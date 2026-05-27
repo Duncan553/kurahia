@@ -68,7 +68,7 @@ def _parse_quantity(data: dict) -> tuple[Decimal | None, str | None]:
 def _get_item(item_id: str) -> tuple:
     item = db.session.get(InventoryItem, item_id)
     if not item or not item.is_active:
-        return None, (jsonify({"error": "Item not found or inactive."}), 404)
+        return None, (jsonify({"error": "This item is disabled or does not exist. Re-enable it or choose another."}), 404)
     return item, None
 
 
