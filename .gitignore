@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+instance/
+*.db
+*.sqlite3
+migrations/versions/
+.pytest_cache/
+dist/
+build/
+*.egg-info/
