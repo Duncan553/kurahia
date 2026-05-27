@@ -118,13 +118,18 @@ def propose_budget(pr_id):
 def approve_request(pr_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
-        return jsonify({"error": "Owner only."}), 403
+        return jsonify({"error": "Only the owner can approve purchase requests."}), 403
 
     pr = db.session.get(PurchaseRequest, pr_id)
     if not pr:
         return jsonify({"error": "Purchase request not found."}), 404
+
+    # Requestor cannot also be the approver
+    if pr.requested_by_id == actor.id:
+        return jsonify({"error": "You can't approve your own purchase request."}), 403
+
     if pr.status not in (RequestStatus.PENDING,):
-        return jsonify({"error": f"Cannot approve a request with status {pr.status}."}), 400
+        return jsonify({"error": f"This request is already {pr.status} and cannot be approved again."}), 400
 
     data   = request.get_json(silent=True) or {}
     action = (data.get("action") or "approve").lower()  # "approve" or "reject"
@@ -167,7 +172,7 @@ def record_purchase():
     idem_key           = data.get("idempotency_key") or str(uuid.uuid4())
 
     if not receipt_photo_path:
-        return jsonify({"error": "receipt_photo_path is mandatory."}), 400
+        return jsonify({"error": "Receipt photo is required before recording the purchase."}), 400
     if not item_id:
         return jsonify({"error": "item_id is required"}), 400
     if raw_qty is None or raw_cost is None:

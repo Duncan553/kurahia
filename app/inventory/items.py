@@ -100,9 +100,12 @@ def edit_item(item_id):
 @jwt_required()
 def list_items():
     actor = db.session.get(User, get_jwt_identity())
-    dept_filter = request.args.get("department")
+    dept_filter       = request.args.get("department")
+    include_disabled  = request.args.get("include_disabled", "false").lower() == "true"
 
-    query = db.session.query(InventoryItem).filter_by(is_active=True)
+    query = db.session.query(InventoryItem)
+    if not include_disabled:
+        query = query.filter_by(is_active=True)
 
     # Managers see their own department; owners see everything
     if actor.role.level < 10 and actor.department_id:
@@ -119,7 +122,8 @@ def list_items():
             "name":          it.name,
             "unit":          it.unit,
             "department_id": it.department_id,
-            "current_stock": str(stock),         # Decimal → string for JSON
+            "is_active":     it.is_active,
+            "current_stock": str(stock),
             "reorder_level": str(it.reorder_level),
             "below_reorder": stock < it.reorder_level,
             "is_watch_list": it.is_watch_list,
@@ -127,3 +131,37 @@ def list_items():
         })
 
     return jsonify(result), 200
+
+
+@items_bp.post("/<item_id>/disable")
+@jwt_required()
+def disable_item(item_id):
+    actor = db.session.get(User, get_jwt_identity())
+    if (err := _require_manager(actor)):
+        return err
+    item = db.session.get(InventoryItem, item_id)
+    if not item:
+        return jsonify({"error": "Item not found."}), 404
+    with db.session.begin_nested():
+        item.is_active = False
+    db.session.commit()
+    AuditLog.log(actor=actor.username, action="inventory.item.disable", target=item.name)
+    db.session.commit()
+    return jsonify({"id": item.id, "is_active": False}), 200
+
+
+@items_bp.post("/<item_id>/enable")
+@jwt_required()
+def enable_item(item_id):
+    actor = db.session.get(User, get_jwt_identity())
+    if (err := _require_manager(actor)):
+        return err
+    item = db.session.get(InventoryItem, item_id)
+    if not item:
+        return jsonify({"error": "Item not found."}), 404
+    with db.session.begin_nested():
+        item.is_active = True
+    db.session.commit()
+    AuditLog.log(actor=actor.username, action="inventory.item.enable", target=item.name)
+    db.session.commit()
+    return jsonify({"id": item.id, "is_active": True}), 200

@@ -52,6 +52,11 @@ def create_app(config_name: str = None) -> Flask:
     from app.judge import judge_bp
     app.register_blueprint(judge_bp)
 
+    from app.admin import dept_bp, roles_bp, baselines_bp
+    app.register_blueprint(dept_bp)
+    app.register_blueprint(roles_bp)
+    app.register_blueprint(baselines_bp)
+
     # Health check — useful for load balancers and deploy scripts
     @app.get("/health")
     def health():

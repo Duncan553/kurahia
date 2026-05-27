@@ -18,6 +18,7 @@ class Role(db.Model):
     department_id = db.Column(
         db.String(36), db.ForeignKey("departments.id"), nullable=True
     )
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
 
     department = db.relationship("Department", back_populates="roles")
     users = db.relationship("User", back_populates="role", lazy="dynamic")

@@ -82,46 +82,85 @@ def create_user():
     }), 201
 
 
+@users_bp.patch("/<user_id>")
+@jwt_required()
+def edit_user(user_id):
+    """Edit username, password, role, or department. Actor must outrank the target."""
+    actor = db.session.get(User, get_jwt_identity())
+    target = db.session.get(User, user_id)
+
+    if not target:
+        return jsonify({"error": "User not found."}), 404
+    if actor.role.level <= target.role.level:
+        return jsonify({"error": "You can only edit users below your own role level."}), 403
+
+    data = request.get_json(silent=True) or {}
+
+    with db.session.begin_nested():
+        if "username" in data:
+            new_name = data["username"].strip().lower()
+            clash = db.session.query(User).filter_by(username=new_name).first()
+            if clash and clash.id != target.id:
+                return jsonify({"error": "That username is already taken."}), 409
+            target.username = new_name
+        if "password" in data:
+            target.set_password(data["password"])
+        if "role_id" in data:
+            new_role = db.session.get(Role, data["role_id"])
+            if not new_role:
+                return jsonify({"error": "Role not found."}), 404
+            if actor.role.level <= new_role.level:
+                return jsonify({"error": "Cannot assign a role at or above your own level."}), 403
+            target.role_id = new_role.id
+        if "department_id" in data:
+            dept = db.session.get(Department, data["department_id"])
+            if not dept or not dept.is_active:
+                return jsonify({"error": "Department not found or disabled."}), 404
+            target.department_id = dept.id
+
+    db.session.commit()
+    AuditLog.log(actor=actor.username, action="user.edit", target=target.username)
+    db.session.commit()
+
+    return jsonify({"id": target.id, "username": target.username}), 200
+
+
 @users_bp.get("")
 @jwt_required()
 def list_users():
-    actor_id = get_jwt_identity()
-    actor = db.session.get(User, actor_id)
+    actor = db.session.get(User, get_jwt_identity())
+    include_disabled = request.args.get("include_disabled", "false").lower() == "true"
 
     query = db.session.query(User)
+    if not include_disabled:
+        query = query.filter_by(is_active=True)
 
-    # Managers see only their department; owners see everyone
-    MANAGER_LEVEL = 5
-    if actor.role.level < 10:  # not owner
-        if actor.department_id:
-            query = query.filter_by(department_id=actor.department_id)
+    if actor.role.level < 10 and actor.department_id:
+        query = query.filter_by(department_id=actor.department_id)
 
-    users = query.all()
     return jsonify([
         {
-            "id": u.id,
-            "username": u.username,
-            "role": u.role.name,
+            "id":         u.id,
+            "username":   u.username,
+            "role":       u.role.name,
             "department": u.department.name if u.department else None,
-            "is_active": u.is_active,
-            "pin_set": u.pin_set,
+            "is_active":  u.is_active,
+            "pin_set":    u.pin_set,
         }
-        for u in users
+        for u in query.all()
     ]), 200
 
 
 @users_bp.post("/<user_id>/activate")
 @jwt_required()
 def activate_user(user_id):
-    actor_id = get_jwt_identity()
-    actor = db.session.get(User, actor_id)
+    actor = db.session.get(User, get_jwt_identity())
     target = db.session.get(User, user_id)
 
     if not target:
         return jsonify({"error": "User not found."}), 404
-
     if actor.role.level <= target.role.level:
-        return jsonify({"error": "Insufficient authority."}), 403
+        return jsonify({"error": "You don't have the authority to activate this account."}), 403
 
     with db.session.begin_nested():
         target.is_active = True
@@ -130,4 +169,4 @@ def activate_user(user_id):
     AuditLog.log(actor=actor.username, action="user.activate", target=target.username)
     db.session.commit()
 
-    return jsonify({"message": f"{target.username} activated."}), 200
+    return jsonify({"message": f"{target.username} has been re-activated."}), 200

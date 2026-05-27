@@ -30,7 +30,7 @@ MANAGER_LEVEL = 5
 def submit_count():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
+        return jsonify({"error": "Only a manager or above can submit stock counts."}), 403
 
     data = request.get_json(silent=True) or {}
     item_id      = data.get("item_id", "")
@@ -58,7 +58,7 @@ def submit_count():
 
     item = db.session.get(InventoryItem, item_id)
     if not item or not item.is_active:
-        return jsonify({"error": "Item not found or inactive."}), 404
+        return jsonify({"error": "This item is disabled or does not exist. Re-enable it or choose another."}), 404
 
     with db.session.begin_nested():
         # Snapshot record for variance anchoring

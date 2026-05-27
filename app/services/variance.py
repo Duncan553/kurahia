@@ -70,7 +70,9 @@ def compute_variance(item_id: str, period_start: datetime, period_end: datetime)
         .first()
     )
     if closing_count is None:
-        return None  # Caller should note "no closing count" in the report
+        # Can't compute variance without at least one closing count in the period.
+        # Caller uses the 'no_closing_count' key to show a plain-English note in the report.
+        return None
 
     actual_closing = Decimal(str(closing_count.counted_amount))
     variance = actual_closing - expected_closing

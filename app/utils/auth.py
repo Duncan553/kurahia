@@ -40,12 +40,12 @@ def check_active_and_unlocked(user) -> tuple[bool, str]:
     Call this at the top of every protected request, not just login.
     """
     if not user.is_active:
-        return False, "Account is disabled."
+        return False, "Your account is disabled. Contact your manager to re-enable it."
     if user.is_locked():
         locked = user.locked_until
         # SQLite returns naive datetimes — treat as UTC
         if locked.tzinfo is None:
             locked = locked.replace(tzinfo=timezone.utc)
         remaining = (locked - datetime.now(timezone.utc)).seconds // 60
-        return False, f"Account locked. Try again in ~{remaining} minutes."
+        return False, f"Account locked after too many failed attempts. Try again in ~{remaining} minutes."
     return True, ""
