@@ -38,8 +38,19 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
 
-    from app.cli import seed_bp
+    from app.cli import seed_bp, inventory_cli_bp
     app.register_blueprint(seed_bp)
+    app.register_blueprint(inventory_cli_bp)
+
+    from app.inventory import items_bp, movements_bp, counts_bp, purchases_bp, variance_bp
+    app.register_blueprint(items_bp)
+    app.register_blueprint(movements_bp)
+    app.register_blueprint(counts_bp)
+    app.register_blueprint(purchases_bp)
+    app.register_blueprint(variance_bp)
+
+    from app.judge import judge_bp
+    app.register_blueprint(judge_bp)
 
     # Health check — useful for load balancers and deploy scripts
     @app.get("/health")
