@@ -65,8 +65,16 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(queues_bp)
     app.register_blueprint(receipts_bp)
 
-    from app.cli import pos_cli_bp
+    from app.cli import pos_cli_bp, finance_cli_bp
     app.register_blueprint(pos_cli_bp)
+    app.register_blueprint(finance_cli_bp)
+
+    from app.finance import cash_bp, mpesa_bp, budgets_bp, analytics_bp, reports_bp
+    app.register_blueprint(cash_bp)
+    app.register_blueprint(mpesa_bp)
+    app.register_blueprint(budgets_bp)
+    app.register_blueprint(analytics_bp)
+    app.register_blueprint(reports_bp)
 
     # Health check — useful for load balancers and deploy scripts
     @app.get("/health")
