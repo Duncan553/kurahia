@@ -1,0 +1,393 @@
+"""
+tests/test_hr.py — Chunk 5 HR & Clock-in tests.
+
+Coverage:
+  - Employee profile CRUD (manager creates, owner disables/enables)
+  - WiFi allow-list management (owner only)
+  - Shift scheduling (conflict detection, cancel)
+  - Clock-in/out WiFi enforcement
+  - Manual clock override (manager only)
+  - Leave request lifecycle (create, approve, reject, self-approval block)
+  - Absence notices (employee posts, manager lists)
+  - Attendance today view
+  - Performance scoring endpoint
+  - Payroll draft
+"""
+import uuid
+import pytest
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Helper
+# ══════════════════════════════════════════════════════════════════════════════
+
+def auth(token):
+    return {"Authorization": f"Bearer {token}"}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 1. Employee profiles
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestEmployeeProfiles:
+    def test_manager_creates_profile(self, client, manager_token, app):
+        from app.models.user import User
+        from app.extensions import db
+        with app.app_context():
+            user = db.session.query(User).filter_by(username="staff1").first()
+            uid = user.id
+
+        rv = client.post("/hr/profiles", json={
+            "user_id": uid, "full_name": "Jane Doe", "phone": "+254711111111",
+        }, headers=auth(manager_token))
+        assert rv.status_code == 201
+        data = rv.get_json()
+        assert data["full_name"] == "Jane Doe"
+
+    def test_staff_cannot_create_profile(self, client, waiter_token, app):
+        from app.models.user import User
+        from app.extensions import db
+        with app.app_context():
+            user = db.session.query(User).filter_by(username="staff1").first()
+            uid = user.id
+
+        rv = client.post("/hr/profiles", json={
+            "user_id": uid, "full_name": "Jane Doe", "phone": "+254711111111",
+        }, headers=auth(waiter_token))
+        assert rv.status_code == 403
+
+    def test_duplicate_profile_rejected(self, client, manager_token, waiter_profile):
+        rv = client.post("/hr/profiles", json={
+            "user_id": waiter_profile.user_id,
+            "full_name": "Duplicate", "phone": "+254799999999",
+        }, headers=auth(manager_token))
+        assert rv.status_code == 409
+
+    def test_owner_disables_and_enables_profile(self, client, owner_token, waiter_profile):
+        pid = waiter_profile.id
+        rv = client.post(f"/hr/profiles/{pid}/disable", headers=auth(owner_token))
+        assert rv.status_code == 200
+        assert rv.get_json()["is_active"] is False
+
+        rv = client.post(f"/hr/profiles/{pid}/enable", headers=auth(owner_token))
+        assert rv.status_code == 200
+        assert rv.get_json()["is_active"] is True
+
+    def test_manager_cannot_disable_profile(self, client, manager_token, waiter_profile):
+        rv = client.post(f"/hr/profiles/{waiter_profile.id}/disable",
+                         headers=auth(manager_token))
+        assert rv.status_code == 403
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 2. WiFi allow-list
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestWifi:
+    def test_owner_creates_wifi_entry(self, client, owner_token):
+        rv = client.post("/hr/wifi", json={
+            "ssid": "Hotel-Staff", "ip_cidr": "10.0.0.0/8",
+        }, headers=auth(owner_token))
+        assert rv.status_code == 201
+        assert rv.get_json()["ip_cidr"] == "10.0.0.0/8"
+
+    def test_invalid_cidr_rejected(self, client, owner_token):
+        rv = client.post("/hr/wifi", json={
+            "ssid": "BadNet", "ip_cidr": "not-a-cidr",
+        }, headers=auth(owner_token))
+        assert rv.status_code == 400
+        assert "error" in rv.get_json()
+
+    def test_manager_cannot_create_wifi(self, client, manager_token):
+        rv = client.post("/hr/wifi", json={
+            "ssid": "Hotel-Staff", "ip_cidr": "10.0.0.0/8",
+        }, headers=auth(manager_token))
+        assert rv.status_code == 403
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 3. Shift scheduling
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestShifts:
+    def test_manager_creates_shift(self, client, manager_token, waiter_profile):
+        rv = client.post("/hr/shifts", json={
+            "employee_id": waiter_profile.id,
+            "scheduled_start_utc": "2030-01-01T08:00:00",
+            "scheduled_end_utc":   "2030-01-01T16:00:00",
+        }, headers=auth(manager_token))
+        assert rv.status_code == 201
+        data = rv.get_json()
+        assert data["employee_id"] == waiter_profile.id
+
+    def test_shift_conflict_rejected(self, client, manager_token, waiter_profile):
+        # First shift
+        client.post("/hr/shifts", json={
+            "employee_id": waiter_profile.id,
+            "scheduled_start_utc": "2030-06-01T08:00:00",
+            "scheduled_end_utc":   "2030-06-01T16:00:00",
+        }, headers=auth(manager_token))
+        # Overlapping shift
+        rv = client.post("/hr/shifts", json={
+            "employee_id": waiter_profile.id,
+            "scheduled_start_utc": "2030-06-01T10:00:00",
+            "scheduled_end_utc":   "2030-06-01T18:00:00",
+        }, headers=auth(manager_token))
+        assert rv.status_code == 409
+
+    def test_cancel_shift(self, client, manager_token, waiter_profile):
+        rv = client.post("/hr/shifts", json={
+            "employee_id": waiter_profile.id,
+            "scheduled_start_utc": "2030-03-01T08:00:00",
+            "scheduled_end_utc":   "2030-03-01T16:00:00",
+        }, headers=auth(manager_token))
+        shift_id = rv.get_json()["id"]
+
+        rv = client.post(f"/hr/shifts/{shift_id}/cancel", headers=auth(manager_token))
+        assert rv.status_code == 200
+        assert rv.get_json()["status"] == "CANCELLED"
+
+    def test_staff_cannot_create_shift(self, client, waiter_token, waiter_profile):
+        rv = client.post("/hr/shifts", json={
+            "employee_id": waiter_profile.id,
+            "scheduled_start_utc": "2030-02-01T08:00:00",
+            "scheduled_end_utc":   "2030-02-01T16:00:00",
+        }, headers=auth(waiter_token))
+        assert rv.status_code == 403
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 4. Clock-in / clock-out (WiFi enforcement)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestClockInOut:
+    def test_clock_in_on_wifi(self, client, waiter_token, waiter_profile, wifi_allowed):
+        rv = client.post("/hr/clock-in",
+                         json={"ssid": "staff-dev-net"},
+                         headers=auth(waiter_token),
+                         environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        assert rv.status_code == 201
+        assert rv.get_json()["event_type"] == "CLOCK_IN"
+
+    def test_clock_in_blocked_off_wifi(self, client, waiter_token, waiter_profile):
+        rv = client.post("/hr/clock-in",
+                         json={},
+                         headers=auth(waiter_token),
+                         environ_base={"REMOTE_ADDR": "8.8.8.8"})
+        assert rv.status_code == 403
+        assert "WiFi" in rv.get_json()["error"]
+
+    def test_clock_out_on_wifi(self, client, waiter_token, waiter_profile, wifi_allowed):
+        # Clock in first
+        client.post("/hr/clock-in",
+                    json={"ssid": "staff-dev-net"},
+                    headers=auth(waiter_token),
+                    environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        rv = client.post("/hr/clock-out",
+                         json={},
+                         headers=auth(waiter_token),
+                         environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        assert rv.status_code == 201
+        assert rv.get_json()["event_type"] == "CLOCK_OUT"
+
+    def test_clock_in_idempotent(self, client, waiter_token, waiter_profile, wifi_allowed):
+        idem = str(uuid.uuid4())
+        for _ in range(2):
+            rv = client.post("/hr/clock-in",
+                             json={"idempotency_key": idem},
+                             headers=auth(waiter_token),
+                             environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        assert rv.status_code == 200
+        assert rv.get_json()["duplicate"] is True
+
+    def test_no_profile_blocks_clock_in(self, client, manager_token, wifi_allowed):
+        # manager1 has no employee profile yet
+        rv = client.post("/hr/clock-in",
+                         json={},
+                         headers=auth(manager_token),
+                         environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        assert rv.status_code == 403
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 5. Manual clock override
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestManualClock:
+    def test_manager_can_override(self, client, manager_token, waiter_profile):
+        rv = client.post("/hr/clock-events/manual", json={
+            "employee_id": waiter_profile.id,
+            "event_type":  "CLOCK_IN",
+            "reason":      "Phone was lost",
+        }, headers=auth(manager_token))
+        assert rv.status_code == 201
+        assert rv.get_json()["is_manual_override"] is True
+
+    def test_override_requires_reason(self, client, manager_token, waiter_profile):
+        rv = client.post("/hr/clock-events/manual", json={
+            "employee_id": waiter_profile.id,
+            "event_type":  "CLOCK_IN",
+        }, headers=auth(manager_token))
+        assert rv.status_code == 400
+
+    def test_staff_cannot_override(self, client, waiter_token, waiter_profile):
+        rv = client.post("/hr/clock-events/manual", json={
+            "employee_id": waiter_profile.id,
+            "event_type":  "CLOCK_IN",
+            "reason":      "Testing",
+        }, headers=auth(waiter_token))
+        assert rv.status_code == 403
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 6. Leave requests
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestLeaveRequests:
+    def test_employee_creates_leave(self, client, waiter_token, waiter_profile):
+        rv = client.post("/hr/leave-requests", json={
+            "leave_type": "ANNUAL",
+            "start_date": "2030-07-01",
+            "end_date":   "2030-07-05",
+        }, headers=auth(waiter_token))
+        assert rv.status_code == 201
+        assert rv.get_json()["status"] == "PENDING"
+
+    def test_manager_approves_leave(self, client, waiter_token, manager_token, waiter_profile):
+        rv = client.post("/hr/leave-requests", json={
+            "leave_type": "SICK",
+            "start_date": "2030-08-01",
+            "end_date":   "2030-08-02",
+        }, headers=auth(waiter_token))
+        lr_id = rv.get_json()["id"]
+
+        rv = client.post(f"/hr/leave-requests/{lr_id}/approve",
+                         json={"notes": "Approved"},
+                         headers=auth(manager_token))
+        assert rv.status_code == 200
+        assert rv.get_json()["status"] == "APPROVED"
+
+    def test_manager_rejects_leave(self, client, waiter_token, manager_token, waiter_profile):
+        rv = client.post("/hr/leave-requests", json={
+            "leave_type": "ANNUAL",
+            "start_date": "2030-09-01",
+            "end_date":   "2030-09-03",
+        }, headers=auth(waiter_token))
+        lr_id = rv.get_json()["id"]
+
+        rv = client.post(f"/hr/leave-requests/{lr_id}/reject",
+                         headers=auth(manager_token))
+        assert rv.status_code == 200
+        assert rv.get_json()["status"] == "REJECTED"
+
+    def test_self_approval_blocked(self, client, manager_token, manager_profile):
+        rv = client.post("/hr/leave-requests", json={
+            "leave_type": "ANNUAL",
+            "start_date": "2030-10-01",
+            "end_date":   "2030-10-02",
+        }, headers=auth(manager_token))
+        lr_id = rv.get_json()["id"]
+
+        rv = client.post(f"/hr/leave-requests/{lr_id}/approve",
+                         headers=auth(manager_token))
+        assert rv.status_code == 403
+        assert "own" in rv.get_json()["error"].lower()
+
+    def test_leave_idempotent(self, client, waiter_token, waiter_profile):
+        idem = str(uuid.uuid4())
+        for _ in range(2):
+            rv = client.post("/hr/leave-requests", json={
+                "leave_type":      "ANNUAL",
+                "start_date":      "2030-11-01",
+                "end_date":        "2030-11-01",
+                "idempotency_key": idem,
+            }, headers=auth(waiter_token))
+        assert rv.status_code == 200
+        assert rv.get_json()["duplicate"] is True
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 7. Absence notices
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestAbsenceNotices:
+    def test_employee_sends_notice(self, client, waiter_token, waiter_profile):
+        rv = client.post("/hr/absence-notices", json={
+            "notice_type": "ABSENT",
+            "reason":      "Feeling unwell",
+        }, headers=auth(waiter_token))
+        assert rv.status_code == 201
+        assert rv.get_json()["notice_type"] == "ABSENT"
+
+    def test_late_notice_with_minutes(self, client, waiter_token, waiter_profile):
+        rv = client.post("/hr/absence-notices", json={
+            "notice_type":           "LATE",
+            "expected_late_minutes": 30,
+        }, headers=auth(waiter_token))
+        assert rv.status_code == 201
+
+    def test_manager_lists_notices(self, client, waiter_token, manager_token, waiter_profile):
+        client.post("/hr/absence-notices", json={
+            "notice_type": "ABSENT",
+        }, headers=auth(waiter_token))
+        rv = client.get("/hr/absence-notices", headers=auth(manager_token))
+        assert rv.status_code == 200
+        assert len(rv.get_json()) >= 1
+
+    def test_no_profile_blocks_notice(self, client, manager_token):
+        # manager1 has no employee profile
+        rv = client.post("/hr/absence-notices", json={
+            "notice_type": "ABSENT",
+        }, headers=auth(manager_token))
+        assert rv.status_code == 403
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 8. Attendance today view
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestAttendanceToday:
+    def test_today_view_requires_manager(self, client, waiter_token):
+        rv = client.get("/hr/attendance/today", headers=auth(waiter_token))
+        assert rv.status_code == 403
+
+    def test_today_view_returns_list(self, client, manager_token, sample_shift):
+        rv = client.get("/hr/attendance/today", headers=auth(manager_token))
+        assert rv.status_code == 200
+        assert isinstance(rv.get_json(), list)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 9. Performance scoring
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestPerformance:
+    def test_performance_endpoint(self, client, manager_token, waiter_profile):
+        rv = client.get(f"/hr/performance/{waiter_profile.id}",
+                        headers=auth(manager_token))
+        assert rv.status_code == 200
+        data = rv.get_json()
+        assert "composite_score" in data
+        assert "detail" in data
+        assert "weights" in data
+
+    def test_performance_unknown_profile(self, client, manager_token):
+        rv = client.get("/hr/performance/nonexistent-id", headers=auth(manager_token))
+        assert rv.status_code == 404
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 10. Payroll draft
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestPayrollDraft:
+    def test_payroll_draft_returns_employees(self, client, manager_token, waiter_profile):
+        rv = client.get("/hr/payroll-draft", headers=auth(manager_token))
+        assert rv.status_code == 200
+        data = rv.get_json()
+        assert "employees" in data
+        assert "period_start" in data
+
+    def test_staff_cannot_see_payroll(self, client, waiter_token, waiter_profile):
+        rv = client.get("/hr/payroll-draft", headers=auth(waiter_token))
+        assert rv.status_code == 403

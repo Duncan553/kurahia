@@ -130,3 +130,61 @@ def general_dept_id(app):
     from app.models.department import Department
     dept = _db.session.query(Department).filter_by(name="General").first()
     return dept.id
+
+
+# ── HR fixtures ───────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def wifi_allowed(app):
+    """Add 127.0.0.0/8 to WiFiAllowList so test client (127.0.0.1) can clock in."""
+    from app.models.wifi_allow_list import WiFiAllowList
+    entry = WiFiAllowList(ssid="staff-dev-net", ip_cidr="127.0.0.0/8", label="Dev")
+    _db.session.add(entry)
+    _db.session.commit()
+    return entry
+
+
+@pytest.fixture
+def waiter_profile(app):
+    """EmployeeProfile for waiter1."""
+    from app.models.employee_profile import EmployeeProfile
+    from app.models.user import User
+    user = _db.session.query(User).filter_by(username="waiter1").first()
+    profile = EmployeeProfile(user_id=user.id, full_name="Test Waiter", phone="+254700000001")
+    _db.session.add(profile)
+    _db.session.commit()
+    return profile
+
+
+@pytest.fixture
+def manager_profile(app):
+    """EmployeeProfile for manager1."""
+    from app.models.employee_profile import EmployeeProfile
+    from app.models.user import User
+    user = _db.session.query(User).filter_by(username="manager1").first()
+    profile = EmployeeProfile(user_id=user.id, full_name="Test Manager", phone="+254700000002")
+    _db.session.add(profile)
+    _db.session.commit()
+    return profile
+
+
+@pytest.fixture
+def sample_shift(app, waiter_profile):
+    """A SCHEDULED shift for waiter_profile starting 1 hour from now."""
+    import uuid
+    from datetime import datetime, timezone, timedelta
+    from app.models.shift import Shift, ShiftStatus
+    from app.models.user import User
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    creator = _db.session.query(User).filter_by(username="manager1").first()
+    shift = Shift(
+        employee_id=waiter_profile.id,
+        scheduled_start_utc=now + timedelta(hours=1),
+        scheduled_end_utc=now + timedelta(hours=9),
+        status=ShiftStatus.SCHEDULED.value,
+        created_by_id=creator.id,
+        idempotency_key=str(uuid.uuid4()),
+    )
+    _db.session.add(shift)
+    _db.session.commit()
+    return shift
