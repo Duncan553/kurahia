@@ -20,6 +20,12 @@ from .budget import Budget
 from .cash_reconciliation import CashReconciliation, ReconciliationStatus, cash_recon_payments
 from .payment_reconciliation import PaymentReconciliation, PaymentReconciliationStatus
 from .period_close import PeriodClose, PeriodCloseStatus
+from .employee_profile import EmployeeProfile, WagePeriod
+from .shift import Shift, ShiftStatus
+from .clock_event import ClockEvent, ClockEventType
+from .leave_request import LeaveRequest, LeaveType, LeaveStatus
+from .absence_notice import AbsenceNotice, NoticeType
+from .wifi_allow_list import WiFiAllowList
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",
@@ -40,4 +46,10 @@ __all__ = [
     "CashReconciliation", "ReconciliationStatus", "cash_recon_payments",
     "PaymentReconciliation", "PaymentReconciliationStatus",
     "PeriodClose", "PeriodCloseStatus",
+    "EmployeeProfile", "WagePeriod",
+    "Shift", "ShiftStatus",
+    "ClockEvent", "ClockEventType",
+    "LeaveRequest", "LeaveType", "LeaveStatus",
+    "AbsenceNotice", "NoticeType",
+    "WiFiAllowList",
 ]
