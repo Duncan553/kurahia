@@ -1,17 +1,14 @@
 """
 judge/engine.py — Layer 2: the silent variance brain.
 
-DORMANT UNTIL POS LANDS.
-
-Design intent: when POS writes SALE_PLACEHOLDER movements, this engine
-will start producing real consumption-vs-revenue ratios and fire alerts.
-No code rewrite needed — the data pipeline just fills in.
+NOW ACTIVE — POS payments feed _get_sales_revenue().
 
 Two jobs:
   run_weekly(period_start, period_end)  → ratio analysis per item
   run_daily(date)                        → watch-list items, spoilage spikes
 
-Both write JudgeAlerts if anomalies found. Both silently no-op if no sales data.
+Both write JudgeAlerts if anomalies found. Both no-op if no payment data.
+Tolerances are kept WIDE at launch — better silent than crying wolf.
 """
 from decimal import Decimal
 from datetime import datetime, timezone
@@ -26,13 +23,19 @@ from app.models.audit_log import AuditLog
 
 def _get_sales_revenue(period_start: datetime, period_end: datetime) -> Decimal | None:
     """
-    Returns total sales revenue for the period, or None if no POS data exists.
-    POS will populate SALE_PLACEHOLDER movements with a notes field containing
-    revenue context. For now, always returns None — judge stays dormant.
-    Replace this function body when POS is built, nothing else changes.
+    Returns total payment revenue for the period. None if no payments exist.
+    This one change wakes Layer 2 — no other judge code changes needed.
+    Per-department revenue splits can be added later without changing this interface.
     """
-    # Future: query SALE_PLACEHOLDER movements or a dedicated sales table
-    return None
+    from app.models.payment import Payment
+    result = db.session.query(func.sum(Payment.amount)).filter(
+        Payment.created_at_utc >= period_start,
+        Payment.created_at_utc <= period_end,
+    ).scalar()
+    if result is None:
+        return None
+    rev = Decimal(str(result))
+    return rev if rev > Decimal("0") else None
 
 
 def _get_period_consumption(item_id: str, period_start: datetime, period_end: datetime) -> Decimal:

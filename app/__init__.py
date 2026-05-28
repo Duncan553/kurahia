@@ -57,6 +57,17 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(roles_bp)
     app.register_blueprint(baselines_bp)
 
+    from app.pos import menu_bp, tabs_bp, orders_bp, payments_bp, queues_bp, receipts_bp
+    app.register_blueprint(menu_bp)
+    app.register_blueprint(tabs_bp)
+    app.register_blueprint(orders_bp)
+    app.register_blueprint(payments_bp)
+    app.register_blueprint(queues_bp)
+    app.register_blueprint(receipts_bp)
+
+    from app.cli import pos_cli_bp
+    app.register_blueprint(pos_cli_bp)
+
     # Health check — useful for load balancers and deploy scripts
     @app.get("/health")
     def health():

@@ -10,6 +10,12 @@ from .purchase_request import PurchaseRequest, RequestStatus
 from .purchase import Purchase
 from .judge_baseline import JudgeBaseline
 from .judge_alert import JudgeAlert, AlertStatus, AlertSeverity
+from .menu_item import MenuItem, PrepStation
+from .tab import Tab, TabType, TabStatus
+from .order import Order, OrderStatus
+from .order_item import OrderItem, OrderItemStatus, VALID_TRANSITIONS
+from .charge import Charge
+from .payment import Payment, PaymentMethod
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",
@@ -20,4 +26,10 @@ __all__ = [
     "Purchase",
     "JudgeBaseline",
     "JudgeAlert", "AlertStatus", "AlertSeverity",
+    "MenuItem", "PrepStation",
+    "Tab", "TabType", "TabStatus",
+    "Order", "OrderStatus",
+    "OrderItem", "OrderItemStatus", "VALID_TRANSITIONS",
+    "Charge",
+    "Payment", "PaymentMethod",
 ]
