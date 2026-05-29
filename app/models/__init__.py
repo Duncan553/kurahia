@@ -35,6 +35,18 @@ from .wristband import Wristband, WristbandStatus
 from .wristband_counter import WristbandCounter
 from .gate_entry import GateEntry
 from .gate_headcount import GateHeadcount
+from .event_type import EventType
+from .event import Event, EventStatus, VALID_EVENT_TRANSITIONS
+from .event_assignment import EventAssignment, AssignmentStatus, VALID_ASSIGNMENT_TRANSITIONS
+from .event_inventory_allocation import (
+    EventInventoryAllocation, AllocationStatus, VALID_ALLOCATION_TRANSITIONS,
+)
+from .event_stock_movement import EventStockMovement, EventMovementType
+from .notification import (
+    Notification, NotificationStatus, NotificationChannel,
+    NotificationReferenceType, NotificationChannelConfig,
+)
+from .suggestion import Suggestion, SuggestionCategory, SuggestionStatus
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",
@@ -70,4 +82,12 @@ __all__ = [
     "WristbandCounter",
     "GateEntry",
     "GateHeadcount",
+    "EventType",
+    "Event", "EventStatus", "VALID_EVENT_TRANSITIONS",
+    "EventAssignment", "AssignmentStatus", "VALID_ASSIGNMENT_TRANSITIONS",
+    "EventInventoryAllocation", "AllocationStatus", "VALID_ALLOCATION_TRANSITIONS",
+    "EventStockMovement", "EventMovementType",
+    "Notification", "NotificationStatus", "NotificationChannel",
+    "NotificationReferenceType", "NotificationChannelConfig",
+    "Suggestion", "SuggestionCategory", "SuggestionStatus",
 ]

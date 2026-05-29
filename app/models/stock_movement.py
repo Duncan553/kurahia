@@ -18,13 +18,16 @@ from app.extensions import db
 
 class MovementReason(str, enum.Enum):
     PURCHASE         = "PURCHASE"
-    COUNT            = "COUNT"           # reconciliation after physical count
+    COUNT            = "COUNT"             # reconciliation after physical count
     SPOILAGE         = "SPOILAGE"
     STAFF_MEAL       = "STAFF_MEAL"
     SENT_BACK        = "SENT_BACK"
     TRANSFER         = "TRANSFER"
     ADJUSTMENT       = "ADJUSTMENT"
     SALE_PLACEHOLDER = "SALE_PLACEHOLDER"  # POS will write here when built
+    # Event movements are NOT in CONSUMPTION_REASONS — judge ignores them automatically.
+    # 50 kg beef going to a wedding doesn't look like theft.
+    EVENT_ALLOCATION = "EVENT_ALLOCATION"
 
 
 # Reasons that represent stock leaving (used by variance math)
