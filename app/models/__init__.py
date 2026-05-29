@@ -26,6 +26,11 @@ from .clock_event import ClockEvent, ClockEventType
 from .leave_request import LeaveRequest, LeaveType, LeaveStatus
 from .absence_notice import AbsenceNotice, NoticeType
 from .wifi_allow_list import WiFiAllowList
+from .bookable_resource import BookableResource, ResourceType
+from .guest_record import GuestRecord
+from .booking import Booking, BookingStatus, VALID_BOOKING_TRANSITIONS
+from .booking_payment import BookingPayment, BookingPaymentPurpose
+from .waiver import Waiver, WaiverActivityType
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",
@@ -52,4 +57,9 @@ __all__ = [
     "LeaveRequest", "LeaveType", "LeaveStatus",
     "AbsenceNotice", "NoticeType",
     "WiFiAllowList",
+    "BookableResource", "ResourceType",
+    "GuestRecord",
+    "Booking", "BookingStatus", "VALID_BOOKING_TRANSITIONS",
+    "BookingPayment", "BookingPaymentPurpose",
+    "Waiver", "WaiverActivityType",
 ]
