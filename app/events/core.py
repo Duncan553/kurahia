@@ -190,6 +190,8 @@ def edit_event(event_id):
     if "expected_guests" in data: event.expected_guests = int(data["expected_guests"])
     event.updated_at_utc = datetime.now(timezone.utc)
     db.session.commit()
+    AuditLog.log(actor=actor.username, action="event.edit", target=event_id)
+    db.session.commit()
     return jsonify(_event_dict(event)), 200
 
 
