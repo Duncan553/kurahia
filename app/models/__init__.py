@@ -31,6 +31,10 @@ from .guest_record import GuestRecord
 from .booking import Booking, BookingStatus, VALID_BOOKING_TRANSITIONS
 from .booking_payment import BookingPayment, BookingPaymentPurpose
 from .waiver import Waiver, WaiverActivityType
+from .wristband import Wristband, WristbandStatus
+from .wristband_counter import WristbandCounter
+from .gate_entry import GateEntry
+from .gate_headcount import GateHeadcount
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",
@@ -62,4 +66,8 @@ __all__ = [
     "Booking", "BookingStatus", "VALID_BOOKING_TRANSITIONS",
     "BookingPayment", "BookingPaymentPurpose",
     "Waiver", "WaiverActivityType",
+    "Wristband", "WristbandStatus",
+    "WristbandCounter",
+    "GateEntry",
+    "GateHeadcount",
 ]
