@@ -52,6 +52,7 @@ from .conduct_signature import ConductSignature
 from .dispute import Dispute, DisputeSubject, DisputeCategory, DisputeStatus, VALID_DISPUTE_TRANSITIONS
 from .guest_feedback import GuestFeedback
 from .calendar_entry import CalendarEntry, CalendarEntryType
+from .equipment import Equipment, MaintenanceLog, SafetyCheck, EquipmentStatus
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",
@@ -100,4 +101,5 @@ __all__ = [
     "Dispute", "DisputeSubject", "DisputeCategory", "DisputeStatus", "VALID_DISPUTE_TRANSITIONS",
     "GuestFeedback",
     "CalendarEntry", "CalendarEntryType",
+    "Equipment", "MaintenanceLog", "SafetyCheck", "EquipmentStatus",
 ]

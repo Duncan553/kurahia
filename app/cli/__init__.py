@@ -7,3 +7,4 @@ from .bookings import bookings_cli_bp
 from .gate import gate_cli_bp
 from .events import events_cli_bp
 from .conduct import conduct_cli_bp, calendar_cli_bp, feedback_cli_bp
+from .system import system_cli_bp, audit_cli_bp, judge_cli_bp
