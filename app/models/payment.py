@@ -23,12 +23,13 @@ class PaymentMethod(str, enum.Enum):
 class Payment(db.Model):
     __tablename__ = "payments"
 
-    id         = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tab_id     = db.Column(db.String(36), db.ForeignKey("tabs.id"), nullable=False, index=True)
-    amount     = db.Column(db.Numeric(14, 2), nullable=False)
-    method     = db.Column(db.String(10), nullable=False)
-    mpesa_code = db.Column(db.String(20), nullable=True)   # captured, not verified yet
-    card_ref   = db.Column(db.String(50), nullable=True)
+    id          = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tab_id      = db.Column(db.String(36), db.ForeignKey("tabs.id"), nullable=True, index=True)
+    amount      = db.Column(db.Numeric(14, 2), nullable=False)
+    method      = db.Column(db.String(10), nullable=False)
+    mpesa_code  = db.Column(db.String(20), nullable=True)
+    card_ref    = db.Column(db.String(50), nullable=True)
+    description = db.Column(db.Text, nullable=True)   # e.g. "Deposit transfer from booking X"
 
     received_by_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
     idempotency_key = db.Column(db.String(128), nullable=False, unique=True)
