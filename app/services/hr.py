@@ -171,6 +171,25 @@ def compute_hours_worked(employee_id: str,
     return Decimal(str(round(total_seconds / 3600, 4)))
 
 
+# ── Guest-rating socket (activated in Chunk 9) ───────────────────────────────
+
+def _get_guest_rating(employee_id: str,
+                      period_start: datetime, period_end: datetime) -> str | None:
+    """
+    Average GuestFeedback score (1-5) for this employee in the period.
+    Returns None if no feedback exists — the composite score stays unaffected.
+    """
+    from app.models.guest_feedback import GuestFeedback
+    result = db.session.query(func.avg(GuestFeedback.score)).filter(
+        GuestFeedback.served_by_employee_id == employee_id,
+        GuestFeedback.created_at_utc >= period_start,
+        GuestFeedback.created_at_utc < period_end,
+    ).scalar()
+    if result is None:
+        return None
+    return str(round(Decimal(str(result)), 2))
+
+
 # ── Performance scoring ───────────────────────────────────────────────────────
 
 def compute_performance(employee_id: str,
@@ -284,7 +303,7 @@ def compute_performance(employee_id: str,
             "cash_shortfalls":  short_count,
             "void_rate_pct":    str(void_rate_pct),
             "hours_worked":     str(hours_worked),
-            "guest_rating":     None,   # Chunk 8: GuestFeedback model
+            "guest_rating":     _get_guest_rating(employee_id, period_start, period_end),
         },
         "weights": {k: str(v) for k, v in SCORE_WEIGHTS.items()},
     }

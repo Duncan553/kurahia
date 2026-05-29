@@ -47,6 +47,11 @@ from .notification import (
     NotificationReferenceType, NotificationChannelConfig,
 )
 from .suggestion import Suggestion, SuggestionCategory, SuggestionStatus
+from .conduct_rule import ConductRule, RuleCategory
+from .conduct_signature import ConductSignature
+from .dispute import Dispute, DisputeSubject, DisputeCategory, DisputeStatus, VALID_DISPUTE_TRANSITIONS
+from .guest_feedback import GuestFeedback
+from .calendar_entry import CalendarEntry, CalendarEntryType
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",
@@ -90,4 +95,9 @@ __all__ = [
     "Notification", "NotificationStatus", "NotificationChannel",
     "NotificationReferenceType", "NotificationChannelConfig",
     "Suggestion", "SuggestionCategory", "SuggestionStatus",
+    "ConductRule", "RuleCategory",
+    "ConductSignature",
+    "Dispute", "DisputeSubject", "DisputeCategory", "DisputeStatus", "VALID_DISPUTE_TRANSITIONS",
+    "GuestFeedback",
+    "CalendarEntry", "CalendarEntryType",
 ]
