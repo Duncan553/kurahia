@@ -157,6 +157,14 @@ def manual_clock():
     if not reason:
         return jsonify({"error": "reason is required for manual overrides."}), 400
 
+    # Self-override block: a manager cannot override their own clock events
+    # (avoids "I worked 4 extra hours" fraud). Owner can override anyone.
+    from app.models.employee_profile import EmployeeProfile as _EP
+    _target_profile = db.session.get(_EP, employee_id)
+    if _target_profile and _target_profile.user_id == actor.id:
+        return jsonify({"error": "You cannot manually override your own clock events. "
+                                 "Ask another manager or the owner to do this."}), 403
+
     profile = db.session.get(EmployeeProfile, employee_id)
     if not profile or not profile.is_active:
         return jsonify({"error": "Employee profile not found or disabled."}), 404
