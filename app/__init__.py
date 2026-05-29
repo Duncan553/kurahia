@@ -65,13 +65,18 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(queues_bp)
     app.register_blueprint(receipts_bp)
 
-    from app.cli import pos_cli_bp, finance_cli_bp, hr_cli_bp, bookings_cli_bp, gate_cli_bp, events_cli_bp
+    from app.cli import (pos_cli_bp, finance_cli_bp, hr_cli_bp, bookings_cli_bp,
+                         gate_cli_bp, events_cli_bp,
+                         conduct_cli_bp, calendar_cli_bp, feedback_cli_bp)
     app.register_blueprint(pos_cli_bp)
     app.register_blueprint(finance_cli_bp)
     app.register_blueprint(hr_cli_bp)
     app.register_blueprint(bookings_cli_bp)
     app.register_blueprint(gate_cli_bp)
     app.register_blueprint(events_cli_bp)
+    app.register_blueprint(conduct_cli_bp)
+    app.register_blueprint(calendar_cli_bp)
+    app.register_blueprint(feedback_cli_bp)
 
     from app.gate import gate_bp
     app.register_blueprint(gate_bp)
@@ -112,6 +117,18 @@ def create_app(config_name: str = None) -> Flask:
 
     from app.suggestions import suggestions_bp
     app.register_blueprint(suggestions_bp)
+
+    from app.conduct import conduct_bp
+    app.register_blueprint(conduct_bp)
+
+    from app.disputes import disputes_bp
+    app.register_blueprint(disputes_bp)
+
+    from app.feedback import feedback_bp
+    app.register_blueprint(feedback_bp)
+
+    from app.calendar_view import calendar_bp
+    app.register_blueprint(calendar_bp)
 
     # Health check — useful for load balancers and deploy scripts
     @app.get("/health")
