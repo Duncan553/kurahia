@@ -7,6 +7,7 @@ Bar staff (Bar dept) or manager+ can see the bar queue.
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.order_item import OrderItem, OrderItemStatus
 from app.models.order import Order
@@ -58,7 +59,7 @@ def _queue_for_station(station: str, actor: User):
 
 
 @queues_bp.get("/kitchen/queue")
-@jwt_required()
+@require_active_user
 def kitchen_queue():
     actor = db.session.get(User, get_jwt_identity())
     result, err = _queue_for_station(PrepStation.KITCHEN.value, actor)
@@ -68,7 +69,7 @@ def kitchen_queue():
 
 
 @queues_bp.get("/bar/queue")
-@jwt_required()
+@require_active_user
 def bar_queue():
     actor = db.session.get(User, get_jwt_identity())
     result, err = _queue_for_station(PrepStation.BAR.value, actor)

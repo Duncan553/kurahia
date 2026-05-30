@@ -6,6 +6,7 @@ import uuid
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.tab import Tab, TabStatus
 from app.models.payment import Payment, PaymentMethod
@@ -17,7 +18,7 @@ payments_bp = Blueprint("payments", __name__, url_prefix="/tabs")
 
 
 @payments_bp.post("/<tab_id>/payments")
-@jwt_required()
+@require_active_user
 def record_payment(tab_id):
     actor = db.session.get(User, get_jwt_identity())
     tab   = db.session.get(Tab, tab_id)

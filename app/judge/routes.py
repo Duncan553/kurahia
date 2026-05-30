@@ -7,6 +7,7 @@ import click
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.judge_alert import JudgeAlert, AlertStatus
 from app.models.user import User
@@ -23,7 +24,7 @@ def _require_owner(actor: User):
 
 
 @judge_bp.get("/alerts")
-@jwt_required()
+@require_active_user
 def list_alerts():
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -52,7 +53,7 @@ def list_alerts():
 
 
 @judge_bp.post("/alerts/<alert_id>/acknowledge")
-@jwt_required()
+@require_active_user
 def acknowledge_alert(alert_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):

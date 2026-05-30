@@ -5,6 +5,7 @@ Manager+ can create / edit / disable / enable.
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.bookable_resource import BookableResource, ResourceType
@@ -18,7 +19,7 @@ OWNER_LEVEL   = 10
 
 
 @resources_bp.post("")
-@jwt_required()
+@require_active_user
 def create_resource():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -62,7 +63,7 @@ def create_resource():
 
 
 @resources_bp.get("")
-@jwt_required()
+@require_active_user
 def list_resources():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -81,7 +82,7 @@ def list_resources():
 
 
 @resources_bp.patch("/<resource_id>")
-@jwt_required()
+@require_active_user
 def edit_resource(resource_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -114,7 +115,7 @@ def edit_resource(resource_id):
 
 
 @resources_bp.post("/<resource_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_resource(resource_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -130,7 +131,7 @@ def disable_resource(resource_id):
 
 
 @resources_bp.post("/<resource_id>/enable")
-@jwt_required()
+@require_active_user
 def enable_resource(resource_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

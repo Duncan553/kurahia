@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.booking import Booking, BookingStatus
@@ -67,7 +68,7 @@ def _booking_dict(b: Booking, include_balance: bool = False) -> dict:
 # ── Create ────────────────────────────────────────────────────────────────────
 
 @bookings_bp.post("")
-@jwt_required()
+@require_active_user
 def create_booking():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -155,7 +156,7 @@ def create_booking():
 # ── Confirm (HELD → CONFIRMED) ────────────────────────────────────────────────
 
 @bookings_bp.post("/<booking_id>/confirm")
-@jwt_required()
+@require_active_user
 def confirm_booking(booking_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -188,7 +189,7 @@ def confirm_booking(booking_id):
 # ── Check-in (CONFIRMED → CHECKED_IN, opens Villa tab) ───────────────────────
 
 @bookings_bp.post("/<booking_id>/check-in")
-@jwt_required()
+@require_active_user
 def check_in(booking_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -217,7 +218,7 @@ def check_in(booking_id):
 # ── Check-out (CHECKED_IN → CHECKED_OUT, closes tab) ─────────────────────────
 
 @bookings_bp.post("/<booking_id>/check-out")
-@jwt_required()
+@require_active_user
 def check_out(booking_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -268,7 +269,7 @@ def check_out(booking_id):
 # ── Cancel ────────────────────────────────────────────────────────────────────
 
 @bookings_bp.post("/<booking_id>/cancel")
-@jwt_required()
+@require_active_user
 def cancel_booking(booking_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -293,7 +294,7 @@ def cancel_booking(booking_id):
 # ── List & availability ────────────────────────────────────────────────────────
 
 @bookings_bp.get("")
-@jwt_required()
+@require_active_user
 def list_bookings():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -324,7 +325,7 @@ def list_bookings():
 
 
 @bookings_bp.get("/availability")
-@jwt_required()
+@require_active_user
 def check_availability():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -361,7 +362,7 @@ def check_availability():
 
 
 @bookings_bp.get("/today")
-@jwt_required()
+@require_active_user
 def today_bookings():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -397,7 +398,7 @@ def today_bookings():
 # ── Water-activity session (waiver gate) ──────────────────────────────────────
 
 @bookings_bp.post("/<booking_id>/water-sessions")
-@jwt_required()
+@require_active_user
 def book_water_session(booking_id):
     """
     Post a water-activity charge to the booking's tab.

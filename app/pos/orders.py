@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.menu_item import MenuItem, PrepStation
 from app.models.tab import Tab, TabStatus
@@ -45,7 +46,7 @@ def _can_operate_station(actor: User, station: str) -> bool:
 # ── Create Order ──────────────────────────────────────────────────────────────
 
 @orders_bp.post("/orders")
-@jwt_required()
+@require_active_user
 def create_order():
     actor = db.session.get(User, get_jwt_identity())
     # Kitchen / Bar staff may not create customer orders (they only work the queue)
@@ -111,7 +112,7 @@ def create_order():
 # ── Send Order ────────────────────────────────────────────────────────────────
 
 @orders_bp.post("/orders/<order_id>/send")
-@jwt_required()
+@require_active_user
 def send_order(order_id):
     actor = db.session.get(User, get_jwt_identity())
     order = db.session.get(Order, order_id)
@@ -165,7 +166,7 @@ def _transition_item(order_item_id: str, new_status: OrderItemStatus, actor: Use
 
 
 @orders_bp.post("/order-items/<oi_id>/receive")
-@jwt_required()
+@require_active_user
 def receive_item(oi_id):
     actor = db.session.get(User, get_jwt_identity())
     oi = db.session.get(OrderItem, oi_id)
@@ -185,7 +186,7 @@ def receive_item(oi_id):
 
 
 @orders_bp.post("/order-items/<oi_id>/ready")
-@jwt_required()
+@require_active_user
 def mark_ready(oi_id):
     actor = db.session.get(User, get_jwt_identity())
     oi = db.session.get(OrderItem, oi_id)
@@ -205,7 +206,7 @@ def mark_ready(oi_id):
 
 
 @orders_bp.post("/order-items/<oi_id>/serve")
-@jwt_required()
+@require_active_user
 def serve_item(oi_id):
     actor = db.session.get(User, get_jwt_identity())
     oi = db.session.get(OrderItem, oi_id)
@@ -225,7 +226,7 @@ def serve_item(oi_id):
 
 
 @orders_bp.post("/order-items/<oi_id>/cancel")
-@jwt_required()
+@require_active_user
 def cancel_item(oi_id):
     actor = db.session.get(User, get_jwt_identity())
     oi = db.session.get(OrderItem, oi_id)
@@ -247,7 +248,7 @@ def cancel_item(oi_id):
 
 
 @orders_bp.post("/order-items/<oi_id>/send-back")
-@jwt_required()
+@require_active_user
 def send_back_item(oi_id):
     """
     Marks the item sent-back (CANCELLED with reason) AND creates an inventory
@@ -297,7 +298,7 @@ def send_back_item(oi_id):
 # ── Staff cash report ─────────────────────────────────────────────────────────
 
 @orders_bp.get("/reports/staff-cash")
-@jwt_required()
+@require_active_user
 def staff_cash_report():
     """
     Sum of CASH payments received by a staff member in a time window.

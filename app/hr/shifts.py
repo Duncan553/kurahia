@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile
@@ -45,7 +46,7 @@ def _has_conflict(employee_id: str, start: datetime, end: datetime,
 
 
 @shifts_bp.post("/shifts")
-@jwt_required()
+@require_active_user
 def create_shift():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -102,7 +103,7 @@ def create_shift():
 
 
 @shifts_bp.get("/shifts")
-@jwt_required()
+@require_active_user
 def list_shifts():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -137,7 +138,7 @@ def list_shifts():
 
 
 @shifts_bp.patch("/shifts/<shift_id>")
-@jwt_required()
+@require_active_user
 def edit_shift(shift_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -168,7 +169,7 @@ def edit_shift(shift_id):
 
 
 @shifts_bp.post("/shifts/<shift_id>/cancel")
-@jwt_required()
+@require_active_user
 def cancel_shift(shift_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile
@@ -20,7 +21,7 @@ MANAGER_LEVEL = 5
 
 
 @absence_bp.post("/absence-notices")
-@jwt_required()
+@require_active_user
 def create_absence_notice():
     actor   = db.session.get(User, get_jwt_identity())
     profile = db.session.query(EmployeeProfile).filter_by(user_id=actor.id, is_active=True).first()
@@ -74,7 +75,7 @@ def create_absence_notice():
 
 
 @absence_bp.get("/absence-notices")
-@jwt_required()
+@require_active_user
 def list_absence_notices():
     actor = db.session.get(User, get_jwt_identity())
 

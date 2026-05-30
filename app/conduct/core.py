@@ -9,6 +9,7 @@ import uuid
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.conduct_rule import ConductRule, RuleCategory
@@ -35,7 +36,7 @@ def _rule_dict(r: ConductRule) -> dict:
 # ── Rules ─────────────────────────────────────────────────────────────────────
 
 @conduct_bp.post("/rules")
-@jwt_required()
+@require_active_user
 def create_or_update_rule():
     """
     If rule_key exists → create new version (v+1), deactivate previous.
@@ -82,7 +83,7 @@ def create_or_update_rule():
 
 
 @conduct_bp.get("/rules")
-@jwt_required()
+@require_active_user
 def list_rules():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < STAFF_LEVEL:
@@ -97,7 +98,7 @@ def list_rules():
 
 
 @conduct_bp.get("/rules/<rule_id>/versions")
-@jwt_required()
+@require_active_user
 def rule_versions(rule_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -114,7 +115,7 @@ def rule_versions(rule_id):
 # ── Signing ───────────────────────────────────────────────────────────────────
 
 @conduct_bp.post("/sign")
-@jwt_required()
+@require_active_user
 def sign_rule():
     """Employee signs the current active version of a rule. Idempotent."""
     actor = db.session.get(User, get_jwt_identity())
@@ -157,7 +158,7 @@ def sign_rule():
 
 
 @conduct_bp.get("/signatures/<employee_id>")
-@jwt_required()
+@require_active_user
 def get_signatures(employee_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -179,7 +180,7 @@ def get_signatures(employee_id):
 # ── Compliance report ─────────────────────────────────────────────────────────
 
 @conduct_bp.get("/compliance")
-@jwt_required()
+@require_active_user
 def compliance_report():
     """
     Per active rule version: list employees who haven't signed.

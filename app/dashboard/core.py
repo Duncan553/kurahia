@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from sqlalchemy import func
 from app.extensions import db
 from app.models.user import User
@@ -37,7 +38,7 @@ def _period_bounds(period: str) -> tuple[datetime, datetime]:
 # ── Overview ──────────────────────────────────────────────────────────────────
 
 @dashboard_bp.get("/overview")
-@jwt_required()
+@require_active_user
 def overview():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -155,7 +156,7 @@ def overview():
 # ── Inventory ─────────────────────────────────────────────────────────────────
 
 @dashboard_bp.get("/inventory")
-@jwt_required()
+@require_active_user
 def inventory_view():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -208,7 +209,7 @@ def inventory_view():
 # ── Finance ───────────────────────────────────────────────────────────────────
 
 @dashboard_bp.get("/finance")
-@jwt_required()
+@require_active_user
 def finance_view():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -274,7 +275,7 @@ def finance_view():
 # ── Bookings ──────────────────────────────────────────────────────────────────
 
 @dashboard_bp.get("/bookings")
-@jwt_required()
+@require_active_user
 def bookings_view():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -367,7 +368,7 @@ def bookings_view():
 # ── Staff ─────────────────────────────────────────────────────────────────────
 
 @dashboard_bp.get("/staff")
-@jwt_required()
+@require_active_user
 def staff_view():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -454,7 +455,7 @@ def staff_view():
 # ── Conduct ───────────────────────────────────────────────────────────────────
 
 @dashboard_bp.get("/conduct")
-@jwt_required()
+@require_active_user
 def conduct_view():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -501,7 +502,7 @@ def conduct_view():
 # ── Suggestions ───────────────────────────────────────────────────────────────
 
 @dashboard_bp.get("/suggestions")
-@jwt_required()
+@require_active_user
 def suggestions_view():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -531,7 +532,7 @@ def suggestions_view():
 # ── Calendar ──────────────────────────────────────────────────────────────────
 
 @dashboard_bp.get("/calendar")
-@jwt_required()
+@require_active_user
 def calendar_view():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -582,7 +583,7 @@ def calendar_view():
 # ── Feedback ──────────────────────────────────────────────────────────────────
 
 @dashboard_bp.get("/feedback")
-@jwt_required()
+@require_active_user
 def feedback_view():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -661,7 +662,7 @@ def feedback_view():
 # ── Equipment ─────────────────────────────────────────────────────────────────
 
 @dashboard_bp.get("/equipment")
-@jwt_required()
+@require_active_user
 def equipment_view():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -688,7 +689,7 @@ def equipment_view():
 # ── Unified alerts feed ───────────────────────────────────────────────────────
 
 @dashboard_bp.get("/alerts")
-@jwt_required()
+@require_active_user
 def alerts_feed():
     actor = db.session.get(User, get_jwt_identity())
     err = _require_owner(actor)
@@ -727,7 +728,7 @@ def alerts_feed():
 
 
 @dashboard_bp.post("/alerts/<alert_id>/acknowledge")
-@jwt_required()
+@require_active_user
 def acknowledge_alert(alert_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -750,7 +751,7 @@ def acknowledge_alert(alert_id):
 
 
 @dashboard_bp.post("/alerts/<alert_id>/action-taken")
-@jwt_required()
+@require_active_user
 def action_taken(alert_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

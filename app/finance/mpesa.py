@@ -11,6 +11,7 @@ flow later (auto-match instead of manual entry). No rewrite needed.
 from decimal import Decimal
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.payment import Payment, PaymentMethod
@@ -43,7 +44,7 @@ def _pending_by_method(method_val: str, period_start, period_end):
 
 
 @mpesa_bp.get("/mpesa/pending")
-@jwt_required()
+@require_active_user
 def mpesa_pending():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -75,7 +76,7 @@ def mpesa_pending():
 
 
 @mpesa_bp.post("/mpesa/reconcile")
-@jwt_required()
+@require_active_user
 def mpesa_reconcile():
     """
     Body: { "entries": [ {payment_id, action, statement_ref, notes} ] }
@@ -168,7 +169,7 @@ def mpesa_reconcile():
 
 
 @mpesa_bp.get("/card/summary")
-@jwt_required()
+@require_active_user
 def card_summary():
     """Cards self-verify via the bank. This totals them for the day's books."""
     actor = db.session.get(User, get_jwt_identity())

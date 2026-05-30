@@ -10,6 +10,7 @@ Staff-food items are excluded — they have their own stock category.
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.inventory_item import InventoryItem
 from app.models.user import User
@@ -21,7 +22,7 @@ MANAGER_LEVEL = 5
 
 
 @variance_bp.get("/variance")
-@jwt_required()
+@require_active_user
 def variance_report():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

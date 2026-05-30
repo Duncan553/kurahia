@@ -6,6 +6,7 @@ import ipaddress
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.wifi_allow_list import WiFiAllowList
@@ -25,7 +26,7 @@ def _validate_cidr(cidr_str: str) -> bool:
 
 
 @wifi_bp.post("/wifi")
-@jwt_required()
+@require_active_user
 def create_wifi():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
@@ -51,7 +52,7 @@ def create_wifi():
 
 
 @wifi_bp.get("/wifi")
-@jwt_required()
+@require_active_user
 def list_wifi():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
@@ -68,7 +69,7 @@ def list_wifi():
 
 
 @wifi_bp.patch("/wifi/<entry_id>")
-@jwt_required()
+@require_active_user
 def edit_wifi(entry_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
@@ -93,7 +94,7 @@ def edit_wifi(entry_id):
 
 
 @wifi_bp.post("/wifi/<entry_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_wifi(entry_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
@@ -109,7 +110,7 @@ def disable_wifi(entry_id):
 
 
 @wifi_bp.post("/wifi/<entry_id>/enable")
-@jwt_required()
+@require_active_user
 def enable_wifi(entry_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:

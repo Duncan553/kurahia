@@ -7,6 +7,7 @@ from datetime import datetime, timezone, date
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile, WagePeriod
@@ -19,7 +20,7 @@ OWNER_LEVEL   = 10
 
 
 @profiles_bp.post("/profiles")
-@jwt_required()
+@require_active_user
 def create_profile():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -81,7 +82,7 @@ def create_profile():
 
 
 @profiles_bp.get("/profiles")
-@jwt_required()
+@require_active_user
 def list_profiles():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -104,7 +105,7 @@ def list_profiles():
 
 
 @profiles_bp.get("/profiles/<profile_id>")
-@jwt_required()
+@require_active_user
 def get_profile(profile_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -129,7 +130,7 @@ def get_profile(profile_id):
 
 
 @profiles_bp.patch("/profiles/<profile_id>")
-@jwt_required()
+@require_active_user
 def edit_profile(profile_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -171,7 +172,7 @@ def edit_profile(profile_id):
 
 
 @profiles_bp.post("/profiles/<profile_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_profile(profile_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
@@ -187,7 +188,7 @@ def disable_profile(profile_id):
 
 
 @profiles_bp.post("/profiles/<profile_id>/enable")
-@jwt_required()
+@require_active_user
 def enable_profile(profile_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:

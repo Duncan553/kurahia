@@ -7,6 +7,7 @@ import uuid
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.booking import Booking, BookingStatus
@@ -20,7 +21,7 @@ FRONT_DESK_LEVEL = 3
 
 
 @deposits_bp.post("")
-@jwt_required()
+@require_active_user
 def record_booking_payment():
     """Record a DEPOSIT or BALANCE payment against a booking."""
     actor = db.session.get(User, get_jwt_identity())
@@ -99,7 +100,7 @@ def record_booking_payment():
 
 
 @deposits_bp.get("")
-@jwt_required()
+@require_active_user
 def list_booking_payments():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:

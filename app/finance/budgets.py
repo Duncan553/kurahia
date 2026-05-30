@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.budget import Budget
@@ -25,7 +26,7 @@ MANAGER_LEVEL = 5
 
 
 @budgets_bp.post("/budgets")
-@jwt_required()
+@require_active_user
 def create_budget():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
@@ -79,7 +80,7 @@ def create_budget():
 
 
 @budgets_bp.patch("/budgets/<budget_id>")
-@jwt_required()
+@require_active_user
 def edit_budget(budget_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
@@ -107,7 +108,7 @@ def edit_budget(budget_id):
 
 
 @budgets_bp.post("/budgets/<budget_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_budget(budget_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
@@ -123,7 +124,7 @@ def disable_budget(budget_id):
 
 
 @budgets_bp.post("/budgets/<budget_id>/enable")
-@jwt_required()
+@require_active_user
 def enable_budget(budget_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
@@ -139,7 +140,7 @@ def enable_budget(budget_id):
 
 
 @budgets_bp.get("/budgets/status")
-@jwt_required()
+@require_active_user
 def budget_status():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

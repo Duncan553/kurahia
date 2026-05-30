@@ -7,6 +7,7 @@ GET /notifications?employee_id=... → admin/manager view
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.notification import Notification, NotificationStatus
@@ -32,7 +33,7 @@ def _notif_dict(n: Notification) -> dict:
 
 
 @notifications_bp.get("/inbox")
-@jwt_required()
+@require_active_user
 def inbox():
     """Current user's unread delivered in-app notifications."""
     user_id = get_jwt_identity()
@@ -46,7 +47,7 @@ def inbox():
 
 
 @notifications_bp.post("/<notif_id>/mark-read")
-@jwt_required()
+@require_active_user
 def mark_read(notif_id):
     user_id = get_jwt_identity()
     notif = db.session.get(Notification, notif_id)
@@ -63,7 +64,7 @@ def mark_read(notif_id):
 
 
 @notifications_bp.get("")
-@jwt_required()
+@require_active_user
 def list_notifications():
     """Admin/manager view — filterable by recipient user_id."""
     actor = db.session.get(User, get_jwt_identity())

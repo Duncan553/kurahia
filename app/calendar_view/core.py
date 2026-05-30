@@ -9,6 +9,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.calendar_entry import CalendarEntry, CalendarEntryType
@@ -83,7 +84,7 @@ def _schedule_planning_trigger(entry: CalendarEntry) -> None:
 # ── CRUD ──────────────────────────────────────────────────────────────────────
 
 @calendar_bp.post("")
-@jwt_required()
+@require_active_user
 def create_entry():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -130,7 +131,7 @@ def create_entry():
 
 
 @calendar_bp.get("")
-@jwt_required()
+@require_active_user
 def list_entries():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -148,7 +149,7 @@ def list_entries():
 
 
 @calendar_bp.post("/<entry_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_entry(entry_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

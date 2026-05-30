@@ -12,6 +12,7 @@ import uuid
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile
@@ -65,7 +66,7 @@ def _write_clock_event(employee_id: str, event_type: ClockEventType,
 
 
 @clock_bp.post("/clock-in")
-@jwt_required()
+@require_active_user
 def clock_in():
     actor = db.session.get(User, get_jwt_identity())
     profile = _get_own_profile(actor.id)
@@ -100,7 +101,7 @@ def clock_in():
 
 
 @clock_bp.post("/clock-out")
-@jwt_required()
+@require_active_user
 def clock_out():
     actor = db.session.get(User, get_jwt_identity())
     profile = _get_own_profile(actor.id)
@@ -133,7 +134,7 @@ def clock_out():
 
 
 @clock_bp.post("/clock-events/manual")
-@jwt_required()
+@require_active_user
 def manual_clock():
     """
     Manager+ manually clocks someone in or out.
@@ -198,7 +199,7 @@ def manual_clock():
 
 
 @clock_bp.get("/clock-events")
-@jwt_required()
+@require_active_user
 def list_clock_events():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

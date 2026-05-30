@@ -5,6 +5,7 @@ Owner/manager+ access. All values derived from immutable records.
 from datetime import datetime, timezone, timedelta, date
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile
@@ -29,7 +30,7 @@ def _parse_period(start_str: str | None, end_str: str | None) -> tuple:
 
 
 @performance_bp.get("/performance/<profile_id>")
-@jwt_required()
+@require_active_user
 def staff_performance(profile_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -57,7 +58,7 @@ def staff_performance(profile_id):
 
 
 @performance_bp.get("/payroll-draft")
-@jwt_required()
+@require_active_user
 def payroll_draft():
     """
     Payroll-ready summary for all active employees for the period.

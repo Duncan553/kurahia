@@ -7,6 +7,7 @@ POST /tabs/:id/close  — close when balance ≤ 0 and all items resolved
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.tab import Tab, TabType, TabStatus
 from app.models.charge import Charge
@@ -21,7 +22,7 @@ tabs_bp = Blueprint("tabs", __name__, url_prefix="/tabs")
 
 
 @tabs_bp.post("")
-@jwt_required()
+@require_active_user
 def open_tab():
     actor = db.session.get(User, get_jwt_identity())
     data      = request.get_json(silent=True) or {}
@@ -43,7 +44,7 @@ def open_tab():
 
 
 @tabs_bp.get("/<tab_id>")
-@jwt_required()
+@require_active_user
 def get_tab(tab_id):
     tab = db.session.get(Tab, tab_id)
     if not tab:
@@ -84,7 +85,7 @@ def get_tab(tab_id):
 
 
 @tabs_bp.post("/<tab_id>/close")
-@jwt_required()
+@require_active_user
 def close_tab(tab_id):
     actor = db.session.get(User, get_jwt_identity())
     tab   = db.session.get(Tab, tab_id)

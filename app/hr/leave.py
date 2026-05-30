@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timezone, date
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile
@@ -19,7 +20,7 @@ MANAGER_LEVEL = 5
 
 
 @leave_bp.post("/leave-requests")
-@jwt_required()
+@require_active_user
 def create_leave_request():
     actor   = db.session.get(User, get_jwt_identity())
     profile = db.session.query(EmployeeProfile).filter_by(user_id=actor.id, is_active=True).first()
@@ -66,7 +67,7 @@ def create_leave_request():
 
 
 @leave_bp.post("/leave-requests/<lr_id>/approve")
-@jwt_required()
+@require_active_user
 def approve_leave(lr_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -95,7 +96,7 @@ def approve_leave(lr_id):
 
 
 @leave_bp.post("/leave-requests/<lr_id>/reject")
-@jwt_required()
+@require_active_user
 def reject_leave(lr_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -123,7 +124,7 @@ def reject_leave(lr_id):
 
 
 @leave_bp.post("/leave-requests/<lr_id>/cancel")
-@jwt_required()
+@require_active_user
 def cancel_leave(lr_id):
     actor   = db.session.get(User, get_jwt_identity())
     profile = db.session.query(EmployeeProfile).filter_by(user_id=actor.id).first()
@@ -147,7 +148,7 @@ def cancel_leave(lr_id):
 
 
 @leave_bp.get("/leave-requests")
-@jwt_required()
+@require_active_user
 def list_leave():
     actor = db.session.get(User, get_jwt_identity())
     profile = db.session.query(EmployeeProfile).filter_by(user_id=actor.id).first()

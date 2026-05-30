@@ -11,6 +11,7 @@ from datetime import datetime, timezone, timedelta
 from sqlalchemy import func
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.payment import Payment, PaymentMethod
@@ -33,7 +34,7 @@ OWNER_LEVEL   = 10
 # ── Three-way reconciliation report ──────────────────────────────────────────
 
 @reports_bp.get("/reconciliation")
-@jwt_required()
+@require_active_user
 def three_way_report():
     """
     Assembles all three corners for a day:
@@ -158,7 +159,7 @@ def three_way_report():
 # ── Period close ──────────────────────────────────────────────────────────────
 
 @reports_bp.post("/close-period")
-@jwt_required()
+@require_active_user
 def close_period():
     """
     Cashier/owner counts the physical safe and closes the day.
@@ -272,7 +273,7 @@ def close_period():
 # ── Owner finance dashboard ───────────────────────────────────────────────────
 
 @reports_bp.get("/dashboard")
-@jwt_required()
+@require_active_user
 def finance_dashboard():
     """
     Owner-only finance overview.

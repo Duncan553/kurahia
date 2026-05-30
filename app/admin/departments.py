@@ -8,6 +8,7 @@ POST   /admin/departments/:id/enable
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.department import Department
 from app.models.user import User
@@ -25,7 +26,7 @@ def _require_owner(actor):
 
 
 @dept_bp.get("")
-@jwt_required()
+@require_active_user
 def list_departments():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < 5:
@@ -41,7 +42,7 @@ def list_departments():
 
 
 @dept_bp.post("")
-@jwt_required()
+@require_active_user
 def create_department():
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -62,7 +63,7 @@ def create_department():
 
 
 @dept_bp.patch("/<dept_id>")
-@jwt_required()
+@require_active_user
 def edit_department(dept_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -81,7 +82,7 @@ def edit_department(dept_id):
 
 
 @dept_bp.post("/<dept_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_department(dept_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -98,7 +99,7 @@ def disable_department(dept_id):
 
 
 @dept_bp.post("/<dept_id>/enable")
-@jwt_required()
+@require_active_user
 def enable_department(dept_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
