@@ -12,6 +12,7 @@ POST /auth/users/<id>/activate → re-activate a deactivated account
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.role import Role
@@ -22,7 +23,7 @@ users_bp = Blueprint("users", __name__, url_prefix="/auth/users")
 
 
 @users_bp.post("")
-@jwt_required()
+@require_active_user
 def create_user():
     actor_id = get_jwt_identity()
     actor = db.session.get(User, actor_id)
@@ -83,7 +84,7 @@ def create_user():
 
 
 @users_bp.patch("/<user_id>")
-@jwt_required()
+@require_active_user
 def edit_user(user_id):
     """Edit username, password, role, or department. Actor must outrank the target."""
     actor = db.session.get(User, get_jwt_identity())
@@ -126,7 +127,7 @@ def edit_user(user_id):
 
 
 @users_bp.get("")
-@jwt_required()
+@require_active_user
 def list_users():
     actor = db.session.get(User, get_jwt_identity())
     include_disabled = request.args.get("include_disabled", "false").lower() == "true"
@@ -152,7 +153,7 @@ def list_users():
 
 
 @users_bp.post("/<user_id>/activate")
-@jwt_required()
+@require_active_user
 def activate_user(user_id):
     actor = db.session.get(User, get_jwt_identity())
     target = db.session.get(User, user_id)

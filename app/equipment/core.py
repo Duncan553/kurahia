@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.equipment import Equipment, MaintenanceLog, SafetyCheck, EquipmentStatus
@@ -33,7 +34,7 @@ def _eq_dict(e: Equipment) -> dict:
 
 
 @equipment_bp.post("")
-@jwt_required()
+@require_active_user
 def create_equipment():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -58,7 +59,7 @@ def create_equipment():
 
 
 @equipment_bp.get("")
-@jwt_required()
+@require_active_user
 def list_equipment():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -71,7 +72,7 @@ def list_equipment():
 
 
 @equipment_bp.patch("/<eq_id>")
-@jwt_required()
+@require_active_user
 def edit_equipment(eq_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -96,7 +97,7 @@ def edit_equipment(eq_id):
 
 
 @equipment_bp.post("/<eq_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_equipment(eq_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -113,7 +114,7 @@ def disable_equipment(eq_id):
 
 
 @equipment_bp.post("/<eq_id>/maintenance")
-@jwt_required()
+@require_active_user
 def log_maintenance(eq_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -159,7 +160,7 @@ def log_maintenance(eq_id):
 
 
 @equipment_bp.post("/<eq_id>/safety-check")
-@jwt_required()
+@require_active_user
 def log_safety_check(eq_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

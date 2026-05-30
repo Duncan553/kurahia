@@ -6,6 +6,7 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.event_type import EventType
@@ -81,14 +82,14 @@ event_types_bp = Blueprint("event_types", __name__, url_prefix="/event-types")
 
 
 @event_types_bp.get("")
-@jwt_required()
+@require_active_user
 def list_event_types():
     types = db.session.query(EventType).filter_by(is_active=True).all()
     return jsonify([{"id": t.id, "name": t.name} for t in types]), 200
 
 
 @event_types_bp.post("")
-@jwt_required()
+@require_active_user
 def create_event_type():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -106,7 +107,7 @@ def create_event_type():
 
 
 @event_types_bp.post("/<type_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_event_type(type_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -122,7 +123,7 @@ def disable_event_type(type_id):
 # ── Events ────────────────────────────────────────────────────────────────────
 
 @events_bp.post("")
-@jwt_required()
+@require_active_user
 def create_event():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -172,7 +173,7 @@ def create_event():
 
 
 @events_bp.patch("/<event_id>")
-@jwt_required()
+@require_active_user
 def edit_event(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -217,7 +218,7 @@ def _lifecycle_transition(event_id, new_status, actor, post_hook=None):
 
 
 @events_bp.post("/<event_id>/confirm")
-@jwt_required()
+@require_active_user
 def confirm_event(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -233,7 +234,7 @@ def confirm_event(event_id):
 
 
 @events_bp.post("/<event_id>/start")
-@jwt_required()
+@require_active_user
 def start_event(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -242,7 +243,7 @@ def start_event(event_id):
 
 
 @events_bp.post("/<event_id>/complete")
-@jwt_required()
+@require_active_user
 def complete_event(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -251,7 +252,7 @@ def complete_event(event_id):
 
 
 @events_bp.post("/<event_id>/cancel")
-@jwt_required()
+@require_active_user
 def cancel_event(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -274,7 +275,7 @@ def cancel_event(event_id):
 
 
 @events_bp.get("")
-@jwt_required()
+@require_active_user
 def list_events():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < STAFF_LEVEL:
@@ -297,7 +298,7 @@ def list_events():
 
 
 @events_bp.get("/upcoming")
-@jwt_required()
+@require_active_user
 def upcoming_events():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < STAFF_LEVEL:
@@ -311,7 +312,7 @@ def upcoming_events():
 
 
 @events_bp.get("/<event_id>")
-@jwt_required()
+@require_active_user
 def get_event(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < STAFF_LEVEL:
@@ -325,7 +326,7 @@ def get_event(event_id):
 # ── Assignments ───────────────────────────────────────────────────────────────
 
 @events_bp.post("/<event_id>/assignments")
-@jwt_required()
+@require_active_user
 def assign_employee(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -370,7 +371,7 @@ def assign_employee(event_id):
 
 
 @events_bp.post("/<event_id>/assignments/<assignment_id>/acknowledge")
-@jwt_required()
+@require_active_user
 def acknowledge_assignment(event_id, assignment_id):
     actor = db.session.get(User, get_jwt_identity())
     assignment = db.session.get(EventAssignment, assignment_id)
@@ -393,7 +394,7 @@ def acknowledge_assignment(event_id, assignment_id):
 
 
 @events_bp.post("/<event_id>/assignments/<assignment_id>/cancel")
-@jwt_required()
+@require_active_user
 def cancel_assignment(event_id, assignment_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -412,7 +413,7 @@ def cancel_assignment(event_id, assignment_id):
 
 
 @events_bp.get("/<event_id>/assignments")
-@jwt_required()
+@require_active_user
 def list_assignments(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < STAFF_LEVEL:
@@ -424,7 +425,7 @@ def list_assignments(event_id):
 # ── Inventory allocations ─────────────────────────────────────────────────────
 
 @events_bp.post("/<event_id>/inventory/allocate")
-@jwt_required()
+@require_active_user
 def allocate_inventory(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -473,7 +474,7 @@ def allocate_inventory(event_id):
 
 
 @events_bp.post("/<event_id>/inventory/<alloc_id>/issue")
-@jwt_required()
+@require_active_user
 def issue_inventory(event_id, alloc_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -493,7 +494,7 @@ def issue_inventory(event_id, alloc_id):
 
 
 @events_bp.post("/<event_id>/inventory/<alloc_id>/return")
-@jwt_required()
+@require_active_user
 def return_inventory(event_id, alloc_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -522,7 +523,7 @@ def return_inventory(event_id, alloc_id):
 
 
 @events_bp.post("/<event_id>/inventory/<alloc_id>/consume")
-@jwt_required()
+@require_active_user
 def consume_inventory(event_id, alloc_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -540,7 +541,7 @@ def consume_inventory(event_id, alloc_id):
 
 
 @events_bp.get("/<event_id>/inventory")
-@jwt_required()
+@require_active_user
 def list_inventory(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

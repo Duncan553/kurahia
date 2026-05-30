@@ -15,6 +15,7 @@ import uuid
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.suggestion import Suggestion, SuggestionCategory, SuggestionStatus
@@ -45,7 +46,7 @@ def _suggestion_dict(s: Suggestion) -> dict:
 
 
 @suggestions_bp.post("")
-@jwt_required()
+@require_active_user
 def submit_suggestion():
     actor = db.session.get(User, get_jwt_identity())
     data  = request.get_json(silent=True) or {}
@@ -116,7 +117,7 @@ def _notify_owner(suggestion: Suggestion):
 
 
 @suggestions_bp.get("")
-@jwt_required()
+@require_active_user
 def list_suggestions():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -137,7 +138,7 @@ def list_suggestions():
 
 
 @suggestions_bp.get("/<suggestion_id>")
-@jwt_required()
+@require_active_user
 def get_suggestion(suggestion_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -156,7 +157,7 @@ def get_suggestion(suggestion_id):
 
 
 @suggestions_bp.post("/<suggestion_id>/review")
-@jwt_required()
+@require_active_user
 def review_suggestion(suggestion_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

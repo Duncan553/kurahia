@@ -8,6 +8,7 @@ summary:    Period summary per employee — shifts, attended, hours, absent type
 from datetime import datetime, timezone, timedelta, date
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile
@@ -28,7 +29,7 @@ def _today_utc() -> date:
 
 
 @attendance_bp.get("/attendance/today")
-@jwt_required()
+@require_active_user
 def attendance_today():
     """
     Returns every employee scheduled today with their status:
@@ -87,7 +88,7 @@ def attendance_today():
 
 
 @attendance_bp.get("/attendance/employee/<profile_id>")
-@jwt_required()
+@require_active_user
 def attendance_employee(profile_id):
     """Clock events for one employee on a given date (defaults to today)."""
     actor = db.session.get(User, get_jwt_identity())
@@ -135,7 +136,7 @@ def attendance_employee(profile_id):
 
 
 @attendance_bp.get("/attendance/summary")
-@jwt_required()
+@require_active_user
 def attendance_summary():
     """
     Per-employee summary for a period (start_date / end_date, defaults to current month).

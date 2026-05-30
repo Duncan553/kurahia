@@ -17,6 +17,7 @@ import uuid
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.purchase_request import PurchaseRequest, RequestStatus
 from app.models.purchase import Purchase
@@ -34,7 +35,7 @@ OWNER_LEVEL   = 10
 # ── Purchase Requests ─────────────────────────────────────────────────────────
 
 @purchases_bp.post("/purchase-requests")
-@jwt_required()
+@require_active_user
 def create_request():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -78,7 +79,7 @@ def create_request():
 
 
 @purchases_bp.post("/purchase-requests/<pr_id>/propose")
-@jwt_required()
+@require_active_user
 def propose_budget(pr_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -114,7 +115,7 @@ def propose_budget(pr_id):
 
 
 @purchases_bp.post("/purchase-requests/<pr_id>/approve")
-@jwt_required()
+@require_active_user
 def approve_request(pr_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < OWNER_LEVEL:
@@ -156,7 +157,7 @@ def approve_request(pr_id):
 # ── Completed Purchase ────────────────────────────────────────────────────────
 
 @purchases_bp.post("/purchases")
-@jwt_required()
+@require_active_user
 def record_purchase():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

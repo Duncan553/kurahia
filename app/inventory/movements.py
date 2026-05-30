@@ -14,6 +14,7 @@ import uuid
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.inventory_item import InventoryItem
 from app.models.stock_movement import StockMovement, MovementReason
@@ -75,7 +76,7 @@ def _get_item(item_id: str) -> tuple:
 # ── Spoilage ──────────────────────────────────────────────────────────────────
 
 @movements_bp.post("/spoilage")
-@jwt_required()
+@require_active_user
 def log_spoilage():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -110,7 +111,7 @@ def log_spoilage():
 # ── Staff meal ────────────────────────────────────────────────────────────────
 
 @movements_bp.post("/staff-meal")
-@jwt_required()
+@require_active_user
 def log_staff_meal():
     """
     Staff meal draws from is_staff_food items only.
@@ -150,7 +151,7 @@ def log_staff_meal():
 # ── Sent-back ─────────────────────────────────────────────────────────────────
 
 @movements_bp.post("/sent-back")
-@jwt_required()
+@require_active_user
 def log_sent_back():
     """A returned plate/order — removes from stock (it cannot be resold)."""
     actor = db.session.get(User, get_jwt_identity())

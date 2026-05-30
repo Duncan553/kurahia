@@ -12,6 +12,7 @@ import uuid
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.stock_count import StockCount, CountType
 from app.models.stock_movement import StockMovement, MovementReason
@@ -26,7 +27,7 @@ MANAGER_LEVEL = 5
 
 
 @counts_bp.post("")
-@jwt_required()
+@require_active_user
 def submit_count():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

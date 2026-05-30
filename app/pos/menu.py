@@ -9,6 +9,7 @@ GET    /menu/items
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.menu_item import MenuItem, PrepStation
 from app.models.department import Department
@@ -27,7 +28,7 @@ def _require_manager(actor):
 
 
 @menu_bp.post("")
-@jwt_required()
+@require_active_user
 def create_menu_item():
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_manager(actor)):
@@ -71,7 +72,7 @@ def create_menu_item():
 
 
 @menu_bp.patch("/<item_id>")
-@jwt_required()
+@require_active_user
 def edit_menu_item(item_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_manager(actor)):
@@ -100,7 +101,7 @@ def edit_menu_item(item_id):
 
 
 @menu_bp.post("/<item_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_menu_item(item_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_manager(actor)):
@@ -117,7 +118,7 @@ def disable_menu_item(item_id):
 
 
 @menu_bp.post("/<item_id>/enable")
-@jwt_required()
+@require_active_user
 def enable_menu_item(item_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_manager(actor)):
@@ -134,7 +135,7 @@ def enable_menu_item(item_id):
 
 
 @menu_bp.get("")
-@jwt_required()
+@require_active_user
 def list_menu_items():
     include_disabled = request.args.get("include_disabled", "false").lower() == "true"
     dept_filter      = request.args.get("department")

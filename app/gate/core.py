@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.wristband import Wristband, WristbandStatus
@@ -48,7 +49,7 @@ def _band_dict(band: Wristband, include_balance: bool = False) -> dict:
 # ── Issue band ────────────────────────────────────────────────────────────────
 
 @gate_bp.post("/issue-band")
-@jwt_required()
+@require_active_user
 def issue_band_route():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < GATE_LEVEL:
@@ -84,7 +85,7 @@ def issue_band_route():
 # ── Deactivate band (customer leaves normally) ────────────────────────────────
 
 @gate_bp.post("/deactivate-band/<int:band_number>")
-@jwt_required()
+@require_active_user
 def deactivate_band(band_number):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < GATE_LEVEL:
@@ -107,7 +108,7 @@ def deactivate_band(band_number):
 # ── Look up band by number ────────────────────────────────────────────────────
 
 @gate_bp.get("/bands/<int:band_number>")
-@jwt_required()
+@require_active_user
 def get_band(band_number):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < LOOKUP_LEVEL:
@@ -130,7 +131,7 @@ def get_band(band_number):
 # ── Active bands (gate/manager view of who's inside) ─────────────────────────
 
 @gate_bp.get("/active-bands")
-@jwt_required()
+@require_active_user
 def active_bands():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < GATE_LEVEL:
@@ -144,7 +145,7 @@ def active_bands():
 # ── Record independent headcount ──────────────────────────────────────────────
 
 @gate_bp.post("/headcount")
-@jwt_required()
+@require_active_user
 def record_headcount():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -184,7 +185,7 @@ def record_headcount():
 # ── EOD forfeit sweep ─────────────────────────────────────────────────────────
 
 @gate_bp.post("/forfeit-day")
-@jwt_required()
+@require_active_user
 def forfeit_day_route():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -213,7 +214,7 @@ def forfeit_day_route():
 # ── Reconciliation ────────────────────────────────────────────────────────────
 
 @gate_bp.get("/reconciliation")
-@jwt_required()
+@require_active_user
 def reconciliation():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

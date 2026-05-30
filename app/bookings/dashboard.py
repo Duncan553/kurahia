@@ -5,6 +5,7 @@ Arrivals, departures, current occupancy, pending waivers.
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.booking import Booking, BookingStatus
@@ -19,7 +20,7 @@ FRONT_DESK_LEVEL = 3
 
 
 @dashboard_bp.get("/today")
-@jwt_required()
+@require_active_user
 def front_desk_today():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:

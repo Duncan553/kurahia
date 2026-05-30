@@ -9,6 +9,7 @@ POST   /admin/baselines/:id/enable
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.judge_baseline import JudgeBaseline
 from app.models.inventory_item import InventoryItem
@@ -27,7 +28,7 @@ def _require_owner(actor):
 
 
 @baselines_bp.get("")
-@jwt_required()
+@require_active_user
 def list_baselines():
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -52,7 +53,7 @@ def list_baselines():
 
 
 @baselines_bp.post("")
-@jwt_required()
+@require_active_user
 def create_baseline():
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -91,7 +92,7 @@ def create_baseline():
 
 
 @baselines_bp.patch("/<baseline_id>")
-@jwt_required()
+@require_active_user
 def edit_baseline(baseline_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -114,7 +115,7 @@ def edit_baseline(baseline_id):
 
 
 @baselines_bp.post("/<baseline_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_baseline(baseline_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -129,7 +130,7 @@ def disable_baseline(baseline_id):
 
 
 @baselines_bp.post("/<baseline_id>/enable")
-@jwt_required()
+@require_active_user
 def enable_baseline(baseline_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):

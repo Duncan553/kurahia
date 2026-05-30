@@ -10,6 +10,7 @@ from decimal import Decimal
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from sqlalchemy import func
 from app.extensions import db
 from app.models.user import User
@@ -36,7 +37,7 @@ def _parse_dt(val: str | None) -> datetime | None:
 # ── Create ─────────────────────────────────────────────────────────────────────
 
 @feedback_bp.post("")
-@jwt_required()
+@require_active_user
 def create_feedback():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < STAFF_LEVEL:
@@ -83,7 +84,7 @@ def create_feedback():
 # ── Aggregate list ─────────────────────────────────────────────────────────────
 
 @feedback_bp.get("")
-@jwt_required()
+@require_active_user
 def list_feedback():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -121,7 +122,7 @@ def list_feedback():
 # ── Per-staff ──────────────────────────────────────────────────────────────────
 
 @feedback_bp.get("/staff/<employee_id>")
-@jwt_required()
+@require_active_user
 def staff_feedback(employee_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

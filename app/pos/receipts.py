@@ -4,6 +4,7 @@ GET /receipts/:tab_id — returns structured data the frontend renders visually.
 """
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.tab import Tab
 from app.models.charge import Charge
@@ -15,7 +16,7 @@ receipts_bp = Blueprint("receipts", __name__, url_prefix="/receipts")
 
 
 @receipts_bp.get("/<tab_id>")
-@jwt_required()
+@require_active_user
 def get_receipt(tab_id):
     tab = db.session.get(Tab, tab_id)
     if not tab:

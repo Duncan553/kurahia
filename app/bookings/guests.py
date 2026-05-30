@@ -4,6 +4,7 @@ Auto-managed; created / matched on booking creation. Read-only API.
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.guest_record import GuestRecord
@@ -15,7 +16,7 @@ FRONT_DESK_LEVEL = 3
 
 
 @guests_bp.get("")
-@jwt_required()
+@require_active_user
 def list_guests():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -31,7 +32,7 @@ def list_guests():
 
 
 @guests_bp.get("/<guest_id>")
-@jwt_required()
+@require_active_user
 def get_guest(guest_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -43,7 +44,7 @@ def get_guest(guest_id):
 
 
 @guests_bp.get("/<guest_id>/history")
-@jwt_required()
+@require_active_user
 def guest_history(guest_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:

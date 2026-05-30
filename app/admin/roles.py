@@ -11,6 +11,7 @@ their role and history intact. It only prevents new users from being assigned it
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.role import Role
 from app.models.user import User
@@ -28,7 +29,7 @@ def _require_owner(actor):
 
 
 @roles_bp.get("")
-@jwt_required()
+@require_active_user
 def list_roles():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < 5:
@@ -44,7 +45,7 @@ def list_roles():
 
 
 @roles_bp.post("")
-@jwt_required()
+@require_active_user
 def create_role():
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -72,7 +73,7 @@ def create_role():
 
 
 @roles_bp.patch("/<role_id>")
-@jwt_required()
+@require_active_user
 def edit_role(role_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -96,7 +97,7 @@ def edit_role(role_id):
 
 
 @roles_bp.post("/<role_id>/disable")
-@jwt_required()
+@require_active_user
 def disable_role(role_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):
@@ -113,7 +114,7 @@ def disable_role(role_id):
 
 
 @roles_bp.post("/<role_id>/enable")
-@jwt_required()
+@require_active_user
 def enable_role(role_id):
     actor = db.session.get(User, get_jwt_identity())
     if (err := _require_owner(actor)):

@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.dispute import (
@@ -58,7 +59,7 @@ def _get_reporter_profile(actor: User) -> EmployeeProfile | None:
 # ── Create ─────────────────────────────────────────────────────────────────────
 
 @disputes_bp.post("")
-@jwt_required()
+@require_active_user
 def create_dispute():
     actor = db.session.get(User, get_jwt_identity())
     profile = _get_reporter_profile(actor)
@@ -118,7 +119,7 @@ def _get_dispute_visible(dispute_id: str, actor: User) -> Dispute | None:
 
 
 @disputes_bp.post("/<dispute_id>/claim")
-@jwt_required()
+@require_active_user
 def claim_dispute(dispute_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -140,7 +141,7 @@ def claim_dispute(dispute_id):
 
 
 @disputes_bp.post("/<dispute_id>/resolve")
-@jwt_required()
+@require_active_user
 def resolve_dispute(dispute_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -165,7 +166,7 @@ def resolve_dispute(dispute_id):
 
 
 @disputes_bp.post("/<dispute_id>/dismiss")
-@jwt_required()
+@require_active_user
 def dismiss_dispute(dispute_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -189,7 +190,7 @@ def dismiss_dispute(dispute_id):
 # ── List ──────────────────────────────────────────────────────────────────────
 
 @disputes_bp.get("")
-@jwt_required()
+@require_active_user
 def list_disputes():
     actor = db.session.get(User, get_jwt_identity())
     q = db.session.query(Dispute)

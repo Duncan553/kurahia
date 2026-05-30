@@ -4,6 +4,7 @@ Required for water activities; checked at session-booking time.
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.booking import Booking
@@ -16,7 +17,7 @@ FRONT_DESK_LEVEL = 3
 
 
 @waivers_bp.post("")
-@jwt_required()
+@require_active_user
 def create_waiver():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -57,7 +58,7 @@ def create_waiver():
 
 
 @waivers_bp.get("")
-@jwt_required()
+@require_active_user
 def list_waivers():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:
@@ -84,7 +85,7 @@ def list_waivers():
 
 
 @waivers_bp.post("/<waiver_id>/revoke")
-@jwt_required()
+@require_active_user
 def revoke_waiver(waiver_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < FRONT_DESK_LEVEL:

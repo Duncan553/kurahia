@@ -12,6 +12,7 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.cash_reconciliation import CashReconciliation, ReconciliationStatus, cash_recon_payments
@@ -26,7 +27,7 @@ SHORTFALL_LIMIT = 3   # consecutive SHORTs before alerting owner
 
 
 @cash_bp.get("/cash/pending")
-@jwt_required()
+@require_active_user
 def pending_cash():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -59,7 +60,7 @@ def pending_cash():
 
 
 @cash_bp.post("/cash/reconcile")
-@jwt_required()
+@require_active_user
 def reconcile_cash():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:

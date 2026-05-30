@@ -9,6 +9,7 @@ Abnormal void rates → JudgeAlert.
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.judge_alert import JudgeAlert, AlertSeverity, AlertStatus
@@ -35,7 +36,7 @@ def _parse_from_to(args) -> tuple | None:
 
 
 @analytics_bp.get("/anomalies/voids")
-@jwt_required()
+@require_active_user
 def void_analytics():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -84,7 +85,7 @@ def void_analytics():
 
 
 @analytics_bp.get("/anomalies/discounts")
-@jwt_required()
+@require_active_user
 def discount_analytics():
     """
     Placeholder — no discount/comp model exists yet.
