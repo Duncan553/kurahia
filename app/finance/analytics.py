@@ -54,7 +54,7 @@ def void_analytics():
         if row["flagged"]:
             existing = db.session.query(JudgeAlert).filter(
                 JudgeAlert.alert_type == "VOID_ABUSE",
-                JudgeAlert.description.contains(row["staff_id"]),
+                JudgeAlert.description.contains(row["staff_name"]),
                 JudgeAlert.status == AlertStatus.OPEN.value,
             ).first()
             if not existing:

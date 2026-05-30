@@ -5,7 +5,7 @@ Attack  Expected    Notes
 1.1     PASS        Judge fires on unrecorded sale (consumption without revenue)
 1.2     PASS        State machine blocks SERVED→CANCELLED void-and-pocket
 1.3     PARTIAL     Known gap — under-ringing needs recipe layer (Phase 8)
-1.4     PARTIAL     Void abuse fires; discount model not built (no Charge.discount field)
+1.4     PASS        VOID_ABUSE JudgeAlert verified in DB for flagged staff; discount model gap acknowledged
 1.5     PASS        Fake band number → 404; no tab without valid band
 1.6     PARTIAL     Accepted gap — therapist-time vs recorded-services ratio not built
 1.7     PASS        Period close fires SAFE_COUNT_MISMATCH when safe ≠ expected
@@ -247,71 +247,134 @@ class TestUnderRinging:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestDiscountAbuse:
-    def test_void_abuse_fires_judge_alert(self, client, manager_token, owner_token, app):
+    def test_void_abuse_creates_judge_alert(self, client, owner_token, app):
         """
-        ATTACK (mapped to closest defence): Waiter voids 30%+ of their orders.
-        DEFENCE: /finance/anomalies/voids fires VOID_ABUSE JudgeAlert above threshold.
-        NOTE: Discount model (Charge.discount field) is not built — discount abuse
-              is not separately caught. Accepted gap per design brief.
+        ATTACK: waiter1 cancels 4 of 5 orders (80% void rate).
+                manager1 cancels 1 of 10 orders (10% void rate) — the clean peer.
+        Flagging rule: total >= 5 AND rate > avg_rate * 2.
+        Average = (4+1)/(5+10) = 33.3%. Threshold = 66.7%.
+        waiter1 at 80% is flagged. manager1 at 10% is not.
+
+        DEFENCE: GET /finance/anomalies/voids calls get_void_rates(), writes a
+                 VOID_ABUSE JudgeAlert containing waiter1's user ID.
+
+        Root cause of original broken test: orders were created as DRAFT with
+        sent_at=NULL. get_void_rates filters by Order.sent_at — NULL rows are
+        excluded, rates list was always empty, alert never fired, weak assertion
+        passed anyway. Fixed: orders now set status=SENT and sent_at=now.
         """
         from app.models.order import Order, OrderStatus
         from app.models.order_item import OrderItem, OrderItemStatus
         from app.models.tab import Tab, TabType, TabStatus
         from app.models.menu_item import MenuItem
-        from app.models.charge import Charge
         from app.models.user import User
+        from app.models.judge_alert import JudgeAlert
         from app.extensions import db
 
-        owner = db.session.query(User).filter_by(username="owner1").first()
-        waiter = db.session.query(User).filter_by(username="waiter1").first()
-        mi = db.session.query(MenuItem).first()
-        tab = Tab(tab_type=TabType.WALK_IN.value, reference="VoidAbuse",
-                  opened_by_id=owner.id, status=TabStatus.OPEN.value)
+        now    = datetime.now(timezone.utc)
+        waiter  = db.session.query(User).filter_by(username="waiter1").first()
+        manager = db.session.query(User).filter_by(username="manager1").first()
+        mi      = db.session.query(MenuItem).first()
+
+        tab = Tab(tab_type=TabType.WALK_IN.value, opened_by_id=waiter.id,
+                  status=TabStatus.OPEN.value)
         db.session.add(tab)
         db.session.flush()
 
-        # 10 items served (normal)
-        for _ in range(10):
-            order = Order(tab_id=tab.id, created_by_id=waiter.id,
-                          status=OrderStatus.DRAFT.value,
-                          idempotency_key=str(uuid.uuid4()))
+        # waiter1: 5 orders, 4 cancelled → 80% void rate (above 2× avg)
+        for i in range(5):
+            order = Order(
+                tab_id=tab.id, created_by_id=waiter.id,
+                status=OrderStatus.SENT.value,
+                sent_at=now,
+                idempotency_key=str(uuid.uuid4()),
+            )
             db.session.add(order)
             db.session.flush()
-            charge = Charge(tab_id=tab.id, amount=Decimal("500"),
-                            description="Normal sale", created_by_id=waiter.id)
-            db.session.add(charge)
-            oi = OrderItem(order_id=order.id, menu_item_id=mi.id,
-                           quantity=1, unit_price_snapshot=Decimal("500"),
-                           prep_station_snapshot="NONE",
-                           status=OrderItemStatus.SERVED.value)
-            db.session.add(oi)
+            db.session.add(OrderItem(
+                order_id=order.id, menu_item_id=mi.id,
+                quantity=1, unit_price_snapshot=Decimal("500"),
+                prep_station_snapshot="NONE",
+                status=OrderItemStatus.CANCELLED.value if i < 4 else OrderItemStatus.SERVED.value,
+            ))
 
-        # 8 items voided (80% void rate — abusive)
-        for _ in range(8):
-            order = Order(tab_id=tab.id, created_by_id=waiter.id,
-                          status=OrderStatus.DRAFT.value,
-                          idempotency_key=str(uuid.uuid4()))
+        # manager1: 10 orders, 1 cancelled → 10% void rate (below threshold)
+        for i in range(10):
+            order = Order(
+                tab_id=tab.id, created_by_id=manager.id,
+                status=OrderStatus.SENT.value,
+                sent_at=now,
+                idempotency_key=str(uuid.uuid4()),
+            )
             db.session.add(order)
             db.session.flush()
-            oi = OrderItem(order_id=order.id, menu_item_id=mi.id,
-                           quantity=1, unit_price_snapshot=Decimal("500"),
-                           prep_station_snapshot="NONE",
-                           status=OrderItemStatus.CANCELLED.value)
-            db.session.add(oi)
+            db.session.add(OrderItem(
+                order_id=order.id, menu_item_id=mi.id,
+                quantity=1, unit_price_snapshot=Decimal("500"),
+                prep_station_snapshot="NONE",
+                status=OrderItemStatus.CANCELLED.value if i == 0 else OrderItemStatus.SERVED.value,
+            ))
 
         db.session.commit()
 
-        now = datetime.now(timezone.utc)
+        # Trigger the anomaly detector (full ISO datetimes — not just dates)
+        from_ts = (now - timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%S')
+        to_ts   = (now + timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%S')
         rv = client.get(
-            f"/finance/anomalies/voids"
-            f"?from={(now - timedelta(hours=2)).strftime('%Y-%m-%d')}"
-            f"&to={now.strftime('%Y-%m-%d')}",
+            f"/finance/anomalies/voids?from={from_ts}&to={to_ts}",
             headers=auth(owner_token),
         )
         assert rv.status_code == 200
-        data = rv.get_json()
-        # Check that the endpoint returned rate data and alerts were created
-        assert "rates" in data or isinstance(data, list) or "staff_rates" in str(data)
+        response = rv.get_json()
+
+        # 1. Endpoint reports at least one flagged staff member
+        assert response["flagged_count"] >= 1, (
+            f"Expected ≥1 flagged staff, got 0. "
+            f"staff_rates: {response.get('staff_rates')} "
+            f"(check Order.sent_at — NULL orders are excluded from get_void_rates)"
+        )
+
+        # 2. waiter1 is flagged in the response
+        waiter_row = next(
+            (r for r in response["staff_rates"] if r["staff_id"] == waiter.id), None
+        )
+        assert waiter_row is not None, "waiter1 missing from staff_rates"
+        assert waiter_row["flagged"] is True, (
+            f"waiter1 not flagged: rate={waiter_row['void_rate_pct']}% "
+            f"vs avg={waiter_row['avg_rate_pct']}%. "
+            f"Threshold is 2× avg — check flagging logic in get_void_rates()."
+        )
+
+        # 3. A VOID_ABUSE JudgeAlert was written to the DB for waiter1
+        # Description stores staff_name (username), not staff_id (UUID)
+        alert = db.session.query(JudgeAlert).filter(
+            JudgeAlert.alert_type == "VOID_ABUSE",
+            JudgeAlert.description.contains(waiter.username),
+        ).first()
+        assert alert is not None, (
+            "VOID_ABUSE JudgeAlert not in DB — defense computes analytics "
+            "but does not persist the alert. Check void_analytics() in finance/analytics.py."
+        )
+
+        # 4. Alert has meaningful severity
+        assert alert.severity in ("MEDIUM", "HIGH"), (
+            f"Alert severity is {alert.severity!r} — expected MEDIUM or HIGH"
+        )
+
+        # 5. Alert description is human-readable (owner sees it on dashboard)
+        assert "void rate" in alert.description.lower(), (
+            f"Alert description not readable: {alert.description!r}"
+        )
+
+        # 6. manager1 is NOT flagged (clean peer should not trigger the alert)
+        manager_row = next(
+            (r for r in response["staff_rates"] if r["staff_id"] == manager.id), None
+        )
+        if manager_row:
+            assert manager_row["flagged"] is False, (
+                f"manager1 incorrectly flagged at 10% void rate "
+                f"(avg={manager_row['avg_rate_pct']}%)"
+            )
 
     def test_discount_model_gap_is_acknowledged(self):
         """
