@@ -105,7 +105,16 @@ def create_booking():
     if existing:
         return jsonify({"id": existing.id, "duplicate": True}), 200
 
-    resource = db.session.get(BookableResource, resource_id)
+    # Lock the resource row for the duration of this transaction.
+    # check_resource_availability() + Booking insert are now atomic: no concurrent
+    # request can pass the overlap check for this resource until we commit.
+    # (SELECT FOR UPDATE serialises in Postgres; SQLite serialises at the writer level.)
+    resource = (
+        db.session.query(BookableResource)
+        .filter_by(id=resource_id)
+        .with_for_update()
+        .first()
+    )
     if not resource or not resource.is_active:
         return jsonify({"error": "Resource not found or disabled."}), 404
 
@@ -114,7 +123,7 @@ def create_booking():
     if not ok:
         return jsonify({"error": reason}), 400
 
-    # Double-booking check
+    # Double-booking check — runs while the lock is held
     ok, reason = check_resource_availability(resource_id, check_in, check_out)
     if not ok:
         return jsonify({"error": reason}), 409
