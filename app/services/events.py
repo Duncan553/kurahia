@@ -158,11 +158,21 @@ def transition_allocation(alloc: EventInventoryAllocation,
     return True, ""
 
 
-def issue_allocation(alloc: EventInventoryAllocation, actor_id: str) -> StockMovement:
+def issue_allocation(alloc: EventInventoryAllocation,
+                     actor_id: str) -> tuple["StockMovement | None", "str | None"]:
     """
     Move PLANNED → ISSUED.
     Writes a StockMovement with reason=EVENT_ALLOCATION (excluded from judge ratios).
+    Returns (movement, None) on success, (None, plain-English error) on insufficient stock.
     """
+    from app.models.inventory_item import InventoryItem
+    from app.services.stock import check_sufficient_stock
+
+    item = db.session.get(InventoryItem, alloc.inventory_item_id)
+    err_msg = check_sufficient_stock(item, alloc.allocated_quantity)
+    if err_msg:
+        return None, err_msg
+
     movement = StockMovement(
         item_id=alloc.inventory_item_id,
         change_amount=-alloc.allocated_quantity,   # leaving the main store
@@ -184,7 +194,7 @@ def issue_allocation(alloc: EventInventoryAllocation, actor_id: str) -> StockMov
     alloc.status = AllocationStatus.ISSUED.value
     alloc.updated_at_utc = datetime.now(timezone.utc)
     db.session.flush()
-    return movement
+    return movement, None
 
 
 def return_allocation(alloc: EventInventoryAllocation,
