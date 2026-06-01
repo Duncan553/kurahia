@@ -485,7 +485,9 @@ def issue_inventory(event_id, alloc_id):
     ok, err = transition_allocation(alloc, AllocationStatus.ISSUED.value)
     if not ok:
         return jsonify({"error": err}), 400
-    movement = issue_allocation(alloc, actor.id)
+    movement, err = issue_allocation(alloc, actor.id)
+    if err:
+        return jsonify({"error": err}), 400
     db.session.commit()
     AuditLog.log(actor=actor.username, action="event.inventory.issue",
                  target=alloc_id, details=f"movement={movement.id}")
