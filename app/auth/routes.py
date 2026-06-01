@@ -24,11 +24,17 @@ from flask_jwt_extended import (
     get_jwt,
 )
 from app.extensions import db
-from app.models.user import User
+from app.models.user import User, _ph
 from app.models.audit_log import AuditLog
 from app.utils.auth import record_failed_attempt, check_active_and_unlocked
+from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+
+# Pre-computed at startup. Burned on every failed lookup so timing is constant
+# regardless of whether a username exists — prevents username enumeration via
+# response-time measurement.
+_DUMMY_HASH = _ph.hash("dummy-password-for-timing-equalization")
 
 
 # ── Password login (manager / owner) ─────────────────────────────────────────
@@ -44,10 +50,20 @@ def login():
 
     # Load from DB — re-check active/locked on every login attempt
     user = db.session.query(User).filter_by(username=username).first()
-    if not user:
-        # Don't reveal whether the user exists
+
+    # Both no-user and inactive-user paths use the same generic error message and
+    # run a dummy verify so response time and content can't reveal whether a username
+    # exists or is active. Real users who hit this in production should be guided to
+    # ask their manager to check users.is_active.
+    if not user or not user.is_active:
+        try:
+            _ph.verify(_DUMMY_HASH, password)
+        except (VerifyMismatchError, VerificationError, InvalidHashError):
+            pass
         return jsonify({"error": "Invalid credentials."}), 401
 
+    # User is active — check lockout only. Locked accounts get the lock message
+    # (UX: the real user needs to know how long to wait).
     ok, msg = check_active_and_unlocked(user)
     if not ok:
         return jsonify({"error": msg}), 403
@@ -97,7 +113,16 @@ def pin_login():
         return jsonify({"error": "username and pin required"}), 400
 
     user = db.session.query(User).filter_by(username=username).first()
-    if not user:
+
+    # Both no-user and inactive-user paths use the same generic error message and
+    # run a dummy verify so response time and content can't reveal whether a username
+    # exists or is active. Real users who hit this in production should be guided to
+    # ask their manager to check users.is_active.
+    if not user or not user.is_active:
+        try:
+            _ph.verify(_DUMMY_HASH, pin)
+        except (VerifyMismatchError, VerificationError, InvalidHashError):
+            pass
         return jsonify({"error": "Invalid credentials."}), 401
 
     ok, msg = check_active_and_unlocked(user)

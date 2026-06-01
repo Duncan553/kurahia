@@ -158,4 +158,25 @@ def create_app(config_name: str = None) -> Flask:
     def missing_token(_reason):
         return jsonify({"error": "Authorization token required."}), 401
 
+    # Catch-all: unhandled exceptions return JSON, never Flask HTML.
+    # Mirrors Flask's own propagation check so TESTING=True still propagates
+    # exceptions to the test suite (handle_user_exception calls this before
+    # handle_exception's propagation guard, so we must guard here too).
+    @app.errorhandler(Exception)
+    def handle_unexpected(e):
+        from werkzeug.exceptions import HTTPException
+        if isinstance(e, HTTPException):
+            return e   # 4xx errors pass through to their own handlers
+        propagate = app.config.get("PROPAGATE_EXCEPTIONS")
+        if propagate is None:
+            propagate = app.testing or app.debug
+        # Re-raise in test/debug mode so pytest and Werkzeug debugger see real exceptions. Standard Flask pattern.
+        if propagate:
+            raise
+        app.logger.exception("Unhandled exception")
+        return jsonify({
+            "error": "internal_server_error",
+            "message": "An unexpected error occurred. Please try again or contact your manager.",
+        }), 500
+
     return app

@@ -55,10 +55,12 @@ def test_kill_switch_blocks_next_request(app, client, owner_token):
     )
     assert rv.status_code == 200
 
-    # manager1 tries to log in — must be blocked
+    # manager1 tries to log in — must be blocked.
+    # Security fix 4.1/4.2: inactive users return 401 + generic "Invalid credentials."
+    # (same as no-user path) so attackers can't enumerate active vs. inactive accounts.
     rv2 = client.post("/auth/login", json={"username": "manager1", "password": "ManagerPass1!"})
-    assert rv2.status_code == 403
-    assert "disabled" in rv2.get_json()["error"].lower()
+    assert rv2.status_code == 401
+    assert rv2.get_json()["error"] == "Invalid credentials."
 
 
 # ── 4. Lockout after N failed attempts ────────────────────────────────────────
