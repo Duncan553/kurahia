@@ -33,12 +33,19 @@ def _write_movement(actor: User, item: InventoryItem, quantity_positive: Decimal
     Returns (movement, None) on success, (None, (json_error, status)) on duplicate/error.
     Must be called inside an active db session; caller commits.
     """
+    from app.services.stock import check_sufficient_stock
+
     # Idempotency: if key already exists, return the existing movement silently
     existing = db.session.query(StockMovement).filter_by(
         idempotency_key=idempotency_key
     ).first()
     if existing:
         return existing, None
+
+    # Reject if this write would take stock below zero
+    err_msg = check_sufficient_stock(item, quantity_positive)
+    if err_msg:
+        return None, (jsonify({"error": err_msg}), 400)
 
     movement = StockMovement(
         item_id=item.id,
@@ -94,9 +101,11 @@ def log_spoilage():
     idem_key = data.get("idempotency_key") or str(uuid.uuid4())
 
     with db.session.begin_nested():
-        movement, _ = _write_movement(
+        movement, err = _write_movement(
             actor, item, qty, MovementReason.SPOILAGE, idem_key, data.get("notes")
         )
+    if err:
+        return err
 
     db.session.commit()
     AuditLog.log(
@@ -134,9 +143,11 @@ def log_staff_meal():
     idem_key = data.get("idempotency_key") or str(uuid.uuid4())
 
     with db.session.begin_nested():
-        movement, _ = _write_movement(
+        movement, err = _write_movement(
             actor, item, qty, MovementReason.STAFF_MEAL, idem_key, data.get("notes")
         )
+    if err:
+        return err
 
     db.session.commit()
     AuditLog.log(
@@ -170,9 +181,11 @@ def log_sent_back():
     idem_key = data.get("idempotency_key") or str(uuid.uuid4())
 
     with db.session.begin_nested():
-        movement, _ = _write_movement(
+        movement, err = _write_movement(
             actor, item, qty, MovementReason.SENT_BACK, idem_key, data.get("notes")
         )
+    if err:
+        return err
 
     db.session.commit()
     AuditLog.log(

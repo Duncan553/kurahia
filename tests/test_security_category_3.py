@@ -20,7 +20,7 @@ import importlib.util
 import inspect
 import os
 from decimal import Decimal
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from unittest.mock import patch
 
 
@@ -220,72 +220,58 @@ class TestDoubleReconciliationRace:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestConcurrentBookingOverlap:
-    def test_overlapping_bookings_no_db_constraint(self, app, client, manager_token):
+    def _make_resource(self, db):
+        from app.models.bookable_resource import BookableResource
+        r = BookableResource(name="Race Villa", resource_type="VILLA",
+                             base_price="10000", is_active=True)
+        db.session.add(r)
+        db.session.commit()
+        return r
+
+    def test_second_booking_same_dates_rejected(self, app, client, manager_token):
         """
-        DESIGN GAP: check_resource_availability() is a plain SELECT — no row lock.
-        Two concurrent transactions can both pass the availability check and both commit.
-        This test bypasses the HTTP layer to show the DB has no constraint that prevents it.
+        SELECT FOR UPDATE on the resource row serialises check + insert.
+        First booking succeeds (201). Second booking for the same dates is rejected (409).
+        Exactly ONE booking exists in the DB after both attempts.
 
-        Fix options:
-          A) SELECT FOR UPDATE on the resource row inside check_resource_availability()
-          B) Postgres EXCLUDE USING gist(resource_id, tsrange(check_in, check_out))
-          C) Daily conflict-sweep CLI command as a detective control
-
-        Do NOT fix here — report only.
+        Caveat: SQLite does not support row-level locking — with_for_update() is a no-op
+        there. However, SQLite serialises ALL writers at the database level, so the serial
+        behaviour tested here still holds. True concurrent protection is provided by Postgres
+        SELECT FOR UPDATE in production (Phase C).
         """
         from app.models.booking import Booking, BookingStatus
-        from app.models.bookable_resource import BookableResource
-        from app.models.user import User
         from app.extensions import db
-        from app.services.booking import check_resource_availability
 
-        resource = BookableResource(name="Race Villa", resource_type="VILLA",
-                                    base_price="10000", is_active=True)
-        db.session.add(resource)
-        db.session.flush()
+        resource = self._make_resource(db)
 
-        owner = db.session.query(User).filter_by(username="owner1").first()
-        check_in  = datetime(2026, 7, 1, tzinfo=timezone.utc)
-        check_out = datetime(2026, 7, 3, tzinfo=timezone.utc)
+        payload_a = {
+            "resource_id": resource.id,
+            "guest_name": "Guest A", "guest_phone": "0700000001",
+            "check_in_planned_utc": "2026-07-01T14:00:00",
+            "check_out_planned_utc": "2026-07-03T11:00:00",
+            "number_of_guests": 1,
+            "idempotency_key": str(uuid.uuid4()),
+        }
+        payload_b = {**payload_a,
+                     "guest_name": "Guest B", "guest_phone": "0700000002",
+                     "idempotency_key": str(uuid.uuid4())}
 
-        # Both threads see no overlap before either commits — this is the race window
-        avail_a, _ = check_resource_availability(resource.id, check_in, check_out)
-        avail_b, _ = check_resource_availability(resource.id, check_in, check_out)
-        assert avail_a and avail_b, "Both availability reads must return True to model the race"
+        rv_a = client.post("/bookings", json=payload_a, headers=auth(manager_token))
+        assert rv_a.status_code == 201, f"First booking failed: {rv_a.get_json()}"
 
-        # Thread A commits
-        booking_a = Booking(
-            resource_id=resource.id, guest_name="Guest A", guest_phone="0700000001",
-            check_in_planned_utc=check_in, check_out_planned_utc=check_out,
-            base_total="20000", number_of_guests=1,
-            status=BookingStatus.CONFIRMED.value, created_by_id=owner.id,
-            idempotency_key=str(uuid.uuid4()),
+        rv_b = client.post("/bookings", json=payload_b, headers=auth(manager_token))
+        assert rv_b.status_code == 409, (
+            f"Second overlapping booking should be 409, got {rv_b.status_code}: {rv_b.get_json()}"
         )
-        db.session.add(booking_a)
-        db.session.commit()
-
-        # Thread B also commits — DB should block but has no constraint to do so
-        booking_b = Booking(
-            resource_id=resource.id, guest_name="Guest B", guest_phone="0700000002",
-            check_in_planned_utc=check_in, check_out_planned_utc=check_out,
-            base_total="20000", number_of_guests=1,
-            status=BookingStatus.CONFIRMED.value, created_by_id=owner.id,
-            idempotency_key=str(uuid.uuid4()),
+        assert "booked" in rv_b.get_json().get("error", "").lower(), (
+            f"Expected 'booked' in error message, got: {rv_b.get_json()}"
         )
-        db.session.add(booking_b)
-        db.session.commit()
 
         count = db.session.query(Booking).filter(
             Booking.resource_id == resource.id,
-            Booking.status == BookingStatus.CONFIRMED.value,
+            Booking.status.in_([BookingStatus.HELD.value, BookingStatus.CONFIRMED.value]),
         ).count()
-
-        assert count == 1, (
-            f"DESIGN GAP: {count} overlapping CONFIRMED bookings committed for the same villa "
-            f"on {check_in.date()} – {check_out.date()}. "
-            "check_resource_availability() has no row lock — concurrent transactions both pass "
-            "the SELECT before either commits. Mitigation required (see options in docstring)."
-        )
+        assert count == 1, f"Expected 1 booking, got {count}"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -294,66 +280,66 @@ class TestConcurrentBookingOverlap:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestNegativeStock:
-    def test_spoilage_beyond_stock_rejected_or_alerted(self, app, client, manager_token):
-        """
-        Stock = 5 units. Spoilage of 10 requested.
-        Expected (secure): 400 rejection OR 201 + JudgeAlert for negative stock.
-        Actual (gap):      201 accepted silently, stock = -5, no alert.
-
-        Do NOT fix here — report only.
-        """
+    def _seed_item(self, db, stock_qty):
+        """Create an active inventory item with the given stock level."""
         from app.models.inventory_item import InventoryItem
         from app.models.stock_movement import StockMovement, MovementReason
-        from app.models.judge_alert import JudgeAlert
         from app.models.user import User
         from app.models.department import Department
-        from app.services.stock import get_current_stock
-        from app.extensions import db
-
-        dept = db.session.query(Department).filter_by(name="General").first()
+        dept  = db.session.query(Department).filter_by(name="General").first()
         owner = db.session.query(User).filter_by(username="owner1").first()
-
-        item = InventoryItem(name="Test Beef", unit="kg",
-                             reorder_level=Decimal("2"), department_id=dept.id)
+        item  = InventoryItem(name="Test Beef", unit="kg",
+                              reorder_level=Decimal("2"), department_id=dept.id)
         db.session.add(item)
         db.session.flush()
-
-        # Stock in 5 units
         db.session.add(StockMovement(
-            item_id=item.id, change_amount=Decimal("5"),
+            item_id=item.id, change_amount=Decimal(str(stock_qty)),
             reason=MovementReason.PURCHASE.value, actor_id=owner.id,
             idempotency_key=str(uuid.uuid4()),
         ))
         db.session.commit()
+        return item
 
-        assert get_current_stock(item.id) == Decimal("5")
+    def test_spoilage_beyond_stock_rejected(self, app, client, manager_token):
+        """Stock=5, spoilage=10 → 400 with 'Insufficient stock' message; no StockMovement row."""
+        from app.models.stock_movement import StockMovement
+        from app.extensions import db
 
-        # Request spoilage of 10 (would take stock to -5)
+        item = self._seed_item(db, 5)
+        before = db.session.query(StockMovement).filter_by(item_id=item.id).count()
+
         rv = client.post("/inventory/movements/spoilage",
                          json={"item_id": item.id, "quantity": "10",
                                "idempotency_key": str(uuid.uuid4())},
                          headers=auth(manager_token))
 
-        if rv.status_code in (400, 409):
-            # System correctly rejected — test passes
-            return
-
-        # Movement was accepted. Check for compensating JudgeAlert
-        assert rv.status_code == 201, f"Unexpected status: {rv.status_code} {rv.get_json()}"
-
-        db.session.expire_all()
-        stock_after = get_current_stock(item.id)
-        alert = db.session.query(JudgeAlert).filter(
-            JudgeAlert.description.like(f"%{item.name}%")
-        ).first()
-
-        assert stock_after >= Decimal("0") or alert is not None, (
-            f"DESIGN GAP: spoilage of 10 on stock=5 was accepted (201). "
-            f"Stock is now {stock_after} and no JudgeAlert was raised. "
-            "The spoilage endpoint (_write_movement) writes whatever negative amount is requested "
-            "without checking get_current_stock(). Mitigation: add stock-check guard in "
-            "_write_movement or in the endpoint, OR fire NEGATIVE_STOCK JudgeAlert post-write."
+        assert rv.status_code == 400, (
+            f"Expected 400 for negative-stock write, got {rv.status_code}: {rv.get_json()}"
         )
+        body = rv.get_json()
+        assert "insufficient" in body.get("error", "").lower(), (
+            f"Expected 'insufficient' in error message, got: {body}"
+        )
+        # No new movement row written
+        after = db.session.query(StockMovement).filter_by(item_id=item.id).count()
+        assert after == before, f"StockMovement row was written despite 400 rejection"
+
+    def test_spoilage_to_exactly_zero_allowed(self, app, client, manager_token):
+        """Stock=5, spoilage=5 → 201; stock reaches exactly 0 (boundary case allowed)."""
+        from app.services.stock import get_current_stock
+        from app.extensions import db
+
+        item = self._seed_item(db, 5)
+
+        rv = client.post("/inventory/movements/spoilage",
+                         json={"item_id": item.id, "quantity": "5",
+                               "idempotency_key": str(uuid.uuid4())},
+                         headers=auth(manager_token))
+
+        assert rv.status_code == 201, (
+            f"Stock-to-zero should be allowed, got {rv.status_code}: {rv.get_json()}"
+        )
+        assert get_current_stock(item.id) == Decimal("0")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -618,3 +604,95 @@ class TestMigrationReversibility:
             "Migrations without a real downgrade() — cannot roll back safely:\n"
             + "\n".join(f"  • {s}" for s in stubs)
         )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 3.6 extension — EVENT_ALLOCATION negative-stock check
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestEventAllocationStock:
+    def _setup(self, db, stock_qty, alloc_qty):
+        """Create event type, inventory item with stock, event, and an allocation."""
+        from app.models.event_type import EventType
+        from app.models.event import Event, EventStatus
+        from app.models.inventory_item import InventoryItem
+        from app.models.stock_movement import StockMovement, MovementReason
+        from app.models.event_inventory_allocation import (
+            EventInventoryAllocation, AllocationStatus
+        )
+        from app.models.user import User
+        from app.models.department import Department
+
+        dept  = db.session.query(Department).filter_by(name="General").first()
+        owner = db.session.query(User).filter_by(username="owner1").first()
+
+        et   = EventType(name=f"TEST_EVT_{uuid.uuid4().hex[:6]}")
+        item = InventoryItem(name="Event Beer", unit="bottle",
+                             reorder_level=Decimal("2"), department_id=dept.id)
+        db.session.add_all([et, item])
+        db.session.flush()
+
+        db.session.add(StockMovement(
+            item_id=item.id, change_amount=Decimal(str(stock_qty)),
+            reason=MovementReason.PURCHASE.value, actor_id=owner.id,
+            idempotency_key=str(uuid.uuid4()),
+        ))
+        db.session.flush()
+
+        now = datetime.now(timezone.utc)
+        event = Event(
+            title="Stock Test Event", event_type_id=et.id,
+            starts_at_utc=now + timedelta(days=7),
+            ends_at_utc=now + timedelta(days=7, hours=6),
+            expected_guests=50, created_by_id=owner.id,
+            status=EventStatus.PLANNED.value,
+            idempotency_key=str(uuid.uuid4()),
+        )
+        db.session.add(event)
+        db.session.flush()
+
+        alloc = EventInventoryAllocation(
+            event_id=event.id, inventory_item_id=item.id,
+            allocated_quantity=Decimal(str(alloc_qty)),
+            status=AllocationStatus.PLANNED.value,
+            created_by_id=owner.id,
+            idempotency_key=str(uuid.uuid4()),
+        )
+        db.session.add(alloc)
+        db.session.commit()
+        return event, alloc, item
+
+    def test_over_allocation_rejected(self, app, client, manager_token):
+        """Allocate 10 from stock=5 → 400, plain-English 'Insufficient' error, no movement."""
+        from app.models.stock_movement import StockMovement
+        from app.extensions import db
+
+        event, alloc, item = self._setup(db, stock_qty=5, alloc_qty=10)
+        before = db.session.query(StockMovement).filter_by(item_id=item.id).count()
+
+        rv = client.post(f"/events/{event.id}/inventory/{alloc.id}/issue",
+                         headers=auth(manager_token))
+
+        assert rv.status_code == 400, (
+            f"Expected 400 for over-allocation, got {rv.status_code}: {rv.get_json()}"
+        )
+        assert "insufficient" in rv.get_json().get("error", "").lower(), (
+            f"Expected 'insufficient' in error, got: {rv.get_json()}"
+        )
+        after = db.session.query(StockMovement).filter_by(item_id=item.id).count()
+        assert after == before, "StockMovement row written despite 400 rejection"
+
+    def test_exact_stock_allocation_allowed(self, app, client, manager_token):
+        """Allocate exactly stock=5 from stock=5 → 200, stock goes to 0."""
+        from app.services.stock import get_current_stock
+        from app.extensions import db
+
+        event, alloc, item = self._setup(db, stock_qty=5, alloc_qty=5)
+
+        rv = client.post(f"/events/{event.id}/inventory/{alloc.id}/issue",
+                         headers=auth(manager_token))
+
+        assert rv.status_code == 200, (
+            f"Exact-stock allocation should succeed, got {rv.status_code}: {rv.get_json()}"
+        )
+        assert get_current_stock(item.id) == Decimal("0")

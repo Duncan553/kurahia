@@ -24,6 +24,20 @@ def get_current_stock(item_id: str) -> Decimal:
     return Decimal(str(result)) if result is not None else Decimal("0")
 
 
+def check_sufficient_stock(item, quantity_positive: Decimal) -> str | None:
+    """
+    Returns None if the write is safe, or a plain-English error string if it
+    would take stock below zero. Single chokepoint used by every stock-out path.
+    """
+    current = get_current_stock(item.id)
+    if current - quantity_positive < Decimal("0"):
+        return (
+            f"Insufficient stock for {item.name}. "
+            f"Available: {current}, requested: {quantity_positive}."
+        )
+    return None
+
+
 def get_stock_at(item_id: str, as_of: datetime) -> Decimal:
     """Stock level as of a point in time — used by variance math as the opening."""
     result = db.session.query(func.sum(StockMovement.change_amount)).filter(

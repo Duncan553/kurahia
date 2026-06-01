@@ -227,6 +227,16 @@ def test_staff_meal_only_touches_staff_food(client, app, item, staff_item, manag
 
 
 def test_staff_meal_on_staff_food_succeeds(client, app, staff_item, manager_token):
+    # Stock the item first — fix 3.6 rejects writes that would take stock negative
+    from app.models.user import User
+    owner = db.session.query(User).filter_by(username="owner1").first()
+    db.session.add(StockMovement(
+        item_id=staff_item, change_amount=Decimal("10"),
+        reason=MovementReason.PURCHASE.value, actor_id=owner.id,
+        idempotency_key=str(uuid.uuid4()),
+    ))
+    db.session.commit()
+
     rv = client.post(
         "/inventory/movements/staff-meal",
         json={"item_id": staff_item, "quantity": "1.5", "idempotency_key": str(uuid.uuid4())},
@@ -332,6 +342,16 @@ def test_decimal_precision_preserved(app, item):
 # ── 8. Audit log per movement ─────────────────────────────────────────────────
 
 def test_audit_log_written_on_spoilage(client, app, item, manager_token):
+    # Stock the item first — fix 3.6 rejects writes that would take stock negative
+    from app.models.user import User
+    owner = db.session.query(User).filter_by(username="owner1").first()
+    db.session.add(StockMovement(
+        item_id=item, change_amount=Decimal("10"),
+        reason=MovementReason.PURCHASE.value, actor_id=owner.id,
+        idempotency_key=str(uuid.uuid4()),
+    ))
+    db.session.commit()
+
     pre_count = _audit_count(app)
     client.post(
         "/inventory/movements/spoilage",
