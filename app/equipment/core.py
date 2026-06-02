@@ -52,7 +52,7 @@ def create_equipment():
         created_by_id=actor.id,
     )
     db.session.add(eq)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="equipment.create", target=eq.id, details=name)
     db.session.commit()
     return jsonify(_eq_dict(eq)), 201
@@ -90,7 +90,7 @@ def edit_equipment(eq_id):
     if "service_interval_days" in data: eq.service_interval_days = data["service_interval_days"]
     if "notes" in data: eq.notes = data["notes"]
     eq.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="equipment.edit", target=eq_id)
     db.session.commit()
     return jsonify(_eq_dict(eq)), 200
@@ -107,7 +107,7 @@ def disable_equipment(eq_id):
         return jsonify({"error": "Equipment not found."}), 404
     eq.is_active = False
     eq.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="equipment.disable", target=eq_id)
     db.session.commit()
     return jsonify({"id": eq.id, "is_active": False}), 200
@@ -152,7 +152,7 @@ def log_maintenance(eq_id):
         eq.last_service_utc = performed_at
     eq.status = EquipmentStatus.ACTIVE.value
     eq.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="equipment.maintenance", target=eq_id)
     db.session.commit()
     return jsonify({"id": log.id, "equipment_id": eq_id,
@@ -182,7 +182,7 @@ def log_safety_check(eq_id):
     db.session.add(check)
     if not passed:
         eq.status = EquipmentStatus.MAINTENANCE.value
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="equipment.safety_check",
                  target=eq_id, details=f"passed={passed}")
     db.session.commit()
