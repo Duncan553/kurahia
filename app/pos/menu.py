@@ -65,7 +65,6 @@ def create_menu_item():
                         prep_station=station, department_id=dept_id, description=description)
         db.session.add(item)
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="menu.item.create", target=name)
     db.session.commit()
     return jsonify({"id": item.id, "name": item.name, "price": str(item.price)}), 201
@@ -94,7 +93,6 @@ def edit_menu_item(item_id):
         if "description" in data:
             item.description = data["description"]
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="menu.item.edit", target=item.name)
     db.session.commit()
     return jsonify({"id": item.id, "name": item.name, "price": str(item.price)}), 200
@@ -111,7 +109,6 @@ def disable_menu_item(item_id):
         return jsonify({"error": "Menu item not found."}), 404
     with db.session.begin_nested():
         item.is_active = False
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="menu.item.disable", target=item.name)
     db.session.commit()
     return jsonify({"id": item.id, "is_active": False}), 200
@@ -128,7 +125,6 @@ def enable_menu_item(item_id):
         return jsonify({"error": "Menu item not found."}), 404
     with db.session.begin_nested():
         item.is_active = True
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="menu.item.enable", target=item.name)
     db.session.commit()
     return jsonify({"id": item.id, "is_active": True}), 200
