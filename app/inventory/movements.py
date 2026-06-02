@@ -107,7 +107,6 @@ def log_spoilage():
     if err:
         return err
 
-    db.session.commit()
     AuditLog.log(
         actor=actor.username, action="inventory.spoilage",
         target=item.name, details=f"qty={qty}",
@@ -149,7 +148,6 @@ def log_staff_meal():
     if err:
         return err
 
-    db.session.commit()
     AuditLog.log(
         actor=actor.username, action="inventory.staff_meal",
         target=item.name, details=f"qty={qty}",
@@ -187,7 +185,6 @@ def log_sent_back():
     if err:
         return err
 
-    db.session.commit()
     AuditLog.log(
         actor=actor.username, action="inventory.sent_back",
         target=item.name, details=f"qty={qty}",
