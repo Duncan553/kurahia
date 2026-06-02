@@ -85,7 +85,7 @@ def submit_suggestion():
     if category == SuggestionCategory.OWNER_PRIVATE.value:
         _notify_owner(suggestion)
 
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="suggestion.submit",
                  details=f"category={category}")
     db.session.commit()
@@ -181,7 +181,7 @@ def review_suggestion(suggestion_id):
     suggestion.reviewed_by_id       = actor.id
     suggestion.reviewed_at_utc      = datetime.now(timezone.utc)
     suggestion.response_to_submitter = data.get("response")
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="suggestion.review",
                  target=suggestion_id, details=f"status={status}")
     db.session.commit()
