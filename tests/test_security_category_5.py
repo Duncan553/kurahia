@@ -180,13 +180,8 @@ class TestScheduledTaskIdempotency:
             "already-delivered notifications should no longer be QUEUED"
         )
 
-    def test_run_daily_not_idempotent(self, app):
-        """
-        IDEMPOTENCY GAP: judge run-daily has no _open_exists() guard.
-        Calling it twice with the same spoilage data creates duplicate JudgeAlerts.
-        Fix: add an existing-open-alert check before _fire_alert() in run_daily.
-        Do NOT fix here — report only.
-        """
+    def test_run_daily_idempotent(self, app):
+        """run_daily called twice: second call finds existing OPEN alert and skips → 1 alert."""
         from app.judge.engine import run_daily
         from app.models.inventory_item import InventoryItem
         from app.models.stock_movement import StockMovement, MovementReason
@@ -228,20 +223,12 @@ class TestScheduledTaskIdempotency:
         ).count()
 
         assert alert_count == 1, (
-            f"IDEMPOTENCY GAP: run_daily called twice produced {alert_count} "
-            f"SPOILAGE_SPIKE alerts instead of 1. "
-            "run_daily() has no _open_exists() deduplication check. "
-            "A cron misfire or manual re-run creates duplicate owner alerts."
+            f"run_daily double-run produced {alert_count} alerts instead of 1 — "
+            "fire_alert_if_absent dedup is not working"
         )
 
-    def test_flag_incomplete_not_idempotent(self, app):
-        """
-        IDEMPOTENCY GAP: events flag-incomplete has no deduplication guard.
-        Calling it twice on the same overdue IN_PROGRESS event creates
-        duplicate EVENT_NOT_CLOSED JudgeAlert rows.
-        Fix: add an _open_exists() check before creating the alert.
-        Do NOT fix here — report only.
-        """
+    def test_flag_incomplete_idempotent(self, app):
+        """flag-incomplete called twice: second call skips existing OPEN alert → 1 alert."""
         from app.models.event import Event, EventStatus
         from app.models.event_type import EventType
         from app.models.judge_alert import JudgeAlert
@@ -274,9 +261,8 @@ class TestScheduledTaskIdempotency:
         ).count()
 
         assert alert_count == 1, (
-            f"IDEMPOTENCY GAP: flag-incomplete called twice produced {alert_count} "
-            f"EVENT_NOT_CLOSED alerts instead of 1. "
-            "No _open_exists() guard before creating the alert."
+            f"flag-incomplete double-run produced {alert_count} alerts instead of 1 — "
+            "fire_alert_if_absent dedup is not working"
         )
 
 
@@ -525,8 +511,6 @@ class TestConcurrentScheduledTasks:
         ).count()
 
         assert alert_count == 1, (
-            f"DESIGN GAP: two run_daily calls produced {alert_count} SPOILAGE_SPIKE "
-            f"alerts instead of 1. In production with Postgres, two concurrent cron "
-            "instances would both INSERT duplicate alerts. "
-            "Fix: add _open_exists() check in run_daily."
+            f"Concurrent run_daily design gap: {alert_count} alerts instead of 1 — "
+            "fire_alert_if_absent dedup is not working"
         )
