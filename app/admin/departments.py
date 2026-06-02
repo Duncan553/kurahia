@@ -56,7 +56,6 @@ def create_department():
     with db.session.begin_nested():
         dept = Department(name=name)
         db.session.add(dept)
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="admin.dept.create", target=name)
     db.session.commit()
     return jsonify({"id": dept.id, "name": dept.name}), 201
@@ -75,7 +74,6 @@ def edit_department(dept_id):
     with db.session.begin_nested():
         if "name" in data:
             dept.name = data["name"].strip()
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="admin.dept.edit", target=dept.name)
     db.session.commit()
     return jsonify({"id": dept.id, "name": dept.name}), 200
@@ -92,7 +90,6 @@ def disable_department(dept_id):
         return jsonify({"error": "Department not found."}), 404
     with db.session.begin_nested():
         dept.is_active = False
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="admin.dept.disable", target=dept.name)
     db.session.commit()
     return jsonify({"id": dept.id, "is_active": False}), 200
@@ -109,7 +106,6 @@ def enable_department(dept_id):
         return jsonify({"error": "Department not found."}), 404
     with db.session.begin_nested():
         dept.is_active = True
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="admin.dept.enable", target=dept.name)
     db.session.commit()
     return jsonify({"id": dept.id, "is_active": True}), 200
