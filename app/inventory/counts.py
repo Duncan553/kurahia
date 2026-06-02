@@ -88,7 +88,6 @@ def submit_count():
             )
             db.session.add(reconciliation)
 
-    db.session.commit()
     AuditLog.log(
         actor=actor.username, action="inventory.count",
         target=item.name, details=f"counted={counted} prior={current}",
