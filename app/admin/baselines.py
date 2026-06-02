@@ -85,7 +85,6 @@ def create_baseline():
             tolerance_percent=tol,
         )
         db.session.add(b)
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="admin.baseline.create", target=item.name)
     db.session.commit()
     return jsonify({"id": b.id}), 201
@@ -108,7 +107,6 @@ def edit_baseline(baseline_id):
             b.tolerance_percent = Decimal(str(data["tolerance_percent"]))
         if "driver_unit" in data:
             b.driver_unit = data["driver_unit"]
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="admin.baseline.edit", target=baseline_id)
     db.session.commit()
     return jsonify({"id": b.id, "expected_ratio": str(b.expected_ratio)}), 200
