@@ -74,7 +74,7 @@ def create_profile():
         wage_period=wage_period,
     )
     db.session.add(profile)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.profile.create", target=user_id,
                  details=full_name)
     db.session.commit()
@@ -165,7 +165,7 @@ def edit_profile(profile_id):
             return jsonify({"error": "hire_date must be YYYY-MM-DD."}), 400
 
     profile.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.profile.edit", target=profile_id)
     db.session.commit()
     return jsonify({"id": profile.id, "full_name": profile.full_name, "is_active": profile.is_active}), 200
@@ -181,7 +181,7 @@ def disable_profile(profile_id):
     if not profile:
         return jsonify({"error": "Employee profile not found."}), 404
     profile.is_active = False
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.profile.disable", target=profile_id)
     db.session.commit()
     return jsonify({"id": profile.id, "is_active": False}), 200
@@ -197,7 +197,7 @@ def enable_profile(profile_id):
     if not profile:
         return jsonify({"error": "Employee profile not found."}), 404
     profile.is_active = True
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.profile.enable", target=profile_id)
     db.session.commit()
     return jsonify({"id": profile.id, "is_active": True}), 200
