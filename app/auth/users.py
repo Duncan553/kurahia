@@ -66,7 +66,6 @@ def create_user():
             new_user.set_password(password)
         db.session.add(new_user)
 
-    db.session.commit()
     AuditLog.log(
         actor=actor.username,
         action="user.create",
@@ -119,7 +118,6 @@ def edit_user(user_id):
                 return jsonify({"error": "Department not found or disabled."}), 404
             target.department_id = dept.id
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="user.edit", target=target.username)
     db.session.commit()
 
@@ -166,7 +164,6 @@ def activate_user(user_id):
     with db.session.begin_nested():
         target.is_active = True
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="user.activate", target=target.username)
     db.session.commit()
 
