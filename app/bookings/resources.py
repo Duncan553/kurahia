@@ -55,7 +55,7 @@ def create_resource():
         department_id=dept_id,
     )
     db.session.add(resource)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.resource.create",
                  details=f"{rtype} {name}")
     db.session.commit()
@@ -108,7 +108,7 @@ def edit_resource(resource_id):
         resource.department_id = data["department_id"]
 
     resource.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.resource.edit", target=resource_id)
     db.session.commit()
     return jsonify(_resource_dict(resource)), 200
@@ -124,7 +124,7 @@ def disable_resource(resource_id):
     if not resource:
         return jsonify({"error": "Resource not found."}), 404
     resource.is_active = False
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.resource.disable", target=resource_id)
     db.session.commit()
     return jsonify({"id": resource.id, "is_active": False}), 200
@@ -140,7 +140,7 @@ def enable_resource(resource_id):
     if not resource:
         return jsonify({"error": "Resource not found."}), 404
     resource.is_active = True
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.resource.enable", target=resource_id)
     db.session.commit()
     return jsonify({"id": resource.id, "is_active": True}), 200
