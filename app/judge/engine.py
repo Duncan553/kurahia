@@ -123,7 +123,7 @@ def run_weekly(period_start: datetime, period_end: datetime) -> int:
             alerts_fired += 1
 
     if alerts_fired:
-        db.session.commit()
+        db.session.flush()
         AuditLog.log(actor="judge", action="judge.weekly_run",
                      details=f"{alerts_fired} alerts fired")
         db.session.commit()
@@ -159,7 +159,7 @@ def run_daily(date: datetime) -> int:
             alerts_fired += 1
 
     if alerts_fired:
-        db.session.commit()
+        db.session.flush()
         AuditLog.log(actor="judge", action="judge.daily_run",
                      details=f"{alerts_fired} alerts fired")
         db.session.commit()
