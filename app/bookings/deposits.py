@@ -85,7 +85,7 @@ def record_booking_payment():
         purpose=purpose,
     )
     db.session.add(bp)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.payment",
                  target=booking_id, details=f"{purpose} {method} {amount}")
     db.session.commit()
