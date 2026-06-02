@@ -155,7 +155,7 @@ def create_booking():
         created_by_id=actor.id,
     )
     db.session.add(booking)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.create",
                  details=f"{resource.name} {guest_name}")
     db.session.commit()
@@ -189,7 +189,7 @@ def confirm_booking(booking_id):
 
     booking.status = BookingStatus.CONFIRMED.value
     booking.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.confirm", target=booking_id)
     db.session.commit()
     return jsonify(_booking_dict(booking)), 200
@@ -217,7 +217,7 @@ def check_in(booking_id):
         return jsonify({"error": err}), 400
 
     tab = open_villa_tab(booking, actor.id)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.check_in",
                  target=booking_id, details=f"tab={tab.id}")
     db.session.commit()
@@ -269,7 +269,7 @@ def check_out(booking_id):
         if gr:
             gr.last_visit_utc = datetime.now(timezone.utc)
 
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.check_out", target=booking_id)
     db.session.commit()
     return jsonify(_booking_dict(booking)), 200
@@ -294,7 +294,7 @@ def cancel_booking(booking_id):
 
     booking.status = BookingStatus.CANCELLED.value
     booking.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.cancel", target=booking_id)
     db.session.commit()
     return jsonify(_booking_dict(booking)), 200
@@ -459,7 +459,7 @@ def book_water_session(booking_id):
         created_by_id=actor.id,
     )
     db.session.add(charge)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.water_session",
                  target=booking_id, details=f"amount={amount}")
     db.session.commit()

@@ -28,6 +28,8 @@ class TestTransactionDurabilityBooking:
     def test_booking_partial_failure_rolls_back(self, app, client, manager_token):
         """
         Mid-write exception after Booking is flushed but before AuditLog.log.
+        Fixed (Cat 5.1 sweep): flush() replaces the early commit(), so Booking
+        and AuditLog land in the same transaction — AuditLog fault rolls both back.
         Expect: zero new Booking rows — the whole transaction reverts.
         Different code path from Cat 3 3.8 (that exercised gate issuance).
         """
