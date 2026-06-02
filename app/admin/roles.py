@@ -66,7 +66,6 @@ def create_role():
     with db.session.begin_nested():
         role = Role(name=name, level=level)
         db.session.add(role)
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="admin.role.create", target=name)
     db.session.commit()
     return jsonify({"id": role.id, "name": role.name, "level": role.level}), 201
@@ -90,7 +89,6 @@ def edit_role(role_id):
                 role.level = int(data["level"])
             except (TypeError, ValueError):
                 return jsonify({"error": "level must be a positive integer."}), 400
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="admin.role.edit", target=role.name)
     db.session.commit()
     return jsonify({"id": role.id, "name": role.name, "level": role.level}), 200
@@ -107,7 +105,6 @@ def disable_role(role_id):
         return jsonify({"error": "Role not found."}), 404
     with db.session.begin_nested():
         role.is_active = False
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="admin.role.disable", target=role.name)
     db.session.commit()
     return jsonify({"id": role.id, "is_active": False}), 200
@@ -124,7 +121,6 @@ def enable_role(role_id):
         return jsonify({"error": "Role not found."}), 404
     with db.session.begin_nested():
         role.is_active = True
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="admin.role.enable", target=role.name)
     db.session.commit()
     return jsonify({"id": role.id, "is_active": True}), 200
