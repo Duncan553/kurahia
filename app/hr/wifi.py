@@ -44,7 +44,7 @@ def create_wifi():
 
     entry = WiFiAllowList(ssid=ssid, ip_cidr=ip_cidr, label=label)
     db.session.add(entry)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.wifi.create",
                  details=f"ssid={ssid} cidr={ip_cidr}")
     db.session.commit()
@@ -86,7 +86,7 @@ def edit_wifi(entry_id):
         entry.ip_cidr = data["ip_cidr"].strip()
     if "label" in data:
         entry.label = data["label"]
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.wifi.edit", target=entry_id)
     db.session.commit()
     return jsonify({"id": entry.id, "ssid": entry.ssid, "ip_cidr": entry.ip_cidr,
@@ -103,7 +103,7 @@ def disable_wifi(entry_id):
     if not entry:
         return jsonify({"error": "WiFi entry not found."}), 404
     entry.is_active = False
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.wifi.disable", target=entry_id)
     db.session.commit()
     return jsonify({"id": entry.id, "is_active": False}), 200
@@ -119,7 +119,7 @@ def enable_wifi(entry_id):
     if not entry:
         return jsonify({"error": "WiFi entry not found."}), 404
     entry.is_active = True
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.wifi.enable", target=entry_id)
     db.session.commit()
     return jsonify({"id": entry.id, "is_active": True}), 200
