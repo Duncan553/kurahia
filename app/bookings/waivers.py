@@ -44,7 +44,7 @@ def create_waiver():
         signature_proof=data.get("signature_proof"),
     )
     db.session.add(waiver)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.waiver.create",
                  target=booking_id, details=f"type={activity_type}")
     db.session.commit()
@@ -94,7 +94,7 @@ def revoke_waiver(waiver_id):
     if not waiver:
         return jsonify({"error": "Waiver not found."}), 404
     waiver.is_active = False
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.waiver.revoke", target=waiver_id)
     db.session.commit()
     return jsonify({"id": waiver.id, "is_active": False}), 200
