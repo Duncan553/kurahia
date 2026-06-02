@@ -56,7 +56,6 @@ def create_item():
         )
         db.session.add(item)
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="inventory.item.create", target=name)
     db.session.commit()
 
@@ -90,7 +89,6 @@ def edit_item(item_id):
         if "is_active" in data:
             item.is_active = bool(data["is_active"])
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="inventory.item.edit", target=item.name)
     db.session.commit()
 
@@ -145,7 +143,6 @@ def disable_item(item_id):
         return jsonify({"error": "Item not found."}), 404
     with db.session.begin_nested():
         item.is_active = False
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="inventory.item.disable", target=item.name)
     db.session.commit()
     return jsonify({"id": item.id, "is_active": False}), 200
@@ -162,7 +159,6 @@ def enable_item(item_id):
         return jsonify({"error": "Item not found."}), 404
     with db.session.begin_nested():
         item.is_active = True
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="inventory.item.enable", target=item.name)
     db.session.commit()
     return jsonify({"id": item.id, "is_active": True}), 200
