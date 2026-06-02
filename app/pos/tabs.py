@@ -36,7 +36,6 @@ def open_tab():
         tab = Tab(tab_type=tab_type, reference=reference, opened_by_id=actor.id)
         db.session.add(tab)
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="tab.open", target=tab.id,
                  details=f"ref={reference}")
     db.session.commit()
@@ -103,7 +102,6 @@ def close_tab(tab_id):
         tab.closed_at_utc = datetime.now(timezone.utc)
         tab.closed_by_id  = actor.id
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="tab.close", target=tab_id)
     db.session.commit()
     return jsonify({"id": tab.id, "status": tab.status}), 200
