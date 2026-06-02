@@ -83,7 +83,7 @@ def login():
             additional_claims={"role_level": user.role.level, "requires_pin_setup": True},
             expires_delta=timedelta(minutes=10),
         )
-        db.session.commit()
+        db.session.flush()
         AuditLog.log(actor=user.username, action="user.login.pending_pin_setup")
         db.session.commit()
         return jsonify({"access_token": setup_token, "requires_pin_setup": True}), 200
@@ -94,7 +94,7 @@ def login():
     )
     refresh_token = create_refresh_token(identity=user.id)
 
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=user.username, action="user.login", details="password")
     db.session.commit()
 
@@ -144,7 +144,7 @@ def pin_login():
     )
     refresh_token = create_refresh_token(identity=user.id)
 
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=user.username, action="user.login", details="pin")
     db.session.commit()
 
@@ -195,7 +195,6 @@ def set_pin():
     with db.session.begin_nested():
         user.set_pin(pin)
 
-    db.session.commit()
     AuditLog.log(actor=user.username, action="pin.set")
     db.session.commit()
 
@@ -233,7 +232,6 @@ def change_pin():
     with db.session.begin_nested():
         user.set_pin(new_pin)
 
-    db.session.commit()
     AuditLog.log(actor=user.username, action="pin.changed")
     db.session.commit()
 
@@ -259,7 +257,6 @@ def deactivate_user(target_user_id):
     with db.session.begin_nested():
         target.is_active = False
 
-    db.session.commit()
     AuditLog.log(
         actor=actor.username,
         action="user.deactivate",
@@ -293,7 +290,6 @@ def reset_lockout(target_user_id):
     with db.session.begin_nested():
         target.reset_lockout()
 
-    db.session.commit()
     AuditLog.log(
         actor=actor.username,
         action="lockout.reset",
