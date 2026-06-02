@@ -71,7 +71,7 @@ def create_feedback():
         idempotency_key=idem,
     )
     db.session.add(fb)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="feedback.create",
                  details=f"score={score} dept={data.get('department_id')}")
     db.session.commit()
