@@ -64,7 +64,6 @@ def record_payment(tab_id):
         )
         db.session.add(payment)
 
-    db.session.commit()
     AuditLog.log(
         actor=actor.username, action="payment.record",
         target=tab_id, details=f"method={method} amount={amount}",
