@@ -71,7 +71,6 @@ def create_request():
         )
         db.session.add(pr)
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="purchase_request.create", target=pr.id)
     db.session.commit()
 
@@ -107,7 +106,6 @@ def propose_budget(pr_id):
         pr.manager_id      = actor.id
         pr.manager_notes   = data.get("notes")
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="purchase_request.propose", target=pr.id)
     db.session.commit()
 
@@ -143,7 +141,6 @@ def approve_request(pr_id):
         pr.owner_notes = data.get("notes")
         pr.status = RequestStatus.APPROVED if action == "approve" else RequestStatus.REJECTED
 
-    db.session.commit()
     AuditLog.log(
         actor=actor.username,
         action=f"purchase_request.{action}",
@@ -232,7 +229,6 @@ def record_purchase():
         )
         db.session.add(purchase)
 
-    db.session.commit()
     AuditLog.log(
         actor=actor.username, action="inventory.purchase",
         target=item.name, details=f"qty={qty} cost={cost}",
