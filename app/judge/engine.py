@@ -19,6 +19,7 @@ from app.models.stock_movement import StockMovement, MovementReason, CONSUMPTION
 from app.models.judge_baseline import JudgeBaseline
 from app.models.judge_alert import JudgeAlert, AlertStatus, AlertSeverity
 from app.models.audit_log import AuditLog
+from app.services.judge_alerts import fire_alert_if_absent
 
 
 def _get_sales_revenue(period_start: datetime, period_end: datetime) -> Decimal | None:
@@ -61,17 +62,21 @@ def _get_spoilage(item_id: str, period_start: datetime, period_end: datetime) ->
 
 def _fire_alert(item_id: str | None, alert_type: str, severity: AlertSeverity,
                 description: str, period_start: datetime, period_end: datetime):
-    """Append a new JudgeAlert row. Caller commits."""
-    alert = JudgeAlert(
-        item_id=item_id,
+    """
+    Idempotent alert creation — skips if an OPEN alert of this type for this
+    item already exists for this period. Returns (alert, created) tuple.
+    """
+    # Use item name from description as the dedup key (item name is always present)
+    description_key = description.split(":")[0]  # e.g. "Watch Beer" from "Watch Beer: spoilage..."
+    alert, created = fire_alert_if_absent(
         alert_type=alert_type,
+        description_key=description_key,
+        item_id=item_id,
         severity=severity.value,
         description=description,
         period_start=period_start,
         period_end=period_end,
-        status=AlertStatus.OPEN.value,
     )
-    db.session.add(alert)
     return alert
 
 

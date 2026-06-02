@@ -110,6 +110,7 @@ def flag_incomplete():
     """Flag IN_PROGRESS events that are past their planned end time."""
     from app.models.event import Event, EventStatus
     from app.models.judge_alert import JudgeAlert, AlertSeverity, AlertStatus
+    from app.services.judge_alerts import fire_alert_if_absent
 
     now = datetime.now(timezone.utc)
     now_naive = now.replace(tzinfo=None)
@@ -122,9 +123,10 @@ def flag_incomplete():
         if end and end.tzinfo:
             end = end.replace(tzinfo=None)
         if end and end < now_naive:
-            alert = JudgeAlert(
-                item_id=None,
+            _, created = fire_alert_if_absent(
                 alert_type="EVENT_NOT_CLOSED",
+                description_key=ev.id,
+                item_id=None,
                 severity=AlertSeverity.MEDIUM.value,
                 description=(
                     f"Event '{ev.title}' (id={ev.id}) is still IN_PROGRESS "
@@ -133,9 +135,8 @@ def flag_incomplete():
                 ),
                 period_start=now,
                 period_end=now,
-                status=AlertStatus.OPEN.value,
             )
-            db.session.add(alert)
-            flagged += 1
+            if created:
+                flagged += 1
     db.session.commit()
     click.echo(f"Flagged {flagged} incomplete event(s).")

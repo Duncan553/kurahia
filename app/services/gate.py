@@ -20,6 +20,7 @@ from app.models.gate_headcount import GateHeadcount
 from app.models.tab import Tab, TabType, TabStatus
 from app.models.payment import Payment, PaymentMethod
 from app.models.judge_alert import JudgeAlert, AlertSeverity, AlertStatus
+from app.services.judge_alerts import fire_alert_if_absent
 
 ENTRY_FEE = Decimal("3000")
 
@@ -250,9 +251,10 @@ def check_gate_signals(date_str: str) -> int:
 
     # Signal 1 — revenue mismatch
     if recon["mismatch"]:
-        alert = JudgeAlert(
-            item_id=None,
+        _, created = fire_alert_if_absent(
             alert_type="GATE_REVENUE_MISMATCH",
+            description_key=f"Gate revenue mismatch on {date_str}",
+            item_id=None,
             severity=AlertSeverity.HIGH.value,
             description=(
                 f"Gate revenue mismatch on {date_str}: "
@@ -261,16 +263,16 @@ def check_gate_signals(date_str: str) -> int:
             ),
             period_start=now,
             period_end=now,
-            status=AlertStatus.OPEN.value,
         )
-        db.session.add(alert)
-        alerts_fired += 1
+        if created:
+            alerts_fired += 1
 
     # Signal 1b — headcount mismatch
     if recon["headcount_mismatch"]:
-        alert = JudgeAlert(
-            item_id=None,
+        _, created = fire_alert_if_absent(
             alert_type="GATE_HEADCOUNT_MISMATCH",
+            description_key=f"Headcount mismatch on {date_str}",
+            item_id=None,
             severity=AlertSeverity.HIGH.value,
             description=(
                 f"Headcount mismatch on {date_str}: "
@@ -280,10 +282,9 @@ def check_gate_signals(date_str: str) -> int:
             ),
             period_start=now,
             period_end=now,
-            status=AlertStatus.OPEN.value,
         )
-        db.session.add(alert)
-        alerts_fired += 1
+        if created:
+            alerts_fired += 1
 
     # Signal 2 — per-staff forfeit rate anomaly
     bands = db.session.query(Wristband).filter_by(issue_date=date_str).all()
@@ -315,9 +316,10 @@ def check_gate_signals(date_str: str) -> int:
             from app.models.user import User
             staff_user = db.session.get(User, staff_id)
             name = staff_user.username if staff_user else staff_id
-            alert = JudgeAlert(
-                item_id=None,
+            _, created = fire_alert_if_absent(
                 alert_type="GATE_FORFEIT_ANOMALY",
+                description_key=f"Gate staff {name}",
+                item_id=None,
                 severity=AlertSeverity.MEDIUM.value,
                 description=(
                     f"Gate staff {name} has an unusually high band forfeit rate on {date_str}: "
@@ -326,10 +328,9 @@ def check_gate_signals(date_str: str) -> int:
                 ),
                 period_start=now,
                 period_end=now,
-                status=AlertStatus.OPEN.value,
             )
-            db.session.add(alert)
-            alerts_fired += 1
+            if created:
+                alerts_fired += 1
 
     db.session.flush()
     return alerts_fired

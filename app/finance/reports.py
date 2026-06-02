@@ -19,6 +19,7 @@ from app.models.cash_reconciliation import CashReconciliation, ReconciliationSta
 from app.models.period_close import PeriodClose, PeriodCloseStatus
 from app.models.judge_alert import JudgeAlert, AlertSeverity, AlertStatus
 from app.models.audit_log import AuditLog
+from app.services.judge_alerts import fire_alert_if_absent
 from app.services.finance import (
     parse_date_bounds, parse_month_bounds,
     get_period_revenue_by_method, get_period_cash_reconciled_total,
@@ -241,11 +242,12 @@ def close_period():
         details=f"safe={safe_count} expected={expected} diff={difference} status={status}",
     )
 
-    # Fire alert if safe count doesn't match
+    # Fire alert if safe count doesn't match (idempotent: skip if OPEN alert for this date exists)
     if status != PeriodCloseStatus.BALANCED.value:
-        alert = JudgeAlert(
-            item_id=None,
+        fire_alert_if_absent(
             alert_type="SAFE_COUNT_MISMATCH",
+            description_key=f"Period {date_str}",
+            item_id=None,
             severity=AlertSeverity.HIGH.value if status == PeriodCloseStatus.SHORT.value
                      else AlertSeverity.MEDIUM.value,
             description=(
@@ -254,9 +256,7 @@ def close_period():
             ),
             period_start=period_start,
             period_end=period_end,
-            status=AlertStatus.OPEN.value,
         )
-        db.session.add(alert)
 
     db.session.commit()
 

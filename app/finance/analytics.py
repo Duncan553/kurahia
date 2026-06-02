@@ -15,6 +15,7 @@ from app.models.user import User
 from app.models.judge_alert import JudgeAlert, AlertSeverity, AlertStatus
 from app.models.audit_log import AuditLog
 from app.services.finance import get_void_rates
+from app.services.judge_alerts import fire_alert_if_absent
 
 analytics_bp = Blueprint("finance_analytics", __name__, url_prefix="/finance")
 
@@ -49,29 +50,22 @@ def void_analytics():
 
     rates = get_void_rates(period_start, period_end)
 
-    # Fire alerts for newly flagged high-void staff (avoid duplicate storms — simple check)
+    # Fire alerts for newly flagged high-void staff (idempotent via shared helper)
     for row in rates:
         if row["flagged"]:
-            existing = db.session.query(JudgeAlert).filter(
-                JudgeAlert.alert_type == "VOID_ABUSE",
-                JudgeAlert.description.contains(row["staff_name"]),
-                JudgeAlert.status == AlertStatus.OPEN.value,
-            ).first()
-            if not existing:
-                alert = JudgeAlert(
-                    item_id=None,
-                    alert_type="VOID_ABUSE",
-                    severity=AlertSeverity.MEDIUM.value,
-                    description=(
-                        f"{row['staff_name']} has a void rate of {row['void_rate_pct']}% "
-                        f"vs average {row['avg_rate_pct']}% "
-                        f"({row['void_count']} voids out of {row['total_items']} items)."
-                    ),
-                    period_start=period_start,
-                    period_end=period_end,
-                    status=AlertStatus.OPEN.value,
-                )
-                db.session.add(alert)
+            fire_alert_if_absent(
+                alert_type="VOID_ABUSE",
+                description_key=row["staff_name"],
+                item_id=None,
+                severity=AlertSeverity.MEDIUM.value,
+                description=(
+                    f"{row['staff_name']} has a void rate of {row['void_rate_pct']}% "
+                    f"vs average {row['avg_rate_pct']}% "
+                    f"({row['void_count']} voids out of {row['total_items']} items)."
+                ),
+                period_start=period_start,
+                period_end=period_end,
+            )
 
     if any(r["flagged"] for r in rates):
         db.session.commit()

@@ -21,6 +21,7 @@ from app.models.payment_reconciliation import (
 from app.models.judge_alert import JudgeAlert, AlertSeverity, AlertStatus
 from app.models.audit_log import AuditLog
 from app.services.finance import parse_date_bounds
+from app.services.judge_alerts import fire_alert_if_absent
 
 mpesa_bp = Blueprint("finance_mpesa", __name__, url_prefix="/finance")
 
@@ -149,18 +150,18 @@ def mpesa_reconcile():
         details=f"matched={len(results)-flagged_count} flagged={flagged_count}",
     )
 
-    # Fire owner alert for each flagged payment
+    # Fire owner alert for flagged payments (idempotent: skip if OPEN alert already exists)
     if flagged_count > 0:
         flagged_pmts = [r["payment_id"] for r in results if r["status"] == PaymentReconciliationStatus.FLAGGED.value]
-        alert = JudgeAlert(
-            item_id=None,
+        alert, _ = fire_alert_if_absent(
             alert_type="MPESA_FLAGGED",
+            description_key="flagged as unverified",
+            item_id=None,
             severity=AlertSeverity.HIGH.value,
             description=(
                 f"{flagged_count} M-Pesa/card payment(s) flagged as unverified: "
                 f"{', '.join(flagged_pmts[:5])}{'...' if flagged_count > 5 else ''}."
             ),
-            status=AlertStatus.OPEN.value,
         )
         db.session.add(alert)
         db.session.commit()

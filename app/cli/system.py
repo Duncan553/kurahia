@@ -90,36 +90,29 @@ def check_alerts():
     from app.models.conduct_signature import ConductSignature
     from app.models.employee_profile import EmployeeProfile
     from app.services.stock import get_current_stock
+    from app.services.judge_alerts import fire_alert_if_absent
     from decimal import Decimal
     from datetime import timedelta
 
     created = 0
     now = datetime.now(timezone.utc)
 
-    def _open_exists(alert_type: str, description_contains: str) -> bool:
-        return db.session.query(JudgeAlert).filter(
-            JudgeAlert.alert_type == alert_type,
-            JudgeAlert.status == AlertStatus.OPEN.value,
-            JudgeAlert.description.like(f"%{description_contains}%"),
-        ).first() is not None
-
-    def _fire(alert_type, severity, description):
-        a = JudgeAlert(
-            item_id=None, alert_type=alert_type, severity=severity.value,
+    def _fire(alert_type, description_key, severity, description):
+        _, fired = fire_alert_if_absent(
+            alert_type=alert_type,
+            description_key=description_key,
+            item_id=None, severity=severity.value,
             description=description, period_start=now, period_end=now,
-            status=AlertStatus.OPEN.value,
         )
-        db.session.add(a)
-        return 1
+        return 1 if fired else 0
 
     # 1. Low stock items
     for item in db.session.query(InventoryItem).filter_by(is_active=True).all():
         stock = get_current_stock(item.id)
         if stock <= Decimal(str(item.reorder_level)):
-            if not _open_exists("LOW_STOCK", item.name):
-                created += _fire("LOW_STOCK", AlertSeverity.MEDIUM,
-                    f"{item.name}: current stock {stock}{item.unit} at or below "
-                    f"reorder level ({item.reorder_level}{item.unit}). Reorder now.")
+            created += _fire("LOW_STOCK", item.name, AlertSeverity.MEDIUM,
+                f"{item.name}: current stock {stock}{item.unit} at or below "
+                f"reorder level ({item.reorder_level}{item.unit}). Reorder now.")
 
     # 2. Water-activity bookings tomorrow without waivers
     tomorrow_start = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
@@ -135,8 +128,8 @@ def check_alerts():
                 booking_id=b.id, activity_type=WaiverActivityType.WATER_ACTIVITY.value,
                 is_active=True,
             ).first()
-            if not has_w and not _open_exists("WAIVER_MISSING", b.guest_name):
-                created += _fire("WAIVER_MISSING", AlertSeverity.HIGH,
+            if not has_w:
+                created += _fire("WAIVER_MISSING", b.guest_name, AlertSeverity.HIGH,
                     f"{b.guest_name} has a water-activity booking tomorrow "
                     f"({b.resource.name}) but no signed waiver. Collect waiver before the session.")
 
@@ -147,8 +140,8 @@ def check_alerts():
         signed_ids = {s.employee_id for s in db.session.query(ConductSignature).filter_by(
             conduct_rule_id=rule.id).all()}
         unsigned_count = sum(1 for p in all_profiles if p.id not in signed_ids)
-        if unsigned_count > 0 and not _open_exists("CONDUCT_UNSIGNED", rule.rule_key):
-            created += _fire("CONDUCT_UNSIGNED", AlertSeverity.LOW,
+        if unsigned_count > 0:
+            created += _fire("CONDUCT_UNSIGNED", rule.rule_key, AlertSeverity.LOW,
                 f"{unsigned_count} employee(s) have not signed the '{rule.title}' "
                 f"conduct rule (v{rule.version}). Follow up on compliance.")
 
@@ -157,8 +150,8 @@ def check_alerts():
         unmatched = db.session.query(PaymentReconciliation).filter_by(
             status=PaymentReconciliationStatus.UNMATCHED.value
         ).count()
-        if unmatched > 3 and not _open_exists("MPESA_UNMATCHED", "M-Pesa"):
-            created += _fire("MPESA_UNMATCHED", AlertSeverity.MEDIUM,
+        if unmatched > 3:
+            created += _fire("MPESA_UNMATCHED", "M-Pesa", AlertSeverity.MEDIUM,
                 f"{unmatched} M-Pesa payments are unmatched. "
                 "Review the M-Pesa reconciliation report.")
     except Exception:

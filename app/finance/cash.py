@@ -19,6 +19,7 @@ from app.models.cash_reconciliation import CashReconciliation, ReconciliationSta
 from app.models.judge_alert import JudgeAlert, AlertSeverity, AlertStatus
 from app.models.audit_log import AuditLog
 from app.services.finance import get_staff_pending_cash, count_staff_shortfalls
+from app.services.judge_alerts import fire_alert_if_absent
 
 cash_bp = Blueprint("finance_cash", __name__, url_prefix="/finance")
 
@@ -134,13 +135,14 @@ def reconcile_cash():
         details=f"expected={expected} actual={actual} diff={difference} status={status}",
     )
 
-    # Repeated shortfalls → owner alert
+    # Repeated shortfalls → owner alert (idempotent: skip if OPEN alert for this staff exists)
     if status == ReconciliationStatus.SHORT.value:
         n_shorts = count_staff_shortfalls(staff_id, last_n=SHORTFALL_LIMIT)
         if n_shorts >= SHORTFALL_LIMIT:
-            alert = JudgeAlert(
-                item_id=None,
+            fire_alert_if_absent(
                 alert_type="CASH_SHORTFALL_PATTERN",
+                description_key=staff.username,
+                item_id=None,
                 severity=AlertSeverity.HIGH.value,
                 description=(
                     f"{staff.username} has {n_shorts} consecutive cash shortfalls. "
@@ -148,9 +150,7 @@ def reconcile_cash():
                 ),
                 period_start=recon.period_start_utc,
                 period_end=recon.period_end_utc,
-                status=AlertStatus.OPEN.value,
             )
-            db.session.add(alert)
 
     db.session.commit()
 
