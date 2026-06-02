@@ -93,7 +93,7 @@ def create_shift():
         idempotency_key=idem_key,
     )
     db.session.add(shift)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.shift.create", target=employee_id,
                  details=f"{start.isoformat()}–{end.isoformat()}")
     db.session.commit()
@@ -162,7 +162,7 @@ def edit_shift(shift_id):
     shift.scheduled_end_utc   = new_end
     if "role_on_shift" in data:
         shift.role_on_shift = data["role_on_shift"]
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.shift.edit", target=shift_id)
     db.session.commit()
     return jsonify({"id": shift.id, "status": shift.status}), 200
@@ -180,7 +180,7 @@ def cancel_shift(shift_id):
     if shift.status == ShiftStatus.CANCELLED.value:
         return jsonify({"error": "Shift is already cancelled."}), 400
     shift.status = ShiftStatus.CANCELLED.value
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.shift.cancel", target=shift_id)
     db.session.commit()
     return jsonify({"id": shift.id, "status": shift.status}), 200
