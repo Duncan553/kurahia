@@ -75,7 +75,7 @@ def issue_band_route():
         idem_key=idem_key,
         notes=data.get("notes"),
     )
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="gate.issue_band",
                  details=f"band={band.band_number} date={band.issue_date}")
     db.session.commit()
@@ -98,7 +98,7 @@ def deactivate_band(band_number):
     close_band(band, actor.id, WristbandStatus.DEACTIVATED.value,
                reason=request.get_json(silent=True, force=True) and
                (request.get_json() or {}).get("notes"))
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="gate.deactivate_band",
                  details=f"band={band_number}")
     db.session.commit()
@@ -175,7 +175,7 @@ def record_headcount():
             recorded_by_id=actor.id,
         )
         db.session.add(hc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="gate.headcount",
                  details=f"date={date_str} counted={counted}")
     db.session.commit()
@@ -198,7 +198,7 @@ def forfeit_day_route():
 
     # Run judge signals after forfeit so forfeit rates are final
     alerts = check_gate_signals(date_str)
-    db.session.commit()
+    db.session.flush()
 
     AuditLog.log(actor=actor.username, action="gate.forfeit_day",
                  details=f"date={date_str} forfeited={count} unused={total_unused}")
