@@ -165,7 +165,7 @@ def create_event():
         idempotency_key=idem,
     )
     db.session.add(event)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="event.create", target=event.id,
                  details=title)
     db.session.commit()
@@ -190,7 +190,7 @@ def edit_event(event_id):
     if "notes" in data:          event.notes = data["notes"]
     if "expected_guests" in data: event.expected_guests = int(data["expected_guests"])
     event.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="event.edit", target=event_id)
     db.session.commit()
     return jsonify(_event_dict(event)), 200
@@ -208,7 +208,7 @@ def _lifecycle_transition(event_id, new_status, actor, post_hook=None):
     count = 0
     if post_hook:
         count = post_hook(event)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action=f"event.{new_status.lower()}", target=event_id)
     db.session.commit()
     resp = _event_dict(event)
@@ -268,7 +268,7 @@ def cancel_event(event_id):
     event.status = EventStatus.CANCELLED.value
     event.updated_at_utc = datetime.now(timezone.utc)
     flipped = cancel_event_notifications(event_id)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="event.cancel", target=event_id)
     db.session.commit()
     return jsonify({**_event_dict(event), "notifications_cancelled": flipped}), 200
@@ -360,7 +360,7 @@ def assign_employee(event_id):
     if event.status == EventStatus.CONFIRMED.value:
         notif_count = schedule_event_alerts(event, assignment)
 
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="event.assign",
                  target=event_id, details=f"emp={employee_id} role={role_txt}")
     db.session.commit()
@@ -466,7 +466,7 @@ def allocate_inventory(event_id):
         idempotency_key=idem, created_by_id=actor.id,
     )
     db.session.add(alloc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="event.inventory.allocate",
                  target=event_id, details=f"item={item_id} qty={qty}")
     db.session.commit()
@@ -488,7 +488,7 @@ def issue_inventory(event_id, alloc_id):
     movement, err = issue_allocation(alloc, actor.id)
     if err:
         return jsonify({"error": err}), 400
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="event.inventory.issue",
                  target=alloc_id, details=f"movement={movement.id}")
     db.session.commit()
@@ -517,7 +517,7 @@ def return_inventory(event_id, alloc_id):
         return jsonify({"error": "return_quantity must be a positive number."}), 400
 
     movement = return_allocation(alloc, return_qty, actor.id)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="event.inventory.return",
                  target=alloc_id, details=f"qty={return_qty}")
     db.session.commit()
