@@ -63,7 +63,7 @@ def create_absence_notice():
         idempotency_key=idem_key,
     )
     db.session.add(notice)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.absence.create",
                  details=f"type={ntype} shift={shift_id}")
     db.session.commit()
