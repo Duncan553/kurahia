@@ -744,7 +744,7 @@ def acknowledge_alert(alert_id):
     alert.status              = AlertStatus.ACKNOWLEDGED.value
     alert.acknowledged_at     = datetime.now(timezone.utc)
     alert.acknowledged_by_id  = actor.id
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="alert.acknowledge", target=alert_id)
     db.session.commit()
     return jsonify({"id": alert.id, "status": alert.status}), 200
@@ -772,7 +772,7 @@ def action_taken(alert_id):
     alert.status             = AlertStatus.RESOLVED.value
     alert.acknowledged_at    = datetime.now(timezone.utc)
     alert.acknowledged_by_id = actor.id
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="alert.action_taken",
                  target=alert_id, details=notes[:200])
     db.session.commit()
