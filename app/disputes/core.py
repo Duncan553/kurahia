@@ -99,7 +99,7 @@ def create_dispute():
         if subj_profile:
             db.session.add(DisputeSubject(dispute_id=dispute.id, employee_id=emp_id))
 
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="dispute.create",
                  target=dispute.id, details=f"category={category}")
     db.session.commit()
@@ -134,7 +134,7 @@ def claim_dispute(dispute_id):
     dispute.status = DisputeStatus.UNDER_REVIEW.value
     dispute.assigned_to_employee_id = profile.id if profile else None
     dispute.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="dispute.claim", target=dispute_id)
     db.session.commit()
     return jsonify(_dispute_dict(dispute)), 200
@@ -159,7 +159,7 @@ def resolve_dispute(dispute_id):
     dispute.status = DisputeStatus.RESOLVED.value
     dispute.resolution_notes = resolution
     dispute.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="dispute.resolve", target=dispute_id)
     db.session.commit()
     return jsonify(_dispute_dict(dispute)), 200
@@ -181,7 +181,7 @@ def dismiss_dispute(dispute_id):
     dispute.status = DisputeStatus.DISMISSED.value
     dispute.resolution_notes = (data.get("reason") or "Dismissed.").strip()
     dispute.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="dispute.dismiss", target=dispute_id)
     db.session.commit()
     return jsonify(_dispute_dict(dispute)), 200
