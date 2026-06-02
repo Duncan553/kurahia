@@ -70,7 +70,7 @@ def create_budget():
         set_by_id=actor.id,
     )
     db.session.add(budget)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="finance.budget.create",
                  target=dept_id, details=f"period={period} amount={amount}")
     db.session.commit()
@@ -100,7 +100,7 @@ def edit_budget(budget_id):
             return jsonify({"error": "Budget amount cannot be negative."}), 400
 
     budget.updated_at_utc = datetime.now(timezone.utc)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="finance.budget.edit", target=budget_id)
     db.session.commit()
     return jsonify({"id": budget.id, "amount": str(budget.amount),
@@ -117,7 +117,7 @@ def disable_budget(budget_id):
     if not budget:
         return jsonify({"error": "Budget not found."}), 404
     budget.is_active = False
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="finance.budget.disable", target=budget_id)
     db.session.commit()
     return jsonify({"id": budget.id, "is_active": False}), 200
@@ -133,7 +133,7 @@ def enable_budget(budget_id):
     if not budget:
         return jsonify({"error": "Budget not found."}), 404
     budget.is_active = True
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="finance.budget.enable", target=budget_id)
     db.session.commit()
     return jsonify({"id": budget.id, "is_active": True}), 200
