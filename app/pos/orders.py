@@ -102,7 +102,6 @@ def create_order():
             )
             db.session.add(order_item)
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="order.create", target=order.id)
     db.session.commit()
 
@@ -142,7 +141,6 @@ def send_order(order_id):
                 oi.status    = OrderItemStatus.SERVED.value
                 oi.served_at = datetime.now(timezone.utc)
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="order.send", target=order.id)
     db.session.commit()
 
@@ -179,7 +177,6 @@ def receive_item(oi_id):
     with db.session.begin_nested():
         oi.status      = OrderItemStatus.RECEIVED.value
         oi.received_at = datetime.now(timezone.utc)
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="order_item.receive", target=oi_id)
     db.session.commit()
     return jsonify({"id": oi.id, "status": oi.status}), 200
@@ -199,7 +196,6 @@ def mark_ready(oi_id):
     with db.session.begin_nested():
         oi.status   = OrderItemStatus.READY.value
         oi.ready_at = datetime.now(timezone.utc)
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="order_item.ready", target=oi_id)
     db.session.commit()
     return jsonify({"id": oi.id, "status": oi.status}), 200
@@ -219,7 +215,6 @@ def serve_item(oi_id):
         oi.served_at = datetime.now(timezone.utc)
         # Auto-complete the order if all items are resolved
         _maybe_complete_order(oi.order)
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="order_item.serve", target=oi_id)
     db.session.commit()
     return jsonify({"id": oi.id, "status": oi.status}), 200
@@ -240,7 +235,6 @@ def cancel_item(oi_id):
         oi.cancelled_at  = datetime.now(timezone.utc)
         oi.cancel_reason = data.get("reason", "")
         _maybe_complete_order(oi.order)
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="order_item.cancel", target=oi_id,
                  details=oi.cancel_reason)
     db.session.commit()
@@ -289,7 +283,6 @@ def send_back_item(oi_id):
             # This avoids FK violation; full link comes when MenuItem↔InventoryItem FK is built
         _maybe_complete_order(oi.order)
 
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="order_item.send_back", target=oi_id)
     db.session.commit()
     return jsonify({"id": oi.id, "status": oi.status, "reason": "sent-back"}), 200
