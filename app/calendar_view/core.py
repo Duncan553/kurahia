@@ -123,7 +123,6 @@ def create_entry():
     db.session.add(entry)
     db.session.flush()
     _schedule_planning_trigger(entry)
-    db.session.commit()
     AuditLog.log(actor=actor.username, action="calendar.create",
                  details=f"{entry_type} {title}")
     db.session.commit()
