@@ -59,7 +59,7 @@ def create_leave_request():
         idempotency_key=idem_key,
     )
     db.session.add(lr)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.leave.create",
                  details=f"{ltype} {start_date}–{end_date}")
     db.session.commit()
@@ -89,7 +89,7 @@ def approve_leave(lr_id):
     lr.reviewed_by_id  = actor.id
     lr.reviewed_at_utc = datetime.now(timezone.utc)
     lr.notes           = data.get("notes")
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.leave.approve", target=lr_id)
     db.session.commit()
     return jsonify({"id": lr.id, "status": lr.status}), 200
@@ -117,7 +117,7 @@ def reject_leave(lr_id):
     lr.reviewed_by_id  = actor.id
     lr.reviewed_at_utc = datetime.now(timezone.utc)
     lr.notes           = data.get("notes")
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.leave.reject", target=lr_id)
     db.session.commit()
     return jsonify({"id": lr.id, "status": lr.status}), 200
@@ -141,7 +141,7 @@ def cancel_leave(lr_id):
         return jsonify({"error": f"This leave request is already {lr.status}."}), 400
 
     lr.status = LeaveStatus.CANCELLED.value
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.leave.cancel", target=lr_id)
     db.session.commit()
     return jsonify({"id": lr.id, "status": lr.status}), 200
