@@ -75,7 +75,7 @@ def create_or_update_rule():
         created_by_id=actor.id,
     )
     db.session.add(rule)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="conduct.rule.publish",
                  details=f"{rule_key} v{new_version}")
     db.session.commit()
@@ -147,7 +147,7 @@ def sign_rule():
         idempotency_key=idem,
     )
     db.session.add(sig)
-    db.session.commit()
+    db.session.flush()
     AuditLog.log(actor=actor.username, action="conduct.sign",
                  details=f"rule={rule_id} v{rule.version}")
     db.session.commit()
