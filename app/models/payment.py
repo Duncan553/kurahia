@@ -15,9 +15,10 @@ from app.extensions import db
 
 
 class PaymentMethod(str, enum.Enum):
-    CASH  = "CASH"
-    CARD  = "CARD"
-    MPESA = "MPESA"
+    CASH          = "CASH"
+    CARD          = "CARD"
+    MPESA         = "MPESA"
+    BANK_TRANSFER = "BANK_TRANSFER"
 
 
 class Payment(db.Model):
