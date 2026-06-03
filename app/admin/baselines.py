@@ -123,6 +123,7 @@ def disable_baseline(baseline_id):
         return jsonify({"error": "Baseline not found."}), 404
     with db.session.begin_nested():
         b.is_active = False
+    AuditLog.log(actor=actor.username, action="admin.baseline.disable", target=baseline_id)
     db.session.commit()
     return jsonify({"id": b.id, "is_active": False}), 200
 
@@ -138,5 +139,6 @@ def enable_baseline(baseline_id):
         return jsonify({"error": "Baseline not found."}), 404
     with db.session.begin_nested():
         b.is_active = True
+    AuditLog.log(actor=actor.username, action="admin.baseline.enable", target=baseline_id)
     db.session.commit()
     return jsonify({"id": b.id, "is_active": True}), 200
