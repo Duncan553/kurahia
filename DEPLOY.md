@@ -22,30 +22,88 @@ flask conduct seed-rules
 flask calendar seed-kenya-holidays
 ```
 
-## Step 3 — TLS (required, even on LAN)
+## Step 3 — TLS / HTTPS on the LAN
+
+**Why self-signed is the right call here:**
+The system is LAN-only with no internet exposure. There is no man-in-the-middle threat from outside
+the building. A malicious device _on_ the LAN is a much larger physical security problem that TLS
+alone cannot solve. Self-signed certificates give encryption in transit at zero cost and zero
+renewal overhead — the correct trade-off for a private hotel network.
+
+### Generate the certificate
+
 ```bash
-# Self-signed for LAN:
-openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
-# Or use Let's Encrypt for internet-facing deployments (certbot)
+sudo mkdir -p /etc/ssl/kurahia
+sudo openssl req -x509 -newkey rsa:4096 \
+    -keyout /etc/ssl/kurahia/key.pem \
+    -out    /etc/ssl/kurahia/cert.pem \
+    -days 3650 -nodes \
+    -subj "/CN=kurahia-server.local"
 ```
 
-Nginx config:
+10-year expiry (`-days 3650`) is intentional — there is no certificate authority involved, so
+there is no reason to renew yearly. Regenerate only if the server hostname changes or the key
+is compromised.
+
+### File permissions
+
+```bash
+sudo chmod 644 /etc/ssl/kurahia/cert.pem   # world-readable is fine
+sudo chmod 600 /etc/ssl/kurahia/key.pem    # private key: nginx user only
+sudo chown root:www-data /etc/ssl/kurahia/key.pem
+```
+
+### First-connect warning — brief all staff before go-live
+
+On the first connection from any tablet or phone, the browser will show
+**"Your connection is not private"** (Chrome) or **"Warning: Potential Security Risk"** (Firefox).
+This is expected — the certificate is self-signed, not issued by a public authority.
+Staff tap **Advanced → Proceed to kurahia-server.local**. The warning never appears again on
+that device. Brief every staff member on day one so this doesn't cause panic.
+
+### Nginx config (`/etc/nginx/sites-available/kurahia`)
+
 ```nginx
 server {
     listen 443 ssl;
-    ssl_certificate     /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
+    server_name kurahia-server.local;
+
+    ssl_certificate     /etc/ssl/kurahia/cert.pem;
+    ssl_certificate_key /etc/ssl/kurahia/key.pem;
+
+    # Allow receipt photos and profile images up to 10 MB
+    client_max_body_size 10M;
+
     location / {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
+        proxy_pass         http://localhost:5000;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
     }
 }
+
 server {
     listen 80;
+    server_name kurahia-server.local;
     return 301 https://$host$request_uri;
 }
 ```
+
+Enable and reload:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/kurahia /etc/nginx/sites-enabled/
+sudo nginx -t            # confirm config is valid before reloading
+sudo systemctl reload nginx
+```
+
+### Tailscale + TLS
+
+For owner remote access via Tailscale, TLS is not strictly required — Tailscale provides
+end-to-end encryption over its own WireGuard tunnel. However, keeping HTTPS on means the owner
+sees the same URL (`https://kurahia-server.local`) whether on the hotel LAN or connecting
+remotely via Tailscale. Consistent URL, no special case for remote access.
 
 ## Step 4 — Run with Waitress (production WSGI)
 ```bash
