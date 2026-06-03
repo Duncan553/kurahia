@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 .env
+.env.production
 instance/
 *.db
 *.sqlite3

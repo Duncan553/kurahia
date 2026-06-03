@@ -98,3 +98,5 @@ When ready:
 4. Seed `NotificationChannelConfig` rows with `is_active=True` for each channel
 
 No other code changes needed — the pipelines are already wired.
+
+> **Note:** M-Pesa, WhatsApp, and SMS are stub implementations that return `UNCONFIGURED`. Activation requires writing real API code, not just adding credentials — see `app/finance/mpesa.py` and `app/services/notifications/`. Variable names are documented in `.env.production.example` as a planning reference only.
