@@ -102,6 +102,8 @@ def create_event_type():
         return jsonify({"error": f"Event type '{name}' already exists."}), 409
     et = EventType(name=name)
     db.session.add(et)
+    db.session.flush()
+    AuditLog.log(actor=actor.username, action="event_type.create", target=et.id)
     db.session.commit()
     return jsonify({"id": et.id, "name": et.name}), 201
 
@@ -116,6 +118,8 @@ def disable_event_type(type_id):
     if not et:
         return jsonify({"error": "Event type not found."}), 404
     et.is_active = False
+    db.session.flush()
+    AuditLog.log(actor=actor.username, action="event_type.disable", target=type_id)
     db.session.commit()
     return jsonify({"id": et.id, "is_active": False}), 200
 
@@ -389,6 +393,8 @@ def acknowledge_assignment(event_id, assignment_id):
         return jsonify({"error": err}), 400
     assignment.status = AssignmentStatus.ACKNOWLEDGED.value
     assignment.updated_at_utc = datetime.now(timezone.utc)
+    db.session.flush()
+    AuditLog.log(actor=actor.username, action="event_assignment.acknowledge", target=assignment_id)
     db.session.commit()
     return jsonify(_assignment_dict(assignment)), 200
 
@@ -408,6 +414,8 @@ def cancel_assignment(event_id, assignment_id):
     assignment.status = AssignmentStatus.CANCELLED.value
     assignment.updated_at_utc = datetime.now(timezone.utc)
     cancel_assignment_notifications(event_id, assignment_id)
+    db.session.flush()
+    AuditLog.log(actor=actor.username, action="event_assignment.cancel", target=assignment_id)
     db.session.commit()
     return jsonify(_assignment_dict(assignment)), 200
 
@@ -538,6 +546,8 @@ def consume_inventory(event_id, alloc_id):
         return jsonify({"error": err}), 400
     alloc.status = AllocationStatus.CONSUMED.value
     alloc.updated_at_utc = datetime.now(timezone.utc)
+    db.session.flush()
+    AuditLog.log(actor=actor.username, action="event_allocation.consume", target=alloc_id)
     db.session.commit()
     return jsonify(_alloc_dict(alloc)), 200
 
