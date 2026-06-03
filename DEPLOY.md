@@ -55,30 +55,46 @@ waitress-serve --host 127.0.0.1 --port 5000 "run:app"
 ```
 
 ## Step 5 — Scheduled jobs (cron)
+
+All times in 24h **Africa/Nairobi**. Install path: `/opt/kurahia`.
+Failures write to stderr → captured by system cron log (`/var/log/syslog`).
+No silent failures: each command exits non-zero on error, which cron mails to the system user.
+
 ```cron
-# Deliver due notifications — every 5 minutes
-*/5 * * * * cd /app && flask events deliver-due
+# Kurahia cron entries — install on hotel server
+# All times in 24h Africa/Nairobi.
 
-# Daily judge analysis — 2 AM
-0 2 * * * cd /app && flask judge run-daily
+# 22:30 — EOD gate sweep: forfeit ACTIVE bands, run gate judge signals.
+# Fail: bands stay ACTIVE overnight; gate revenue reconciliation will show mismatch next morning.
+30 22 * * *   cd /opt/kurahia && /opt/kurahia/.venv/bin/flask gate close-day
 
-# Weekly ratio analysis — Sunday 3 AM
-0 3 * * 0 cd /app && flask judge run-weekly
+# 23:00 — Mark past-check-in bookings as NO_SHOW.
+# Fail: no-shows stay as HELD; owner won't see them in no-show report until next run.
+0 23 * * *    cd /opt/kurahia && /opt/kurahia/.venv/bin/flask bookings flag-no-shows
 
-# EOD gate close — 11 PM
-0 23 * * * cd /app && flask gate close-day
+# 00:00 — Dispatch all QUEUED notifications past their scheduled send time.
+# Fail: staff notifications delayed until next run; idempotent so re-running is safe.
+0 0 * * *     cd /opt/kurahia && /opt/kurahia/.venv/bin/flask events deliver-due
 
-# Flag incomplete events — midnight
-0 0 * * * cd /app && flask events flag-incomplete
+# 00:05 — Spoilage spike + watch-list check; writes JudgeAlerts to dashboard.
+# Fail: no alerts generated for that day; silent theft detection has a gap.
+5 0 * * *     cd /opt/kurahia && /opt/kurahia/.venv/bin/flask judge run-daily
 
-# Sweep actionable alerts — every hour
-0 * * * * cd /app && flask system check-alerts
+# 00:10 — Flag IN_PROGRESS events that ran past their end time.
+# Fail: stale events stay IN_PROGRESS; planner view shows them as active incorrectly.
+10 0 * * *    cd /opt/kurahia && /opt/kurahia/.venv/bin/flask events flag-incomplete
 
-# Audit chain verification — daily 4 AM
-0 4 * * * cd /app && flask audit verify-chain
+# 03:00 — Backup: SQLite copy or pg_dump to /opt/kurahia/backups/.
+# Fail: no backup written for that day; previous backup still intact.
+0 3 * * *     cd /opt/kurahia && /opt/kurahia/.venv/bin/flask system backup
+```
 
-# Backups — daily 3:30 AM
-30 3 * * * cd /app && flask system backup --dest /backups/kurahia
+### How to install these cron entries
+
+```bash
+sudo -u kurahia crontab -e   # opens editor; paste the entries above
+sudo -u kurahia crontab -l   # verify they're saved
+sudo systemctl status cron   # confirm cron daemon is running
 ```
 
 ## Step 6 — Security hardening
