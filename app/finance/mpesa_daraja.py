@@ -12,8 +12,13 @@ import os
 import re
 import time
 from datetime import datetime
+from decimal import Decimal
 import httpx
 from typing import Tuple, Optional
+from app.extensions import db
+from app.models.payment import Payment, PaymentMethod
+from app.models.payment_reconciliation import PaymentReconciliation, PaymentReconciliationStatus
+from app.models.audit_log import AuditLog
 
 # ── Env var contract ────────────────────────────────────────────
 REQUIRED_ENV_VARS = (
@@ -73,6 +78,21 @@ def _clear_token_cache():
     """Test helper — reset cache between tests."""
     _token_cache["token"] = None
     _token_cache["expires_at"] = 0
+
+# ── Pending STK Push map (in-memory, transient) ──────────────────
+# Maps checkout_request_id → {"tab_id": ...}
+# Lives only as long as the process. If the server restarts between push and
+# callback, the payment lands in Pending Payments for manual tab assignment —
+# a documented fallback (PAYMENTS_DESIGN.md §3.6). No migration needed.
+_pending_stk: dict = {}
+
+def _register_pending_stk(checkout_request_id: str, tab_id) -> None:
+    """Called by initiate_stk_push on success so the callback can link to the right tab."""
+    _pending_stk[checkout_request_id] = {"tab_id": tab_id}
+
+def _clear_pending_stk() -> None:
+    """Test helper — reset pending STK map between tests."""
+    _pending_stk.clear()
 
 def is_configured() -> bool:
     """Return True if all required env vars are set."""
@@ -171,8 +191,10 @@ def initiate_stk_push(amount, phone_number, tab_id, payment_id):
         data = resp.json()
 
         if data.get("ResponseCode") == "0":
+            checkout_id = data.get("CheckoutRequestID")
+            _register_pending_stk(checkout_id, tab_id)
             return True, {
-                "checkout_request_id": data.get("CheckoutRequestID"),
+                "checkout_request_id": checkout_id,
                 "merchant_request_id": data.get("MerchantRequestID"),
                 "customer_message": data.get("CustomerMessage"),
             }
@@ -185,14 +207,146 @@ def initiate_stk_push(amount, phone_number, tab_id, payment_id):
     except Exception as e:
         return False, f"Daraja STK Push failed: {type(e).__name__}: {e}"
 
-def handle_c2b_callback(payload):
-    """Process incoming C2B notification from Safaricom."""
-    if not is_configured():
-        return False, "M-Pesa Daraja integration not configured."
-    raise NotImplementedError("Step 1.4 will implement this.")
+def handle_c2b_callback(payload: dict) -> Tuple[bool, any]:
+    """
+    Process C2B callback from Safaricom (customer paid till directly).
 
-def handle_stk_callback(payload):
-    """Process STK Push completion callback."""
-    if not is_configured():
-        return False, "M-Pesa Daraja integration not configured."
-    raise NotImplementedError("Step 1.4 will implement this.")
+    Returns (True, payment_id) on success or idempotent duplicate.
+    Returns (False, error_message) on bad payload or write failure.
+    """
+    trans_id     = payload.get("TransID")
+    trans_amount = payload.get("TransAmount")
+    msisdn       = payload.get("MSISDN")
+
+    if not trans_id or not trans_amount or not msisdn:
+        return False, "Invalid C2B callback payload: missing TransID, TransAmount, or MSISDN."
+
+    try:
+        amount = Decimal(str(trans_amount))
+    except Exception:
+        return False, f"Invalid transaction amount in C2B callback: {trans_amount}"
+
+    # Idempotency — Safaricom retries; second call returns existing payment silently
+    existing = db.session.query(Payment).filter_by(idempotency_key=trans_id).first()
+    if existing:
+        return True, existing.id
+
+    try:
+        payment = Payment(
+            method=PaymentMethod.MPESA.value,
+            amount=amount,
+            mpesa_code=trans_id,
+            received_by_id=None,   # automated — no human actor
+            idempotency_key=trans_id,
+        )
+        db.session.add(payment)
+        db.session.flush()   # populate payment.id before building recon
+
+        recon = PaymentReconciliation(
+            payment_id=payment.id,
+            method=PaymentMethod.MPESA.value,
+            matched=True,
+            statement_ref=trans_id,
+            status=PaymentReconciliationStatus.MATCHED.value,
+        )
+        db.session.add(recon)
+
+        AuditLog.log(
+            actor="daraja",
+            action="payment.mpesa_c2b",
+            target=trans_id,
+            details=f"amount={amount} msisdn={msisdn}",
+        )
+
+        db.session.commit()
+        return True, payment.id
+    except Exception as e:
+        db.session.rollback()
+        return False, f"C2B callback write failed: {type(e).__name__}: {e}"
+
+
+def handle_stk_callback(payload: dict) -> Tuple[bool, any]:
+    """
+    Process STK Push completion callback from Safaricom.
+
+    Success path: creates Payment + PaymentReconciliation, links to originating tab.
+    Failure path (cancelled/insufficient funds): writes audit log only, no Payment row.
+
+    Returns (True, payment_id) on success.
+    Returns (False, error_message) on failure or bad payload.
+    """
+    try:
+        callback            = payload["Body"]["stkCallback"]
+        result_code         = callback["ResultCode"]
+        checkout_request_id = callback["CheckoutRequestID"]
+    except (KeyError, TypeError):
+        return False, "Invalid STK callback payload: missing Body.stkCallback fields."
+
+    # Failure path — customer cancelled, insufficient funds, timeout, etc.
+    if result_code != 0:
+        result_desc = callback.get("ResultDesc", "STK Push failed.")
+        try:
+            AuditLog.log(
+                actor="daraja",
+                action="payment.stk_failed",
+                target=checkout_request_id,
+                details=f"result_code={result_code} desc={result_desc}",
+            )
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return False, f"STK Push failed: {result_desc}"
+
+    # Success path — extract CallbackMetadata items into a name→value dict
+    try:
+        items   = {i["Name"]: i.get("Value") for i in callback["CallbackMetadata"]["Item"]}
+        receipt = str(items.get("MpesaReceiptNumber", ""))
+        amount  = Decimal(str(items.get("Amount", 0)))
+    except (KeyError, TypeError) as e:
+        return False, f"Could not parse STK callback metadata: {e}"
+
+    if not receipt:
+        return False, "STK callback missing MpesaReceiptNumber."
+
+    # Idempotency — duplicate callback on same receipt number
+    existing = db.session.query(Payment).filter_by(idempotency_key=receipt).first()
+    if existing:
+        return True, existing.id
+
+    # Look up the originating tab from the in-memory pending map
+    tab_id = _pending_stk.get(checkout_request_id, {}).get("tab_id")
+
+    try:
+        payment = Payment(
+            tab_id=tab_id,
+            method=PaymentMethod.MPESA.value,
+            amount=amount,
+            mpesa_code=receipt,
+            received_by_id=None,   # automated — no human actor
+            idempotency_key=receipt,
+        )
+        db.session.add(payment)
+        db.session.flush()
+
+        recon = PaymentReconciliation(
+            payment_id=payment.id,
+            method=PaymentMethod.MPESA.value,
+            matched=True,
+            statement_ref=receipt,
+            status=PaymentReconciliationStatus.MATCHED.value,
+        )
+        db.session.add(recon)
+
+        AuditLog.log(
+            actor="daraja",
+            action="payment.stk_confirmed",
+            target=receipt,
+            details=f"amount={amount} checkout_id={checkout_request_id} tab_id={tab_id}",
+        )
+
+        db.session.commit()
+        _pending_stk.pop(checkout_request_id, None)
+        return True, payment.id
+    except Exception as e:
+        db.session.rollback()
+        return False, f"STK callback write failed: {type(e).__name__}: {e}"

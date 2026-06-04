@@ -32,7 +32,7 @@ class Payment(db.Model):
     card_ref    = db.Column(db.String(50), nullable=True)
     description = db.Column(db.Text, nullable=True)   # e.g. "Deposit transfer from booking X"
 
-    received_by_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    received_by_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
     idempotency_key = db.Column(db.String(128), nullable=False, unique=True)
 
     created_at_utc = db.Column(
