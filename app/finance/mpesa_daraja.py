@@ -15,10 +15,18 @@ from datetime import datetime
 from decimal import Decimal
 import httpx
 from typing import Tuple, Optional
+from flask import Blueprint, request, jsonify, current_app
+from flask_jwt_extended import get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
+from app.models.user import User
 from app.models.payment import Payment, PaymentMethod
 from app.models.payment_reconciliation import PaymentReconciliation, PaymentReconciliationStatus
 from app.models.audit_log import AuditLog
+
+mpesa_daraja_bp = Blueprint("mpesa_daraja", __name__, url_prefix="/finance")
+
+MANAGER_LEVEL = 5
 
 # ── Env var contract ────────────────────────────────────────────
 REQUIRED_ENV_VARS = (
@@ -350,3 +358,67 @@ def handle_stk_callback(payload: dict) -> Tuple[bool, any]:
     except Exception as e:
         db.session.rollback()
         return False, f"STK callback write failed: {type(e).__name__}: {e}"
+
+
+# ── Flask routes ─────────────────────────────────────────────────
+
+@mpesa_daraja_bp.post("/mpesa/charge")
+@require_active_user
+def mpesa_charge():
+    """Cashier-initiated STK Push to customer's phone."""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    if not is_configured():
+        return jsonify({
+            "error": "M-Pesa Daraja integration not configured.",
+            "fallback": "Use manual M-Pesa entry.",
+        }), 503
+
+    data = request.get_json(silent=True) or {}
+    for field in ("amount", "phone_number", "tab_id", "payment_id"):
+        if data.get(field) is None:
+            return jsonify({"error": f"Missing required field: {field}."}), 400
+
+    ok, result = initiate_stk_push(
+        amount=data["amount"],
+        phone_number=data["phone_number"],
+        tab_id=data["tab_id"],
+        payment_id=data["payment_id"],
+    )
+    if not ok:
+        return jsonify({"error": result}), 400
+    return jsonify({
+        "status": "pending",
+        "checkout_request_id": result["checkout_request_id"],
+        "customer_message": result["customer_message"],
+    }), 200
+
+
+@mpesa_daraja_bp.post("/mpesa/callback")
+def mpesa_callback():
+    """
+    Public — Safaricom calls this from the internet (no JWT).
+    Always return 200 so Safaricom doesn't retry endlessly on our bugs.
+    """
+    try:
+        payload = request.get_json(silent=True) or {}
+        if "Body" in payload and "stkCallback" in payload.get("Body", {}):
+            handle_stk_callback(payload)
+        else:
+            handle_c2b_callback(payload)
+    except Exception:
+        current_app.logger.exception("Daraja callback processing failed")
+    return jsonify({"ResultCode": 0, "ResultDesc": "Accepted"}), 200
+
+
+@mpesa_daraja_bp.get("/mpesa/status")
+@require_active_user
+def mpesa_status():
+    """Diagnostic — is the Daraja socket live?"""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+    configured, message = configuration_status()
+    return jsonify({"configured": configured, "message": message}), 200
