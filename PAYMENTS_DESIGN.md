@@ -627,6 +627,60 @@ BANK_SMS_FORWARDER_TOKEN=<a random secret — validates incoming SMS forwards>
 | Wrong reference typed by customer | Auto-match fails. Payment lands unmatched. | Manager sees it in reconciliation screen. One-click manual match. |
 | Bank changes their SMS format | SMS parser stops matching. | All transfers land unmatched. SMS parser needs a regex update. |
 
+### 4.6 Production Hardening TODOs
+
+These are deliberately excluded from the current build. Nothing here blocks activation.
+All of the API-path items must be resolved before real money flows through Layer 3.
+
+**Verify real API endpoints and response fields (required before Layer 3 go-live)**
+
+Three `# TODO` markers remain in `app/finance/bank_transfer.py` — one per provider.
+Each marks an endpoint URL and response field name that was inferred from public docs
+and must be confirmed against the actual production API before go-live:
+
+- `_verify_equity`: endpoint `/v3/account/transaction` and fields `status`, `amount`, `transactionDate`
+  → verify at https://developer.equitybankgroup.com (Jenga v3 docs)
+- `_verify_kcb`: OAuth token endpoint `/oauth/token`, query endpoint `/v1/account/transactions`,
+  fields `status`, `amount`, `transactionDate`
+  → verify at https://developer.kcbgroup.com
+- `_verify_coop`: auth mechanism (Basic auth assumed — may be OAuth), endpoint
+  `/api/1.0/Transactions/Statement`, fields `Successful`, `Amount`, `TransactionDate`
+  → verify at https://developer.co-opbank.co.ke
+
+**IP allowlisting on `/finance/bank/sms-forward`**
+
+If your SMS forwarder app routes through a fixed IP (e.g. a dedicated VPS relay),
+restrict the endpoint to that IP range. Blocks anyone who guesses your webhook URL from
+POSTing fake bank credit notifications. Low priority while the webhook secret is in place —
+both checks together is the right long-term posture.
+
+**Monitoring**
+
+Add structured logging for:
+- SMS forward latency (time between SMS receipt on phone and Payment row written)
+- Parse failure rate (`payment.bank_sms_unrecognized` events per hour) — a spike means
+  a bank changed their SMS format
+- Bank API verification success rate per provider and per day — a drop means the bank
+  API endpoint changed or their sandbox is down
+
+**Alerting: SMS format drift**
+
+If more than 5 consecutive SMS payloads hit `payment.bank_sms_unrecognized` within
+an hour, fire a `JudgeAlert`. This is the fastest signal that a bank changed their
+credit notification SMS format after a core banking upgrade. Without the alert, the
+first sign of the problem is the manager noticing the pending list is full.
+Implementation: count `AuditLog` entries with `action="payment.bank_sms_unrecognized"`
+in a rolling window; fire if threshold exceeded.
+
+**Optional: persist SMS format patterns to the database**
+
+Currently `_BANK_SMS_PATTERNS` is a list of compiled regexes in Python code.
+When a bank changes their SMS format, a code deploy is needed to update the regex.
+A future improvement: move patterns to a DB table (`bank_sms_patterns`) with columns
+`bank_name`, `regex_pattern`, `is_active`. Owner can update patterns via a CLI command
+without a redeploy. Only worth doing if SMS format changes become frequent (more than
+once per year per bank).
+
 ---
 
 ## 5. Card Gateway Socket
