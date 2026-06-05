@@ -11,12 +11,14 @@ from app.extensions import db, limiter
 @pytest.fixture
 def rate_limit_client(app, client):
     """
-    Each test gets a fresh app (function-scoped) with fresh in-memory storage.
-    Reset ensures any setup calls don't pre-fill the counter.
+    Opt into rate limiting for this test (exempt by default in testing).
+    Reset state before and after to ensure clean counts.
     """
+    app.config["TEST_RATELIMIT"] = True
     limiter.reset()
     yield client
     limiter.reset()
+    app.config["TEST_RATELIMIT"] = False
 
 
 def _login(client, username="manager1", password="ManagerPass1!"):
