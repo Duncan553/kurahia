@@ -667,6 +667,14 @@ def card_callback():
     Public — card gateway calls this from the internet (no JWT).
     Always returns 200 so the gateway doesn't retry on our bugs.
     """
+    from app.utils.webhook_validation import validate_webhook_payload
+    ok, reason = validate_webhook_payload(request)
+    if not ok:
+        current_app.logger.warning(
+            "card/callback rejected — ip=%s reason=%s", request.remote_addr, reason
+        )
+        return jsonify({"status": "accepted"}), 200
+
     try:
         payload = request.get_json(silent=True) or {}
         handle_card_ipn(payload)

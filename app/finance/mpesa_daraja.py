@@ -422,6 +422,14 @@ def mpesa_callback():
     Public — Safaricom calls this from the internet (no JWT).
     Always return 200 so Safaricom doesn't retry endlessly on our bugs.
     """
+    from app.utils.webhook_validation import validate_webhook_payload
+    ok, reason = validate_webhook_payload(request)
+    if not ok:
+        current_app.logger.warning(
+            "mpesa/callback rejected — ip=%s reason=%s", request.remote_addr, reason
+        )
+        return jsonify({"ResultCode": 0, "ResultDesc": "Accepted"}), 200
+
     try:
         payload = request.get_json(silent=True) or {}
         if "Body" in payload and "stkCallback" in payload.get("Body", {}):

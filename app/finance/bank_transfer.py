@@ -511,6 +511,14 @@ def bank_sms_forward():
     If BANK_SMS_WEBHOOK_SECRET is set, requires X-Webhook-Secret header to match.
     Always returns 200 so the forwarder app doesn't retry on internal bugs.
     """
+    from app.utils.webhook_validation import validate_webhook_payload
+    ok, reason = validate_webhook_payload(request)
+    if not ok:
+        current_app.logger.warning(
+            "bank/sms-forward rejected — ip=%s reason=%s", request.remote_addr, reason
+        )
+        return jsonify({"status": "accepted"}), 200
+
     expected = os.environ.get("BANK_SMS_WEBHOOK_SECRET")
     if expected and request.headers.get("X-Webhook-Secret") != expected:
         return jsonify({"error": "Unauthorized."}), 401
