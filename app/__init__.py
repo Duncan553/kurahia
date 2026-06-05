@@ -7,8 +7,8 @@ Why a factory? It lets you create multiple app instances with different configs
 Call create_app() once in run.py (or via `flask run`). Extensions are bound here.
 """
 import os
-from flask import Flask, jsonify
-from .extensions import db, jwt, migrate
+from flask import Flask, jsonify, request
+from .extensions import db, jwt, migrate, limiter
 from config import config
 
 
@@ -28,6 +28,7 @@ def create_app(config_name: str = None) -> Flask:
     db.init_app(app)
     jwt.init_app(app)
     migrate.init_app(app, db)
+    limiter.init_app(app)
 
     # Import models here so Flask-Migrate sees them for `flask db migrate`
     with app.app_context():
@@ -157,6 +158,26 @@ def create_app(config_name: str = None) -> Flask:
     @app.get("/health")
     def health():
         return jsonify({"status": "ok"}), 200
+
+    # Rate limit exceeded — log to audit trail and return 429 JSON
+    from flask_limiter.errors import RateLimitExceeded
+    @app.errorhandler(RateLimitExceeded)
+    def handle_rate_limit(e):
+        ip = request.remote_addr or "unknown"
+        try:
+            from app.models.audit_log import AuditLog
+            AuditLog.log(
+                actor="rate_limiter",
+                action="auth.login.rate_limited",
+                target=ip,
+                details=str(e.description),
+            )
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return jsonify({
+            "error": "Too many login attempts. Wait 1 minute before trying again."
+        }), 429
 
     # JWT error handlers — return JSON instead of HTML error pages
     @jwt.expired_token_loader
