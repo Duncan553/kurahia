@@ -267,3 +267,65 @@ def test_ipn_unrecognized_format_no_writes(app):
         method=PaymentMethod.CARD.value
     ).count()
     assert after == before
+
+
+# ── Step 3.2: Flask route tests ───────────────────────────────────
+
+def test_card_initiate_requires_manager_role(client, waiter_token):
+    """Waiter token → 403 on POST /finance/card/initiate."""
+    rv = client.post(
+        "/finance/card/initiate",
+        json={"amount": 500, "tab_id": "tab1", "payment_id": "pay1", "customer_email": "a@b.com"},
+        headers={"Authorization": f"Bearer {waiter_token}"},
+    )
+    assert rv.status_code == 403
+
+
+def test_card_initiate_dormant_returns_503(client, manager_token, monkeypatch):
+    """No CARD_PROVIDER → 503 with fallback message."""
+    monkeypatch.delenv("CARD_PROVIDER", raising=False)
+    monkeypatch.delenv("CARD_API_KEY", raising=False)
+    rv = client.post(
+        "/finance/card/initiate",
+        json={"amount": 500, "tab_id": "tab1", "payment_id": "pay1"},
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 503
+    body = rv.get_json()
+    assert "not configured" in body["error"].lower()
+    assert "fallback" in body
+
+
+def test_card_initiate_validates_body(client, manager_token, monkeypatch, base_card_env):
+    """Missing required field → 400 naming the missing field."""
+    monkeypatch.setenv("CARD_PROVIDER", "pesapal")
+    rv = client.post(
+        "/finance/card/initiate",
+        json={"amount": 500, "tab_id": "tab1"},  # payment_id absent
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 400
+    assert "payment_id" in rv.get_json()["error"]
+
+
+def test_card_callback_public_no_auth_required(client):
+    """No Authorization header → endpoint accepts, returns 200."""
+    payload = {"some_field": "some_value"}
+    rv = client.post("/finance/card/callback", json=payload)
+    assert rv.status_code == 200
+    assert rv.get_json()["status"] == "accepted"
+
+
+def test_card_status_returns_configuration_state(client, manager_token, monkeypatch):
+    """Dormant (no provider) → {"configured": false, "provider": null}."""
+    monkeypatch.delenv("CARD_PROVIDER", raising=False)
+    monkeypatch.delenv("CARD_API_KEY", raising=False)
+    rv = client.get(
+        "/finance/card/status",
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 200
+    body = rv.get_json()
+    assert body["configured"] is False
+    assert body["provider"] is None
+    assert "message" in body

@@ -1,14 +1,13 @@
 """
-finance/card_gateway.py — Card gateway dormant socket.
+finance/card_gateway.py — Card gateway dormant socket + Flask routes.
 
 Activation: set CARD_PROVIDER (pesapal | dpo | cellulant) + shared env vars.
 Three supported gateways, all provider-dispatched from a single public API.
 
-Two public functions:
-  initiate_card_payment() — cashier triggers a payment URL sent to customer
-  handle_card_ipn()       — public IPN callback receiver (gateway calls us)
-
-Routes are registered separately (Step 3.2).
+Routes:
+  POST /finance/card/initiate  — manager auth, triggers payment URL
+  POST /finance/card/callback  — public IPN receiver (gateway calls us)
+  GET  /finance/card/status    — manager auth, diagnostic
 """
 import os
 import time
@@ -18,10 +17,18 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Tuple, Optional
 import httpx
+from flask import Blueprint, request, jsonify, current_app
+from flask_jwt_extended import get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
+from app.models.user import User
 from app.models.payment import Payment, PaymentMethod
 from app.models.payment_reconciliation import PaymentReconciliation, PaymentReconciliationStatus
 from app.models.audit_log import AuditLog
+
+card_gateway_bp = Blueprint("card_gateway", __name__, url_prefix="/finance")
+
+MANAGER_LEVEL = 5
 
 # ── Env var contracts ────────────────────────────────────────────
 
@@ -614,3 +621,70 @@ def _handle_cellulant_ipn(payload: dict) -> Tuple[bool, any]:
     except Exception as e:
         db.session.rollback()
         return False, f"Cellulant IPN write failed: {type(e).__name__}: {e}"
+
+
+# ── Flask routes ─────────────────────────────────────────────────
+
+@card_gateway_bp.post("/card/initiate")
+@require_active_user
+def card_initiate():
+    """Cashier triggers a card payment — customer follows the returned URL."""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    if not is_configured():
+        return jsonify({
+            "error": "Card gateway not configured.",
+            "fallback": "Customer pays via terminal directly; record manually.",
+        }), 503
+
+    data = request.get_json(silent=True) or {}
+    for field in ("amount", "tab_id", "payment_id"):
+        if data.get(field) is None:
+            return jsonify({"error": f"Missing required field: {field}."}), 400
+
+    ok, result = initiate_card_payment(
+        amount=data["amount"],
+        tab_id=data["tab_id"],
+        payment_id=data["payment_id"],
+        customer_email=data.get("customer_email"),
+        customer_phone=data.get("customer_phone"),
+    )
+    if not ok:
+        return jsonify({"error": result}), 400
+    return jsonify({
+        "status":          "pending",
+        "payment_url":     result["payment_url"],
+        "transaction_ref": result["transaction_ref"],
+        "provider":        result["provider"],
+    }), 200
+
+
+@card_gateway_bp.post("/card/callback")
+def card_callback():
+    """
+    Public — card gateway calls this from the internet (no JWT).
+    Always returns 200 so the gateway doesn't retry on our bugs.
+    """
+    try:
+        payload = request.get_json(silent=True) or {}
+        handle_card_ipn(payload)
+    except Exception:
+        current_app.logger.exception("Card IPN processing failed")
+    return jsonify({"status": "accepted"}), 200
+
+
+@card_gateway_bp.get("/card/status")
+@require_active_user
+def card_status():
+    """Diagnostic — is the card gateway configured?"""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+    configured, message = configuration_status()
+    return jsonify({
+        "configured": configured,
+        "provider":   get_provider_name(),
+        "message":    message,
+    }), 200

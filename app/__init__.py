@@ -101,6 +101,9 @@ def create_app(config_name: str = None) -> Flask:
     from app.finance.bank_transfer import bank_transfer_bp
     app.register_blueprint(bank_transfer_bp)
 
+    from app.finance.card_gateway import card_gateway_bp
+    app.register_blueprint(card_gateway_bp)
+
     from app.hr import (profiles_bp, wifi_bp, shifts_bp, clock_bp,
                         leave_bp, absence_bp, attendance_bp, performance_bp)
     app.register_blueprint(profiles_bp)
