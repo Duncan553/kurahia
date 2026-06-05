@@ -6,13 +6,14 @@ import pytest
 from app.finance import mpesa_daraja
 from app.models.payment import Payment
 from app.models.payment_reconciliation import PaymentReconciliation, PaymentReconciliationStatus
+from app.models.pending_stk_push import PendingSTKPush
 from app.models.audit_log import AuditLog
 from app.extensions import db
 
 
 @pytest.fixture(autouse=True)
-def _reset_state():
-    """Clear in-memory caches before and after each test."""
+def _reset_state(app):
+    """Clear OAuth token cache and PendingSTKPush rows before and after each test."""
     mpesa_daraja._clear_token_cache()
     mpesa_daraja._clear_pending_stk()
     yield
@@ -110,8 +111,11 @@ def test_stk_callback_success_links_tab(app):
     assert recon is not None
     assert recon.status == PaymentReconciliationStatus.MATCHED.value
 
-    # checkout_request_id should be cleaned from the pending map after success
-    assert "ws_CO_99999" not in mpesa_daraja._pending_stk
+    # checkout_request_id should be deleted from the pending table after success
+    row = db.session.query(PendingSTKPush).filter_by(
+        checkout_request_id="ws_CO_99999"
+    ).first()
+    assert row is None
 
 
 # ── Invalid payload test ──────────────────────────────────────────────────────
@@ -130,3 +134,114 @@ def test_callback_invalid_payload_no_write(app):
     assert db.session.query(Payment).count()               == pmt_before
     assert db.session.query(PaymentReconciliation).count() == recon_before
     assert db.session.query(AuditLog).count()              == audit_before
+
+
+# ── PendingSTKPush persistence tests ─────────────────────────────────────────
+
+def test_pending_stk_persists_across_simulated_restart(app):
+    """
+    PendingSTKPush row survives a module-state reset (simulates server restart).
+    After restart, handle_stk_callback still finds the tab_id via DB.
+    """
+    from datetime import datetime, timezone, timedelta
+
+    # Directly insert a row (simulating what initiate_stk_push would have done
+    # before the "restart")
+    row = PendingSTKPush(
+        checkout_request_id="ws_CO_RESTART_001",
+        tab_id="tab-persist-abc",
+        expires_at_utc=datetime.now(timezone.utc) + timedelta(hours=1),
+    )
+    db.session.add(row)
+    db.session.commit()
+
+    # Module-level dict no longer exists — DB is the source of truth
+    # (No state to clear since we use DB now — this assertion confirms it)
+    assert db.session.query(PendingSTKPush).filter_by(
+        checkout_request_id="ws_CO_RESTART_001"
+    ).count() == 1
+
+    # Callback arrives and finds the tab_id
+    ok, payment_id = mpesa_daraja.handle_stk_callback({
+        "Body": {
+            "stkCallback": {
+                "CheckoutRequestID": "ws_CO_RESTART_001",
+                "ResultCode": 0,
+                "ResultDesc": "The service request is processed successfully.",
+                "CallbackMetadata": {
+                    "Item": [
+                        {"Name": "Amount", "Value": 500},
+                        {"Name": "MpesaReceiptNumber", "Value": "XYZ_PERSIST_001"},
+                        {"Name": "TransactionDate", "Value": 20260605220000},
+                        {"Name": "PhoneNumber", "Value": 254712345678},
+                    ]
+                },
+            }
+        }
+    })
+
+    assert ok is True
+    p = db.session.get(Payment, payment_id)
+    assert p.tab_id == "tab-persist-abc"
+
+    # Row cleaned up after successful callback
+    assert db.session.query(PendingSTKPush).filter_by(
+        checkout_request_id="ws_CO_RESTART_001"
+    ).count() == 0
+
+
+def test_pending_stk_cleanup_removes_expired(app):
+    """Cleanup function deletes expired rows and leaves non-expired rows intact."""
+    from datetime import datetime, timezone, timedelta
+    from app.finance.mpesa_daraja import cleanup_expired_pending_stk
+
+    now = datetime.now(timezone.utc)
+    # Insert one expired row and one non-expired row
+    expired = PendingSTKPush(
+        checkout_request_id="ws_CO_EXPIRED_001",
+        tab_id="tab-expired",
+        expires_at_utc=now - timedelta(minutes=10),   # already expired
+    )
+    fresh = PendingSTKPush(
+        checkout_request_id="ws_CO_FRESH_001",
+        tab_id="tab-fresh",
+        expires_at_utc=now + timedelta(hours=1),       # not yet expired
+    )
+    db.session.add_all([expired, fresh])
+    db.session.commit()
+
+    deleted = cleanup_expired_pending_stk()
+
+    assert deleted == 1
+    assert db.session.query(PendingSTKPush).filter_by(
+        checkout_request_id="ws_CO_EXPIRED_001"
+    ).count() == 0
+    assert db.session.query(PendingSTKPush).filter_by(
+        checkout_request_id="ws_CO_FRESH_001"
+    ).count() == 1
+
+
+def test_pending_stk_unique_checkout_request_id(app):
+    """Inserting a duplicate checkout_request_id raises an IntegrityError."""
+    import pytest
+    from datetime import datetime, timezone, timedelta
+    from sqlalchemy.exc import IntegrityError
+
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    row1 = PendingSTKPush(
+        checkout_request_id="ws_CO_DUP_001",
+        tab_id="tab-a",
+        expires_at_utc=expires,
+    )
+    db.session.add(row1)
+    db.session.commit()
+
+    row2 = PendingSTKPush(
+        checkout_request_id="ws_CO_DUP_001",   # same checkout_request_id
+        tab_id="tab-b",
+        expires_at_utc=expires,
+    )
+    db.session.add(row2)
+    with pytest.raises(IntegrityError):
+        db.session.flush()
+    db.session.rollback()

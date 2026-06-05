@@ -11,7 +11,7 @@ import base64
 import os
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 import httpx
 from typing import Tuple, Optional
@@ -23,6 +23,7 @@ from app.models.user import User
 from app.models.payment import Payment, PaymentMethod
 from app.models.payment_reconciliation import PaymentReconciliation, PaymentReconciliationStatus
 from app.models.audit_log import AuditLog
+from app.models.pending_stk_push import PendingSTKPush
 
 mpesa_daraja_bp = Blueprint("mpesa_daraja", __name__, url_prefix="/finance")
 
@@ -87,20 +88,32 @@ def _clear_token_cache():
     _token_cache["token"] = None
     _token_cache["expires_at"] = 0
 
-# ── Pending STK Push map (in-memory, transient) ──────────────────
-# Maps checkout_request_id → {"tab_id": ...}
-# Lives only as long as the process. If the server restarts between push and
-# callback, the payment lands in Pending Payments for manual tab assignment —
-# a documented fallback (PAYMENTS_DESIGN.md §3.6). No migration needed.
-_pending_stk: dict = {}
+# ── Pending STK Push persistence ────────────────────────────────
+# checkout_request_id → tab_id mapping persisted in PendingSTKPush table.
+# Survives server restarts. Rows expire after 1 hour; cleaned by CLI command.
 
-def _register_pending_stk(checkout_request_id: str, tab_id) -> None:
-    """Called by initiate_stk_push on success so the callback can link to the right tab."""
-    _pending_stk[checkout_request_id] = {"tab_id": tab_id}
+def _register_pending_stk(checkout_request_id: str, tab_id, payment_id=None) -> None:
+    """
+    Persist a PendingSTKPush row so the callback can link to the originating tab
+    even after a server restart.
+    """
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    row = PendingSTKPush(
+        checkout_request_id=checkout_request_id,
+        tab_id=str(tab_id) if tab_id else None,
+        payment_id=str(payment_id) if payment_id else None,
+        expires_at_utc=expires,
+    )
+    try:
+        db.session.add(row)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()   # non-fatal — payment still works, just loses tab link
 
 def _clear_pending_stk() -> None:
-    """Test helper — reset pending STK map between tests."""
-    _pending_stk.clear()
+    """Test helper — delete all PendingSTKPush rows."""
+    db.session.query(PendingSTKPush).delete()
+    db.session.commit()
 
 def is_configured() -> bool:
     """Return True if all required env vars are set."""
@@ -321,8 +334,11 @@ def handle_stk_callback(payload: dict) -> Tuple[bool, any]:
     if existing:
         return True, existing.id
 
-    # Look up the originating tab from the in-memory pending map
-    tab_id = _pending_stk.get(checkout_request_id, {}).get("tab_id")
+    # Look up the originating tab from the persistent pending table
+    pending_row = db.session.query(PendingSTKPush).filter_by(
+        checkout_request_id=checkout_request_id
+    ).first()
+    tab_id = pending_row.tab_id if pending_row else None
 
     try:
         payment = Payment(
@@ -352,8 +368,9 @@ def handle_stk_callback(payload: dict) -> Tuple[bool, any]:
             details=f"amount={amount} checkout_id={checkout_request_id} tab_id={tab_id}",
         )
 
+        if pending_row:
+            db.session.delete(pending_row)
         db.session.commit()
-        _pending_stk.pop(checkout_request_id, None)
         return True, payment.id
     except Exception as e:
         db.session.rollback()
@@ -422,3 +439,19 @@ def mpesa_status():
         return jsonify({"error": "Manager or above required."}), 403
     configured, message = configuration_status()
     return jsonify({"configured": configured, "message": message}), 200
+
+
+# ── Cleanup helper (called by CLI) ───────────────────────────────
+
+def cleanup_expired_pending_stk() -> int:
+    """
+    Delete PendingSTKPush rows past their expires_at_utc.
+    Returns the number of rows deleted.
+    Called by `flask mpesa cleanup-expired-stk`.
+    """
+    cutoff = datetime.now(timezone.utc)
+    deleted = db.session.query(PendingSTKPush).filter(
+        PendingSTKPush.expires_at_utc < cutoff
+    ).delete()
+    db.session.commit()
+    return deleted

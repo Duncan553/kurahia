@@ -16,6 +16,7 @@ from .order import Order, OrderStatus
 from .order_item import OrderItem, OrderItemStatus, VALID_TRANSITIONS
 from .charge import Charge
 from .payment import Payment, PaymentMethod
+from .pending_stk_push import PendingSTKPush
 from .budget import Budget
 from .cash_reconciliation import CashReconciliation, ReconciliationStatus, cash_recon_payments
 from .payment_reconciliation import PaymentReconciliation, PaymentReconciliationStatus
