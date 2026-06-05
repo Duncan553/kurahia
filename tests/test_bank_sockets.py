@@ -6,6 +6,7 @@ SMS forwarder: call handle_sms_forward() directly (Flask routes added in Step 2.
 """
 import uuid
 import pytest
+import httpx
 from decimal import Decimal
 from datetime import datetime, timezone
 
@@ -233,18 +234,22 @@ def test_verify_bank_transfer_invalid_provider(monkeypatch):
 
 
 def test_verify_bank_transfer_dispatches_to_equity(monkeypatch, api_env):
-    """BANK_PROVIDER=equity → dispatches to _verify_equity (confirmed by NotImplementedError)."""
-    # _verify_equity raises NotImplementedError — that's the proof it was reached
-    with pytest.raises(NotImplementedError, match="Equity"):
-        bank_transfer.verify_bank_transfer(Decimal("1000"), "EQTREF001")
+    """BANK_PROVIDER=equity → reaches _verify_equity (proven by Equity-specific env var error)."""
+    # No BANK_EQUITY_* vars set — _verify_equity returns its own env var error, not the generic one
+    monkeypatch.delenv("BANK_EQUITY_API_KEY", raising=False)
+    ok, msg = bank_transfer.verify_bank_transfer(Decimal("1000"), "EQTREF001")
+    assert ok is False
+    assert "equity api env vars missing" in msg.lower()
 
 
 def test_verify_bank_transfer_dispatches_to_kcb(monkeypatch):
-    """BANK_PROVIDER=kcb → dispatches to _verify_kcb."""
+    """BANK_PROVIDER=kcb → reaches _verify_kcb (proven by KCB-specific env var error)."""
     monkeypatch.setenv("BANK_PROVIDER", "kcb")
     monkeypatch.setenv("BANK_API_KEY", "fake-api-key-002")
-    with pytest.raises(NotImplementedError, match="KCB"):
-        bank_transfer.verify_bank_transfer(Decimal("1000"), "KCBREF001")
+    monkeypatch.delenv("BANK_KCB_CLIENT_ID", raising=False)
+    ok, msg = bank_transfer.verify_bank_transfer(Decimal("1000"), "KCBREF001")
+    assert ok is False
+    assert "kcb api env vars missing" in msg.lower()
 
 
 def test_verify_bank_transfer_invalid_amount(api_env):
@@ -260,3 +265,109 @@ def test_configuration_status_includes_provider_name(monkeypatch, api_env):
     sms_ready, api_ready, msg = bank_transfer.configuration_status()
     assert api_ready is True
     assert "equity" in msg.lower()
+
+
+# ── Step 2.3: provider HTTP implementation tests ──────────────────
+
+from unittest.mock import patch, MagicMock
+
+
+def _mock_resp(json_data, status_code=200):
+    """Build a mock httpx response."""
+    m = MagicMock()
+    m.json.return_value = json_data
+    m.status_code = status_code
+    m.raise_for_status.return_value = None
+    return m
+
+
+@pytest.fixture
+def equity_env(monkeypatch, api_env):
+    """Add Equity-specific env vars on top of the base api_env fixture."""
+    monkeypatch.setenv("BANK_EQUITY_API_BASE", "https://sandbox.equitybankgroup.com")
+    monkeypatch.setenv("BANK_EQUITY_API_KEY", "fake-equity-key")
+    monkeypatch.setenv("BANK_EQUITY_MERCHANT_CODE", "MERCH001")
+
+
+@pytest.fixture
+def kcb_env(monkeypatch):
+    """Set env vars for KCB provider (includes BANK_PROVIDER + API creds)."""
+    monkeypatch.setenv("BANK_PROVIDER", "kcb")
+    monkeypatch.setenv("BANK_API_KEY", "fake-kcb-api-key")
+    monkeypatch.setenv("BANK_KCB_API_BASE", "https://uat.buni.kcbgroup.com")
+    monkeypatch.setenv("BANK_KCB_CLIENT_ID", "fake-client-id")
+    monkeypatch.setenv("BANK_KCB_CLIENT_SECRET", "fake-client-secret")
+    # Clear token cache so each test starts fresh
+    bank_transfer._kcb_token_cache["token"] = None
+    bank_transfer._kcb_token_cache["expires_at"] = 0
+
+
+@pytest.fixture
+def coop_env(monkeypatch):
+    monkeypatch.setenv("BANK_PROVIDER", "coop")
+    monkeypatch.setenv("BANK_API_KEY", "fake-coop-api-key")
+    monkeypatch.setenv("BANK_COOP_API_BASE", "https://developer.co-opbank.co.ke:8243")
+    monkeypatch.setenv("BANK_COOP_USERNAME", "fake-coop-user")
+    monkeypatch.setenv("BANK_COOP_PASSWORD", "fake-coop-pass")
+
+
+def test_verify_equity_success(equity_env):
+    """Valid Equity response → (True, dict) with correct provider and amount."""
+    mock_data = {"status": "SUCCESS", "amount": "1500.00", "transactionDate": "2026-06-05"}
+    with patch("app.finance.bank_transfer.httpx.get", return_value=_mock_resp(mock_data)):
+        ok, result = bank_transfer._verify_equity(Decimal("1500.00"), "EQTREF001", "")
+    assert ok is True
+    assert result["provider"] == "equity"
+    assert result["details"]["confirmed_amount"] == "1500.00"
+    assert "verified_at" in result
+
+
+def test_verify_equity_amount_mismatch(equity_env):
+    """Equity confirms different amount → (False, 'Amount mismatch')."""
+    mock_data = {"status": "SUCCESS", "amount": "999.00", "transactionDate": "2026-06-05"}
+    with patch("app.finance.bank_transfer.httpx.get", return_value=_mock_resp(mock_data)):
+        ok, msg = bank_transfer._verify_equity(Decimal("1500.00"), "EQTREF002", "")
+    assert ok is False
+    assert "mismatch" in msg.lower()
+
+
+def test_verify_kcb_success(kcb_env):
+    """KCB: token fetch + query both succeed → (True, dict)."""
+    token_resp = _mock_resp({"access_token": "tok-abc", "expires_in": 3600})
+    query_resp = _mock_resp({"status": "SUCCESS", "amount": "2000.00", "transactionDate": "2026-06-05"})
+    with patch("app.finance.bank_transfer.httpx.post", return_value=token_resp), \
+         patch("app.finance.bank_transfer.httpx.get", return_value=query_resp):
+        ok, result = bank_transfer._verify_kcb(Decimal("2000.00"), "KCBREF001", "")
+    assert ok is True
+    assert result["provider"] == "kcb"
+    assert result["details"]["confirmed_amount"] == "2000.00"
+
+
+def test_verify_coop_success(coop_env):
+    """Co-op confirms transfer → (True, dict)."""
+    mock_data = {"Successful": True, "Amount": "3500.00", "TransactionDate": "2026-06-05"}
+    with patch("app.finance.bank_transfer.httpx.get", return_value=_mock_resp(mock_data)):
+        ok, result = bank_transfer._verify_coop(Decimal("3500.00"), "COOPREF001", "")
+    assert ok is True
+    assert result["provider"] == "coop"
+    assert result["details"]["confirmed_amount"] == "3500.00"
+
+
+def test_verify_provider_network_timeout(equity_env):
+    """httpx.TimeoutException → (False, '...timed out...')."""
+    with patch("app.finance.bank_transfer.httpx.get", side_effect=httpx.TimeoutException("timeout")):
+        ok, msg = bank_transfer._verify_equity(Decimal("1000.00"), "EQTREF003", "")
+    assert ok is False
+    assert "timed out" in msg.lower()
+
+
+def test_verify_provider_missing_env_vars(monkeypatch, api_env):
+    """BANK_PROVIDER=equity + BANK_API_KEY set but Equity-specific vars missing → plain error."""
+    # api_env sets BANK_PROVIDER=equity and BANK_API_KEY — is_api_configured() is True
+    # but _verify_equity's own env check catches missing BANK_EQUITY_API_KEY etc.
+    monkeypatch.delenv("BANK_EQUITY_API_KEY", raising=False)
+    monkeypatch.delenv("BANK_EQUITY_API_BASE", raising=False)
+    monkeypatch.delenv("BANK_EQUITY_MERCHANT_CODE", raising=False)
+    ok, msg = bank_transfer._verify_equity(Decimal("1000.00"), "EQTREF004", "")
+    assert ok is False
+    assert "env vars missing" in msg.lower()

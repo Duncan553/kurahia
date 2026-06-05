@@ -16,9 +16,12 @@ Routes are NOT registered here. Step 2.5 adds Flask routes.
 """
 import os
 import re
+import time
 import uuid
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Tuple, Optional
+import httpx
 from app.extensions import db
 from app.models.payment import Payment, PaymentMethod
 from app.models.payment_reconciliation import PaymentReconciliation, PaymentReconciliationStatus
@@ -273,15 +276,225 @@ def verify_bank_transfer(amount, bank_ref: str, account_number: str = "") -> Tup
         return False, f"Unknown bank provider: {provider}."
 
 
-# ── Provider stubs (Step 2.3 implements these) ────────────────────
+# ── Provider implementations ─────────────────────────────────────
 
 def _verify_equity(amount: Decimal, bank_ref: str, account_number: str) -> Tuple[bool, any]:
-    raise NotImplementedError("Step 2.3 will implement Equity Jenga API integration.")
+    """
+    Verify a bank transfer via Equity Bank Jenga API.
+
+    Required env vars:
+        BANK_EQUITY_API_BASE      Sandbox: https://sandbox.equitybankgroup.com
+                                  Production: https://api.equitybankgroup.com
+        BANK_EQUITY_API_KEY       API key from Jenga developer portal
+        BANK_EQUITY_MERCHANT_CODE Merchant code from Jenga developer portal
+
+    TODO: verify exact endpoint path and response fields against
+          https://developer.equitybankgroup.com (Jenga API v3 docs).
+    """
+    api_base      = os.environ.get("BANK_EQUITY_API_BASE")
+    api_key       = os.environ.get("BANK_EQUITY_API_KEY")
+    merchant_code = os.environ.get("BANK_EQUITY_MERCHANT_CODE")
+
+    missing = [k for k, v in {
+        "BANK_EQUITY_API_BASE":      api_base,
+        "BANK_EQUITY_API_KEY":       api_key,
+        "BANK_EQUITY_MERCHANT_CODE": merchant_code,
+    }.items() if not v]
+    if missing:
+        return False, f"Equity API env vars missing: {', '.join(missing)}."
+
+    try:
+        resp = httpx.get(
+            f"{api_base}/v3/account/transaction",  # TODO: verify endpoint from Jenga v3 docs
+            params={"transactionRef": bank_ref, "merchantCode": merchant_code},
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except httpx.TimeoutException:
+        return False, "Equity API timed out after 15 seconds."
+    except httpx.HTTPStatusError as e:
+        return False, f"Equity API HTTP error: {e.response.status_code}."
+    except Exception as e:
+        return False, f"Equity API request failed: {type(e).__name__}: {e}"
+
+    # TODO: verify exact status field name/values from Jenga API response spec
+    status = str(data.get("status", "")).upper()
+    if status not in ("SUCCESS", "COMPLETED"):
+        return False, f"Equity API: transfer not confirmed (status={status!r})."
+
+    confirmed_amount = Decimal(str(data.get("amount", 0)))
+    if confirmed_amount != amount:
+        return False, f"Amount mismatch: expected {amount}, bank confirms {confirmed_amount}."
+
+    return True, {
+        "provider": "equity",
+        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "details": {
+            "bank_ref":        bank_ref,
+            "confirmed_amount": str(confirmed_amount),
+            "transaction_date": data.get("transactionDate"),  # TODO: verify field name
+        },
+    }
+
+
+# KCB OAuth token cache — same pattern as M-Pesa Daraja
+_kcb_token_cache: dict = {"token": None, "expires_at": 0}
+
+
+def _get_kcb_token(api_base: str, client_id: str, client_secret: str) -> Tuple[Optional[str], Optional[str]]:
+    """Fetch and cache a KCB OAuth2 bearer token."""
+    now = time.time()
+    if _kcb_token_cache["token"] and _kcb_token_cache["expires_at"] > now:
+        return _kcb_token_cache["token"], None
+    try:
+        resp = httpx.post(
+            f"{api_base}/oauth/token",  # TODO: verify OAuth endpoint from KCB Open Banking docs
+            data={
+                "grant_type":    "client_credentials",
+                "client_id":     client_id,
+                "client_secret": client_secret,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data  = resp.json()
+        token = data["access_token"]
+        _kcb_token_cache["token"]      = token
+        _kcb_token_cache["expires_at"] = now + data.get("expires_in", 3600) - 60
+        return token, None
+    except httpx.HTTPStatusError as e:
+        return None, f"KCB OAuth HTTP error: {e.response.status_code}."
+    except httpx.TimeoutException:
+        return None, "KCB OAuth timed out after 10 seconds."
+    except Exception as e:
+        return None, f"KCB OAuth failed: {type(e).__name__}: {e}"
 
 
 def _verify_kcb(amount: Decimal, bank_ref: str, account_number: str) -> Tuple[bool, any]:
-    raise NotImplementedError("Step 2.3 will implement KCB Open Banking integration.")
+    """
+    Verify a bank transfer via KCB Open Banking API (OAuth2).
+
+    Required env vars:
+        BANK_KCB_API_BASE       Sandbox: https://uat.buni.kcbgroup.com
+                                Production: https://api.kcbgroup.com
+        BANK_KCB_CLIENT_ID      OAuth client ID from KCB developer portal
+        BANK_KCB_CLIENT_SECRET  OAuth client secret from KCB developer portal
+
+    TODO: verify exact token + query endpoint paths against
+          https://developer.kcbgroup.com docs.
+    """
+    api_base      = os.environ.get("BANK_KCB_API_BASE")
+    client_id     = os.environ.get("BANK_KCB_CLIENT_ID")
+    client_secret = os.environ.get("BANK_KCB_CLIENT_SECRET")
+
+    missing = [k for k, v in {
+        "BANK_KCB_API_BASE":       api_base,
+        "BANK_KCB_CLIENT_ID":      client_id,
+        "BANK_KCB_CLIENT_SECRET":  client_secret,
+    }.items() if not v]
+    if missing:
+        return False, f"KCB API env vars missing: {', '.join(missing)}."
+
+    token, err = _get_kcb_token(api_base, client_id, client_secret)
+    if err:
+        return False, err
+
+    try:
+        resp = httpx.get(
+            f"{api_base}/v1/account/transactions",  # TODO: verify endpoint from KCB docs
+            params={"transactionReference": bank_ref},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except httpx.TimeoutException:
+        return False, "KCB API timed out after 15 seconds."
+    except httpx.HTTPStatusError as e:
+        return False, f"KCB API HTTP error: {e.response.status_code}."
+    except Exception as e:
+        return False, f"KCB API request failed: {type(e).__name__}: {e}"
+
+    # TODO: verify exact response field names from KCB Open Banking response spec
+    status = str(data.get("status", "")).upper()
+    if status not in ("SUCCESS", "COMPLETED"):
+        return False, f"KCB API: transfer not confirmed (status={status!r})."
+
+    confirmed_amount = Decimal(str(data.get("amount", 0)))
+    if confirmed_amount != amount:
+        return False, f"Amount mismatch: expected {amount}, bank confirms {confirmed_amount}."
+
+    return True, {
+        "provider": "kcb",
+        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "details": {
+            "bank_ref":         bank_ref,
+            "confirmed_amount": str(confirmed_amount),
+            "transaction_date": data.get("transactionDate"),  # TODO: verify field name
+        },
+    }
 
 
 def _verify_coop(amount: Decimal, bank_ref: str, account_number: str) -> Tuple[bool, any]:
-    raise NotImplementedError("Step 2.3 will implement Co-op Mobicash integration.")
+    """
+    Verify a bank transfer via Co-op Bank API (Basic auth).
+
+    Required env vars:
+        BANK_COOP_API_BASE    Sandbox: https://developer.co-opbank.co.ke:8243
+                              Production: https://api.co-opbank.co.ke:8243
+        BANK_COOP_USERNAME    Consumer key from Co-op developer portal
+        BANK_COOP_PASSWORD    Consumer secret from Co-op developer portal
+
+    TODO: verify exact endpoint path and auth mechanism against
+          https://developer.co-opbank.co.ke docs (may use OAuth, not Basic auth).
+    """
+    api_base = os.environ.get("BANK_COOP_API_BASE")
+    username = os.environ.get("BANK_COOP_USERNAME")
+    password = os.environ.get("BANK_COOP_PASSWORD")
+
+    missing = [k for k, v in {
+        "BANK_COOP_API_BASE": api_base,
+        "BANK_COOP_USERNAME": username,
+        "BANK_COOP_PASSWORD": password,
+    }.items() if not v]
+    if missing:
+        return False, f"Co-op API env vars missing: {', '.join(missing)}."
+
+    try:
+        resp = httpx.get(
+            f"{api_base}/api/1.0/Transactions/Statement",  # TODO: verify from Co-op API docs
+            params={"TransactionRef": bank_ref},
+            auth=(username, password),
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except httpx.TimeoutException:
+        return False, "Co-op API timed out after 15 seconds."
+    except httpx.HTTPStatusError as e:
+        return False, f"Co-op API HTTP error: {e.response.status_code}."
+    except Exception as e:
+        return False, f"Co-op API request failed: {type(e).__name__}: {e}"
+
+    # TODO: verify exact response field names from Co-op Bank API response spec
+    if not data.get("Successful", False):
+        return False, "Co-op API: transfer not confirmed."
+
+    confirmed_amount = Decimal(str(data.get("Amount", 0)))
+    if confirmed_amount != amount:
+        return False, f"Amount mismatch: expected {amount}, bank confirms {confirmed_amount}."
+
+    return True, {
+        "provider": "coop",
+        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "details": {
+            "bank_ref":         bank_ref,
+            "confirmed_amount": str(confirmed_amount),
+            "transaction_date": data.get("TransactionDate"),  # TODO: verify field name
+        },
+    }
