@@ -512,6 +512,11 @@ class TestSeniorCoercingJunior:
         ids = [d["id"] for d in rv.get_json()]
         assert dispute_id in ids, "Owner must be able to see is_owner_only disputes"
 
+    @pytest.mark.skip(
+        reason="Covered by tests/test_security_category_1.py::"
+               "TestManualOverrideAbuse::test_override_of_another_writes_audit_log; "
+               "kept here for Cat 6 mapping completeness"
+    )
     def test_manager_override_leaves_permanent_audit_trail(
             self, client, manager_token, app):
         """
