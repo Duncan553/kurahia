@@ -108,7 +108,10 @@ def _register_pending_stk(checkout_request_id: str, tab_id, payment_id=None) -> 
         db.session.add(row)
         db.session.commit()
     except Exception:
-        db.session.rollback()   # non-fatal — payment still works, just loses tab link
+        try:
+            db.session.rollback()
+        except Exception:
+            pass   # no app context (e.g. direct function call in tests) — non-fatal
 
 def _clear_pending_stk() -> None:
     """Test helper — delete all PendingSTKPush rows."""
