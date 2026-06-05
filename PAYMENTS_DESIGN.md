@@ -435,6 +435,54 @@ If the callback arrives twice, the second one finds the Payment row already exis
 | Duplicate callback | Idempotency check returns 200 immediately. No duplicate Payment. | Invisible to owner — correct behavior. |
 | `MPESA_ENV=sandbox` in production | Daraja sandbox accepts transactions but no real money moves. | **Critical**: owner must flip to `production` before go-live. |
 
+### 3.6.1 Production Hardening TODOs
+
+These are deliberately excluded from the current build. Nothing here blocks sandbox
+testing. All of these must be done before real money flows through the socket.
+
+**IP allowlisting on `/finance/mpesa/callback`**
+
+Safaricom publishes the IP ranges their callback servers use. Restrict the callback
+endpoint to those IPs only — reject anything else with a 403. This stops anyone from
+POSTing fake callbacks to your public URL.
+Important: Safaricom's callback IPs can change. Re-verify the allowlist against their
+developer portal before each production deploy, not just at initial setup.
+
+**Monitoring**
+
+Add structured logging for:
+- Callback latency (time from STK Push initiation to callback receipt)
+- Callback failure rate (how often `handle_stk_callback` or `handle_c2b_callback` returns `False`)
+- OAuth token refresh frequency (excessive refreshes indicate token cache is being bypassed or expiring early)
+
+A spike in callback failure rate with no corresponding spike in latency means a payload
+format change from Safaricom — check their changelog.
+
+**Alerting: orphaned STK Push entries**
+
+If no Daraja callback arrives within 60 seconds of a successful STK Push, there may
+be an orphaned entry in `_pending_stk` — the customer was prompted but the callback
+was lost. Fire a `JudgeAlert` so the cashier can follow up manually.
+Implementation: a background job (Flask-APScheduler or a cron hitting a CLI command)
+checks `_pending_stk` for entries older than 60 seconds and fires the alert.
+
+**Optional: `datetime.utcnow()` → `datetime.now(timezone.utc)`**
+
+`datetime.utcnow()` is deprecated in Python 3.12. It still works but emits a
+deprecation warning in newer Python versions. Replace with
+`datetime.now(timezone.utc)` across `mpesa_daraja.py` when convenient.
+This is a cosmetic fix — it does not affect any stored data or behavior.
+
+**Optional: persist `_pending_stk` to the database**
+
+Currently `_pending_stk` is an in-memory dict. If the server restarts between an
+STK Push and its callback, the callback arrives but can't link to the originating tab
+(the dict is empty). The payment still lands in the system via idempotency, but without
+a tab assignment — it goes to "Pending Payments" for manual assignment.
+This is the documented and acceptable fallback at hotel scale (low STK Push volume,
+short server restart windows). If STK Push volume grows or the server restarts
+frequently, move `_pending_stk` to a DB table with a TTL column.
+
 ---
 
 ## 4. Bank API Socket
