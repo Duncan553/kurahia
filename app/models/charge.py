@@ -3,6 +3,12 @@ Charge — append-only record of what the tab owes.
 Created when an Order is SENT (one Charge per OrderItem).
 amount = order_item.quantity × order_item.unit_price_snapshot.
 Never update or delete. Corrections = new rows.
+
+Tab balance formula: SUM(charges.amount) − SUM(payments.amount)
+That sum is computed on every balance query — never stored.
+
+order_item_id is nullable: non-POS charges (villa rent, event minimums, manual
+adjustments) link to no order item and use the description field instead.
 """
 import uuid
 from datetime import datetime, timezone
