@@ -23,7 +23,7 @@ from flask_jwt_extended import (
     get_jwt_identity,
     get_jwt,
 )
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models.user import User, _ph
 from app.models.audit_log import AuditLog
 from app.utils.auth import record_failed_attempt, check_active_and_unlocked
@@ -40,6 +40,7 @@ _DUMMY_HASH = _ph.hash("dummy-password-for-timing-equalization")
 # ── Password login (manager / owner) ─────────────────────────────────────────
 
 @auth_bp.post("/login")
+@limiter.limit("5 per minute")
 def login():
     data = request.get_json(silent=True) or {}
     username = data.get("username", "").strip().lower()
