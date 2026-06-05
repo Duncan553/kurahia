@@ -82,16 +82,21 @@ def void_analytics():
 @require_active_user
 def discount_analytics():
     """
-    Placeholder — no discount/comp model exists yet.
-    Returns empty data with a note so the frontend can show the screen without error.
+    Placeholder — intentionally returns empty data. No discount model exists yet.
+
+    To implement: add a `discount_amount` field (Decimal, nullable) to the Charge model
+    with a migration, then replace this body with per-staff discount aggregation and
+    fire_alert_if_absent() for abnormal comping rates, mirroring void_analytics() above.
+
+    Returns the empty shell so the frontend can render the screen without a 404.
     """
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
         return jsonify({"error": "Manager or above required."}), 403
 
     return jsonify({
-        "note": "Discount/comp tracking is not yet configured. "
-                "Add a discount field to Charge in a future chunk.",
+        "note": "Discount/comp anomaly tracking not yet configured. "
+                "Requires a discount_amount field on the Charge model.",
         "staff_rates": [],
         "flagged_count": 0,
     }), 200
