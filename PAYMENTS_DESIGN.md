@@ -769,6 +769,82 @@ CARD_MERCHANT_ID=<from gateway portal>
 | Card declined | Gateway sends failure callback. Audit log entry. | Cashier sees "Card declined" message. Customer pays another way. |
 | `CARD_PROVIDER` not set | Function returns `("", "UNCONFIGURED")`. Cashier routed to manual flow. | Error shown: "Card gateway not configured. Use manual card entry." |
 
+### 5.5 Production Hardening TODOs
+
+These are deliberately excluded from the current build. None block testing. Resolve
+all API-specific items before any real card transaction flows through the system.
+
+**Verify real provider API endpoints + auth flows (required before go-live)**
+
+The code contains `# TODO` markers for all three providers:
+- Pesapal: `CARD_API_SECRET` handling in OAuth (currently uses `CARD_API_KEY` as both
+  key and secret as a placeholder); status API call in IPN handler to confirm completion
+  before writing Payment row
+- DPO: ServiceType code (`3854` used — must match account's registered service codes);
+  exact API version path (`/API/v6/`) — verify from DPO portal docs
+- Cellulant: endpoint path (`/v2/payments/request`), auth header format (`clientId`
+  header + Bearer token), response field names (`checkoutUrl` vs `redirectUrl`),
+  IPN amount field location — verify from Cellulant Tingg v3 docs
+
+**IPN-not-received fallback (polling job)**
+
+If a customer completes payment on the provider side but the IPN never arrives (tunnel
+was down, provider had a delivery failure), the tab balance stays wrong. Add a background
+job that: queries initiate_card_payment log entries older than 5 minutes with no matching
+Payment row; fires a `JudgeAlert` so a manager can check the provider dashboard and
+manually reconcile if needed. No automatic retry — let a human confirm first.
+
+**Webhook signature verification**
+
+Currently the `/finance/card/callback` endpoint trusts any POST. Providers offer
+signature verification to prove the IPN came from them:
+- Pesapal: HMAC-SHA256 of the IPN payload using your consumer secret
+- DPO: XML signature in the IPN POST body
+- Cellulant: JWT-signed payload using a shared secret
+
+Add signature verification before processing each IPN. Reject unsigned IPNs with a 401
+(but still log the payload for debugging). This blocks anyone who discovers your
+callback URL from injecting fake payment notifications.
+
+**Monitoring**
+
+Add structured logging for:
+- IPN delivery latency (time from cashier triggering initiate to IPN received)
+- IPN parse failure rate per provider (unrecognized payload shape)
+- Initiation-to-completion latency per provider (useful for UX comparison between providers)
+- OAuth token refresh frequency (Pesapal — excessive refreshes indicate cache is bypassed)
+
+**Alerting: IPN failure rate threshold**
+
+If more than 5% of IPNs from a provider result in `handle_card_ipn()` returning `False`
+within any 1-hour window, fire a `JudgeAlert`. This signals a payload format change
+(provider updated their IPN schema without notice) or a systematic integration issue.
+Implementation: count `payment.card_ipn_unrecognized` audit log events against total
+IPN volume in a rolling window.
+
+**IP allowlisting on `/finance/card/callback`**
+
+If any provider publishes fixed IP ranges for their IPN servers, add those to an
+allowlist. Pesapal and DPO have IPN delivery from specific IP blocks — check each
+provider's developer documentation. IP allowlisting + signature verification together
+make the callback endpoint substantially harder to abuse.
+
+**Currency handling**
+
+All current implementations assume KES. The Payment model and gateway payloads hardcode
+`"currency": "KES"` and `"PaymentCurrency": "KES"`. If Kurahia ever takes payments
+from foreign guests in USD or EUR, the currency handling needs a full design pass before
+that flows through here. Until then: KES only, no exceptions.
+
+**Card refund flow (not implemented)**
+
+There is no refund endpoint. If a customer is overcharged or a booking is cancelled
+after card payment, the current process is: contact the provider gateway's merchant
+portal and issue the refund there manually. The Payment row stays in the system
+(append-only). Add a `refund` note to the tab or booking for audit purposes. A
+programmatic refund API endpoint would be a separate design effort (each provider
+has a different refund API shape).
+
 ---
 
 ## 6. Shared Components
