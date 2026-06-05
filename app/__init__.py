@@ -65,12 +65,13 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(queues_bp)
     app.register_blueprint(receipts_bp)
 
-    from app.cli import (pos_cli_bp, finance_cli_bp, hr_cli_bp, bookings_cli_bp,
+    from app.cli import (pos_cli_bp, finance_cli_bp, mpesa_cli_bp, hr_cli_bp, bookings_cli_bp,
                          gate_cli_bp, events_cli_bp,
                          conduct_cli_bp, calendar_cli_bp, feedback_cli_bp,
                          system_cli_bp, audit_cli_bp, judge_cli_bp)
     app.register_blueprint(pos_cli_bp)
     app.register_blueprint(finance_cli_bp)
+    app.register_blueprint(mpesa_cli_bp)
     app.register_blueprint(hr_cli_bp)
     app.register_blueprint(bookings_cli_bp)
     app.register_blueprint(gate_cli_bp)

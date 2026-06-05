@@ -473,15 +473,16 @@ deprecation warning in newer Python versions. Replace with
 `datetime.now(timezone.utc)` across `mpesa_daraja.py` when convenient.
 This is a cosmetic fix — it does not affect any stored data or behavior.
 
-**Optional: persist `_pending_stk` to the database**
+**✅ DONE: `_pending_stk` persisted to `PendingSTKPush` DB table (Phase Q-1.5)**
 
-Currently `_pending_stk` is an in-memory dict. If the server restarts between an
-STK Push and its callback, the callback arrives but can't link to the originating tab
-(the dict is empty). The payment still lands in the system via idempotency, but without
-a tab assignment — it goes to "Pending Payments" for manual assignment.
-This is the documented and acceptable fallback at hotel scale (low STK Push volume,
-short server restart windows). If STK Push volume grows or the server restarts
-frequently, move `_pending_stk` to a DB table with a TTL column.
+`_pending_stk` was an in-memory dict. It has been replaced with the `PendingSTKPush`
+model (`app/models/pending_stk_push.py`). Rows are written when `initiate_stk_push()`
+succeeds and deleted when `handle_stk_callback()` confirms the payment. Rows expire
+after 1 hour; clean up with `flask mpesa cleanup-expired-stk`.
+
+A server restart between push and callback no longer loses the tab assignment. If a
+row is missing (expired or never written), the payment still lands via idempotency
+and goes to Pending Payments for manual assignment — same documented fallback as before.
 
 ---
 

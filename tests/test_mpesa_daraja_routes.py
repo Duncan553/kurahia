@@ -10,8 +10,8 @@ from app.finance import mpesa_daraja
 
 
 @pytest.fixture(autouse=True)
-def _reset_state():
-    """Clear OAuth token cache before and after each test."""
+def _reset_state(app):
+    """Clear OAuth token cache and PendingSTKPush rows before and after each test."""
     mpesa_daraja._clear_token_cache()
     mpesa_daraja._clear_pending_stk()
     yield

@@ -1,6 +1,7 @@
 """
 cli/finance.py — Finance CLI commands.
-`flask finance seed-budgets` — seeds starter monthly budgets for each active dept.
+`flask finance seed-budgets`           — seeds starter monthly budgets for each active dept.
+`flask mpesa cleanup-expired-stk`      — delete expired PendingSTKPush rows.
 """
 import click
 from datetime import datetime, timezone
@@ -11,6 +12,7 @@ from app.models.department import Department
 from app.models.user import User
 
 finance_cli_bp = Blueprint("finance", __name__)
+mpesa_cli_bp   = Blueprint("mpesa", __name__)
 
 DEFAULT_BUDGET = "50000"   # KES 50,000 per department per month
 
@@ -55,3 +57,11 @@ def seed_budgets(period):
     db.session.commit()
     click.echo(f"seed-budgets: {added} budgets added for {period} "
                f"({len(depts) - added} already existed).")
+
+
+@mpesa_cli_bp.cli.command("cleanup-expired-stk")
+def cleanup_expired_stk():
+    """Delete PendingSTKPush rows past their expiry time."""
+    from app.finance.mpesa_daraja import cleanup_expired_pending_stk
+    deleted = cleanup_expired_pending_stk()
+    click.echo(f"cleanup-expired-stk: {deleted} expired row(s) deleted.")
