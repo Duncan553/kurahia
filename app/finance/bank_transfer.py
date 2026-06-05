@@ -9,6 +9,9 @@ Two activation paths:
 
 2. Bank API — BANK_PROVIDER + BANK_API_KEY + provider-specific vars activate this.
    POST /finance/bank/verify triggers real-time transfer verification via provider API.
+   Implementations exist for Equity Jenga, KCB Open Banking, and Co-op Mobicash.
+   Each has # TODO markers for exact endpoint URL and response field verification
+   against production bank docs before go-live.
 """
 import os
 import re

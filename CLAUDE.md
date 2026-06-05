@@ -7,7 +7,7 @@
 ## 1. What this is
 
 Resort management backend for a Kenyan hotel/resort (Waterfront Kurahia).
-Solo-built by Wachira. **264 tests passing across 10 chunks. Backend is feature-complete.**
+Solo-built by Wachira. **453 passing, 1 skipped (Phase B security review + Phase C-ext payment sockets complete).**
 
 **Stack:** Python 3.12, Flask 3, Flask-SQLAlchemy 2.0, Flask-JWT-Extended, Flask-Migrate, Argon2 (passwords + PINs), Waitress (prod server). SQLite in dev, Postgres in prod. Tailscale for remote owner access.
 
@@ -85,7 +85,7 @@ kurahia/
 │   ├── judge/engine.py         silent theft detection
 │   ├── cli/                    flask CLI commands
 │   └── utils/                  shared helpers
-├── tests/                      264+ pytest tests
+├── tests/                      453+ pytest tests
 ├── migrations/                 Alembic migration files
 ├── KURAHIA_BACKEND_REFERENCE.md   ← master doc, read before pattern changes
 ├── CLI_REFERENCE.md
@@ -178,7 +178,7 @@ All currently return `("UNCONFIGURED", "...")`. Activating each is **one functio
 
 ```bash
 # Run tests
-pytest                                  # all 264+
+pytest                                  # all 453+
 pytest tests/test_pos.py -v             # one file, verbose
 pytest tests/test_pos.py::test_xyz      # one test
 pytest -x                               # stop on first failure

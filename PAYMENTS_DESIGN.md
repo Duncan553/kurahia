@@ -859,12 +859,14 @@ card gateway IPN).
 Payment (append-only)              PaymentReconciliation (one-to-one)
 ─────────────────────              ─────────────────────────────────────
 id                           ←──  payment_id (UNIQUE FK)
-method: MPESA/CARD/CASH            method: mirrors Payment.method
-amount: 1500.00                    matched: True/False
-mpesa_code: "QJN4X3P1ZB"          matched_by_id: user who confirmed
-card_ref: null                     statement_ref: real ref from bank/Safaricom
-tab_id: "uuid"                     status: MATCHED | UNMATCHED | FLAGGED
-idempotency_key: "QJN4X3P1ZB"     notes: "Confirmed against statement 2026-06-03"
+method: MPESA/CARD/CASH/           method: mirrors Payment.method
+        BANK_TRANSFER              matched: True/False
+amount: 1500.00                    matched_by_id: user who confirmed
+mpesa_code: "QJN4X3P1ZB"          statement_ref: real ref from bank/Safaricom
+card_ref: nullable String(50)      status: MATCHED | UNMATCHED | FLAGGED
+bank_ref: nullable String(64)      notes: "Confirmed against statement 2026-06-03"
+tab_id: "uuid"
+idempotency_key: "QJN4X3P1ZB"
 ```
 
 **Manual reconciliation** — human writes this row via API.
