@@ -371,3 +371,81 @@ def test_verify_provider_missing_env_vars(monkeypatch, api_env):
     ok, msg = bank_transfer._verify_equity(Decimal("1000.00"), "EQTREF004", "")
     assert ok is False
     assert "env vars missing" in msg.lower()
+
+
+# ── Step 2.4: Flask route tests ───────────────────────────────────
+
+def test_bank_sms_forward_public_no_auth_required(client, monkeypatch):
+    """No BANK_SMS_WEBHOOK_SECRET set → endpoint accepts without any header, returns 200."""
+    monkeypatch.delenv("BANK_SMS_WEBHOOK_SECRET", raising=False)
+    rv = client.post(
+        "/finance/bank/sms-forward",
+        json={"from": "+254700000001", "body": "Some random text."},
+    )
+    assert rv.status_code == 200
+
+
+def test_bank_sms_forward_with_webhook_secret_required(client, monkeypatch):
+    """BANK_SMS_WEBHOOK_SECRET set, X-Webhook-Secret header missing → 401."""
+    monkeypatch.setenv("BANK_SMS_WEBHOOK_SECRET", "super-secret-key")
+    rv = client.post(
+        "/finance/bank/sms-forward",
+        json={"from": "+254700000001", "body": "Some random text."},
+        # no X-Webhook-Secret header
+    )
+    assert rv.status_code == 401
+
+
+def test_bank_sms_forward_with_correct_secret(client, monkeypatch):
+    """BANK_SMS_WEBHOOK_SECRET set, correct X-Webhook-Secret header → 200 regardless of SMS content."""
+    monkeypatch.setenv("BANK_SMS_WEBHOOK_SECRET", "super-secret-key")
+    rv = client.post(
+        "/finance/bank/sms-forward",
+        json={"from": "+254700000001", "body": "Unrecognized SMS format."},
+        headers={"X-Webhook-Secret": "super-secret-key"},
+    )
+    assert rv.status_code == 200
+    assert rv.get_json()["status"] == "accepted"
+
+
+def test_bank_verify_requires_manager_role(client, waiter_token):
+    """Waiter token → 403 on POST /finance/bank/verify."""
+    rv = client.post(
+        "/finance/bank/verify",
+        json={"amount": 1000, "bank_ref": "EQTREF001"},
+        headers={"Authorization": f"Bearer {waiter_token}"},
+    )
+    assert rv.status_code == 403
+
+
+def test_bank_verify_dormant_returns_503(client, manager_token, monkeypatch):
+    """No bank API configured → 503 with fallback message."""
+    monkeypatch.delenv("BANK_PROVIDER", raising=False)
+    monkeypatch.delenv("BANK_API_KEY", raising=False)
+    rv = client.post(
+        "/finance/bank/verify",
+        json={"amount": 1000, "bank_ref": "EQTREF001"},
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 503
+    body = rv.get_json()
+    assert "not configured" in body["error"].lower()
+    assert "fallback" in body
+
+
+def test_bank_status_returns_dual_state(client, manager_token, monkeypatch):
+    """GET /finance/bank/status returns both sms_configured and api_configured fields."""
+    monkeypatch.delenv("BANK_SMS_WEBHOOK_SECRET", raising=False)
+    monkeypatch.delenv("BANK_PROVIDER", raising=False)
+    monkeypatch.delenv("BANK_API_KEY", raising=False)
+    rv = client.get(
+        "/finance/bank/status",
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 200
+    body = rv.get_json()
+    assert "sms_configured" in body
+    assert "api_configured" in body
+    assert body["sms_configured"] is False
+    assert body["api_configured"] is False
+    assert "message" in body
