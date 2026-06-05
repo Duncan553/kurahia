@@ -29,33 +29,60 @@ from app.models.audit_log import AuditLog
 REQUIRED_ENV_VARS_SMS = ("BANK_SMS_WEBHOOK_SECRET",)
 REQUIRED_ENV_VARS_API = ("BANK_PROVIDER", "BANK_API_KEY")
 
+SUPPORTED_PROVIDERS = ("equity", "kcb", "coop")
+
 
 def is_sms_configured() -> bool:
     return all(os.environ.get(k) for k in REQUIRED_ENV_VARS_SMS)
 
 
+def get_provider_name() -> Optional[str]:
+    """Return the configured BANK_PROVIDER if it's valid, else None."""
+    provider = (os.environ.get("BANK_PROVIDER") or "").strip().lower()
+    return provider if provider in SUPPORTED_PROVIDERS else None
+
+
 def is_api_configured() -> bool:
-    return all(os.environ.get(k) for k in REQUIRED_ENV_VARS_API)
+    """True only when BANK_API_KEY is set AND BANK_PROVIDER is a supported provider."""
+    return bool(os.environ.get("BANK_API_KEY")) and get_provider_name() is not None
 
 
 def configuration_status() -> Tuple[bool, bool, str]:
-    """Return (sms_ready, api_ready, message) for the diagnostic endpoint."""
-    sms = is_sms_configured()
-    api = is_api_configured()
+    """
+    Return (sms_ready, api_ready, message) for the diagnostic endpoint.
+
+    API message distinguishes three states:
+      - Configured:    BANK_PROVIDER is valid + BANK_API_KEY set   → names the provider
+      - Dormant:       BANK_PROVIDER not set                        → says so plainly
+      - Misconfigured: BANK_PROVIDER set but not in SUPPORTED_PROVIDERS → names the bad value
+    """
+    sms      = is_sms_configured()
+    api      = is_api_configured()
+    provider = get_provider_name()
+    raw_prov = (os.environ.get("BANK_PROVIDER") or "").strip()
+
+    # Build the API-side status message
+    if api:
+        api_msg = f"Bank API configured for provider: {provider}."
+    elif raw_prov and provider is None:
+        # BANK_PROVIDER is set but isn't in SUPPORTED_PROVIDERS — misconfigured, treated as dormant
+        api_msg = f"Bank API misconfigured — provider '{raw_prov}' not supported. Supported: {', '.join(SUPPORTED_PROVIDERS)}."
+    elif not raw_prov:
+        api_msg = "Bank API dormant — BANK_PROVIDER not set."
+    else:
+        # BANK_PROVIDER valid but BANK_API_KEY missing
+        api_msg = f"Bank API dormant — BANK_API_KEY not set (provider '{raw_prov}' recognised)."
+
     if sms and api:
-        msg = "Bank socket fully active: SMS forwarder + API verification both configured."
+        msg = f"Bank socket fully active: SMS forwarder active. {api_msg}"
     elif sms:
-        msg = "Bank SMS forwarder active. Bank API not configured (manual reconciliation fallback)."
+        msg = f"Bank SMS forwarder active. {api_msg}"
     elif api:
-        msg = "Bank API configured. SMS forwarder not active (BANK_SMS_WEBHOOK_SECRET missing)."
+        msg = f"Bank SMS forwarder not active (BANK_SMS_WEBHOOK_SECRET missing). {api_msg}"
     else:
         missing_sms = [k for k in REQUIRED_ENV_VARS_SMS if not os.environ.get(k)]
-        missing_api = [k for k in REQUIRED_ENV_VARS_API if not os.environ.get(k)]
-        msg = (
-            f"Bank socket dormant. "
-            f"SMS path missing: {', '.join(missing_sms)}. "
-            f"API path missing: {', '.join(missing_api)}."
-        )
+        msg = f"Bank socket dormant. SMS path missing: {', '.join(missing_sms)}. {api_msg}"
+
     return sms, api, msg
 
 
@@ -208,15 +235,53 @@ def handle_sms_forward(payload: dict, webhook_secret: str) -> Tuple[bool, any]:
         return False, f"Bank SMS write failed: {type(e).__name__}: {e}"
 
 
-# ── Bank API stub ────────────────────────────────────────────────
+# ── Bank API dispatch layer ──────────────────────────────────────
 
-def verify_bank_transfer(amount: Decimal, bank_ref: str, account_number: str = "") -> Tuple[bool, str]:
+def verify_bank_transfer(amount, bank_ref: str, account_number: str = "") -> Tuple[bool, any]:
     """
-    Verify a bank transfer via provider API.
-    Stubbed until Step 2.4 implements provider-specific handlers.
+    Verify a bank transfer via the configured bank API.
+    Dispatches to the appropriate provider implementation.
 
-    Returns (True, confirmed_ref) on success or (False, error_message) on failure.
+    Input validation runs before provider dispatch — applies equally to all providers.
+
+    Returns:
+        (True,  {"provider": ..., "verified_at": ..., "details": ...}) on confirmed transfer
+        (False, "plain English error message") on failure or dormancy
     """
     if not is_api_configured():
         return False, "Bank API integration not configured."
-    raise NotImplementedError("Step 2.4 will implement provider-specific verification.")
+
+    # Input validation — before touching any provider
+    try:
+        amount = Decimal(str(amount))
+    except (InvalidOperation, TypeError):
+        return False, "Amount must be a positive number."
+    if amount <= 0:
+        return False, "Amount must be a positive number."
+    if not bank_ref or not str(bank_ref).strip():
+        return False, "bank_ref is required."
+
+    provider = get_provider_name()
+    if provider == "equity":
+        return _verify_equity(amount, bank_ref, account_number)
+    elif provider == "kcb":
+        return _verify_kcb(amount, bank_ref, account_number)
+    elif provider == "coop":
+        return _verify_coop(amount, bank_ref, account_number)
+    else:
+        # Defensive — should not reach here since is_api_configured() validates provider
+        return False, f"Unknown bank provider: {provider}."
+
+
+# ── Provider stubs (Step 2.3 implements these) ────────────────────
+
+def _verify_equity(amount: Decimal, bank_ref: str, account_number: str) -> Tuple[bool, any]:
+    raise NotImplementedError("Step 2.3 will implement Equity Jenga API integration.")
+
+
+def _verify_kcb(amount: Decimal, bank_ref: str, account_number: str) -> Tuple[bool, any]:
+    raise NotImplementedError("Step 2.3 will implement KCB Open Banking integration.")
+
+
+def _verify_coop(amount: Decimal, bank_ref: str, account_number: str) -> Tuple[bool, any]:
+    raise NotImplementedError("Step 2.3 will implement Co-op Mobicash integration.")

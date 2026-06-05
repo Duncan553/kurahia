@@ -202,3 +202,61 @@ def test_sms_forward_unrecognized_format_returns_error_no_writes(app, sms_env):
         method=PaymentMethod.BANK_TRANSFER.value
     ).count()
     assert after == before   # no new Payment row written
+
+
+# ── Step 2.2: provider dispatch tests ────────────────────────────
+
+@pytest.fixture
+def api_env(monkeypatch):
+    """Set env vars for a valid bank API configuration (Equity)."""
+    monkeypatch.setenv("BANK_PROVIDER", "equity")
+    monkeypatch.setenv("BANK_API_KEY", "fake-api-key-001")
+
+
+def test_verify_bank_transfer_dormant_no_provider(monkeypatch):
+    """BANK_PROVIDER unset → is_api_configured() False → verify returns dormancy error."""
+    monkeypatch.delenv("BANK_PROVIDER", raising=False)
+    monkeypatch.delenv("BANK_API_KEY", raising=False)
+    ok, msg = bank_transfer.verify_bank_transfer(Decimal("500"), "REF001")
+    assert ok is False
+    assert "not configured" in msg.lower()
+
+
+def test_verify_bank_transfer_invalid_provider(monkeypatch):
+    """BANK_PROVIDER=xyz (not in SUPPORTED_PROVIDERS) → treated as dormant."""
+    monkeypatch.setenv("BANK_PROVIDER", "xyz")
+    monkeypatch.setenv("BANK_API_KEY", "fake-key")
+    assert bank_transfer.is_api_configured() is False
+    ok, msg = bank_transfer.verify_bank_transfer(Decimal("500"), "REF001")
+    assert ok is False
+    assert "not configured" in msg.lower()
+
+
+def test_verify_bank_transfer_dispatches_to_equity(monkeypatch, api_env):
+    """BANK_PROVIDER=equity → dispatches to _verify_equity (confirmed by NotImplementedError)."""
+    # _verify_equity raises NotImplementedError — that's the proof it was reached
+    with pytest.raises(NotImplementedError, match="Equity"):
+        bank_transfer.verify_bank_transfer(Decimal("1000"), "EQTREF001")
+
+
+def test_verify_bank_transfer_dispatches_to_kcb(monkeypatch):
+    """BANK_PROVIDER=kcb → dispatches to _verify_kcb."""
+    monkeypatch.setenv("BANK_PROVIDER", "kcb")
+    monkeypatch.setenv("BANK_API_KEY", "fake-api-key-002")
+    with pytest.raises(NotImplementedError, match="KCB"):
+        bank_transfer.verify_bank_transfer(Decimal("1000"), "KCBREF001")
+
+
+def test_verify_bank_transfer_invalid_amount(api_env):
+    """amount=0 → (False, 'Amount must be a positive number.') BEFORE reaching provider."""
+    ok, msg = bank_transfer.verify_bank_transfer(0, "EQTREF002")
+    assert ok is False
+    assert "positive" in msg.lower()
+
+
+def test_configuration_status_includes_provider_name(monkeypatch, api_env):
+    """BANK_PROVIDER=equity → status message contains 'equity'."""
+    monkeypatch.delenv("BANK_SMS_WEBHOOK_SECRET", raising=False)
+    sms_ready, api_ready, msg = bank_transfer.configuration_status()
+    assert api_ready is True
+    assert "equity" in msg.lower()
