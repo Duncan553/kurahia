@@ -95,7 +95,7 @@ kurahia/
 │   ├── MPESA_SANDBOX_TESTING.md
 │   ├── BANK_SOCKET_ACTIVATION.md
 │   └── CARD_GATEWAY_ACTIVATION.md
-├── KURAHIA_BACKEND_REFERENCE.md   ← master doc, read before pattern changes
+├── docs/SYSTEM_OVERVIEW.md        ← master doc, read before pattern changes
 ├── PAYMENTS_DESIGN.md             ← payment architecture + all three sockets
 ├── CLI_REFERENCE.md
 ├── DEPLOY.md
@@ -106,7 +106,7 @@ kurahia/
 
 ## 5. The 15 cross-cutting patterns
 
-When adding new code, follow the existing patterns. Each is documented in detail in §6 (dummy→engineer→code) and §7 (quick-reference) of `KURAHIA_BACKEND_REFERENCE.md`.
+When adding new code, follow the existing patterns. Each is documented in detail in §4 (patterns) of `docs/SYSTEM_OVERVIEW.md`.
 
 1. App factory (create_app)
 2. init_app decoupling for extensions
@@ -165,7 +165,7 @@ Both currently return `("UNCONFIGURED", "...")`. Activating each is one function
 
 ## 8. Working with this codebase — rules
 
-1. **Read `KURAHIA_BACKEND_REFERENCE.md` before proposing pattern changes.** It's the source of truth. Don't reinvent.
+1. **Read `docs/SYSTEM_OVERVIEW.md` before proposing pattern changes.** It's the source of truth. Don't reinvent.
 2. **Match existing patterns.** New endpoints get role check + idempotency + audit log + plain-English errors. New entities get is_active + UTC + Decimal-where-money.
 3. **No deletes. No floats for money. No hardcoded role/department lists.** Adding these is a regression.
 4. **One logical change per commit.** Descriptive message: e.g., `"Chunk N: short description"` or `"Security Category N: <attack name>"`.
