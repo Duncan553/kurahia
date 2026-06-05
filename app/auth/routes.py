@@ -40,7 +40,12 @@ _DUMMY_HASH = _ph.hash("dummy-password-for-timing-equalization")
 # ── Password login (manager / owner) ─────────────────────────────────────────
 
 @auth_bp.post("/login")
-@limiter.limit("5 per minute")
+@limiter.limit(
+    "5 per minute",
+    # Exempt in testing by default — tests opt-in via app.config["TEST_RATELIMIT"] = True
+    # This prevents the rate limit from interfering with timing tests that make 10+ login calls
+    exempt_when=lambda: current_app.testing and not current_app.config.get("TEST_RATELIMIT"),
+)
 def login():
     data = request.get_json(silent=True) or {}
     username = data.get("username", "").strip().lower()
