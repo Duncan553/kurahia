@@ -95,6 +95,9 @@ def create_app(config_name: str = None) -> Flask:
     from app.finance.mpesa_daraja import mpesa_daraja_bp
     app.register_blueprint(mpesa_daraja_bp)
 
+    from app.finance.bank import bank_bp
+    app.register_blueprint(bank_bp)
+
     from app.hr import (profiles_bp, wifi_bp, shifts_bp, clock_bp,
                         leave_bp, absence_bp, attendance_bp, performance_bp)
     app.register_blueprint(profiles_bp)
