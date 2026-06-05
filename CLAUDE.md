@@ -17,18 +17,21 @@ Solo-built by Wachira. **453 passing, 1 skipped (Phase B security review + Phase
 
 ## 2. Current phase
 
-**Phase B: Adversarial security review** in progress.
+**Phase C-ext: Payment sockets — COMPLETE.** Working tree clean. 453 passing, 1 skipped.
 
-- ✅ Phase A: Master reference document (see `KURAHIA_BACKEND_REFERENCE.md`)
-- 🔄 Phase B: Security attacks across 6 categories
-  - ✅ Category 1: Business Logic — done (test_security_category_1.py)
-  - 🔄 Category 2: Auth & Authorization — in progress
-  - ⏳ Category 3: Data integrity & concurrency
-  - ⏳ Category 4: Information leaks
-  - ⏳ Category 5: Operational & disaster recovery
-  - ⏳ Category 6: Human attacks / collusion
-- ⏳ Phase C: Real-data deployment plan
-- ⏳ Frontend (only after Phase B + C complete)
+- ✅ Phase A: Backend chunks 1-10 (264 baseline tests, feature-complete)
+- ✅ Phase B: Adversarial security review — all 6 categories done
+  - 13 production bugs caught and fixed (+123 tests across test_security_category_1-6.py)
+  - Cat 5 follow-up: audit-log atomicity sweep across 33 files (single-commit write pattern)
+  - HUMAN_THREATS.md runbook written for owner (Cat 6)
+- ✅ Phase C-1: Infrastructure-switch readiness (Postgres verified, secrets templated, cron + TLS documented)
+- ✅ Phase C-ext: All three payment sockets built, tested, documented (21 commits, +66 tests)
+  - M-Pesa Daraja: STK Push + C2B callback + routes (docs/MPESA_SANDBOX_TESTING.md)
+  - Bank Transfer: SMS forwarder + Equity/KCB/Co-op API + routes (docs/BANK_SOCKET_ACTIVATION.md)
+  - Card Gateway: Pesapal/DPO/Cellulant + IPN handler + routes (docs/CARD_GATEWAY_ACTIVATION.md)
+- ⏳ Phase C-2: Real-data seeding (awaits owner answers via partner)
+- ⏳ Phase C-3: Shadow week + go-live runbook
+- ⏳ Phase D: Frontend (4-7 weeks estimated, parked until C-2 + C-3 complete)
 
 ---
 
@@ -64,11 +67,11 @@ kurahia/
 │   ├── __init__.py             create_app() factory
 │   ├── extensions.py           db, jwt, migrate (init_app pattern)
 │   ├── config.py               development / testing / production
-│   ├── models/                 42 SQLAlchemy models
+│   ├── models/                 45+ SQLAlchemy models
 │   ├── auth/                   login, refresh, PIN, account creation
 │   ├── inventory/              items, counts, movements, purchases
 │   ├── pos/                    menu, orders, kitchen/bar queues, payments
-│   ├── finance/                cash + M-Pesa reconciliation, budgets, periods
+│   ├── finance/                cash, M-Pesa/bank/card reconciliation + dormant sockets, budgets
 │   ├── hr/                     profiles, clock-in, shifts, leave, performance
 │   ├── bookings/               resources, bookings, deposits, waivers
 │   ├── gate/                   wristband issuance, reconciliation, forfeit
@@ -87,7 +90,13 @@ kurahia/
 │   └── utils/                  shared helpers
 ├── tests/                      453+ pytest tests
 ├── migrations/                 Alembic migration files
+├── docs/
+│   ├── SYSTEM_OVERVIEW.md          ← start here if new to the codebase
+│   ├── MPESA_SANDBOX_TESTING.md
+│   ├── BANK_SOCKET_ACTIVATION.md
+│   └── CARD_GATEWAY_ACTIVATION.md
 ├── KURAHIA_BACKEND_REFERENCE.md   ← master doc, read before pattern changes
+├── PAYMENTS_DESIGN.md             ← payment architecture + all three sockets
 ├── CLI_REFERENCE.md
 ├── DEPLOY.md
 └── .env.example
@@ -117,17 +126,29 @@ When adding new code, follow the existing patterns. Each is documented in detail
 
 ---
 
-## 6. Three dormant sockets — activate by replacing ONE function body
+## 6. Dormant sockets — activate by setting env vars
 
-Don't redesign the dispatcher / reconciliation flow. Just swap the function.
+Three payment sockets are fully implemented. They are dormant by default and activate
+when their required env vars are set. See `docs/` for activation runbooks.
+
+| Socket | File | Activation env var(s) | Runbook |
+|---|---|---|---|
+| M-Pesa Daraja | `app/finance/mpesa_daraja.py` | `MPESA_CONSUMER_KEY` + 4 others | docs/MPESA_SANDBOX_TESTING.md |
+| Bank Transfer (SMS) | `app/finance/bank_transfer.py` | `BANK_SMS_WEBHOOK_SECRET` | docs/BANK_SOCKET_ACTIVATION.md |
+| Bank Transfer (API) | `app/finance/bank_transfer.py` | `BANK_PROVIDER` + `BANK_API_KEY` | docs/BANK_SOCKET_ACTIVATION.md |
+| Card Gateway | `app/finance/card_gateway.py` | `CARD_PROVIDER` + `CARD_API_KEY` + 2 others | docs/CARD_GATEWAY_ACTIVATION.md |
+
+Diagnostic for each: `GET /finance/mpesa/status`, `/finance/bank/status`, `/finance/card/status`.
+All return `{"configured": bool, "message": str}` — plain English on what's missing.
+
+Two notification stubs remain (true "one function body" swaps when credentials arrive):
 
 | Socket | File | Function | Needs |
 |---|---|---|---|
-| M-Pesa Daraja | `app/finance/mpesa.py` | `initiate_stk_push`, `verify_payment` | Daraja API keys, Pay Bill / Till, passkey, callback URL |
 | WhatsApp | `app/services/notifications/whatsapp.py` | `send_whatsapp` | Meta Business API + approved templates, OR Twilio / Africa's Talking |
 | SMS | `app/services/notifications/sms.py` | `send_sms` | Africa's Talking (recommended for Kenya): username + API key + sender ID |
 
-All currently return `("UNCONFIGURED", "...")`. Activating each is **one function body** — no other code changes.
+Both currently return `("UNCONFIGURED", "...")`. Activating each is one function body — no other code changes.
 
 ---
 
@@ -159,7 +180,7 @@ All currently return `("UNCONFIGURED", "...")`. Activating each is **one functio
 - **Big picture first**, then details. Always.
 - **Dummy → engineer → where-in-code** when teaching a new concept.
 - **Honest about the work, kind about him.** Brutal feedback on code; never on his ability.
-- **Backend logic before any frontend.** Frontend is parked until Phase B and C are done.
+- **Backend logic before any frontend.** Frontend is parked until Phase C-2 (data seeding) and Phase C-3 (shadow week) are complete.
 - **Match his energy:** direct, alive, fast. No corporate fluff. No padding.
 - **Capture tangents quickly, then steer back** to the main goal.
 - **When stuck, explain WHY it broke** — root cause, not just the fix.
