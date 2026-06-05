@@ -1,18 +1,14 @@
 """
-finance/bank_transfer.py — Bank transfer dormant socket.
+finance/bank_transfer.py — Bank transfer dormant socket + Flask routes.
 
 Two activation paths:
 
 1. SMS forwarder (primary) — BANK_SMS_WEBHOOK_SECRET env var activates this.
-   An Android SMS forwarding app (e.g. SMSSync) sends bank credit SMSs to
-   POST /finance/bank/sms-forward. This module parses the SMS body,
-   extracts amount + bank_ref, and writes Payment + PaymentReconciliation.
+   POST /finance/bank/sms-forward receives SMSs forwarded from the till phone.
+   Parses Equity / KCB / Co-op credit SMSs, writes Payment + PaymentReconciliation.
 
-2. Bank API (stub) — BANK_PROVIDER + BANK_API_KEY activate this.
-   Not yet implemented. verify_bank_transfer() returns a plain error until
-   Step 2.4 fills in provider-specific code.
-
-Routes are NOT registered here. Step 2.5 adds Flask routes.
+2. Bank API — BANK_PROVIDER + BANK_API_KEY + provider-specific vars activate this.
+   POST /finance/bank/verify triggers real-time transfer verification via provider API.
 """
 import os
 import re
@@ -22,10 +18,18 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Tuple, Optional
 import httpx
+from flask import Blueprint, request, jsonify, current_app
+from flask_jwt_extended import get_jwt_identity
+from app.utils.auth_decorators import require_active_user
 from app.extensions import db
+from app.models.user import User
 from app.models.payment import Payment, PaymentMethod
 from app.models.payment_reconciliation import PaymentReconciliation, PaymentReconciliationStatus
 from app.models.audit_log import AuditLog
+
+bank_transfer_bp = Blueprint("bank_transfer", __name__, url_prefix="/finance")
+
+MANAGER_LEVEL = 5
 
 # ── Env var contracts ────────────────────────────────────────────
 
@@ -171,11 +175,6 @@ def handle_sms_forward(payload: dict, webhook_secret: str) -> Tuple[bool, any]:
     """
     if not is_sms_configured():
         return False, "Bank SMS forwarder not configured."
-
-    # Shared-secret check — forwarder app sends the secret in the payload body
-    expected_secret = os.environ.get("BANK_SMS_WEBHOOK_SECRET", "")
-    if payload.get("secret") != expected_secret:
-        return False, "Unauthorized: invalid webhook secret."
 
     body = (payload.get("body") or "").strip()
     if not body:
@@ -498,3 +497,70 @@ def _verify_coop(amount: Decimal, bank_ref: str, account_number: str) -> Tuple[b
             "transaction_date": data.get("TransactionDate"),  # TODO: verify field name
         },
     }
+
+
+# ── Flask routes ─────────────────────────────────────────────────
+
+@bank_transfer_bp.post("/bank/sms-forward")
+def bank_sms_forward():
+    """
+    Public — called by the SMS forwarder app on the till phone.
+    If BANK_SMS_WEBHOOK_SECRET is set, requires X-Webhook-Secret header to match.
+    Always returns 200 so the forwarder app doesn't retry on internal bugs.
+    """
+    expected = os.environ.get("BANK_SMS_WEBHOOK_SECRET")
+    if expected and request.headers.get("X-Webhook-Secret") != expected:
+        return jsonify({"error": "Unauthorized."}), 401
+
+    try:
+        payload = request.get_json(silent=True) or {}
+        handle_sms_forward(payload)
+    except Exception:
+        current_app.logger.exception("Bank SMS forward processing failed")
+    return jsonify({"status": "accepted"}), 200
+
+
+@bank_transfer_bp.post("/bank/verify")
+@require_active_user
+def bank_verify():
+    """Manager-triggered real-time verification of a bank transfer via provider API."""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    if not is_api_configured():
+        return jsonify({
+            "error": "Bank API not configured.",
+            "fallback": "Use manual reconciliation or SMS forwarder.",
+        }), 503
+
+    data          = request.get_json(silent=True) or {}
+    amount        = data.get("amount")
+    bank_ref      = data.get("bank_ref")
+    account_number = data.get("account_number", "")
+
+    if amount is None:
+        return jsonify({"error": "Missing required field: amount."}), 400
+    if not bank_ref:
+        return jsonify({"error": "Missing required field: bank_ref."}), 400
+
+    ok, result = verify_bank_transfer(amount, bank_ref, account_number)
+    if not ok:
+        return jsonify({"error": result}), 400
+    return jsonify(result), 200
+
+
+@bank_transfer_bp.get("/bank/status")
+@require_active_user
+def bank_status():
+    """Diagnostic — which parts of the bank socket are configured?"""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+    sms_configured, api_configured, message = configuration_status()
+    return jsonify({
+        "sms_configured": sms_configured,
+        "api_configured": api_configured,
+        "provider":       get_provider_name(),
+        "message":        message,
+    }), 200
