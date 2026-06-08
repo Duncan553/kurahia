@@ -88,15 +88,18 @@ kurahia/
 │   ├── judge/engine.py         silent theft detection
 │   ├── cli/                    flask CLI commands
 │   └── utils/                  shared helpers
-├── tests/                      453+ pytest tests
+├── tests/                      479+ pytest tests
 ├── migrations/                 Alembic migration files
 ├── docs/
 │   ├── SYSTEM_OVERVIEW.md          ← start here if new to the codebase
+│   ├── FRONTEND_DESIGN.md          ← complete frontend design specification (F-0 onward)
 │   ├── MPESA_SANDBOX_TESTING.md
 │   ├── BANK_SOCKET_ACTIVATION.md
 │   └── CARD_GATEWAY_ACTIVATION.md
-├── docs/SYSTEM_OVERVIEW.md        ← master doc, read before pattern changes
-├── PAYMENTS_DESIGN.md             ← payment architecture + all three sockets
+├── employee_pwa/               ← Employee Progressive Web App (React + Vite, port 5173)
+├── owner_pwa/                  ← Owner Progressive Web App (React + Vite, port 5174)
+├── shared_ui/                  ← Design tokens + components shared between both PWAs
+├── PAYMENTS_DESIGN.md          ← payment architecture + all three sockets
 ├── CLI_REFERENCE.md
 ├── DEPLOY.md
 └── .env.example
