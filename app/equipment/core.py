@@ -12,6 +12,7 @@ from app.extensions import db
 from app.models.user import User
 from app.models.equipment import Equipment, MaintenanceLog, SafetyCheck, EquipmentStatus
 from app.models.audit_log import AuditLog
+from app.equipment.safety_templates import get_template
 
 equipment_bp = Blueprint("equipment_core", __name__, url_prefix="/equipment")
 
@@ -168,23 +169,69 @@ def log_safety_check(eq_id):
     eq = db.session.get(Equipment, eq_id)
     if not eq or not eq.is_active:
         return jsonify({"error": "Equipment not found."}), 404
+
     data = request.get_json(silent=True) or {}
-    passed = data.get("passed")
-    if passed is None:
-        return jsonify({"error": "passed (true/false) is required."}), 400
+    check_items = data.get("check_items")
+
+    if not isinstance(check_items, dict) or not check_items:
+        return jsonify({"error": "check_items is required and must be a non-empty object."}), 400
+
+    # Validate against the template for this equipment type
+    template = get_template(eq.equipment_type)
+    if template:
+        missing = [k for k in template if k not in check_items]
+        unchecked = [
+            k for k in template
+            if k in check_items and check_items[k].get("checked") is not True
+        ]
+        not_confirmed = missing + unchecked
+        if not_confirmed:
+            return jsonify({
+                "error": (
+                    f"Safety check failed. The following items are not confirmed: "
+                    f"{not_confirmed}. All {len(template)} items must be checked "
+                    f"before equipment can be used."
+                )
+            }), 400
+    else:
+        # Unknown type: all supplied items must be checked=true
+        unchecked = [k for k, v in check_items.items()
+                     if not isinstance(v, dict) or v.get("checked") is not True]
+        if unchecked:
+            return jsonify({
+                "error": (
+                    f"Safety check failed. The following items are not confirmed: "
+                    f"{unchecked}. All items must be checked before equipment can be used."
+                )
+            }), 400
+
     check = SafetyCheck(
         equipment_id=eq_id,
         performed_by_id=actor.id,
         performed_at_utc=datetime.now(timezone.utc),
-        passed=bool(passed),
-        checklist_notes=data.get("checklist_notes"),
+        passed=True,
+        check_items=check_items,
     )
     db.session.add(check)
-    if not passed:
-        eq.status = EquipmentStatus.MAINTENANCE.value
     db.session.flush()
     AuditLog.log(actor=actor.username, action="equipment.safety_check",
-                 target=eq_id, details=f"passed={passed}")
+                 target=eq_id, details="passed=True")
     db.session.commit()
-    return jsonify({"id": check.id, "passed": check.passed,
+    return jsonify({"id": check.id, "passed": True,
                     "equipment_status": eq.status}), 201
+
+
+@equipment_bp.get("/checklist-templates/<equipment_type>")
+@require_active_user
+def get_checklist_template(equipment_type):
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+    template = get_template(equipment_type)
+    if template is None:
+        return jsonify({"error": f"No checklist template found for equipment type '{equipment_type}'."}), 404
+    return jsonify({
+        "equipment_type": equipment_type.strip().lower(),
+        "items": template,
+        "count": len(template),
+    }), 200

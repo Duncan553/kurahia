@@ -89,7 +89,8 @@ class SafetyCheck(db.Model):
     performed_by_id  = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
     performed_at_utc = db.Column(db.DateTime(timezone=True), nullable=False)
     passed           = db.Column(db.Boolean, nullable=False)
-    checklist_notes  = db.Column(db.Text, nullable=True)  # JSON string or plain notes
+    checklist_notes  = db.Column(db.Text, nullable=True)  # kept for legacy / free-text notes
+    check_items      = db.Column(db.JSON, nullable=True)  # structured per-item results
 
     created_at_utc = db.Column(
         db.DateTime(timezone=True), nullable=False,
