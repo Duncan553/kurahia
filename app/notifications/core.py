@@ -63,6 +63,18 @@ def mark_read(notif_id):
     return jsonify(_notif_dict(notif)), 200
 
 
+@notifications_bp.get("/whatsapp/status")
+@require_active_user
+def whatsapp_status():
+    """Diagnostic: is the WhatsApp socket configured? Manager+ only."""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+    from app.services.notifications.whatsapp import configuration_status
+    configured, message = configuration_status()
+    return jsonify({"configured": configured, "message": message}), 200
+
+
 @notifications_bp.get("")
 @require_active_user
 def list_notifications():
