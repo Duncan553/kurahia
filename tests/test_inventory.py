@@ -322,6 +322,57 @@ def test_purchase_accepted_with_receipt(client, app, item, manager_token):
         assert get_current_stock(item) == Decimal("5")
 
 
+# ── 6b. Receipt photo enforcement (explicit named cases) ─────────────────────
+
+def test_purchase_rejected_without_receipt_photo(client, app, item, manager_token):
+    """Missing receipt_photo_path field → 400 with clear message."""
+    rv = client.post(
+        "/inventory/purchases",
+        json={
+            "item_id": item, "quantity": "3", "actual_cost": "300",
+            "idempotency_key": str(uuid.uuid4()),
+        },
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 400
+    body = rv.get_json()
+    assert "receipt" in body["error"].lower()
+    assert "required" in body["error"].lower()
+
+
+def test_purchase_rejected_with_empty_receipt_photo(client, app, item, manager_token):
+    """Empty string and null receipt_photo_path → 400."""
+    for bad_value in ("", None):
+        rv = client.post(
+            "/inventory/purchases",
+            json={
+                "item_id": item, "quantity": "3", "actual_cost": "300",
+                "receipt_photo_path": bad_value,
+                "idempotency_key": str(uuid.uuid4()),
+            },
+            headers={"Authorization": f"Bearer {manager_token}"},
+        )
+        assert rv.status_code == 400, f"Expected 400 for receipt_photo_path={bad_value!r}"
+        assert "receipt" in rv.get_json()["error"].lower()
+
+
+def test_purchase_succeeds_with_receipt_photo(client, app, item, manager_token):
+    """Valid receipt_photo_path → 201 and purchase persists."""
+    rv = client.post(
+        "/inventory/purchases",
+        json={
+            "item_id": item, "quantity": "2", "actual_cost": "200",
+            "receipt_photo_path": "/receipts/q3-test.jpg",
+            "idempotency_key": str(uuid.uuid4()),
+        },
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 201
+    data = rv.get_json()
+    assert "purchase_id" in data
+    assert data["quantity"] == "2"
+
+
 # ── 7. Decimal precision ──────────────────────────────────────────────────────
 
 def test_decimal_precision_preserved(app, item):

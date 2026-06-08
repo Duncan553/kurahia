@@ -170,7 +170,7 @@ def record_purchase():
     idem_key           = data.get("idempotency_key") or str(uuid.uuid4())
 
     if not receipt_photo_path:
-        return jsonify({"error": "Receipt photo is required before recording the purchase."}), 400
+        return jsonify({"error": "Receipt photo is required for every purchase. Upload a photo of the receipt to complete this purchase."}), 400
     if not item_id:
         return jsonify({"error": "item_id is required"}), 400
     if raw_qty is None or raw_cost is None:
