@@ -10,3 +10,11 @@ instance/
 dist/
 build/
 *.egg-info/
+
+# PWA build artifacts
+employee_pwa/node_modules/
+employee_pwa/dist/
+employee_pwa/.vite/
+owner_pwa/node_modules/
+owner_pwa/dist/
+owner_pwa/.vite/
