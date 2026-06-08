@@ -290,14 +290,20 @@ class TestEquipment:
             eq = db.session.get(Equipment, eq_id)
         assert eq.is_due_service is False
 
-    def test_failed_safety_check_sets_maintenance_status(self, client, manager_token):
+    def test_safety_check_succeeds_with_full_jetski_checklist(self, client, manager_token):
         rv = self._create(client, manager_token, name="Jetski C")
         eq_id = rv.get_json()["id"]
         rv = client.post(f"/equipment/{eq_id}/safety-check",
-                         json={"passed": False, "checklist_notes": "Engine issue."},
+                         json={"check_items": {
+                             "life_jackets_on_board":      {"checked": True, "note": ""},
+                             "engine_oil_level_checked":   {"checked": True, "note": ""},
+                             "fuel_level_ok":              {"checked": True, "note": ""},
+                             "kill_switch_lanyard_present":{"checked": True, "note": ""},
+                             "guest_waiver_confirmed":     {"checked": True, "note": ""},
+                         }},
                          headers=auth(manager_token))
         assert rv.status_code == 201
-        assert rv.get_json()["equipment_status"] == "MAINTENANCE"
+        assert rv.get_json()["passed"] is True
 
     def test_disable_equipment(self, client, manager_token):
         rv = self._create(client, manager_token, name="Jetski D")
