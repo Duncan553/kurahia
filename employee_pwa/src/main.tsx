@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import { ToastContainer } from '@shared'
@@ -9,10 +9,12 @@ import AppLayout from './layouts/AppLayout'
 import LoginScreen from './screens/LoginScreen'
 import PinEntryScreen from './screens/PinEntryScreen'
 import PinSetupScreen from './screens/PinSetupScreen'
-import HomeScreen from './screens/HomeScreen'
-import OrdersScreen from './screens/OrdersScreen'
+import ClockScreen from './screens/ClockScreen'
+import ScheduleScreen from './screens/ScheduleScreen'
 import NotificationsScreen from './screens/NotificationsScreen'
 import ProfileScreen from './screens/ProfileScreen'
+import ConductScreen from './screens/ConductScreen'
+import SuggestionsScreen from './screens/SuggestionsScreen'
 import GateScreen from './screens/GateScreen'
 import ManagerScreen from './screens/ManagerScreen'
 
@@ -32,16 +34,20 @@ const router = createBrowserRouter([
     children: [{
       element: <AppLayout />,
       children: [
-        { path: '/',              element: <HomeScreen />          },
-        { path: '/orders',        element: <OrdersScreen />        },
-        { path: '/notifications', element: <NotificationsScreen /> },
-        { path: '/profile',       element: <ProfileScreen />       },
-        // Gate tab — level 3+
+        // Root redirects to the primary action
+        { path: '/',                element: <Navigate to="/clock" replace /> },
+        // Universal screens (F-7)
+        { path: '/clock',           element: <ClockScreen />         },
+        { path: '/schedule',        element: <ScheduleScreen />      },
+        { path: '/notifications',   element: <NotificationsScreen /> },
+        { path: '/profile',         element: <ProfileScreen />       },
+        { path: '/conduct',         element: <ConductScreen />       },
+        { path: '/suggestions/new', element: <SuggestionsScreen />   },
+        // Role-gated screens
         {
           element: <RoleGate minLevel={3} />,
           children: [{ path: '/gate', element: <GateScreen /> }],
         },
-        // Manager tab — level 5+
         {
           element: <RoleGate minLevel={5} />,
           children: [{ path: '/manager', element: <ManagerScreen /> }],

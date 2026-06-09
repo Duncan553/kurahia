@@ -1,19 +1,23 @@
 import { useLocation, useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
+import api from '../lib/axios'
+import type { Notification } from '../screens/NotificationsScreen'
 
 // ── Icons (inline SVG — no library dependency) ─────────────────────────────
 
-function HomeIcon() {
+function ClockIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M3 9.5L11 3l8 6.5V19a1 1 0 01-1 1H14v-5h-4v5H4a1 1 0 01-1-1V9.5z"
-      stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M11 7v4.5l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
-function OrdersIcon() {
+function ScheduleIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <rect x="5" y="3" width="12" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M8 7h6M8 11h6M8 15h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <rect x="3" y="4" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M7 2v4M15 2v4M3 10h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M7 14h2M13 14h2M7 17h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 }
 function BellIcon() {
@@ -73,12 +77,12 @@ function TopBarStats({ roleLevel }: { roleLevel: number }) {
 interface NavItem { path: string; label: string; Icon: () => JSX.Element; minLevel: number; badge?: boolean }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/',              label: 'Home',          Icon: HomeIcon,    minLevel: 0 },
-  { path: '/orders',        label: 'Orders',        Icon: OrdersIcon,  minLevel: 0 },
-  { path: '/notifications', label: 'Notifications', Icon: BellIcon,    minLevel: 0, badge: true },
-  { path: '/profile',       label: 'Profile',       Icon: ProfileIcon, minLevel: 0 },
-  { path: '/gate',          label: 'Gate',          Icon: GateIcon,    minLevel: 3 },
-  { path: '/manager',       label: 'Manager',       Icon: ManagerIcon, minLevel: 5 },
+  { path: '/clock',         label: 'Clock',         Icon: ClockIcon,    minLevel: 0 },
+  { path: '/schedule',      label: 'Schedule',      Icon: ScheduleIcon, minLevel: 0 },
+  { path: '/notifications', label: 'Alerts',        Icon: BellIcon,     minLevel: 0, badge: true },
+  { path: '/profile',       label: 'Profile',       Icon: ProfileIcon,  minLevel: 0 },
+  { path: '/gate',          label: 'Gate',          Icon: GateIcon,     minLevel: 3 },
+  { path: '/manager',       label: 'Manager',       Icon: ManagerIcon,  minLevel: 5 },
 ]
 
 // ── Page transition ─────────────────────────────────────────────────────────
@@ -100,8 +104,13 @@ export default function AppLayout() {
 
   const visibleItems = NAV_ITEMS.filter((item) => roleLevel >= item.minLevel)
 
-  // Notification badge count — 0 placeholder, real count wired in F-7
-  const badgeCount = 0
+  // Shares the same TanStack cache key as NotificationsScreen → no extra network request
+  const { data: inbox } = useQuery<Notification[]>({
+    queryKey: ['notifications', 'inbox'],
+    queryFn: () => api.get<Notification[]>('/notifications/inbox').then((r) => r.data),
+    staleTime: 30_000,
+  })
+  const badgeCount = inbox?.length ?? 0
 
   function signOut() { clearAuth(); navigate('/pin') }
 
@@ -147,7 +156,7 @@ export default function AppLayout() {
           <NavLink
             key={path}
             to={path}
-            end={path === '/'}
+            end={path === '/clock'}
             className={({ isActive }) => [
               'flex-1 flex flex-col items-center justify-center gap-0.5 py-2',
               'min-h-[56px] relative transition-colors',
