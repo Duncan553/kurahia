@@ -1,21 +1,21 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useNavigate } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import { EmptyState } from '@shared'
 
-// Redirects unauthenticated users to /pin (daily auth method)
 export function AuthGate() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   if (!isAuthenticated) return <Navigate to="/pin" replace />
   return <Outlet />
 }
 
-// Wraps a route that requires a minimum role level.
-// Shows EmptyState (not a redirect) so the nav shell stays visible.
-export function requireRole(minLevel: number) {
-  return function RoleGate() {
-    const user = useAuthStore((s) => s.user)
-    if (!user || user.role_level < minLevel) {
-      return (
+// Role gate for nested routes — shows EmptyState (not redirect) so nav shell stays.
+export function RoleGate({ minLevel }: { minLevel: number }) {
+  const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  if (!user || user.role_level < minLevel) {
+    return (
+      <div className="p-6">
         <EmptyState
           icon={
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
@@ -26,9 +26,38 @@ export function requireRole(minLevel: number) {
           }
           title="You don't have access to this area."
           description="Ask your manager if you think this is a mistake."
+          actionLabel="Go back"
+          onAction={() => navigate(-1)}
         />
-      )
-    }
-    return <Outlet />
+      </div>
+    )
   }
+  return <Outlet />
 }
+
+// Used in AuthGate to check role before rendering a page inline (no nesting needed).
+export function RequireRole({ minLevel, children }: { minLevel: number; children: ReactNode }) {
+  const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  if (!user || user.role_level < minLevel) {
+    return (
+      <div className="p-6">
+        <EmptyState
+          icon={
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <rect x="12" y="22" width="24" height="18" rx="3" stroke="currentColor" strokeWidth="2" />
+              <path d="M16 22v-6a8 8 0 0116 0v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="24" cy="31" r="2" fill="currentColor" />
+            </svg>
+          }
+          title="You don't have access to this area."
+          description="Ask your manager if you think this is a mistake."
+          actionLabel="Go back"
+          onAction={() => navigate(-1)}
+        />
+      </div>
+    )
+  }
+  return <>{children}</>
+}
+
