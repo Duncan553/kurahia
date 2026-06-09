@@ -1,1 +1,72 @@
 @import "tailwindcss";
+
+@theme {
+  /* ── System palette ──────────────────────────────────────────── */
+  --color-sage-main: #9CB39A;
+  --color-sage-light: #B8C8B0;
+  --color-sage-dark: #7A9374;
+  --color-cream-card: #F2EBDD;
+  --color-cream-alt: #EBE2CE;
+  --color-ink-primary: #2A2620;
+  --color-ink-secondary: #5C5147;
+  --color-ink-tertiary: #8C7E6F;
+
+  /* ── Ticket palette ──────────────────────────────────────────── */
+  --color-ticket-paper: #EFE6D2;
+  --color-ticket-alt: #E5DAC1;
+  --color-ticket-ink: #1F1B14;
+  --color-stamp-red: #9A3E32;
+  --color-leaf-green: #708A4F;
+  --color-tea-brown: #6B4A2E;
+
+  /* ── Status palette ──────────────────────────────────────────── */
+  --color-status-paid: #4A7A4A;
+  --color-status-pending: #B88838;
+  --color-status-failed: #A04438;
+  --color-status-neutral: #4A7889;
+
+  /* ── Font families ───────────────────────────────────────────── */
+  --font-sans: Inter, sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+
+  /* ── Type scale (8-step: 12/14/16/20/25/31/39/49px) ─────────── */
+  /* text-xs  = 12px (Tailwind default 0.75rem — unchanged) */
+  /* text-sm  = 14px (Tailwind default 0.875rem — unchanged) */
+  /* text-base = 16px (Tailwind default 1rem — unchanged) */
+  /* text-xl  = 20px (Tailwind default 1.25rem — unchanged) */
+  --text-2xl: 1.5625rem;  /* 25px — Tailwind default is 24px */
+  --text-3xl: 1.9375rem;  /* 31px — Tailwind default is 30px */
+  --text-4xl: 2.4375rem;  /* 39px — Tailwind default is 36px */
+  --text-5xl: 3.0625rem;  /* 49px — Tailwind default is 48px */
+
+  /* ── Tracking ────────────────────────────────────────────────── */
+  /* tracking-wide / tracking-widest use Tailwind defaults */
+  /* tracking-tight uses Tailwind default */
+
+  /* ── Breakpoints (Tailwind v4 defaults — confirmed) ─────────── */
+  /* sm: 640px  md: 768px  lg: 1024px  xl: 1280px */
+}
+
+/* F-18 font-size slider hook — regular CSS var, not a Tailwind token */
+html {
+  --font-size-base: 16px;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: Inter, sans-serif;
+    font-size: var(--font-size-base);
+  }
+}
+
+/* Utility: tabular numbers for financial data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
