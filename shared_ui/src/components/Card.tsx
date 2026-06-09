@@ -56,13 +56,13 @@ export function Card({
       <motion.div
         whileHover={{ translateY: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.10)' }}
         whileTap={{ scale: 0.99 }}
-        transition={{ duration: 0.15, ease: 'easeOut' }}
+        transition={{ duration: 0.15, ease: 'easeOut' as const }}
         className={base}
         onClick={onClick}
         role={onClick ? 'button' : undefined}
         tabIndex={onClick ? 0 : undefined}
         onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick() } : undefined}
-        {...(rest as ComponentPropsWithoutRef<'div'>)}
+        {...(rest as Record<string, unknown>)}
       >
         {children}
       </motion.div>

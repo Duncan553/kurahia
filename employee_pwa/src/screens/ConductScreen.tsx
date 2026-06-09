@@ -68,7 +68,7 @@ export default function ConductScreen() {
   const signMutation = useMutation({
     mutationFn: ({ rule_key, version }: { rule_key: string; version: number }) =>
       api.post('/conduct/sign', { rule_key, version, idempotency_key: crypto.randomUUID() }),
-    onSuccess: (_, vars) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conduct', 'signatures', userId] })
       addToast({ type: 'success', message: 'Code of conduct signed.' })
     },
@@ -81,12 +81,12 @@ export default function ConductScreen() {
   if (isLoading) {
     return (
       <div className="p-4 space-y-4">
-        <Skeleton variant="text" width="w-1/3" />
-        <Skeleton variant="rectangular" height="h-40" />
+        <Skeleton variant="text" className="w-1/3" />
+        <Skeleton variant="card" />
         <Skeleton variant="text" />
-        <Skeleton variant="text" width="w-3/4" />
-        <Skeleton variant="text" width="w-2/3" />
-        <Skeleton variant="rectangular" height="h-10" width="w-32" />
+        <Skeleton variant="text" className="w-3/4" />
+        <Skeleton variant="text" className="w-2/3" />
+        <Skeleton variant="button" />
       </div>
     )
   }

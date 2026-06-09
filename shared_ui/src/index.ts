@@ -34,3 +34,5 @@ export type { SpinnerProps, SpinnerSize, SpinnerColor } from './components/Spinn
 
 export { EmptyState } from './components/EmptyState'
 export type { EmptyStateProps } from './components/EmptyState'
+
+export { Logo } from './components/Logo'

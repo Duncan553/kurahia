@@ -17,6 +17,9 @@ import ConductScreen from './screens/ConductScreen'
 import SuggestionsScreen from './screens/SuggestionsScreen'
 import GateScreen from './screens/GateScreen'
 import ManagerScreen from './screens/ManagerScreen'
+import WristbandScreen from './screens/WristbandScreen'
+import CheckInScreen from './screens/CheckInScreen'
+import WaiverScreen from './screens/WaiverScreen'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -34,8 +37,9 @@ const router = createBrowserRouter([
     children: [{
       element: <AppLayout />,
       children: [
-        // Root redirects to the primary action
+        // Root redirects to primary action
         { path: '/',                element: <Navigate to="/clock" replace /> },
+
         // Universal screens (F-7)
         { path: '/clock',           element: <ClockScreen />         },
         { path: '/schedule',        element: <ScheduleScreen />      },
@@ -43,11 +47,21 @@ const router = createBrowserRouter([
         { path: '/profile',         element: <ProfileScreen />       },
         { path: '/conduct',         element: <ConductScreen />       },
         { path: '/suggestions/new', element: <SuggestionsScreen />   },
-        // Role-gated screens
+
+        // F-8: Front desk screens (level 3+)
         {
           element: <RoleGate minLevel={3} />,
-          children: [{ path: '/gate', element: <GateScreen /> }],
+          children: [
+            { path: '/gate',               element: <GateScreen />      },
+            { path: '/gate/issue',         element: <WristbandScreen /> },
+            { path: '/front-desk/checkin', element: <CheckInScreen />   },
+          ],
         },
+
+        // F-8: Waiver (level 1+ — any staff)
+        { path: '/gate/waiver', element: <WaiverScreen /> },
+
+        // Manager screens (level 5+)
         {
           element: <RoleGate minLevel={5} />,
           children: [{ path: '/manager', element: <ManagerScreen /> }],

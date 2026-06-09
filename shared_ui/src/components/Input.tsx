@@ -61,12 +61,13 @@ export function Input({
           aria-describedby={hasAriaDesc ? errorId : undefined}
           onChange={handleChange}
           className={[
-            'w-full rounded border bg-cream-card text-ink-primary text-base',
-            'px-3 py-2 min-h-[44px]',
-            'focus:outline-none focus:border-sage-dark focus:ring-0',
-            'placeholder:text-ink-tertiary',
+            'w-full rounded-xl border bg-white text-ink-primary text-base',
+            'px-4 py-3 min-h-[52px]',
+            'focus:outline-none focus:border-sage-dark focus:ring-2 focus:ring-sage-dark/20',
+            'placeholder:text-ink-tertiary/60',
             'disabled:opacity-50 disabled:cursor-not-allowed',
-            error ? 'border-status-failed' : 'border-ink-tertiary',
+            'transition-colors',
+            error ? 'border-status-failed' : 'border-cream-alt',
             leftIcon  ? 'pl-10' : '',
             rightIcon ? 'pr-10' : '',
           ].join(' ')}

@@ -198,6 +198,35 @@ def manual_clock():
     }), 201
 
 
+@clock_bp.get("/clock-status")
+@require_active_user
+def my_clock_status():
+    """Current user's own latest clock event — accessible to all staff (no Manager check)."""
+    actor   = db.session.get(User, get_jwt_identity())
+    profile = _get_own_profile(actor.id)
+    if not profile:
+        return jsonify({"error": "No employee profile found."}), 404
+
+    latest = (
+        db.session.query(ClockEvent)
+        .filter_by(employee_id=profile.id)
+        .order_by(ClockEvent.occurred_at_utc.desc())
+        .first()
+    )
+    if not latest:
+        return jsonify({"status": "CLOCKED_OUT", "last_event": None}), 200
+
+    return jsonify({
+        "status": latest.event_type,
+        "last_event": {
+            "id":          latest.id,
+            "event_type":  latest.event_type,
+            "occurred_at": latest.occurred_at_utc.isoformat(),
+            "shift_id":    latest.shift_id,
+        },
+    }), 200
+
+
 @clock_bp.get("/clock-events")
 @require_active_user
 def list_clock_events():

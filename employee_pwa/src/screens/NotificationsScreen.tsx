@@ -77,10 +77,10 @@ export default function NotificationsScreen() {
       <div className="p-4 space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="flex gap-3 items-start">
-            <Skeleton variant="circular" width="w-2" height="h-2" />
+            <Skeleton variant="avatar" className="w-2 h-2 shrink-0" />
             <div className="flex-1 space-y-2">
-              <Skeleton variant="text" width="w-3/4" />
-              <Skeleton variant="text" width="w-1/2" />
+              <Skeleton variant="text" className="w-3/4" />
+              <Skeleton variant="text" className="w-1/2" />
             </div>
           </div>
         ))}

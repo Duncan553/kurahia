@@ -52,13 +52,13 @@ function useFocusTrap(ref: React.RefObject<HTMLElement | null>, active: boolean)
 // Mobile: slides up from bottom. Desktop: fades + scales from center.
 const mobileVariants = {
   hidden:  { y: '100%', opacity: 0 },
-  visible: { y: 0,      opacity: 1, transition: { duration: 0.2, ease: 'easeOut' } },
-  exit:    { y: '100%', opacity: 0, transition: { duration: 0.2, ease: 'easeIn'  } },
+  visible: { y: 0,      opacity: 1, transition: { duration: 0.2, ease: 'easeOut' as const } },
+  exit:    { y: '100%', opacity: 0, transition: { duration: 0.2, ease: 'easeIn'  as const } },
 }
 const desktopVariants = {
   hidden:  { scale: 0.95, opacity: 0 },
-  visible: { scale: 1,    opacity: 1, transition: { duration: 0.2, ease: 'easeOut' } },
-  exit:    { scale: 0.95, opacity: 0, transition: { duration: 0.2, ease: 'easeIn'  } },
+  visible: { scale: 1,    opacity: 1, transition: { duration: 0.2, ease: 'easeOut' as const } },
+  exit:    { scale: 0.95, opacity: 0, transition: { duration: 0.2, ease: 'easeIn'  as const } },
 }
 
 export function Modal({ open, onClose, title, children, size = 'md', preventClose = false }: ModalProps) {
