@@ -1,11 +1,6 @@
-function App() {
-  return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-slate-900">
-        Kurahia Staff
-      </h1>
-    </div>
-  )
-}
+import TokenPage from './pages/TokenPage'
 
-export default App
+// F-1: TokenPage is the default route until F-2 components ship
+export default function App() {
+  return <TokenPage />
+}
