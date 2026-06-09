@@ -6,11 +6,10 @@ import axios from 'axios'
 import api from '../lib/axios'
 import { decodeJWT } from '../lib/jwt'
 import { useAuthStore } from '../stores/authStore'
-import { Input } from '@shared'
 
 interface LoginResponse {
   access_token: string
-  refresh_token?: string
+  refresh_token?: true
   requires_pin_setup?: true
 }
 interface JWTClaims extends Record<string, unknown> {
@@ -20,8 +19,13 @@ interface JWTClaims extends Record<string, unknown> {
   requires_pin_setup?: boolean
 }
 
-// Aerial waterfront hero — owner replaces with real Kurahia drone shot
-const HERO_URL = 'https://picsum.photos/1400/1000?image=1015'
+/*
+ * Aerial waterfront photo — Unsplash source API, keyword-matched.
+ * Owner can replace HERO_URL constant with a real Kurahia drone shot path.
+ * e.g. HERO_URL = '/assets/kurahia-aerial.jpg'  (drop file in employee_pwa/public/assets/)
+ */
+const HERO_URL =
+  'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?auto=format&fit=crop&w=1400&q=80'
 
 export default function LoginScreen() {
   const navigate = useNavigate()
@@ -63,122 +67,180 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row overflow-hidden">
+    /* Hero fills the full viewport behind everything */
+    <div className="relative min-h-screen overflow-hidden">
 
-      {/* ── Left: form column ──────────────────────────────────────── */}
+      {/* ── Hero: aerial water photo ─────────────────────────────── */}
       <motion.div
-        initial={{ x: -40, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="relative flex-1 md:flex-none md:w-[55%] flex items-center justify-center
-          min-h-screen md:min-h-0"
-        style={{
-          backgroundImage: `url(${HERO_URL})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        {/* Cream overlay — full opacity on mobile, light on desktop (desktop hero is right column) */}
-        <div className="absolute inset-0 bg-cream-card/92 md:bg-cream-card" />
-
-        {/* Form content — sits above the overlay */}
-        <div className="relative z-10 w-full max-w-[420px] px-8 py-12 md:px-12">
-
-          {/* Wordmark */}
-          <div className="mb-10">
-            <p className="text-xs tracking-widest uppercase text-ink-tertiary font-medium mb-1">
-              KURAHIA STAFF
-            </p>
-            <h1 className="font-serif text-4xl font-bold tracking-widest text-ink-primary leading-none">
-              WELCOME
-            </h1>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <Input
-              label="Username"
-              type="text"
-              autoComplete="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={loginMutation.isPending}
-            />
-            <Input
-              label="Password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loginMutation.isPending}
-            />
-
-            {errorMsg && (
-              <p role="alert" className="text-sm text-status-failed">{errorMsg}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={!username || !password || loginMutation.isPending}
-              className={[
-                'w-full py-4 rounded-2xl text-base font-semibold transition-all mt-2',
-                'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-              ].join(' ')}
-            >
-              {loginMutation.isPending ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
-                    <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  Signing in…
-                </span>
-              ) : 'Sign in'}
-            </button>
-          </form>
-
-          <button
-            type="button"
-            onClick={() => navigate('/pin')}
-            className="mt-5 w-full text-sm text-ink-tertiary hover:text-ink-secondary
-              hover:underline text-center transition-colors"
-          >
-            Use PIN instead →
-          </button>
-        </div>
-      </motion.div>
-
-      {/* ── Right: hero image column (desktop only) ────────────────── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
-        className="hidden md:block md:w-[45%] relative overflow-hidden"
+        className="absolute inset-0"
+        initial={{ opacity: 0, scale: 1.04 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.1, ease: 'easeOut' }}
       >
         <img
           src={HERO_URL}
-          alt="Waterfront Kurahia aerial view"
-          className="absolute inset-0 w-full h-full object-cover"
+          alt=""
+          aria-hidden="true"
+          className="w-full h-full object-cover object-center"
         />
-
-        {/* Dark gradient for text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-
-        {/* Overlay wordmark — bottom-left */}
-        <div className="absolute bottom-12 left-12">
-          <p
-            className="font-serif text-5xl font-bold tracking-widest text-white leading-none"
-            style={{ textShadow: '0 2px 16px rgba(0,0,0,0.5)' }}
-          >
-            WATERFRONT<br />KURAHIA
-          </p>
-          <p className="mt-2 text-xs tracking-widest uppercase text-white/80 font-medium">
-            DAM RESORT · KENYA
-          </p>
-        </div>
+        {/* Terracotta tint — ties the photo to our brand palette */}
+        <div className="absolute inset-0 bg-primary-dark/20 mix-blend-multiply" />
       </motion.div>
+
+      {/* ── Wordmark bottom-right (desktop only) ─────────────────── */}
+      <motion.div
+        className="absolute bottom-10 right-10 hidden md:block text-right z-10 pointer-events-none"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.8, ease: 'easeOut' }}
+      >
+        <p
+          className="font-serif text-5xl font-bold tracking-widest text-white leading-none"
+          style={{ textShadow: '0 2px 20px rgba(0,0,0,0.55)' }}
+        >
+          WATERFRONT<br />KURAHIA
+        </p>
+        <p className="mt-2 text-[10px] tracking-[0.3em] uppercase text-white/60 font-medium">
+          DAM RESORT · KENYA
+        </p>
+      </motion.div>
+
+      {/* ── Form card — torn edge on desktop, full-overlay on mobile ─ */}
+      <div className="relative z-10 flex min-h-screen">
+
+        {/*
+         * login-torn-edge class defined in index.css:
+         *   mobile  → clip-path: none   (card is full-width overlay)
+         *   md+     → clip-path: polygon (organic torn right edge bleeds into photo)
+         */}
+        <motion.div
+          className="login-torn-edge w-full md:w-[52%] bg-cream-card min-h-screen"
+          initial={{ x: -60, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.25, ease: 'easeOut' }}
+        >
+          {/* Centered form content — padded clear of the torn right edge */}
+          <div className="flex items-center min-h-screen">
+            <div className="w-full max-w-[360px] mx-auto md:ml-14 px-8 md:px-0 py-16">
+
+              {/* Wordmark — "artists." editorial scale from the reference */}
+              <motion.div
+                className="mb-8"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.45, ease: 'easeOut' }}
+              >
+                <p className="text-[10px] tracking-[0.3em] uppercase text-ink-tertiary font-medium mb-3">
+                  KURAHIA STAFF
+                </p>
+                <h1 className="font-serif text-6xl font-bold tracking-tight text-ink-primary leading-[0.92]">
+                  SIGN<br />IN.
+                </h1>
+              </motion.div>
+
+              {/* Terracotta accent rule */}
+              <motion.div
+                className="w-10 h-[2px] bg-primary-main mb-8"
+                initial={{ scaleX: 0, originX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.35, delay: 0.6, ease: 'easeOut' }}
+              />
+
+              {/* Form */}
+              <motion.form
+                onSubmit={handleSubmit}
+                noValidate
+                className="space-y-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.35, delay: 0.65, ease: 'easeOut' }}
+              >
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] uppercase text-ink-tertiary font-medium mb-1.5">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    autoComplete="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={loginMutation.isPending}
+                    className="
+                      w-full rounded-xl px-4 py-3
+                      bg-cream-alt border border-cream-deep
+                      text-ink-primary text-sm font-medium
+                      placeholder:text-ink-tertiary
+                      focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-main/20
+                      disabled:opacity-50 transition-all
+                    "
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] uppercase text-ink-tertiary font-medium mb-1.5">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loginMutation.isPending}
+                    className="
+                      w-full rounded-xl px-4 py-3
+                      bg-cream-alt border border-cream-deep
+                      text-ink-primary text-sm font-medium
+                      placeholder:text-ink-tertiary
+                      focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-main/20
+                      disabled:opacity-50 transition-all
+                    "
+                  />
+                </div>
+
+                {errorMsg && (
+                  <p role="alert" className="text-sm text-status-failed font-medium">
+                    {errorMsg}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!username || !password || loginMutation.isPending}
+                  className="
+                    w-full mt-2 py-3.5 rounded-xl
+                    bg-primary-dark text-cream-card
+                    text-sm font-semibold tracking-widest uppercase
+                    hover:bg-primary-main active:scale-[0.99]
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    transition-all
+                  "
+                >
+                  {loginMutation.isPending ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
+                        <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                      Signing in…
+                    </span>
+                  ) : 'Sign in ↗'}
+                </button>
+              </motion.form>
+
+              {/* PIN link — spare, editorial arrow */}
+              <button
+                type="button"
+                onClick={() => navigate('/pin')}
+                className="mt-6 text-xs text-ink-tertiary hover:text-primary-main
+                  tracking-widest uppercase transition-colors flex items-center gap-2"
+              >
+                Use PIN instead <span className="text-primary-main" aria-hidden="true">↗</span>
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
 
     </div>
   )
