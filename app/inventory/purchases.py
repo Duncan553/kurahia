@@ -53,12 +53,15 @@ def list_requests():
 
     reqs = query.order_by(PurchaseRequest.created_at.desc()).all()
     return jsonify([{
-        "id":        r.id,
-        "item_id":   r.item_id,
-        "item_name": r.item.name if r.item else r.item_description,
-        "quantity":  str(r.quantity),
-        "status":    r.status,
-        "created_at": r.created_at.isoformat(),
+        "id":             r.id,
+        "item_id":        r.item_id,
+        "item_name":      r.item.name if r.item else r.item_description,
+        "quantity":       str(r.quantity),
+        "status":         r.status,
+        "created_at":     r.created_at.isoformat(),
+        "requested_by":   r.requested_by.username if r.requested_by else None,
+        "notes":          r.manager_notes,
+        "estimated_cost": str(r.estimated_cost) if r.estimated_cost else None,
     } for r in reqs]), 200
 
 

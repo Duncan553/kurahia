@@ -42,6 +42,14 @@ import InventoryCountScreen   from './screens/InventoryCountScreen'
 import PurchaseRequestScreen  from './screens/PurchaseRequestScreen'
 import QuickEntryScreen       from './screens/QuickEntryScreen'
 
+// Manager sub-screens (F-11)
+import CashReconScreen      from './screens/CashReconScreen'
+import LeaveApprovalScreen  from './screens/LeaveApprovalScreen'
+import ShiftScreen          from './screens/ShiftScreen'
+import AttendanceScreen     from './screens/AttendanceScreen'
+import PurchaseReqScreen    from './screens/PurchaseReqScreen'
+import FrontDeskScreen      from './screens/FrontDeskScreen'
+
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 })
@@ -95,6 +103,13 @@ const router = createBrowserRouter([
             { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
             { path: '/inventory/quick-entry',      element: <QuickEntryScreen />      },
             { path: '/equipment/maintenance',      element: <MaintenanceLogScreen />  },
+            // F-11: Manager sub-screens
+            { path: '/manager/cash',       element: <CashReconScreen />     },
+            { path: '/manager/leave',      element: <LeaveApprovalScreen /> },
+            { path: '/manager/shifts',     element: <ShiftScreen />         },
+            { path: '/manager/attendance', element: <AttendanceScreen />    },
+            { path: '/manager/purchases',  element: <PurchaseReqScreen />   },
+            { path: '/manager/front-desk', element: <FrontDeskScreen />     },
           ],
         },
       ],
