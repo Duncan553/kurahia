@@ -1,10 +1,10 @@
 /**
- * TokenPage — F-1/F-2 gate verification page.
- * Proves design tokens and component primitives render correctly.
- * Remove once F-2 gate is signed off.
+ * TokenPage — F-1/F-2/F-3 gate verification page.
+ * Proves design tokens, primitives, and containers render correctly.
+ * Remove once F-3 gate is signed off.
  */
 import { useState } from 'react'
-import { Button, Input, Select, Toggle } from '@shared'
+import { Button, Input, Select, Toggle, Card, Modal, Drawer, ToastContainer, useToastStore } from '@shared'
 
 interface Swatch {
   token: string;
@@ -84,6 +84,10 @@ export default function TokenPage() {
   const [toggle1, setToggle1]     = useState(false)
   const [toggle2, setToggle2]     = useState(true)
   const [loading, setLoading]     = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [rightDrawerOpen, setRightDrawerOpen] = useState(false)
+  const addToast = useToastStore((s) => s.addToast)
 
   function simulateLoad() {
     setLoading(true)
@@ -92,13 +96,15 @@ export default function TokenPage() {
 
   return (
     <div className="min-h-screen bg-cream-card font-sans text-ink-primary p-8">
+      <ToastContainer />
+
       <header className="mb-12 border-b border-ink-tertiary pb-6">
         <p className="text-sm tracking-wide text-ink-secondary uppercase mb-1">
-          Kurahia · Phase F-1/F-2 Gate
+          Kurahia · Phase F-1/F-2/F-3 Gate
         </p>
         <h1 className="text-4xl font-bold">Design Token + Component Reference</h1>
         <p className="text-base text-ink-secondary mt-2">
-          18 colour swatches · 8 type sizes · 3 weights · 4 component primitives
+          18 colour swatches · 8 type sizes · 3 weights · 8 components
         </p>
       </header>
 
@@ -171,22 +177,79 @@ export default function TokenPage() {
         {/* Toggle */}
         <div className="mb-8 space-y-4">
           <h3 className="text-sm tracking-widest uppercase text-ink-tertiary mb-4">Toggle</h3>
-          <Toggle
-            checked={toggle1}
-            onChange={setToggle1}
-            label="Wi-Fi clock-in required"
-          />
-          <Toggle
-            checked={toggle2}
-            onChange={setToggle2}
-            label="Notifications enabled"
-          />
-          <Toggle
-            checked={false}
-            onChange={() => {}}
-            label="Disabled toggle"
-            disabled
-          />
+          <Toggle checked={toggle1} onChange={setToggle1} label="Wi-Fi clock-in required" />
+          <Toggle checked={toggle2} onChange={setToggle2} label="Notifications enabled" />
+          <Toggle checked={false} onChange={() => {}} label="Disabled toggle" disabled />
+        </div>
+      </section>
+
+      {/* ── Containers ───────────────────────────────────────── */}
+      <section className="mb-14">
+        <h2 className="text-2xl font-bold mb-6 tracking-wide uppercase text-ink-secondary">
+          Containers
+        </h2>
+
+        {/* Card */}
+        <div className="mb-8">
+          <h3 className="text-sm tracking-widest uppercase text-ink-tertiary mb-4">Card</h3>
+          <div className="flex flex-wrap gap-4">
+            <Card padding="sm" shadow="none" border>
+              <p className="text-sm text-ink-secondary">Border · no shadow · sm padding</p>
+            </Card>
+            <Card padding="md" shadow="sm">
+              <p className="text-sm text-ink-secondary">Shadow sm · md padding</p>
+            </Card>
+            <Card padding="md" shadow="md" tappable onClick={() => addToast({ type: 'success', message: 'Card tapped!' })}>
+              <p className="text-sm font-medium text-ink-primary">Tappable · shadow md</p>
+              <p className="text-xs text-ink-tertiary mt-1">Hover lifts · tap scales · click fires toast</p>
+            </Card>
+            <Card padding="md" shadow="sm" selected>
+              <p className="text-sm font-medium text-ink-primary">Selected state</p>
+              <p className="text-xs text-ink-tertiary mt-1">sage-light bg · sage-dark border</p>
+            </Card>
+          </div>
+        </div>
+
+        {/* Modal */}
+        <div className="mb-8">
+          <h3 className="text-sm tracking-widest uppercase text-ink-tertiary mb-4">Modal</h3>
+          <Button variant="secondary" onClick={() => setModalOpen(true)}>Open Modal</Button>
+          <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Example Modal" size="md">
+            <p className="text-base text-ink-secondary mb-4">
+              Mobile: slides from bottom. Desktop: fades + scales from center. Escape closes.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={() => { setModalOpen(false); addToast({ type: 'success', message: 'Action confirmed' }) }}>Confirm</Button>
+            </div>
+          </Modal>
+        </div>
+
+        {/* Drawer */}
+        <div className="mb-8">
+          <h3 className="text-sm tracking-widest uppercase text-ink-tertiary mb-4">Drawer</h3>
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={() => setDrawerOpen(true)}>Bottom Drawer</Button>
+            <Button variant="secondary" onClick={() => setRightDrawerOpen(true)}>Right Drawer</Button>
+          </div>
+          <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Bottom Drawer" side="bottom">
+            <p className="text-base text-ink-secondary mb-4">Drag handle to snap. Swipe down to dismiss.</p>
+            <Button variant="primary" onClick={() => { setDrawerOpen(false); addToast({ type: 'warning', message: 'Drawer closed' }) }}>Close</Button>
+          </Drawer>
+          <Drawer open={rightDrawerOpen} onClose={() => setRightDrawerOpen(false)} title="Right Drawer" side="right">
+            <p className="text-base text-ink-secondary mb-4">400px wide. Slides from right.</p>
+            <Button variant="primary" onClick={() => { setRightDrawerOpen(false); addToast({ type: 'success', message: 'Right drawer closed' }) }}>Close</Button>
+          </Drawer>
+        </div>
+
+        {/* Toast */}
+        <div className="mb-8">
+          <h3 className="text-sm tracking-widest uppercase text-ink-tertiary mb-4">Toast</h3>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="primary" onClick={() => addToast({ type: 'success', message: 'Record saved successfully' })}>Success toast</Button>
+            <Button variant="danger"  onClick={() => addToast({ type: 'error',   message: 'Failed to save — try again', actionLabel: 'Retry', onAction: () => {} })}>Error + retry</Button>
+            <Button variant="ghost"   onClick={() => addToast({ type: 'warning', message: 'Session expires in 5 minutes' })}>Warning toast</Button>
+          </div>
         </div>
       </section>
 
@@ -202,14 +265,12 @@ export default function TokenPage() {
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {palette.swatches.map((s) => (
-                <div
-                  key={s.token}
-                  className={`${s.bg} rounded-lg p-4 h-24 flex flex-col justify-end`}
-                >
-                  <p className={`text-xs font-mono font-medium leading-tight ${s.lightText ? 'text-cream-card' : 'text-ink-primary'}`}>
+                <div key={s.token}>
+                  <div className={`${s.bg} rounded-lg h-16 mb-2`} />
+                  <p className="text-xs font-mono font-medium text-ink-primary leading-tight">
                     {s.token.replace('--color-', '')}
                   </p>
-                  <p className={`text-xs font-mono tabular-nums ${s.lightText ? 'text-cream-alt' : 'text-ink-secondary'}`}>
+                  <p className="text-xs font-mono tabular-nums text-ink-tertiary">
                     {s.hex}
                   </p>
                 </div>
@@ -295,7 +356,7 @@ export default function TokenPage() {
       </section>
 
       <footer className="text-xs text-ink-tertiary pt-6 border-t border-cream-alt">
-        F-1/F-2 token + component gate · Remove before F-3 ships
+        F-1/F-2/F-3 token + component gate · Remove before F-4 ships
       </footer>
     </div>
   );
