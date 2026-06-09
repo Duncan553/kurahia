@@ -91,6 +91,24 @@ function MealsIcon() {
     <path d="M6 14h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 }
+// Safety check: shield + checkmark
+function SafetyIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path d="M11 3L4 6v5c0 4.5 3 8.5 7 9.5 4-1 7-5 7-9.5V6L11 3z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M8 11l2 2.5L14 9" stroke="currentColor" strokeWidth="1.5"
+      strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+}
+// Maintenance: wrench
+function MaintenanceIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path d="M14.5 4.5a4 4 0 00-4 4c0 .6.1 1.1.3 1.6L4 17a1.4 1.4 0 002 2l6.9-6.8c.5.2 1 .3 1.6.3a4 4 0 000-8z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M14.5 4.5v3h-3" stroke="currentColor" strokeWidth="1.5"
+      strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+}
 // Manager: person + star badge
 function ManagerIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
@@ -176,14 +194,19 @@ const NAV_ITEMS: NavItem[] = [
     visible: () => true,
   },
 
-  // ── Waiver: water activities station only ───────────────────────────────────
-  // Whoever handles payment for water activities records the waiver before the activity.
-  // Front desk / gate staff do NOT need this — it's a water activities responsibility.
+  // ── Waiver + Safety: water activities station only ──────────────────────────
   {
     id: 'waiver',
     path: '/gate/waiver',
     label: 'Waiver',
     Icon: WaiverIcon,
+    visible: (_level, dept) => deptIs(dept, 'water', 'activit', 'aqua'),
+  },
+  {
+    id: 'safety-check',
+    path: '/equipment/safety-check',
+    label: 'Safety',
+    Icon: SafetyIcon,
     visible: (_level, dept) => deptIs(dept, 'water', 'activit', 'aqua'),
   },
 
@@ -232,6 +255,13 @@ const NAV_ITEMS: NavItem[] = [
     path: '/inventory/quick-entry',
     label: 'Meals',
     Icon: MealsIcon,
+    visible: (level) => level >= 5,
+  },
+  {
+    id: 'maintenance',
+    path: '/equipment/maintenance',
+    label: 'Service',
+    Icon: MaintenanceIcon,
     visible: (level) => level >= 5,
   },
   {

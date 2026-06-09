@@ -29,8 +29,12 @@ import BandLookupScreen  from './screens/BandLookupScreen'
 import WristbandScreen from './screens/WristbandScreen'
 import CheckInScreen   from './screens/CheckInScreen'
 
-// Water activities (level 1, water dept) — but accessible by any staff who navigates directly
-import WaiverScreen from './screens/WaiverScreen'
+// Water activities (level 1, water dept) — nav filters by department
+import WaiverScreen        from './screens/WaiverScreen'
+import SafetyCheckScreen   from './screens/SafetyCheckScreen'
+
+// Equipment maintenance (level 5+ manager)
+import MaintenanceLogScreen from './screens/MaintenanceLogScreen'
 
 // Manager (level 5+)
 import ManagerScreen          from './screens/ManagerScreen'
@@ -69,8 +73,9 @@ const router = createBrowserRouter([
         // ── Band lookup: all staff (level 1+) ────────────────────
         { path: '/gate/band-lookup', element: <BandLookupScreen /> },
 
-        // ── Water activities: waiver (any staff via nav dept filter)
-        { path: '/gate/waiver', element: <WaiverScreen /> },
+        // ── Water activities: waiver + safety check (any staff, nav filters by dept)
+        { path: '/gate/waiver',           element: <WaiverScreen />       },
+        { path: '/equipment/safety-check', element: <SafetyCheckScreen /> },
 
         // ── Gate / Front Desk (level 3+) ─────────────────────────
         {
@@ -89,6 +94,7 @@ const router = createBrowserRouter([
             { path: '/inventory/count',            element: <InventoryCountScreen />  },
             { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
             { path: '/inventory/quick-entry',      element: <QuickEntryScreen />      },
+            { path: '/equipment/maintenance',      element: <MaintenanceLogScreen />  },
           ],
         },
       ],
