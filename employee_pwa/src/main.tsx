@@ -6,23 +6,37 @@ import './index.css'
 import { ToastContainer } from '@shared'
 import { AuthGate, RoleGate } from './components/AuthGate'
 import AppLayout from './layouts/AppLayout'
-import LoginScreen from './screens/LoginScreen'
-import PinEntryScreen from './screens/PinEntryScreen'
-import PinSetupScreen from './screens/PinSetupScreen'
-import ClockScreen from './screens/ClockScreen'
-import ScheduleScreen from './screens/ScheduleScreen'
+
+// Auth
+import LoginScreen       from './screens/LoginScreen'
+import PinEntryScreen    from './screens/PinEntryScreen'
+import PinSetupScreen    from './screens/PinSetupScreen'
+
+// Universal — all staff
+import ClockScreen         from './screens/ClockScreen'
+import ScheduleScreen      from './screens/ScheduleScreen'
 import NotificationsScreen from './screens/NotificationsScreen'
-import ProfileScreen from './screens/ProfileScreen'
-import ConductScreen from './screens/ConductScreen'
-import SuggestionsScreen from './screens/SuggestionsScreen'
-import GateScreen from './screens/GateScreen'
-import ManagerScreen from './screens/ManagerScreen'
+import ProfileScreen       from './screens/ProfileScreen'
+import ConductScreen       from './screens/ConductScreen'
+import SuggestionsScreen   from './screens/SuggestionsScreen'
+import LeaveRequestScreen  from './screens/LeaveRequestScreen'
+import AbsenceNoticeScreen from './screens/AbsenceNoticeScreen'
+
+// All staff — band lookup (level 1+)
+import BandLookupScreen  from './screens/BandLookupScreen'
+
+// Gate / Front Desk (level 3+)
 import WristbandScreen from './screens/WristbandScreen'
-import CheckInScreen from './screens/CheckInScreen'
+import CheckInScreen   from './screens/CheckInScreen'
+
+// Water activities (level 1, water dept) — but accessible by any staff who navigates directly
 import WaiverScreen from './screens/WaiverScreen'
-import InventoryCountScreen from './screens/InventoryCountScreen'
-import PurchaseRequestScreen from './screens/PurchaseRequestScreen'
-import QuickEntryScreen from './screens/QuickEntryScreen'
+
+// Manager (level 5+)
+import ManagerScreen          from './screens/ManagerScreen'
+import InventoryCountScreen   from './screens/InventoryCountScreen'
+import PurchaseRequestScreen  from './screens/PurchaseRequestScreen'
+import QuickEntryScreen       from './screens/QuickEntryScreen'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -34,50 +48,48 @@ const router = createBrowserRouter([
   { path: '/pin',       element: <PinEntryScreen /> },
   { path: '/pin/setup', element: <PinSetupScreen /> },
 
-  // Protected — all sit inside AuthGate → AppLayout
+  // Protected — all inside AuthGate → AppLayout
   {
     element: <AuthGate />,
     children: [{
       element: <AppLayout />,
       children: [
-        // Root redirects to primary action
-        { path: '/',                element: <Navigate to="/clock" replace /> },
+        { path: '/', element: <Navigate to="/clock" replace /> },
 
-        // Universal screens (F-7)
+        // ── Universal: all staff ──────────────────────────────────
         { path: '/clock',           element: <ClockScreen />         },
         { path: '/schedule',        element: <ScheduleScreen />      },
         { path: '/notifications',   element: <NotificationsScreen /> },
         { path: '/profile',         element: <ProfileScreen />       },
         { path: '/conduct',         element: <ConductScreen />       },
         { path: '/suggestions/new', element: <SuggestionsScreen />   },
+        { path: '/leave',           element: <LeaveRequestScreen />  },
+        { path: '/absence',         element: <AbsenceNoticeScreen /> },
 
-        // F-8: Front desk screens (level 3+)
+        // ── Band lookup: all staff (level 1+) ────────────────────
+        { path: '/gate/band-lookup', element: <BandLookupScreen /> },
+
+        // ── Water activities: waiver (any staff via nav dept filter)
+        { path: '/gate/waiver', element: <WaiverScreen /> },
+
+        // ── Gate / Front Desk (level 3+) ─────────────────────────
         {
           element: <RoleGate minLevel={3} />,
           children: [
-            { path: '/gate',               element: <GateScreen />      },
             { path: '/gate/issue',         element: <WristbandScreen /> },
             { path: '/front-desk/checkin', element: <CheckInScreen />   },
           ],
         },
 
-        // F-8: Waiver (level 1+ — any staff)
-        { path: '/gate/waiver', element: <WaiverScreen /> },
-
-        // F-9: Inventory, purchase request, quick entry (level 5+ — managers own all stock ops)
+        // ── Manager (level 5+) ───────────────────────────────────
         {
           element: <RoleGate minLevel={5} />,
           children: [
-            { path: '/inventory/count',            element: <InventoryCountScreen /> },
+            { path: '/manager',                    element: <ManagerScreen />         },
+            { path: '/inventory/count',            element: <InventoryCountScreen />  },
             { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
-            { path: '/inventory/quick-entry',      element: <QuickEntryScreen /> },
+            { path: '/inventory/quick-entry',      element: <QuickEntryScreen />      },
           ],
-        },
-
-        // Manager screens (level 5+)
-        {
-          element: <RoleGate minLevel={5} />,
-          children: [{ path: '/manager', element: <ManagerScreen /> }],
         },
       ],
     }],

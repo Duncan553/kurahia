@@ -34,6 +34,14 @@ function ProfileIcon() {
     <path d="M3 19c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 }
+// Band search: magnifier
+function BandIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M14 14l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M7 9.5h5M9.5 7v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
 // Gate: wristband icon
 function GateIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
@@ -193,6 +201,14 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Check-In',
     Icon: CheckInIcon,
     visible: (level) => level >= 3 && level <= 4,
+  },
+  // Band Lookup — level 1+: any staff can look up a band (waiter charging to tab, spa, etc.)
+  {
+    id: 'band-lookup',
+    path: '/gate/band-lookup',
+    label: 'Band',
+    Icon: BandIcon,
+    visible: (level) => level >= 1,
   },
 
   // ── Manager / Department Head tablet (level 5+) ──────────────────────────────
