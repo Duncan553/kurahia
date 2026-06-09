@@ -23,6 +23,7 @@ export default defineConfig({
       '/conduct':       { target: 'http://localhost:5000', changeOrigin: true },
       '/suggestions':   { target: 'http://localhost:5000', changeOrigin: true },
       '/health':        { target: 'http://localhost:5000', changeOrigin: true },
+      '/inventory':     { target: 'http://localhost:5000', changeOrigin: true },
       '/gate':          { target: 'http://localhost:5000', changeOrigin: true },
       '/bookings':      { target: 'http://localhost:5000', changeOrigin: true },
       '/front-desk':    { target: 'http://localhost:5000', changeOrigin: true },

@@ -55,6 +55,21 @@ function WaiverIcon() {
     <path d="M12 16l1.5-1.5L15 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
+function MealsIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path d="M11 3v4M7 4.5c0 3.5 2 5 4 5s4-1.5 4-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M11 9v10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M6 14h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
+function InventoryIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="12" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="3" y="12" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M12 15.5h7M15.5 12v7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
 function ManagerIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
     <path d="M3 17v-1.5C3 13 6.1 11 11 11s8 2 8 4.5V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -99,13 +114,16 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/clock',                label: 'Clock',      Icon: ClockIcon,    minLevel: 0 },
   { path: '/schedule',             label: 'Schedule',   Icon: ScheduleIcon, minLevel: 0 },
   { path: '/notifications',        label: 'Alerts',     Icon: BellIcon,     minLevel: 0, badge: true },
-  // Level 1–2 only: waiver standalone (level 3+ access waiver from the Gate screen)
-  { path: '/gate/waiver',          label: 'Waiver',     Icon: WaiverIcon,   minLevel: 1, maxLevel: 2 },
+  // Level 1–2: waiver standalone + staff meals (gate staff handle waiver from /gate/issue)
+  { path: '/gate/waiver',          label: 'Waiver',     Icon: WaiverIcon,    minLevel: 1, maxLevel: 2 },
+  { path: '/inventory/quick-entry',label: 'Meals',      Icon: MealsIcon,     minLevel: 1, maxLevel: 4 },
   // Level 3+: issue bands + check-in
-  { path: '/gate/issue',           label: 'Issue',      Icon: GateIcon,     minLevel: 3 },
-  { path: '/front-desk/checkin',   label: 'Check-In',   Icon: CheckInIcon,  minLevel: 3 },
-  { path: '/profile',              label: 'Profile',    Icon: ProfileIcon,  minLevel: 0 },
-  { path: '/manager',              label: 'Manager',    Icon: ManagerIcon,  minLevel: 5 },
+  { path: '/gate/issue',           label: 'Issue',      Icon: GateIcon,      minLevel: 3 },
+  { path: '/front-desk/checkin',   label: 'Check-In',   Icon: CheckInIcon,   minLevel: 3 },
+  // Level 5+: inventory
+  { path: '/inventory/count',      label: 'Inventory',  Icon: InventoryIcon, minLevel: 5 },
+  { path: '/profile',              label: 'Profile',    Icon: ProfileIcon,   minLevel: 0 },
+  { path: '/manager',              label: 'Manager',    Icon: ManagerIcon,   minLevel: 5 },
 ]
 
 // ── Page transition ─────────────────────────────────────────────────────────
