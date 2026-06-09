@@ -9,6 +9,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
+    dedupe: ['react', 'react-dom', 'framer-motion', 'zustand'],
     alias: {
       '@shared': resolve(__dirname, '../shared_ui/src'),
     },

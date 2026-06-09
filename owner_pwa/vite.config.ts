@@ -12,6 +12,7 @@ export default defineConfig({
     port: 5174,
   },
   resolve: {
+    dedupe: ['react', 'react-dom', 'framer-motion', 'zustand'],
     alias: {
       '@shared': resolve(__dirname, '../shared_ui/src'),
     },
