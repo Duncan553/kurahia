@@ -168,17 +168,15 @@ const NAV_ITEMS: NavItem[] = [
     visible: () => true,
   },
 
-  // ── Staff: waiver record ────────────────────────────────────────────────────
-  // Water activities staff (level 1-2, dept ~ water/activities) need it for guest waivers
-  // Gate staff (level 3-4) need it as part of their check-in flow
+  // ── Waiver: water activities station only ───────────────────────────────────
+  // Whoever handles payment for water activities records the waiver before the activity.
+  // Front desk / gate staff do NOT need this — it's a water activities responsibility.
   {
     id: 'waiver',
     path: '/gate/waiver',
     label: 'Waiver',
     Icon: WaiverIcon,
-    visible: (level, dept) =>
-      (level >= 1 && level <= 2 && deptIs(dept, 'water', 'activit', 'aqua'))
-      || (level >= 3 && level <= 4),
+    visible: (_level, dept) => deptIs(dept, 'water', 'activit', 'aqua'),
   },
 
   // ── Gate / Front Desk tablet (level 3–4) ────────────────────────────────────
