@@ -11,6 +11,9 @@ dist/
 build/
 *.egg-info/
 
+# Dev-only seed scripts (contain plaintext passwords — never commit)
+test_setup.sh
+
 # PWA build artifacts
 employee_pwa/node_modules/
 employee_pwa/dist/

@@ -17,6 +17,7 @@ from app.equipment.safety_templates import get_template
 equipment_bp = Blueprint("equipment_core", __name__, url_prefix="/equipment")
 
 MANAGER_LEVEL = 5
+LOOKUP_LEVEL  = 1   # any staff can list equipment and submit safety checks
 
 
 def _eq_dict(e: Equipment) -> dict:
@@ -63,8 +64,8 @@ def create_equipment():
 @require_active_user
 def list_equipment():
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
+    if actor.role.level < LOOKUP_LEVEL:
+        return jsonify({"error": "Staff login required."}), 403
     include_retired = request.args.get("include_retired", "false").lower() == "true"
     q = db.session.query(Equipment).filter_by(is_active=True)
     if not include_retired:
@@ -164,8 +165,8 @@ def log_maintenance(eq_id):
 @require_active_user
 def log_safety_check(eq_id):
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
+    if actor.role.level < LOOKUP_LEVEL:
+        return jsonify({"error": "Staff login required."}), 403
     eq = db.session.get(Equipment, eq_id)
     if not eq or not eq.is_active:
         return jsonify({"error": "Equipment not found."}), 404
@@ -188,10 +189,10 @@ def log_safety_check(eq_id):
         if not_confirmed:
             return jsonify({
                 "error": (
-                    f"Safety check failed. The following items are not confirmed: "
-                    f"{not_confirmed}. All {len(template)} items must be checked "
-                    f"before equipment can be used."
-                )
+                    f"Safety check failed. "
+                    f"All {len(template)} items must be checked before equipment can be used."
+                ),
+                "unchecked_items": not_confirmed,
             }), 400
     else:
         # Unknown type: all supplied items must be checked=true
@@ -199,10 +200,8 @@ def log_safety_check(eq_id):
                      if not isinstance(v, dict) or v.get("checked") is not True]
         if unchecked:
             return jsonify({
-                "error": (
-                    f"Safety check failed. The following items are not confirmed: "
-                    f"{unchecked}. All items must be checked before equipment can be used."
-                )
+                "error": "Safety check failed. All items must be checked before equipment can be used.",
+                "unchecked_items": unchecked,
             }), 400
 
     check = SafetyCheck(
@@ -225,8 +224,8 @@ def log_safety_check(eq_id):
 @require_active_user
 def get_checklist_template(equipment_type):
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
+    if actor.role.level < LOOKUP_LEVEL:
+        return jsonify({"error": "Staff login required."}), 403
     template = get_template(equipment_type)
     if template is None:
         return jsonify({"error": f"No checklist template found for equipment type '{equipment_type}'."}), 404
