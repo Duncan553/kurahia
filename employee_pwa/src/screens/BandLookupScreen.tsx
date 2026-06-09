@@ -80,16 +80,16 @@ export default function BandLookupScreen() {
           onKeyDown={handleKey}
           className="flex-1 rounded-xl border border-cream-alt bg-white px-4 py-3
             text-lg font-semibold tabular-nums text-ink-primary
-            focus:outline-none focus:border-sage-dark focus:ring-2 focus:ring-sage-dark/20"
+            focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
         />
         <button
           onClick={lookup}
           disabled={loading || !input.trim()}
           className={[
-            'px-5 py-3 rounded-xl bg-sage-dark text-cream-card font-semibold text-sm',
-            'hover:bg-sage-dark/90 transition-all shrink-0',
+            'px-5 py-3 rounded-xl bg-primary-dark text-cream-card font-semibold text-sm',
+            'hover:bg-primary-dark/90 transition-all shrink-0',
             'disabled:opacity-50 disabled:cursor-not-allowed',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
           ].join(' ')}
         >
           {loading ? (
@@ -118,7 +118,7 @@ export default function BandLookupScreen() {
         <div className="rounded-2xl border border-cream-alt bg-cream-card shadow-sm overflow-hidden">
 
           {/* Header */}
-          <div className="bg-sage-dark/10 px-5 py-4 flex items-center justify-between">
+          <div className="bg-primary-dark/10 px-5 py-4 flex items-center justify-between">
             <div>
               <p className="text-2xl font-bold tabular-nums text-ink-primary">
                 Band #{result.band_number}

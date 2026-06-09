@@ -24,9 +24,9 @@ const PALETTES: Palette[] = [
   {
     name: 'System',
     swatches: [
-      { token: '--color-sage-main',      hex: '#9CB39A', bg: 'bg-sage-main',      lightText: false },
-      { token: '--color-sage-light',     hex: '#B8C8B0', bg: 'bg-sage-light',     lightText: false },
-      { token: '--color-sage-dark',      hex: '#7A9374', bg: 'bg-sage-dark',      lightText: false },
+      { token: '--color-primary-main',      hex: '#9CB39A', bg: 'bg-primary-main',      lightText: false },
+      { token: '--color-primary-light',     hex: '#B8C8B0', bg: 'bg-primary-light',     lightText: false },
+      { token: '--color-primary-dark',      hex: '#7A9374', bg: 'bg-primary-dark',      lightText: false },
       { token: '--color-cream-card',     hex: '#F2EBDD', bg: 'bg-cream-card',     lightText: false },
       { token: '--color-cream-alt',      hex: '#EBE2CE', bg: 'bg-cream-alt',      lightText: false },
       { token: '--color-ink-primary',    hex: '#2A2620', bg: 'bg-ink-primary',    lightText: true  },
@@ -220,7 +220,7 @@ export default function TokenPage() {
             </Card>
             <Card padding="md" shadow="sm" selected>
               <p className="text-sm font-medium text-ink-primary">Selected state</p>
-              <p className="text-xs text-ink-tertiary mt-1">sage-light bg · sage-dark border</p>
+              <p className="text-xs text-ink-tertiary mt-1">primary-light bg · primary-dark border</p>
             </Card>
           </div>
         </div>
@@ -447,9 +447,9 @@ export default function TokenPage() {
         </h2>
         <div className="rounded-lg overflow-hidden border border-cream-alt text-sm font-mono">
           <div className="bg-ink-primary text-cream-card p-3 block sm:hidden">&lt; 640px — base</div>
-          <div className="hidden sm:block md:hidden bg-sage-dark text-cream-card p-3">640px–767px — sm:</div>
-          <div className="hidden md:block lg:hidden bg-sage-main text-ink-primary p-3">768px–1023px — md:</div>
-          <div className="hidden lg:block xl:hidden bg-sage-light text-ink-primary p-3">1024px–1279px — lg:</div>
+          <div className="hidden sm:block md:hidden bg-primary-dark text-cream-card p-3">640px–767px — sm:</div>
+          <div className="hidden md:block lg:hidden bg-primary-main text-ink-primary p-3">768px–1023px — md:</div>
+          <div className="hidden lg:block xl:hidden bg-primary-light text-ink-primary p-3">1024px–1279px — lg:</div>
           <div className="hidden xl:block bg-cream-card text-ink-primary p-3">≥ 1280px — xl:</div>
         </div>
       </section>

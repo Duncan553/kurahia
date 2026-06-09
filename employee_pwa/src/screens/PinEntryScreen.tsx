@@ -82,7 +82,7 @@ export default function PinEntryScreen() {
   }, [digits])
 
   return (
-    <div className="min-h-screen bg-sage-dark">
+    <div className="min-h-screen bg-primary-dark">
 
       {/* ── Brand + PIN state — fixed padding ────────────────────── */}
       <div className="flex flex-col items-center px-6 pt-14 pb-8 gap-4">
@@ -140,11 +140,11 @@ export default function PinEntryScreen() {
                   'min-h-[72px] w-full rounded-2xl text-2xl font-semibold',
                   'flex items-center justify-center select-none',
                   'transition-all duration-75',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                   'disabled:opacity-40',
                   key === '⌫'
                     ? 'bg-transparent text-ink-tertiary active:text-ink-primary active:scale-95'
-                    : 'bg-white shadow-sm border border-cream-alt text-ink-primary active:bg-sage-light/40 active:shadow-none active:scale-95',
+                    : 'bg-white shadow-sm border border-cream-alt text-ink-primary active:bg-primary-light/40 active:shadow-none active:scale-95',
                 ].join(' ')}
               >
                 {key === '⌫' ? (

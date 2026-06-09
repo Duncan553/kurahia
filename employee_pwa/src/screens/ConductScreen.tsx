@@ -182,9 +182,9 @@ export default function ConductScreen() {
                     disabled={!scrollReady || signMutation.isPending}
                     className={[
                       'px-5 py-2.5 rounded-xl text-sm font-semibold transition-all',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                       scrollReady
-                        ? 'bg-sage-dark text-cream-card hover:bg-sage-dark/90 active:scale-[0.98]'
+                        ? 'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.98]'
                         : 'bg-ink-tertiary/15 text-ink-tertiary cursor-not-allowed',
                       'disabled:opacity-60 disabled:cursor-not-allowed',
                     ].join(' ')}

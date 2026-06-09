@@ -142,12 +142,12 @@ export default function NotificationsScreen() {
             className={[
               'w-full text-left px-4 py-4 flex gap-3 items-start transition-colors',
               'hover:bg-cream-alt/40 active:bg-cream-alt/60',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sage-dark',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark',
               'disabled:opacity-50 disabled:cursor-wait',
             ].join(' ')}
           >
             {/* Unread dot */}
-            <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-sage-dark"
+            <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-primary-dark"
               style={{ opacity: isUnread ? 1 : 0 }}
               aria-hidden="true"
             />

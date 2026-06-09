@@ -43,7 +43,7 @@ export function Card({
     SHADOW[shadow],
     border || selected ? 'border-2' : '',
     selected
-      ? 'bg-sage-light border-sage-dark'
+      ? 'bg-primary-light border-primary-dark'
       : border
         ? 'border-cream-alt'
         : '',

@@ -12,7 +12,7 @@ export interface SpinnerProps {
 const SIZE_PX: Record<SpinnerSize, number> = { sm: 16, md: 24, lg: 32 }
 
 const STROKE_COLOR: Record<SpinnerColor, string> = {
-  sage:  'var(--color-sage-dark)',
+  sage:  'var(--color-primary-dark)',
   cream: 'var(--color-cream-card)',
   ink:   'var(--color-ink-primary)',
 }

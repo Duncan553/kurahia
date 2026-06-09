@@ -80,7 +80,7 @@ export default function PinSetupScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-sage-dark">
+    <div className="min-h-screen bg-primary-dark">
 
       {/* Brand header */}
       <div className="flex flex-col items-center px-6 pt-16 pb-10 gap-3">
@@ -129,9 +129,9 @@ export default function PinSetupScreen() {
             disabled={!ready || setupMutation.isPending}
             className={[
               'w-full py-4 rounded-2xl text-base font-semibold transition-all mt-1',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark focus-visible:ring-offset-2',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
-              'bg-sage-dark text-cream-card hover:bg-sage-dark/90 active:scale-[0.99]',
+              'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
             ].join(' ')}
           >
             {setupMutation.isPending ? (

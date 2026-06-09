@@ -144,9 +144,9 @@ export default function PinEntryScreen() {
                   'min-h-[80px] min-w-[80px] w-full rounded-xl text-xl font-medium',
                   'flex items-center justify-center',
                   'bg-cream-alt text-ink-primary',
-                  'active:bg-sage-light active:scale-95 transition-all',
+                  'active:bg-primary-light active:scale-95 transition-all',
                   'disabled:opacity-50',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                 ].join(' ')}
               >
                 {key}

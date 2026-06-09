@@ -85,9 +85,9 @@ function SideLink({ path, label, Icon }: NavItem) {
       end={path === '/dashboard'}
       className={({ isActive }) => [
         'flex items-center gap-3 px-4 py-3 rounded-lg mx-2 transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
         isActive
-          ? 'bg-sage-dark/20 text-cream-card'
+          ? 'bg-primary-dark/20 text-cream-card'
           : 'text-cream-card/60 hover:bg-cream-card/10 hover:text-cream-card',
       ].join(' ')}
     >
@@ -128,7 +128,7 @@ export default function AppLayout() {
 
         {/* User + sign out */}
         <div className="border-t border-cream-card/10 p-3 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-sage-dark flex items-center justify-center
+          <div className="w-8 h-8 rounded-full bg-primary-dark flex items-center justify-center
             text-cream-card text-sm font-bold shrink-0">
             {user?.username?.[0]?.toUpperCase() ?? '?'}
           </div>
@@ -157,7 +157,7 @@ export default function AppLayout() {
           </div>
           {/* Mobile sign-out */}
           <button onClick={signOut}
-            className="sm:hidden w-8 h-8 rounded-full bg-sage-dark flex items-center justify-center
+            className="sm:hidden w-8 h-8 rounded-full bg-primary-dark flex items-center justify-center
               text-cream-card text-sm font-bold"
             aria-label="Sign out">
             {user?.username?.[0]?.toUpperCase() ?? '?'}
@@ -191,8 +191,8 @@ export default function AppLayout() {
               end={path === '/dashboard'}
               className={({ isActive }) => [
                 'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px]',
-                'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark focus-visible:ring-inset',
-                isActive ? 'text-sage-dark' : 'text-ink-tertiary hover:text-ink-secondary',
+                'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-inset',
+                isActive ? 'text-primary-dark' : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               <Icon />

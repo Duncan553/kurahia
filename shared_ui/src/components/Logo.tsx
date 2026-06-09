@@ -24,7 +24,7 @@ export function Logo({ size = 'md', variant = 'dark', className = '', ...props }
       <svg
         width={s.mark} height={s.mark}
         viewBox="0 0 40 40" fill="none" aria-hidden="true"
-        className={variant === 'light' ? 'text-cream-card/50' : 'text-sage-dark/60'}
+        className={variant === 'light' ? 'text-cream-card/50' : 'text-primary-dark/60'}
       >
         <path
           d="M20 36C20 36 8 28 8 18a12 12 0 0124 0c0 10-12 18-12 18z"

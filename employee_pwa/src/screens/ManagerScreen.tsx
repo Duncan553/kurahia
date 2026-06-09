@@ -109,9 +109,9 @@ export default function ManagerScreen() {
               onClick={() => navigate(path)}
               className="flex flex-col items-start gap-3 p-4 rounded-2xl border border-cream-alt
                 bg-cream-card hover:bg-cream-alt/40 active:bg-cream-alt/60 transition-colors text-left
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark"
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
             >
-              <span className="text-sage-dark">
+              <span className="text-primary-dark">
                 <Icon />
               </span>
               <div>

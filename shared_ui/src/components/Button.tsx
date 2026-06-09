@@ -19,8 +19,8 @@ export interface ButtonProps extends Omit<ComponentPropsWithoutRef<'button'>, HT
 }
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary:   'bg-sage-dark text-cream-card hover:bg-sage-main',
-  secondary: 'bg-cream-card text-ink-primary border border-sage-dark hover:bg-cream-alt',
+  primary:   'bg-primary-dark text-cream-card hover:bg-primary-main',
+  secondary: 'bg-cream-card text-ink-primary border border-primary-dark hover:bg-cream-alt',
   ghost:     'bg-transparent text-ink-secondary hover:bg-cream-alt',
   danger:    'bg-status-failed text-white hover:opacity-90',
 }
@@ -78,7 +78,7 @@ export function Button({
       aria-disabled={isDisabled ? true : undefined}
       className={[
         'relative inline-flex items-center justify-center font-medium transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark focus-visible:ring-offset-1',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-1',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         VARIANT[variant],
         SIZE[size],

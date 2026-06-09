@@ -105,9 +105,9 @@ export default function WristbandScreen() {
 
         {/* ── Last issued band (success card) ───────────────────────── */}
         {lastBand && (
-          <div className="bg-sage-light/30 border border-sage-main/30 rounded-2xl p-4 text-center">
+          <div className="bg-primary-light/30 border border-primary-main/30 rounded-2xl p-4 text-center">
             <p className="text-xs text-ink-tertiary uppercase tracking-widest mb-1">Last issued</p>
-            <p className="text-5xl font-bold tabular-nums text-sage-dark">#{lastBand.band_number}</p>
+            <p className="text-5xl font-bold tabular-nums text-primary-dark">#{lastBand.band_number}</p>
             <p className="text-sm text-ink-secondary mt-1">Tab opened · KSh {ENTRY_FEE.toLocaleString()} paid</p>
           </div>
         )}
@@ -159,8 +159,8 @@ export default function WristbandScreen() {
             disabled={mutation.isPending}
             className={[
               'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-              'bg-sage-dark text-cream-card hover:bg-sage-dark/90 active:scale-[0.99]',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark focus-visible:ring-offset-2',
+              'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             ].join(' ')}
           >
@@ -197,8 +197,8 @@ export default function WristbandScreen() {
           <button
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending}
-            className="flex-1 py-3 rounded-xl bg-sage-dark text-cream-card font-semibold
-              hover:bg-sage-dark/90 transition-colors disabled:opacity-50"
+            className="flex-1 py-3 rounded-xl bg-primary-dark text-cream-card font-semibold
+              hover:bg-primary-dark/90 transition-colors disabled:opacity-50"
           >
             {mutation.isPending ? 'Issuing…' : 'Confirm Issue'}
           </button>
@@ -218,8 +218,8 @@ export default function WristbandScreen() {
           </button>
           <button
             onClick={() => { setErrorOpen(false); setConfirmOpen(true) }}
-            className="flex-1 py-3 rounded-xl bg-sage-dark text-cream-card font-semibold
-              hover:bg-sage-dark/90 transition-colors"
+            className="flex-1 py-3 rounded-xl bg-primary-dark text-cream-card font-semibold
+              hover:bg-primary-dark/90 transition-colors"
           >
             Retry
           </button>

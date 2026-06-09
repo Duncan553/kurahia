@@ -183,9 +183,9 @@ export default function PurchaseReqScreen() {
               {req.status === 'PENDING' && (
                 <button
                   onClick={() => openPropose(req)}
-                  className="w-full mt-1 py-2.5 rounded-xl bg-sage-dark text-cream-card text-sm font-semibold
-                    hover:bg-sage-dark/90 transition-colors
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark"
+                  className="w-full mt-1 py-2.5 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+                    hover:bg-primary-dark/90 transition-colors
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                 >
                   Propose budget
                 </button>
@@ -195,8 +195,8 @@ export default function PurchaseReqScreen() {
               {req.status === 'PROPOSED' && (
                 <button
                   onClick={() => openPropose(req)}
-                  className="w-full mt-1 py-2 rounded-xl border border-sage-dark/30 text-sage-dark
-                    text-sm font-medium hover:bg-sage-dark/5 transition-colors"
+                  className="w-full mt-1 py-2 rounded-xl border border-primary-dark/30 text-primary-dark
+                    text-sm font-medium hover:bg-primary-dark/5 transition-colors"
                 >
                   Update estimate
                 </button>
@@ -250,7 +250,7 @@ export default function PurchaseReqScreen() {
                 placeholder="0.00"
                 autoFocus
                 className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3 text-base
-                  text-ink-primary focus:outline-none focus:border-sage-dark focus:ring-2 focus:ring-sage-dark/20"
+                  text-ink-primary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
 
@@ -264,8 +264,8 @@ export default function PurchaseReqScreen() {
                 onChange={(e) => setPropNotes(e.target.value)}
                 placeholder="Supplier name, urgency, any caveats…"
                 className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3 text-sm
-                  text-ink-primary focus:outline-none focus:border-sage-dark
-                  focus:ring-2 focus:ring-sage-dark/20 resize-none"
+                  text-ink-primary focus:outline-none focus:border-primary-dark
+                  focus:ring-2 focus:ring-primary-dark/20 resize-none"
               />
             </div>
 
@@ -278,8 +278,8 @@ export default function PurchaseReqScreen() {
               disabled={!costValid}
               className={[
                 'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-                'bg-sage-dark text-cream-card hover:bg-sage-dark/90 active:scale-[0.99]',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark focus-visible:ring-offset-2',
+                'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               ].join(' ')}
             >
@@ -318,8 +318,8 @@ export default function PurchaseReqScreen() {
                     proposeMutation.mutate({ id: confirmId })
                   }}
                   disabled={proposeMutation.isPending}
-                  className="flex-1 py-3 rounded-xl bg-sage-dark text-cream-card text-sm font-semibold
-                    hover:bg-sage-dark/90 disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+                    hover:bg-primary-dark/90 disabled:opacity-50 transition-colors"
                 >
                   {proposeMutation.isPending ? 'Submitting…' : 'Confirm'}
                 </button>

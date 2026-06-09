@@ -68,7 +68,7 @@ function ChecklistItem({
       hasError
         ? 'border-status-failed bg-status-failed/5'
         : state.checked
-          ? 'border-sage-main/40 bg-sage-light/10'
+          ? 'border-primary-main/40 bg-primary-light/10'
           : 'border-cream-alt bg-cream-card',
     ].join(' ')}>
 
@@ -77,13 +77,13 @@ function ChecklistItem({
         type="button"
         onClick={() => onChange(!state.checked)}
         className="flex items-center gap-3 w-full px-4 py-3.5 text-left
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark focus-visible:ring-inset"
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-inset"
       >
         {/* Custom checkbox square */}
         <span className={[
           'flex-shrink-0 w-5 h-5 rounded flex items-center justify-center border-2 transition-colors',
           state.checked
-            ? 'border-sage-dark bg-sage-dark'
+            ? 'border-primary-dark bg-primary-dark'
             : hasError
               ? 'border-status-failed'
               : 'border-ink-tertiary/60',
@@ -117,8 +117,8 @@ function ChecklistItem({
             onChange={(e) => onNote(e.target.value)}
             placeholder="Optional note…"
             className="w-full rounded-lg border border-cream-alt bg-white px-3 py-2
-              text-sm text-ink-primary focus:outline-none focus:border-sage-dark
-              focus:ring-2 focus:ring-sage-dark/20 resize-none"
+              text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+              focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />
         </div>
       )}
@@ -286,7 +286,7 @@ export default function SafetyCheckScreen() {
             onClick={() => selectEquipment(eq)}
             className="w-full flex items-center gap-4 p-4 rounded-2xl border border-cream-alt
               bg-cream-card hover:bg-cream-alt/40 active:bg-cream-alt/60 transition-colors text-left
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark"
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -317,7 +317,7 @@ export default function SafetyCheckScreen() {
         <button
           onClick={clearSelection}
           className="mt-0.5 p-1.5 rounded-lg hover:bg-cream-alt transition-colors shrink-0
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark"
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           aria-label="Back to equipment list"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -376,7 +376,7 @@ export default function SafetyCheckScreen() {
           <div className="flex items-center gap-3">
             <div className="flex-1 h-1.5 rounded-full bg-cream-alt overflow-hidden">
               <div
-                className="h-full bg-sage-dark rounded-full transition-all duration-300"
+                className="h-full bg-primary-dark rounded-full transition-all duration-300"
                 style={{ width: `${(checkedCount / template.items.length) * 100}%` }}
                 aria-hidden="true"
               />
@@ -391,8 +391,8 @@ export default function SafetyCheckScreen() {
             disabled={!allChecked || submitting}
             className={[
               'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-              'bg-sage-dark text-cream-card hover:bg-sage-dark/90 active:scale-[0.99]',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark focus-visible:ring-offset-2',
+              'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             ].join(' ')}
           >

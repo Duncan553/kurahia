@@ -72,9 +72,9 @@ export default function SuggestionsScreen() {
                 type="button"
                 onClick={() => setCategory(c)}
                 className={[
-                  'flex-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sage-dark',
+                  'flex-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark',
                   category === c
-                    ? 'bg-sage-dark text-cream-card'
+                    ? 'bg-primary-dark text-cream-card'
                     : 'text-ink-secondary hover:bg-cream-alt/40',
                 ].join(' ')}
               >
@@ -109,7 +109,7 @@ export default function SuggestionsScreen() {
             className={[
               'w-full px-4 py-3 rounded-xl border bg-cream-card text-sm text-ink-primary',
               'placeholder:text-ink-tertiary/60 transition-colors',
-              'focus:outline-none focus:ring-2 focus:ring-sage-dark focus:border-transparent',
+              'focus:outline-none focus:ring-2 focus:ring-primary-dark focus:border-transparent',
               subjectError ? 'border-status-failed' : 'border-cream-alt',
             ].join(' ')}
           />
@@ -142,7 +142,7 @@ export default function SuggestionsScreen() {
             className={[
               'w-full px-4 py-3 rounded-xl border bg-cream-card text-sm text-ink-primary resize-none',
               'placeholder:text-ink-tertiary/60 transition-colors',
-              'focus:outline-none focus:ring-2 focus:ring-sage-dark focus:border-transparent',
+              'focus:outline-none focus:ring-2 focus:ring-primary-dark focus:border-transparent',
               bodyError ? 'border-status-failed' : 'border-cream-alt',
             ].join(' ')}
           />
@@ -159,9 +159,9 @@ export default function SuggestionsScreen() {
           disabled={!isValid || mutation.isPending}
           className={[
             'w-full py-3.5 rounded-xl text-sm font-semibold transition-all',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark focus-visible:ring-offset-2',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
             'disabled:opacity-50 disabled:cursor-not-allowed',
-            'bg-sage-dark text-cream-card hover:bg-sage-dark/90 active:scale-[0.99]',
+            'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
           ].join(' ')}
         >
           {mutation.isPending ? (
