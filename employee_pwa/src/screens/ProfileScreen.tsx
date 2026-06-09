@@ -3,26 +3,34 @@ import { useAuthStore } from '../stores/authStore'
 
 function roleName(level: number): string {
   if (level >= 10) return 'Owner'
-  if (level >= 5) return 'Manager'
-  if (level >= 3) return 'Gate Staff'
+  if (level >= 5)  return 'Manager'
+  if (level >= 3)  return 'Gate Staff'
   return 'Staff'
 }
 
-function NavCard({ label, description, path, icon }: {
+function NavCard({ label, description, path, icon, danger }: {
   label: string; description: string; path: string
-  icon: React.ReactNode
+  icon: React.ReactNode; danger?: boolean
 }) {
   const navigate = useNavigate()
   return (
     <button
       onClick={() => navigate(path)}
-      className="w-full flex items-center gap-4 p-4 rounded-2xl border border-cream-alt
-        bg-cream-card hover:bg-cream-alt/40 active:bg-cream-alt/60 transition-colors text-left
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark"
+      className={[
+        'w-full flex items-center gap-4 p-4 rounded-2xl border transition-colors text-left',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark',
+        danger
+          ? 'border-status-failed/20 bg-status-failed/5 hover:bg-status-failed/10'
+          : 'border-cream-alt bg-cream-card hover:bg-cream-alt/40 active:bg-cream-alt/60',
+      ].join(' ')}
     >
-      <span className="shrink-0 text-ink-secondary">{icon}</span>
+      <span className={danger ? 'text-status-failed shrink-0' : 'text-ink-secondary shrink-0'}>
+        {icon}
+      </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-ink-primary">{label}</p>
+        <p className={`text-sm font-semibold ${danger ? 'text-status-failed' : 'text-ink-primary'}`}>
+          {label}
+        </p>
         <p className="text-xs text-ink-tertiary mt-0.5">{description}</p>
       </div>
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"
@@ -43,7 +51,7 @@ export default function ProfileScreen() {
   return (
     <div className="p-4 space-y-6 max-w-md mx-auto">
 
-      {/* User card */}
+      {/* ── Identity card ─────────────────────────────────────────── */}
       <div className="flex items-center gap-4 pt-2">
         <div className="w-14 h-14 rounded-full bg-sage-dark flex items-center justify-center
           text-cream-card text-xl font-bold shrink-0">
@@ -51,23 +59,59 @@ export default function ProfileScreen() {
         </div>
         <div>
           <p className="text-base font-bold text-ink-primary">{user?.username}</p>
-          <p className="text-sm text-ink-tertiary">{roleName(user?.role_level ?? 0)}</p>
+          <p className="text-sm text-ink-tertiary">
+            {roleName(user?.role_level ?? 0)}
+            {user?.department ? ` · ${user.department}` : ''}
+          </p>
         </div>
       </div>
 
-      {/* Quick nav */}
-      <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary px-1">Actions</p>
+      {/* ── HR actions ────────────────────────────────────────────── */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary px-1">
+          Leave & Attendance
+        </p>
+        <NavCard
+          path="/leave"
+          label="Leave Request"
+          description="Request annual, sick, emergency, or unpaid leave."
+          icon={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M8 2v4M16 2v4M3 10h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M8 15h8M8 18h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          }
+        />
+        <NavCard
+          path="/absence"
+          label="Absence Notice"
+          description="Calling in today? Record it immediately — manager is notified."
+          danger
+          icon={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          }
+        />
+      </div>
+
+      {/* ── Company actions ───────────────────────────────────────── */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary px-1">
+          Company
+        </p>
         <NavCard
           path="/conduct"
           label="Code of Conduct"
           description="Review and sign the employee conduct rules."
           icon={
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M7 3H4a1 1 0 00-1 1v16a1 1 0 001 1h16a1 1 0 001-1V8l-5-5H7z"
-                stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-              <path d="M14 3v5h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M14 3v5h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           }
         />
@@ -78,14 +122,14 @@ export default function ProfileScreen() {
           icon={
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"
-                stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-              <path d="M8 10h.01M12 10h.01M16 10h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M8 10h.01M12 10h.01M16 10h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           }
         />
       </div>
 
-      {/* Sign out */}
+      {/* ── Sign out ──────────────────────────────────────────────── */}
       <div className="pt-2 border-t border-cream-alt">
         <button
           onClick={signOut}
@@ -95,8 +139,8 @@ export default function ProfileScreen() {
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-            <path d="M7 9h8M12 6l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M11 3.5H4a1 1 0 00-1 1v9a1 1 0 001 1h7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M7 9h8M12 6l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M11 3.5H4a1 1 0 00-1 1v9a1 1 0 001 1h7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
           Sign Out
         </button>
