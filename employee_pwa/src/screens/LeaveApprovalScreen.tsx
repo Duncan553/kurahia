@@ -192,9 +192,9 @@ export default function LeaveApprovalScreen() {
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => setApproveId(lr.id)}
-                    className="flex-1 py-2.5 rounded-xl bg-sage-dark text-cream-card text-sm font-semibold
-                      hover:bg-sage-dark/90 transition-colors
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark"
+                    className="flex-1 py-2.5 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+                      hover:bg-primary-dark/90 transition-colors
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                   >
                     Approve
                   </button>
@@ -240,8 +240,8 @@ export default function LeaveApprovalScreen() {
                 <button
                   onClick={() => approveMutation.mutate(approveId)}
                   disabled={approveMutation.isPending}
-                  className="flex-1 py-3 rounded-xl bg-sage-dark text-cream-card text-sm font-semibold
-                    hover:bg-sage-dark/90 disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+                    hover:bg-primary-dark/90 disabled:opacity-50 transition-colors"
                 >
                   {approveMutation.isPending ? 'Approving…' : 'Approve'}
                 </button>
@@ -277,8 +277,8 @@ export default function LeaveApprovalScreen() {
                   placeholder="Explain why this leave cannot be approved… (min 10 chars)"
                   autoFocus
                   className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3 text-sm
-                    text-ink-primary focus:outline-none focus:border-sage-dark
-                    focus:ring-2 focus:ring-sage-dark/20 resize-none"
+                    text-ink-primary focus:outline-none focus:border-primary-dark
+                    focus:ring-2 focus:ring-primary-dark/20 resize-none"
                 />
                 {rejectNotes.length > 0 && !rejectNotesValid && (
                   <p className="text-xs text-status-failed mt-1">

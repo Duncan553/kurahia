@@ -58,7 +58,7 @@ function DepositBar({ paid, required }: { paid: string; required: string }) {
       </div>
       <div className="h-1 rounded-full bg-cream-alt overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${full ? 'bg-status-paid' : 'bg-sage-main'}`}
+          className={`h-full rounded-full transition-all ${full ? 'bg-status-paid' : 'bg-primary-main'}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -215,10 +215,10 @@ export default function CheckInScreen() {
                         disabled={waiverBlocked || checkInMutation.isPending}
                         className={[
                           'shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                           waiverBlocked
                             ? 'bg-cream-alt text-ink-tertiary cursor-not-allowed'
-                            : 'bg-sage-dark text-cream-card hover:bg-sage-dark/90 active:scale-[0.98]',
+                            : 'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.98]',
                           'disabled:opacity-60',
                         ].join(' ')}
                       >

@@ -91,8 +91,8 @@ function ItemQtyForm({
           onBlur={() => touch('qty')}
           disabled={isPending}
           className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3
-            text-base text-ink-primary focus:outline-none focus:border-sage-dark
-            focus:ring-2 focus:ring-sage-dark/20 disabled:opacity-50"
+            text-base text-ink-primary focus:outline-none focus:border-primary-dark
+            focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
         />
       </div>
       {qtyErr && <p className="text-sm text-status-failed -mt-2">{qtyErr}</p>}
@@ -110,8 +110,8 @@ function ItemQtyForm({
             disabled={isPending}
             placeholder="e.g. Fridge failure overnight, chicken spoiled"
             className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3
-              text-sm text-ink-primary focus:outline-none focus:border-sage-dark
-              focus:ring-2 focus:ring-sage-dark/20 disabled:opacity-50 resize-none"
+              text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+              focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50 resize-none"
           />
           {reasonErr && <p className="text-sm text-status-failed mt-1">{reasonErr}</p>}
         </div>
@@ -122,8 +122,8 @@ function ItemQtyForm({
         disabled={isPending}
         className={[
           'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-          'bg-sage-dark text-cream-card hover:bg-sage-dark/90 active:scale-[0.99]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark focus-visible:ring-offset-2',
+          'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
         ].join(' ')}
       >

@@ -2,12 +2,13 @@
 
 @theme {
   /* ── System palette ──────────────────────────────────────────── */
-  --color-sage-main: #6BA07A;
-  --color-sage-light: #BDD9C5;
-  --color-sage-dark: #4D7A5B;
-  --color-cream-card: #F2EBDD;
-  --color-cream-alt: #EBE2CE;
-  --color-ink-primary: #2A2620;
+  --color-primary-main: #B4533C;
+  --color-primary-light: #D88A6E;
+  --color-primary-dark: #8C3E2C;
+  --color-cream-card: #F4EDDF;
+  --color-cream-alt: #ECE3D0;
+  --color-cream-deep: #E5D9C0;
+  --color-ink-primary: #1F1B14;
   --color-ink-secondary: #5C5147;
   --color-ink-tertiary: #8C7E6F;
 

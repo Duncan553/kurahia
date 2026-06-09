@@ -53,7 +53,7 @@ function ToastCard({ toast }: { toast: ToastItem }) {
         {toast.actionLabel && toast.onAction && (
           <button
             onClick={() => { toast.onAction?.(); removeToast(toast.id) }}
-            className="text-sm font-medium text-sage-dark hover:underline"
+            className="text-sm font-medium text-primary-dark hover:underline"
           >
             {toast.actionLabel}
           </button>

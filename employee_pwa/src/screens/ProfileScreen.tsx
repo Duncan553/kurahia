@@ -18,7 +18,7 @@ function NavCard({ label, description, path, icon, danger }: {
       onClick={() => navigate(path)}
       className={[
         'w-full flex items-center gap-4 p-4 rounded-2xl border transition-colors text-left',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
         danger
           ? 'border-status-failed/20 bg-status-failed/5 hover:bg-status-failed/10'
           : 'border-cream-alt bg-cream-card hover:bg-cream-alt/40 active:bg-cream-alt/60',
@@ -53,7 +53,7 @@ export default function ProfileScreen() {
 
       {/* ── Identity card ─────────────────────────────────────────── */}
       <div className="flex items-center gap-4 pt-2">
-        <div className="w-14 h-14 rounded-full bg-sage-dark flex items-center justify-center
+        <div className="w-14 h-14 rounded-full bg-primary-dark flex items-center justify-center
           text-cream-card text-xl font-bold shrink-0">
           {user?.username?.[0]?.toUpperCase() ?? '?'}
         </div>

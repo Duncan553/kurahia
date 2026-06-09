@@ -193,7 +193,7 @@ export default function ClockScreen() {
           'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           isClockingIn
-            ? 'bg-sage-dark text-cream-card hover:bg-sage-dark/90 active:scale-[0.98] focus-visible:ring-sage-dark'
+            ? 'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.98] focus-visible:ring-primary-dark'
             : 'bg-ink-tertiary/10 text-ink-primary border border-ink-tertiary/20 hover:bg-ink-tertiary/20 active:scale-[0.98] focus-visible:ring-ink-tertiary',
         ].join(' ')}
       >

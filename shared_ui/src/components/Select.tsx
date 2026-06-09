@@ -66,7 +66,7 @@ export function Select({
           className={[
             'w-full appearance-none rounded border bg-cream-card text-ink-primary text-base',
             'px-3 pr-10 py-2 min-h-[44px]',
-            'focus:outline-none focus:border-sage-dark focus:ring-0',
+            'focus:outline-none focus:border-primary-dark focus:ring-0',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             error ? 'border-status-failed' : 'border-ink-tertiary',
           ].join(' ')}

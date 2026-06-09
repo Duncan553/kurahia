@@ -191,7 +191,7 @@ export default function AttendanceScreen() {
                         onClick={() => setSelectedEmp(row)}
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-cream-alt
                           bg-cream-card hover:bg-cream-alt/40 transition-colors text-left
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark"
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">

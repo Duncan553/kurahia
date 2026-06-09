@@ -63,7 +63,7 @@ export function Input({
           className={[
             'w-full rounded-xl border bg-white text-ink-primary text-base',
             'px-4 py-3 min-h-[52px]',
-            'focus:outline-none focus:border-sage-dark focus:ring-2 focus:ring-sage-dark/20',
+            'focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20',
             'placeholder:text-ink-tertiary/60',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'transition-colors',

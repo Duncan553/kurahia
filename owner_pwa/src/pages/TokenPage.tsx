@@ -13,9 +13,9 @@ interface Palette { name: string; swatches: Swatch[] }
 
 const PALETTES: Palette[] = [
   { name: 'System', swatches: [
-    { token: '--color-sage-main',      hex: '#9CB39A', bg: 'bg-sage-main',      lightText: false },
-    { token: '--color-sage-light',     hex: '#B8C8B0', bg: 'bg-sage-light',     lightText: false },
-    { token: '--color-sage-dark',      hex: '#7A9374', bg: 'bg-sage-dark',      lightText: false },
+    { token: '--color-primary-main',      hex: '#9CB39A', bg: 'bg-primary-main',      lightText: false },
+    { token: '--color-primary-light',     hex: '#B8C8B0', bg: 'bg-primary-light',     lightText: false },
+    { token: '--color-primary-dark',      hex: '#7A9374', bg: 'bg-primary-dark',      lightText: false },
     { token: '--color-cream-card',     hex: '#F2EBDD', bg: 'bg-cream-card',     lightText: false },
     { token: '--color-cream-alt',      hex: '#EBE2CE', bg: 'bg-cream-alt',      lightText: false },
     { token: '--color-ink-primary',    hex: '#2A2620', bg: 'bg-ink-primary',    lightText: true  },

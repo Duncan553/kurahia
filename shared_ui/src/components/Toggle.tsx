@@ -39,13 +39,13 @@ export function Toggle({
         onClick={() => { if (!disabled) onChange(!checked) }}
         animate={{
           backgroundColor: checked
-            ? 'var(--color-sage-dark)'
+            ? 'var(--color-primary-dark)'
             : 'var(--color-cream-alt)',
         }}
         transition={SPRING}
         className={[
           'relative w-11 h-6 rounded-full',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark focus-visible:ring-offset-1',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-1',
           disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
         ].join(' ')}
       >

@@ -133,11 +133,11 @@ export default function ScheduleScreen() {
       {/* Pull-to-refresh indicator */}
       {pullProgress > 0 && (
         <div
-          className="flex items-center justify-center overflow-hidden transition-all bg-sage-light/30"
+          className="flex items-center justify-center overflow-hidden transition-all bg-primary-light/30"
           style={{ height: `${pullProgress * 48}px` }}
         >
           <svg
-            className="text-sage-dark"
+            className="text-primary-dark"
             style={{ opacity: pullProgress, transform: `rotate(${pullProgress * 360}deg)` }}
             width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"
           >
@@ -167,7 +167,7 @@ export default function ScheduleScreen() {
               {/* Day header */}
               <p className={[
                 'text-xs font-semibold uppercase tracking-wider mb-2',
-                isToday ? 'text-sage-dark' : 'text-ink-tertiary',
+                isToday ? 'text-primary-dark' : 'text-ink-tertiary',
               ].join(' ')}>
                 {isToday ? `Today · ${label}` : label}
               </p>
@@ -177,7 +177,7 @@ export default function ScheduleScreen() {
                 <div className={[
                   'rounded-xl border px-4 py-3',
                   isToday
-                    ? 'bg-sage-light/20 border-sage-dark/20'
+                    ? 'bg-primary-light/20 border-primary-dark/20'
                     : 'bg-cream-alt/30 border-cream-alt',
                 ].join(' ')}>
                   <p className="text-sm text-ink-tertiary">No shift</p>
@@ -190,7 +190,7 @@ export default function ScheduleScreen() {
                       className={[
                         'rounded-xl border px-4 py-3 flex items-center justify-between gap-3',
                         isToday
-                          ? 'bg-sage-light/20 border-sage-dark/20'
+                          ? 'bg-primary-light/20 border-primary-dark/20'
                           : 'bg-cream-card border-cream-alt',
                       ].join(' ')}
                     >

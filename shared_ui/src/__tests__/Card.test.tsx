@@ -27,7 +27,7 @@ describe('Card', () => {
   test('selected card has aria-relevant class applied', () => {
     const { container } = render(<Card selected>Selected</Card>)
     const div = container.firstChild as HTMLElement
-    expect(div.className).toContain('bg-sage-light')
-    expect(div.className).toContain('border-sage-dark')
+    expect(div.className).toContain('bg-primary-light')
+    expect(div.className).toContain('border-primary-dark')
   })
 })

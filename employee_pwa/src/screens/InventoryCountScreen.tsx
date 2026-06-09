@@ -210,7 +210,7 @@ export default function InventoryCountScreen() {
                   key={item.id}
                   className={[
                     'rounded-xl border p-3 space-y-2 transition-colors',
-                    submitted ? 'bg-sage-light/20 border-sage-main/30' : 'bg-cream-alt/30 border-cream-alt',
+                    submitted ? 'bg-primary-light/20 border-primary-main/30' : 'bg-cream-alt/30 border-cream-alt',
                   ].join(' ')}
                 >
                   <div className="flex items-center gap-2 flex-wrap">
@@ -229,7 +229,7 @@ export default function InventoryCountScreen() {
                       </span>
                     )}
                     {submitted && (
-                      <span className="ml-auto text-sage-dark">
+                      <span className="ml-auto text-primary-dark">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                           <circle cx="8" cy="8" r="8" opacity="0.2"/>
                           <path d="M4.5 8l2.5 2.5L11.5 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
@@ -256,19 +256,19 @@ export default function InventoryCountScreen() {
                       onChange={(e) => setInputs((prev) => ({ ...prev, [item.id]: e.target.value }))}
                       disabled={pending.has(item.id)}
                       className="flex-1 rounded-xl border border-cream-alt bg-white px-3 py-2
-                        text-sm text-ink-primary focus:outline-none focus:border-sage-dark
-                        focus:ring-2 focus:ring-sage-dark/20 disabled:opacity-50"
+                        text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+                        focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
                     />
                     <button
                       onClick={() => submitCount(item)}
                       disabled={pending.has(item.id) || !inputs[item.id]?.trim()}
                       className={[
                         'px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-dark',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                         'disabled:opacity-40 disabled:cursor-not-allowed',
                         submitted
-                          ? 'bg-sage-main/20 text-sage-dark hover:bg-sage-main/30'
-                          : 'bg-sage-dark text-cream-card hover:bg-sage-dark/90',
+                          ? 'bg-primary-main/20 text-primary-dark hover:bg-primary-main/30'
+                          : 'bg-primary-dark text-cream-card hover:bg-primary-dark/90',
                       ].join(' ')}
                     >
                       {pending.has(item.id) ? (
@@ -296,8 +296,8 @@ export default function InventoryCountScreen() {
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
                   className="w-full rounded-xl border border-cream-alt bg-white px-3 py-2.5
-                    text-sm text-ink-primary focus:outline-none focus:border-sage-dark
-                    focus:ring-2 focus:ring-sage-dark/20"
+                    text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+                    focus:ring-2 focus:ring-primary-dark/20"
                 />
               </div>
               <div className="flex-1">
@@ -307,15 +307,15 @@ export default function InventoryCountScreen() {
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
                   className="w-full rounded-xl border border-cream-alt bg-white px-3 py-2.5
-                    text-sm text-ink-primary focus:outline-none focus:border-sage-dark
-                    focus:ring-2 focus:ring-sage-dark/20"
+                    text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+                    focus:ring-2 focus:ring-primary-dark/20"
                 />
               </div>
               <button
                 onClick={() => { setVarTriggered(true); refetchVariance() }}
                 disabled={varFetching}
-                className="px-4 py-2.5 rounded-xl bg-sage-dark text-cream-card text-sm font-semibold
-                  hover:bg-sage-dark/90 disabled:opacity-50 transition-all shrink-0"
+                className="px-4 py-2.5 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+                  hover:bg-primary-dark/90 disabled:opacity-50 transition-all shrink-0"
               >
                 {varFetching ? '…' : 'Run'}
               </button>
