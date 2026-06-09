@@ -12,7 +12,12 @@ interface LoginResponse {
   refresh_token?: string
   requires_pin_setup?: true
 }
-interface JWTClaims extends Record<string, unknown> { sub: string; role_level: number; requires_pin_setup?: boolean }
+interface JWTClaims extends Record<string, unknown> {
+  sub: string
+  role_level: number
+  department?: string | null
+  requires_pin_setup?: boolean
+}
 
 export default function LoginScreen() {
   const navigate = useNavigate()
@@ -32,7 +37,7 @@ export default function LoginScreen() {
         navigate('/pin/setup', { state: { username } })
         return
       }
-      setAuth({ id: claims.sub, username, role_level: claims.role_level }, data.access_token)
+      setAuth({ id: claims.sub, username, role_level: claims.role_level, department: claims.department ?? null }, data.access_token)
       navigate('/clock')
     },
     onError: (err) => {

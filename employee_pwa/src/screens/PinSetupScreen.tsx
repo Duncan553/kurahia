@@ -8,7 +8,11 @@ import { useAuthStore } from '../stores/authStore'
 import { Input } from '@shared'
 
 interface SetPinResponse { access_token: string; refresh_token: string }
-interface JWTClaims extends Record<string, unknown> { sub: string; role_level: number }
+interface JWTClaims extends Record<string, unknown> {
+  sub: string
+  role_level: number
+  department?: string | null
+}
 
 function criteria(pin: string, confirm: string) {
   return {
@@ -56,7 +60,7 @@ export default function PinSetupScreen() {
     onSuccess: (data) => {
       setErrorMsg('')
       const claims = decodeJWT<JWTClaims>(data.access_token)
-      setAuth({ id: claims.sub, username, role_level: claims.role_level }, data.access_token)
+      setAuth({ id: claims.sub, username, role_level: claims.role_level, department: claims.department ?? null }, data.access_token)
       navigate('/')
     },
 

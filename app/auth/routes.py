@@ -82,11 +82,17 @@ def login():
     # Success — clear lockout counter, issue tokens
     user.reset_lockout()
 
+    dept = user.department.name if user.department else None
+
     # If PIN not yet set, issue a short-lived "setup-only" token
     if not user.pin_set:
         setup_token = create_access_token(
             identity=user.id,
-            additional_claims={"role_level": user.role.level, "requires_pin_setup": True},
+            additional_claims={
+                "role_level": user.role.level,
+                "department": dept,
+                "requires_pin_setup": True,
+            },
             expires_delta=timedelta(minutes=10),
         )
         db.session.flush()
@@ -96,7 +102,7 @@ def login():
 
     access_token = create_access_token(
         identity=user.id,
-        additional_claims={"role_level": user.role.level},
+        additional_claims={"role_level": user.role.level, "department": dept},
     )
     refresh_token = create_refresh_token(identity=user.id)
 
@@ -146,7 +152,10 @@ def pin_login():
     user.reset_lockout()
     access_token = create_access_token(
         identity=user.id,
-        additional_claims={"role_level": user.role.level},
+        additional_claims={
+            "role_level": user.role.level,
+            "department": user.department.name if user.department else None,
+        },
     )
     refresh_token = create_refresh_token(identity=user.id)
 
@@ -174,7 +183,10 @@ def refresh():
 
     new_token = create_access_token(
         identity=user.id,
-        additional_claims={"role_level": user.role.level},
+        additional_claims={
+            "role_level": user.role.level,
+            "department": user.department.name if user.department else None,
+        },
     )
     return jsonify({"access_token": new_token}), 200
 
@@ -207,7 +219,10 @@ def set_pin():
     # Issue real tokens now that setup is complete
     access_token = create_access_token(
         identity=user.id,
-        additional_claims={"role_level": user.role.level},
+        additional_claims={
+            "role_level": user.role.level,
+            "department": user.department.name if user.department else None,
+        },
     )
     refresh_token = create_refresh_token(identity=user.id)
     return jsonify({"access_token": access_token, "refresh_token": refresh_token}), 200

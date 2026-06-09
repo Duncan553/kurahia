@@ -3,9 +3,10 @@ import { create } from 'zustand'
 // Only what the JWT gives us + the username the user typed on the login form.
 // No full_name on the backend User model — username is the display identity.
 export interface AuthUser {
-  id: string         // JWT `sub`
-  username: string   // from login form
-  role_level: number // JWT `role_level` claim (owner=10, manager=5, staff=1)
+  id: string               // JWT `sub`
+  username: string         // from login form
+  role_level: number       // JWT `role_level` claim (owner=10, manager=5, staff=1)
+  department: string | null // JWT `department` claim — drives tablet-aware nav
 }
 
 interface AuthState {
