@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react'
 import { useLocation, useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
@@ -36,7 +37,22 @@ function ProfileIcon() {
 function GateIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
     <rect x="3" y="5" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M8 11h6M11 8v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="11" cy="11" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M3 11h5.5M13.5 11H19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+}
+function CheckInIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <rect x="3" y="4" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M7 2v4M15 2v4M3 10h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M7.5 15l2.5 2.5L15 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+}
+function WaiverIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <rect x="4" y="3" width="14" height="17" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M7 8h8M7 12h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M12 16l1.5-1.5L15 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 function ManagerIcon() {
@@ -74,15 +90,22 @@ function TopBarStats({ roleLevel }: { roleLevel: number }) {
 
 // ── Nav item definition ─────────────────────────────────────────────────────
 
-interface NavItem { path: string; label: string; Icon: () => JSX.Element; minLevel: number; badge?: boolean }
+interface NavItem {
+  path: string; label: string; Icon: () => ReactElement
+  minLevel: number; maxLevel?: number; badge?: boolean
+}
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/clock',         label: 'Clock',         Icon: ClockIcon,    minLevel: 0 },
-  { path: '/schedule',      label: 'Schedule',      Icon: ScheduleIcon, minLevel: 0 },
-  { path: '/notifications', label: 'Alerts',        Icon: BellIcon,     minLevel: 0, badge: true },
-  { path: '/profile',       label: 'Profile',       Icon: ProfileIcon,  minLevel: 0 },
-  { path: '/gate',          label: 'Gate',          Icon: GateIcon,     minLevel: 3 },
-  { path: '/manager',       label: 'Manager',       Icon: ManagerIcon,  minLevel: 5 },
+  { path: '/clock',                label: 'Clock',      Icon: ClockIcon,    minLevel: 0 },
+  { path: '/schedule',             label: 'Schedule',   Icon: ScheduleIcon, minLevel: 0 },
+  { path: '/notifications',        label: 'Alerts',     Icon: BellIcon,     minLevel: 0, badge: true },
+  // Level 1–2 only: waiver standalone (level 3+ access waiver from the Gate screen)
+  { path: '/gate/waiver',          label: 'Waiver',     Icon: WaiverIcon,   minLevel: 1, maxLevel: 2 },
+  // Level 3+: issue bands + check-in
+  { path: '/gate/issue',           label: 'Issue',      Icon: GateIcon,     minLevel: 3 },
+  { path: '/front-desk/checkin',   label: 'Check-In',   Icon: CheckInIcon,  minLevel: 3 },
+  { path: '/profile',              label: 'Profile',    Icon: ProfileIcon,  minLevel: 0 },
+  { path: '/manager',              label: 'Manager',    Icon: ManagerIcon,  minLevel: 5 },
 ]
 
 // ── Page transition ─────────────────────────────────────────────────────────
@@ -102,7 +125,9 @@ export default function AppLayout() {
   const clearAuth = useAuthStore((s) => s.clearAuth)
   const roleLevel = user?.role_level ?? 0
 
-  const visibleItems = NAV_ITEMS.filter((item) => roleLevel >= item.minLevel)
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => roleLevel >= item.minLevel && (item.maxLevel === undefined || roleLevel <= item.maxLevel)
+  )
 
   // Shares the same TanStack cache key as NotificationsScreen → no extra network request
   const { data: inbox } = useQuery<Notification[]>({

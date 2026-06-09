@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Skeleton, EmptyState, useToastStore } from '@shared'
 import api from '../lib/axios'
@@ -6,16 +6,23 @@ import { formatTime, dutyTime } from '../lib/format'
 import { enqueueClockEvent, drainClockQueue } from '../lib/clockQueue'
 import type { ClockEventType } from '../lib/clockQueue'
 
-interface ClockEvent {
+interface LastEvent {
   id: string
   event_type: 'CLOCK_IN' | 'CLOCK_OUT'
   occurred_at: string
   shift_id: string | null
-  is_manual_override: boolean
-  source_ip: string | null
 }
 
-interface ClockResponse extends ClockEvent {
+interface ClockStatus {
+  status: 'CLOCK_IN' | 'CLOCK_OUT' | 'CLOCKED_OUT'
+  last_event: LastEvent | null
+}
+
+interface ClockResponse {
+  id: string
+  event_type: 'CLOCK_IN' | 'CLOCK_OUT'
+  occurred_at: string
+  shift_id: string | null
   no_shift?: boolean
   duplicate?: boolean
 }
@@ -26,22 +33,16 @@ export default function ClockScreen() {
   const [btnDisabled, setBtnDisabled] = useState(false)
   const [dutyMinutes, setDutyMinutes] = useState(0)
 
-  const { data: events, isLoading, isError, refetch } = useQuery<ClockEvent[]>({
-    queryKey: ['clock-events'],
-    queryFn: () => api.get<ClockEvent[]>('/hr/clock-events').then((r) => r.data),
+  // Staff-accessible endpoint — returns only the current user's own status
+  const { data, isLoading, isError, refetch } = useQuery<ClockStatus>({
+    queryKey: ['clock-status'],
+    queryFn: () => api.get<ClockStatus>('/hr/clock-status').then((r) => r.data),
   })
 
-  // Most recent event first → determines clocked-in state
-  const sorted = useMemo(
-    () => [...(events ?? [])].sort(
-      (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
-    ),
-    [events]
-  )
-  const lastEvent = sorted[0]
-  const isClockedIn = lastEvent?.event_type === 'CLOCK_IN'
+  const isClockedIn = data?.status === 'CLOCK_IN'
+  const lastEvent   = data?.last_event ?? null
 
-  // Live duty timer — ticks every minute
+  // Live duty timer — ticks every minute while clocked in
   useEffect(() => {
     if (!isClockedIn || !lastEvent) return
     const base = new Date(lastEvent.occurred_at).getTime()
@@ -58,7 +59,7 @@ export default function ClockScreen() {
         await api.post(type === 'CLOCK_IN' ? '/hr/clock-in' : '/hr/clock-out')
       })
       if (count > 0) {
-        queryClient.invalidateQueries({ queryKey: ['clock-events'] })
+        queryClient.invalidateQueries({ queryKey: ['clock-status'] })
         addToast({ type: 'success', message: `${count} offline clock event${count > 1 ? 's' : ''} synced.` })
       }
     }
@@ -69,37 +70,41 @@ export default function ClockScreen() {
   const mutation = useMutation({
     mutationFn: () =>
       api.post<ClockResponse>(isClockedIn ? '/hr/clock-out' : '/hr/clock-in'),
+
     onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ['clock-events'] })
-      const prev = queryClient.getQueryData<ClockEvent[]>(['clock-events'])
-      const optimistic: ClockEvent = {
-        id: `opt-${Date.now()}`,
-        event_type: isClockedIn ? 'CLOCK_OUT' : 'CLOCK_IN',
+      await queryClient.cancelQueries({ queryKey: ['clock-status'] })
+      const prev = queryClient.getQueryData<ClockStatus>(['clock-status'])
+
+      // Optimistically flip the local status
+      const optimisticEvent: LastEvent = {
+        id:          `opt-${Date.now()}`,
+        event_type:  isClockedIn ? 'CLOCK_OUT' : 'CLOCK_IN',
         occurred_at: new Date().toISOString(),
-        shift_id: null,
-        is_manual_override: false,
-        source_ip: null,
+        shift_id:    null,
       }
-      queryClient.setQueryData<ClockEvent[]>(['clock-events'], (old = []) => [optimistic, ...old])
-      // 500ms button grayout (Pattern 1)
+      queryClient.setQueryData<ClockStatus>(['clock-status'], {
+        status:     optimisticEvent.event_type,
+        last_event: optimisticEvent,
+      })
+
       setBtnDisabled(true)
       setTimeout(() => setBtnDisabled(false), 500)
       return { prev }
     },
+
     onError: (_, __, ctx) => {
-      queryClient.setQueryData(['clock-events'], ctx?.prev)
+      queryClient.setQueryData(['clock-status'], ctx?.prev)
       addToast({ type: 'error', message: 'Clock-in failed. Check your connection and try again.' })
     },
+
     onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['clock-events'] })
+      queryClient.invalidateQueries({ queryKey: ['clock-status'] })
       const event = res.data
       if (event.duplicate) return
       const time = formatTime(event.occurred_at)
       if (event.event_type === 'CLOCK_IN') {
         addToast({ type: 'success', message: `Clocked in at ${time}` })
-        if (event.no_shift) {
-          addToast({ type: 'warning', message: 'No shift scheduled — clock event recorded.' })
-        }
+        if (event.no_shift) addToast({ type: 'warning', message: 'No shift scheduled — clock event recorded.' })
       } else {
         addToast({ type: 'success', message: `Clocked out at ${time}` })
       }
@@ -109,35 +114,34 @@ export default function ClockScreen() {
   function handleTap() {
     if (!navigator.onLine) {
       const type: ClockEventType = isClockedIn ? 'CLOCK_OUT' : 'CLOCK_IN'
-      // Optimistically flip state in cache
-      queryClient.setQueryData<ClockEvent[]>(['clock-events'], (old = []) => [{
-        id: `offline-${Date.now()}`,
-        event_type: type,
-        occurred_at: new Date().toISOString(),
-        shift_id: null,
-        is_manual_override: false,
-        source_ip: null,
-      }, ...old])
+      queryClient.setQueryData<ClockStatus>(['clock-status'], {
+        status:     type,
+        last_event: {
+          id:          `offline-${Date.now()}`,
+          event_type:  type,
+          occurred_at: new Date().toISOString(),
+          shift_id:    null,
+        },
+      })
       enqueueClockEvent(type)
-      const action = type === 'CLOCK_IN' ? 'in' : 'out'
-      addToast({ type: 'warning', message: `Clocked ${action} (offline — will sync when connected).` })
+      addToast({ type: 'warning', message: `Clocked ${type === 'CLOCK_IN' ? 'in' : 'out'} (offline — will sync when connected).` })
       return
     }
     mutation.mutate()
   }
 
-  // ── LOADING ─────────────────────────────────────────────────────────────────
+  // ── LOADING ───────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] p-6 gap-6">
-        <Skeleton variant="text" width="w-48" />
-        <Skeleton variant="rectangular" width="w-full max-w-xs" height="h-16" />
-        <Skeleton variant="text" width="w-32" />
+        <Skeleton variant="text" className="w-48" />
+        <Skeleton variant="row" className="w-full max-w-xs h-16" />
+        <Skeleton variant="text" className="w-32" />
       </div>
     )
   }
 
-  // ── ERROR ────────────────────────────────────────────────────────────────────
+  // ── ERROR ─────────────────────────────────────────────────────────────────
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] p-6">
@@ -157,7 +161,6 @@ export default function ClockScreen() {
     )
   }
 
-  // ── SUCCESS (and PARTIAL — shift info might be absent, but button always renders) ──
   const isClockingIn = !isClockedIn
 
   return (
@@ -168,14 +171,14 @@ export default function ClockScreen() {
         {isClockedIn ? 'On Duty' : 'Off Duty'}
       </p>
 
-      {/* Duty timer — shown only when clocked in */}
-      {isClockedIn && (
+      {/* Duty timer — only while clocked in */}
+      {isClockedIn && lastEvent && (
         <div className="text-center">
           <p className="text-4xl font-bold font-mono text-ink-primary tabular-nums">
             {dutyTime(dutyMinutes)}
           </p>
           <p className="text-xs text-ink-tertiary mt-1">
-            since {formatTime(lastEvent!.occurred_at)}
+            since {formatTime(lastEvent.occurred_at)}
           </p>
         </div>
       )}
@@ -207,7 +210,7 @@ export default function ClockScreen() {
         )}
       </button>
 
-      {/* Offline indicator */}
+      {/* Offline badge */}
       {!navigator.onLine && (
         <p className="text-xs text-status-pending flex items-center gap-1.5">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">

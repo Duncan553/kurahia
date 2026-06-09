@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Skeleton, EmptyState, StatusBadge, useToastStore } from '@shared'
+import { Skeleton, EmptyState, StatusBadge } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
 import { formatTime, formatDayLabel, toDateKey, todayKey, nextNDays } from '../lib/format'
@@ -21,7 +21,7 @@ function shiftStatus(s: string): StatusValue {
     SCHEDULED: 'confirmed',
     PUBLISHED: 'confirmed',
     ACTIVE: 'active',
-    COMPLETED: 'completed',
+    COMPLETED: 'checked-out',
     CANCELLED: 'cancelled',
     PENDING: 'pending',
   }
@@ -32,7 +32,6 @@ const DAYS = nextNDays(7)
 const TODAY = todayKey()
 
 export default function ScheduleScreen() {
-  const addToast = useToastStore((s) => s.addToast)
   const containerRef = useRef<HTMLDivElement>(null)
   const touchStart = useRef(0)
   const [pullProgress, setPullProgress] = useState(0)
@@ -74,8 +73,8 @@ export default function ScheduleScreen() {
       <div className="p-4 space-y-3">
         {Array.from({ length: 7 }).map((_, i) => (
           <div key={i} className="space-y-2">
-            <Skeleton variant="text" width="w-24" />
-            <Skeleton variant="rectangular" height="h-16" />
+            <Skeleton variant="text" className="w-24" />
+            <Skeleton variant="row" />
           </div>
         ))}
       </div>
