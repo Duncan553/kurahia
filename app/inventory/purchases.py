@@ -34,6 +34,34 @@ OWNER_LEVEL   = 10
 
 # ── Purchase Requests ─────────────────────────────────────────────────────────
 
+@purchases_bp.get("/purchase-requests")
+@require_active_user
+def list_requests():
+    """Recent purchase requests — manager sees their department's; owner sees all."""
+    from datetime import datetime, timezone, timedelta
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    since = datetime.now(timezone.utc) - timedelta(days=30)
+    query = db.session.query(PurchaseRequest).filter(PurchaseRequest.created_at >= since)
+
+    if actor.role.level < 10 and actor.department_id:
+        from app.models.user import User as U
+        dept_ids = [u.id for u in db.session.query(U).filter_by(department_id=actor.department_id).all()]
+        query = query.filter(PurchaseRequest.requested_by_id.in_(dept_ids))
+
+    reqs = query.order_by(PurchaseRequest.created_at.desc()).all()
+    return jsonify([{
+        "id":        r.id,
+        "item_id":   r.item_id,
+        "item_name": r.item.name if r.item else r.item_description,
+        "quantity":  str(r.quantity),
+        "status":    r.status,
+        "created_at": r.created_at.isoformat(),
+    } for r in reqs]), 200
+
+
 @purchases_bp.post("/purchase-requests")
 @require_active_user
 def create_request():

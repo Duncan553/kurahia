@@ -20,6 +20,9 @@ import ManagerScreen from './screens/ManagerScreen'
 import WristbandScreen from './screens/WristbandScreen'
 import CheckInScreen from './screens/CheckInScreen'
 import WaiverScreen from './screens/WaiverScreen'
+import InventoryCountScreen from './screens/InventoryCountScreen'
+import PurchaseRequestScreen from './screens/PurchaseRequestScreen'
+import QuickEntryScreen from './screens/QuickEntryScreen'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -60,6 +63,18 @@ const router = createBrowserRouter([
 
         // F-8: Waiver (level 1+ — any staff)
         { path: '/gate/waiver', element: <WaiverScreen /> },
+
+        // F-9: Quick entry (level 1+ — staff meal accessible to all; spoilage gated inline)
+        { path: '/inventory/quick-entry', element: <QuickEntryScreen /> },
+
+        // F-9: Inventory + purchase request (level 5+)
+        {
+          element: <RoleGate minLevel={5} />,
+          children: [
+            { path: '/inventory/count',            element: <InventoryCountScreen /> },
+            { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
+          ],
+        },
 
         // Manager screens (level 5+)
         {
