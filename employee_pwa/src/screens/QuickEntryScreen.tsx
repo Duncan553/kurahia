@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Select, useToastStore } from '@shared'
 import api from '../lib/axios'
-import { useAuthStore } from '../stores/authStore'
 
 interface InventoryItem {
   id: string
@@ -143,10 +142,8 @@ function ItemQtyForm({
 }
 
 export default function QuickEntryScreen() {
-  const addToast  = useToastStore((s) => s.addToast)
-  const user      = useAuthStore((s) => s.user)
-  const roleLevel = user?.role_level ?? 0
-  const [tab, setTab] = useState<Tab>(roleLevel >= 5 ? 'spoilage' : 'staff-meal')
+  const addToast = useToastStore((s) => s.addToast)
+  const [tab, setTab] = useState<Tab>('spoilage')
 
   const { data: items, isLoading: itemsLoading } = useQuery<InventoryItem[]>({
     queryKey: ['inventory-items'],
@@ -204,36 +201,26 @@ export default function QuickEntryScreen() {
         <p className="text-sm text-ink-tertiary">Log spoilage or staff meals</p>
       </div>
 
-      {/* ── Tab bar ─────────────────────────────────────────────── */}
+      {/* ── Tab bar — both tabs visible to managers ──────────────── */}
       <div className="flex gap-1 bg-cream-alt/50 rounded-xl p-1">
-        {roleLevel >= 5 && (
+        {(['spoilage', 'staff-meal'] as Tab[]).map((t) => (
           <button
-            onClick={() => setTab('spoilage')}
+            key={t}
+            onClick={() => setTab(t)}
             className={[
-              'flex-1 py-2 rounded-lg text-xs font-medium transition-all',
-              tab === 'spoilage'
+              'flex-1 py-2 rounded-lg text-xs font-medium capitalize transition-all',
+              tab === t
                 ? 'bg-cream-card shadow-sm text-ink-primary'
                 : 'text-ink-tertiary hover:text-ink-secondary',
             ].join(' ')}
           >
-            Spoilage
+            {t === 'spoilage' ? 'Spoilage' : 'Staff Meal'}
           </button>
-        )}
-        <button
-          onClick={() => setTab('staff-meal')}
-          className={[
-            'flex-1 py-2 rounded-lg text-xs font-medium transition-all',
-            tab === 'staff-meal'
-              ? 'bg-cream-card shadow-sm text-ink-primary'
-              : 'text-ink-tertiary hover:text-ink-secondary',
-          ].join(' ')}
-        >
-          Staff Meal
-        </button>
+        ))}
       </div>
 
-      {/* ── SPOILAGE TAB (level 5+ only) ────────────────────────── */}
-      {tab === 'spoilage' && roleLevel >= 5 && (
+      {/* ── SPOILAGE TAB ─────────────────────────────────────────── */}
+      {tab === 'spoilage' && (
         <ItemQtyForm
           label="Item"
           items={allItems}

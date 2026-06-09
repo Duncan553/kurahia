@@ -64,15 +64,13 @@ const router = createBrowserRouter([
         // F-8: Waiver (level 1+ — any staff)
         { path: '/gate/waiver', element: <WaiverScreen /> },
 
-        // F-9: Quick entry (level 1+ — staff meal accessible to all; spoilage gated inline)
-        { path: '/inventory/quick-entry', element: <QuickEntryScreen /> },
-
-        // F-9: Inventory + purchase request (level 5+)
+        // F-9: Inventory, purchase request, quick entry (level 5+ — managers own all stock ops)
         {
           element: <RoleGate minLevel={5} />,
           children: [
             { path: '/inventory/count',            element: <InventoryCountScreen /> },
             { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
+            { path: '/inventory/quick-entry',      element: <QuickEntryScreen /> },
           ],
         },
 

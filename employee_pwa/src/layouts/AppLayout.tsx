@@ -34,6 +34,7 @@ function ProfileIcon() {
     <path d="M3 19c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 }
+// Gate: wristband icon
 function GateIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
     <rect x="3" y="5" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -41,6 +42,7 @@ function GateIcon() {
     <path d="M3 11h5.5M13.5 11H19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 }
+// Check-in: calendar + check
 function CheckInIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
     <rect x="3" y="4" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -48,6 +50,7 @@ function CheckInIcon() {
     <path d="M7.5 15l2.5 2.5L15 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
+// Waiver: document + pen
 function WaiverIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
     <rect x="4" y="3" width="14" height="17" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -55,13 +58,7 @@ function WaiverIcon() {
     <path d="M12 16l1.5-1.5L15 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
-function MealsIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M11 3v4M7 4.5c0 3.5 2 5 4 5s4-1.5 4-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M11 9v10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M6 14h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-}
+// Inventory: grid
 function InventoryIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
     <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
@@ -70,6 +67,23 @@ function InventoryIcon() {
     <path d="M12 15.5h7M15.5 12v7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 }
+// Restock: clipboard + arrow up
+function RestockIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <rect x="4" y="4" width="14" height="16" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M8 4V3a1 1 0 011-1h4a1 1 0 011 1v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M11 9v6M8.5 11.5L11 9l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+}
+// Meals: fork
+function MealsIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path d="M11 3v4M7 4.5c0 3.5 2 5 4 5s4-1.5 4-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M11 9v10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M6 14h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
+// Manager: person + star badge
 function ManagerIcon() {
   return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
     <path d="M3 17v-1.5C3 13 6.1 11 11 11s8 2 8 4.5V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -78,10 +92,17 @@ function ManagerIcon() {
   </svg>
 }
 
+// ── Department helper ──────────────────────────────────────────────────────────
+
+function deptIs(dept: string | null, ...keywords: string[]): boolean {
+  if (!dept) return false
+  const d = dept.toLowerCase()
+  return keywords.some((k) => d.includes(k))
+}
+
 // ── Role-aware top bar stats ────────────────────────────────────────────────
 
 function TopBarStats({ roleLevel }: { roleLevel: number }) {
-  // Numbers are "—" placeholders — real data wired in F-7+ via TanStack Query
   if (roleLevel >= 5) return (
     <div className="hidden sm:flex items-center gap-4 text-xs text-ink-tertiary">
       <span><span className="font-semibold text-ink-primary">—</span> approvals</span>
@@ -106,24 +127,106 @@ function TopBarStats({ roleLevel }: { roleLevel: number }) {
 // ── Nav item definition ─────────────────────────────────────────────────────
 
 interface NavItem {
-  path: string; label: string; Icon: () => ReactElement
-  minLevel: number; maxLevel?: number; badge?: boolean
+  id: string       // unique React key (can't use path — some paths repeat across roles)
+  path: string
+  label: string
+  Icon: () => ReactElement
+  badge?: boolean
+  // Returns true when this item should appear for the given role + department
+  visible: (level: number, dept: string | null) => boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/clock',                label: 'Clock',      Icon: ClockIcon,    minLevel: 0 },
-  { path: '/schedule',             label: 'Schedule',   Icon: ScheduleIcon, minLevel: 0 },
-  { path: '/notifications',        label: 'Alerts',     Icon: BellIcon,     minLevel: 0, badge: true },
-  // Level 1–2: waiver standalone + staff meals (gate staff handle waiver from /gate/issue)
-  { path: '/gate/waiver',          label: 'Waiver',     Icon: WaiverIcon,    minLevel: 1, maxLevel: 2 },
-  { path: '/inventory/quick-entry',label: 'Meals',      Icon: MealsIcon,     minLevel: 1, maxLevel: 4 },
-  // Level 3+: issue bands + check-in
-  { path: '/gate/issue',           label: 'Issue',      Icon: GateIcon,      minLevel: 3 },
-  { path: '/front-desk/checkin',   label: 'Check-In',   Icon: CheckInIcon,   minLevel: 3 },
-  // Level 5+: inventory
-  { path: '/inventory/count',      label: 'Inventory',  Icon: InventoryIcon, minLevel: 5 },
-  { path: '/profile',              label: 'Profile',    Icon: ProfileIcon,   minLevel: 0 },
-  { path: '/manager',              label: 'Manager',    Icon: ManagerIcon,   minLevel: 5 },
+  // ── Universal — every logged-in user ────────────────────────────────────────
+  {
+    id: 'clock',
+    path: '/clock',
+    label: 'Clock',
+    Icon: ClockIcon,
+    visible: () => true,
+  },
+  {
+    id: 'schedule',
+    path: '/schedule',
+    label: 'Schedule',
+    Icon: ScheduleIcon,
+    visible: () => true,
+  },
+  {
+    id: 'alerts',
+    path: '/notifications',
+    label: 'Alerts',
+    Icon: BellIcon,
+    badge: true,
+    visible: () => true,
+  },
+  {
+    id: 'profile',
+    path: '/profile',
+    label: 'Profile',
+    Icon: ProfileIcon,
+    visible: () => true,
+  },
+
+  // ── Staff: waiver record ────────────────────────────────────────────────────
+  // Water activities staff (level 1-2, dept ~ water/activities) need it for guest waivers
+  // Gate staff (level 3-4) need it as part of their check-in flow
+  {
+    id: 'waiver',
+    path: '/gate/waiver',
+    label: 'Waiver',
+    Icon: WaiverIcon,
+    visible: (level, dept) =>
+      (level >= 1 && level <= 2 && deptIs(dept, 'water', 'activit', 'aqua'))
+      || (level >= 3 && level <= 4),
+  },
+
+  // ── Gate / Front Desk tablet (level 3–4) ────────────────────────────────────
+  {
+    id: 'issue',
+    path: '/gate/issue',
+    label: 'Issue',
+    Icon: GateIcon,
+    visible: (level) => level >= 3 && level <= 4,
+  },
+  {
+    id: 'checkin',
+    path: '/front-desk/checkin',
+    label: 'Check-In',
+    Icon: CheckInIcon,
+    visible: (level) => level >= 3 && level <= 4,
+  },
+
+  // ── Manager / Department Head tablet (level 5+) ──────────────────────────────
+  {
+    id: 'inventory',
+    path: '/inventory/count',
+    label: 'Inventory',
+    Icon: InventoryIcon,
+    visible: (level) => level >= 5,
+  },
+  {
+    id: 'restock',
+    path: '/inventory/purchase-request',
+    label: 'Restock',
+    Icon: RestockIcon,
+    visible: (level) => level >= 5,
+  },
+  // Spoilage + staff meals both live in QuickEntryScreen — managers own both
+  {
+    id: 'meals',
+    path: '/inventory/quick-entry',
+    label: 'Meals',
+    Icon: MealsIcon,
+    visible: (level) => level >= 5,
+  },
+  {
+    id: 'manager',
+    path: '/manager',
+    label: 'Manager',
+    Icon: ManagerIcon,
+    visible: (level) => level >= 5,
+  },
 ]
 
 // ── Page transition ─────────────────────────────────────────────────────────
@@ -142,10 +245,9 @@ export default function AppLayout() {
   const user = useAuthStore((s) => s.user)
   const clearAuth = useAuthStore((s) => s.clearAuth)
   const roleLevel = user?.role_level ?? 0
+  const department = user?.department ?? null
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => roleLevel >= item.minLevel && (item.maxLevel === undefined || roleLevel <= item.maxLevel)
-  )
+  const visibleItems = NAV_ITEMS.filter((item) => item.visible(roleLevel, department))
 
   // Shares the same TanStack cache key as NotificationsScreen → no extra network request
   const { data: inbox } = useQuery<Notification[]>({
@@ -195,9 +297,9 @@ export default function AppLayout() {
       {/* ── Bottom nav ──────────────────────────────────────────── */}
       <nav className="shrink-0 flex border-t border-cream-alt bg-cream-card"
         aria-label="Main navigation">
-        {visibleItems.map(({ path, label, Icon, badge }) => (
+        {visibleItems.map(({ id, path, label, Icon, badge }) => (
           <NavLink
-            key={path}
+            key={id}
             to={path}
             end={path === '/clock'}
             className={({ isActive }) => [
