@@ -1,6 +1,3 @@
-import TokenPage from './pages/TokenPage'
-
-// F-1: TokenPage is the default route until F-2 components ship
-export default function App() {
-  return <TokenPage />
-}
+// App.tsx no longer used as entry point — routing is in main.tsx.
+// Kept so the TokenPage import chain doesn't break during F-4 sign-off.
+export { default } from './pages/TokenPage'
