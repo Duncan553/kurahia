@@ -1,10 +1,12 @@
 /**
- * TokenPage — F-1/F-2/F-3 gate verification page.
- * Proves design tokens, primitives, and containers render correctly.
- * Remove once F-3 gate is signed off.
+ * TokenPage — F-1 through F-4 gate verification page.
+ * Proves design tokens, primitives, containers, and feedback components render correctly.
+ * Remove once F-4 gate is signed off.
  */
 import { useState } from 'react'
-import { Button, Input, Select, Toggle, Card, Modal, Drawer, ToastContainer, useToastStore } from '@shared'
+import { Button, Input, Select, Toggle, Card, Modal, Drawer, ToastContainer, useToastStore,
+  StatusBadge, Skeleton, Spinner, EmptyState } from '@shared'
+import type { StatusValue } from '@shared'
 
 interface Swatch {
   token: string;
@@ -274,6 +276,79 @@ export default function TokenPage() {
             <Button variant="danger"  onClick={() => addToast({ type: 'error',   message: 'Failed to save — try again', actionLabel: 'Retry', onAction: () => {} })}>Error + retry</Button>
             <Button variant="ghost"  onClick={() => addToast({ type: 'warning', message: 'Session expires in 5 minutes' })}>Warning toast</Button>
           </div>
+        </div>
+      </section>
+
+      {/* ── Feedback Components ──────────────────────────────── */}
+      <section className="mb-14">
+        <h2 className="text-2xl font-bold mb-6 tracking-wide uppercase text-ink-secondary">
+          Feedback Components
+        </h2>
+
+        {/* StatusBadge — all 12 */}
+        <div className="mb-8">
+          <h3 className="text-sm tracking-widest uppercase text-ink-tertiary mb-4">StatusBadge — all 12 variants</h3>
+          <div className="flex flex-wrap gap-3 mb-3">
+            {(['paid','active','confirmed','checked-in','pending','held','failed','info','checked-out','inactive','cancelled','no-show'] as StatusValue[]).map((s) => (
+              <StatusBadge key={s} status={s} />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {(['paid','pending','failed','inactive'] as StatusValue[]).map((s) => (
+              <StatusBadge key={s} status={s} size="sm" variant="pill" />
+            ))}
+            <span className="text-xs text-ink-tertiary self-center">↑ sm + pill</span>
+          </div>
+        </div>
+
+        {/* Skeleton */}
+        <div className="mb-8 space-y-3 max-w-sm">
+          <h3 className="text-sm tracking-widest uppercase text-ink-tertiary mb-4">Skeleton</h3>
+          <Skeleton variant="heading" />
+          <Skeleton variant="text" lines={3} />
+          <div className="flex items-center gap-3">
+            <Skeleton variant="avatar" />
+            <div className="flex-1 space-y-2">
+              <Skeleton variant="text" />
+              <Skeleton variant="badge" />
+            </div>
+          </div>
+          <Skeleton variant="row" />
+          <Skeleton variant="button" />
+          <Skeleton variant="card" />
+        </div>
+
+        {/* Spinner */}
+        <div className="mb-8">
+          <h3 className="text-sm tracking-widest uppercase text-ink-tertiary mb-4">Spinner</h3>
+          <div className="flex items-center gap-6 flex-wrap">
+            <Spinner size="sm" color="sage" label="Loading small" />
+            <Spinner size="md" color="sage" label="Loading medium" />
+            <Spinner size="lg" color="sage" label="Loading large" />
+            <div className="bg-ink-primary rounded-lg p-3 flex gap-4">
+              <Spinner size="sm" color="cream" label="Light sm" />
+              <Spinner size="md" color="cream" label="Light md" />
+              <Spinner size="lg" color="cream" label="Light lg" />
+            </div>
+          </div>
+        </div>
+
+        {/* EmptyState */}
+        <div className="mb-8 border border-cream-alt rounded-xl overflow-hidden">
+          <h3 className="text-sm tracking-widest uppercase text-ink-tertiary p-4 border-b border-cream-alt">EmptyState</h3>
+          <EmptyState
+            icon={
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                <rect x="8" y="14" width="32" height="24" rx="4" stroke="currentColor" strokeWidth="2" />
+                <path d="M16 14V10a8 8 0 0116 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M20 26h8M24 22v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            }
+            title="No orders yet today."
+            description="Orders placed at the POS will appear here in real time."
+            actionLabel="Refresh"
+            onAction={() => addToast({ type: 'success', message: 'Refreshed' })}
+          />
         </div>
       </section>
 
