@@ -1,8 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Skeleton, EmptyState, Modal, useToastStore } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
+import { useKioskStore } from '../stores/kioskStore'
+import { useAuthStore } from '../stores/authStore'
 
 interface Arrival {
   booking_id: string
@@ -69,6 +72,9 @@ function DepositBar({ paid, required }: { paid: string; required: string }) {
 export default function CheckInScreen() {
   const queryClient = useQueryClient()
   const addToast    = useToastStore((s) => s.addToast)
+  const navigate    = useNavigate()
+  const user        = useAuthStore((s) => s.user)
+  const activateKiosk = useKioskStore((s) => s.activateKiosk)
   const [tab,       setTab]       = useState<Tab>('arrivals')
   const [errorOpen, setErrorOpen] = useState(false)
   const [errorMsg,  setErrorMsg]  = useState('')
@@ -226,12 +232,27 @@ export default function CheckInScreen() {
                       </button>
                     </div>
                     {waiverBlocked && (
-                      <p className="mt-2 text-xs text-status-failed flex items-center gap-1.5">
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                          <circle cx="6" cy="6" r="5"/>
-                        </svg>
-                        Waiver required before check-in
-                      </p>
+                      <div className="mt-2 space-y-2">
+                        <p className="text-xs text-status-failed flex items-center gap-1.5">
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                            <circle cx="6" cy="6" r="5"/>
+                          </svg>
+                          Waiver required before check-in
+                        </p>
+                        <button
+                          onClick={() => {
+                            if (!user?.username) return
+                            activateKiosk(user.username)
+                            navigate(`/kiosk/waiver/${a.booking_id}`)
+                          }}
+                          className="w-full min-h-[44px] rounded-xl border border-primary-dark
+                            text-primary-dark text-sm font-semibold
+                            hover:bg-primary-dark/5 active:scale-[0.98] transition-all
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
+                        >
+                          Waiver Kiosk →
+                        </button>
+                      </div>
                     )}
                     <DepositBar paid={a.deposit_paid} required={a.deposit_required} />
                   </div>
