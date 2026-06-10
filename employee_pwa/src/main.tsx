@@ -50,11 +50,13 @@ import AttendanceScreen     from './screens/AttendanceScreen'
 import PurchaseReqScreen    from './screens/PurchaseReqScreen'
 import FrontDeskScreen      from './screens/FrontDeskScreen'
 
-// Kiosk (F-12/F-13) — outside AppLayout, inside AuthGate
-import KioskLaunchScreen  from './screens/kiosk/KioskLaunchScreen'
-import KioskMenuScreen    from './screens/kiosk/KioskMenuScreen'
-import KioskWelcomeScreen from './screens/kiosk/KioskWelcomeScreen'
-import KioskWaiverScreen  from './screens/kiosk/KioskWaiverScreen'
+// Kiosk (F-12/F-13/F-14) — outside AppLayout, inside AuthGate
+import KioskLaunchScreen         from './screens/kiosk/KioskLaunchScreen'
+import KioskMenuScreen           from './screens/kiosk/KioskMenuScreen'
+import KioskWelcomeScreen        from './screens/kiosk/KioskWelcomeScreen'
+import KioskWaiverScreen         from './screens/kiosk/KioskWaiverScreen'
+import KioskFeedbackLaunchScreen from './screens/kiosk/KioskFeedbackLaunchScreen'
+import KioskFeedbackScreen       from './screens/kiosk/KioskFeedbackScreen'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -70,11 +72,13 @@ const router = createBrowserRouter([
   {
     element: <AuthGate />,
     children: [
-      // ── Kiosk routes (F-12/F-13) — no AppLayout chrome ─────────
-      { path: '/kiosk/launch',              element: <KioskLaunchScreen />  },
-      { path: '/kiosk/menu',                element: <KioskMenuScreen />    },
-      { path: '/kiosk/welcome',             element: <KioskWelcomeScreen /> },
-      { path: '/kiosk/waiver/:bookingId',   element: <KioskWaiverScreen />  },
+      // ── Kiosk routes (F-12/F-13/F-14) — no AppLayout chrome ────
+      { path: '/kiosk/launch',              element: <KioskLaunchScreen />         },
+      { path: '/kiosk/menu',                element: <KioskMenuScreen />           },
+      { path: '/kiosk/welcome',             element: <KioskWelcomeScreen />        },
+      { path: '/kiosk/waiver/:bookingId',   element: <KioskWaiverScreen />         },
+      { path: '/kiosk/feedback/launch',     element: <KioskFeedbackLaunchScreen /> },
+      { path: '/kiosk/feedback',            element: <KioskFeedbackScreen />       },
 
       // ── Staff routes — inside AppLayout ────────────────────────
       {
