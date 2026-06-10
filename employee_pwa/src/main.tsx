@@ -50,10 +50,11 @@ import AttendanceScreen     from './screens/AttendanceScreen'
 import PurchaseReqScreen    from './screens/PurchaseReqScreen'
 import FrontDeskScreen      from './screens/FrontDeskScreen'
 
-// Kiosk (F-12) — outside AppLayout, inside AuthGate
+// Kiosk (F-12/F-13) — outside AppLayout, inside AuthGate
 import KioskLaunchScreen  from './screens/kiosk/KioskLaunchScreen'
 import KioskMenuScreen    from './screens/kiosk/KioskMenuScreen'
 import KioskWelcomeScreen from './screens/kiosk/KioskWelcomeScreen'
+import KioskWaiverScreen  from './screens/kiosk/KioskWaiverScreen'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -69,10 +70,11 @@ const router = createBrowserRouter([
   {
     element: <AuthGate />,
     children: [
-      // ── Kiosk routes (F-12) — no AppLayout chrome ──────────────
-      { path: '/kiosk/launch',  element: <KioskLaunchScreen />  },
-      { path: '/kiosk/menu',    element: <KioskMenuScreen />    },
-      { path: '/kiosk/welcome', element: <KioskWelcomeScreen /> },
+      // ── Kiosk routes (F-12/F-13) — no AppLayout chrome ─────────
+      { path: '/kiosk/launch',              element: <KioskLaunchScreen />  },
+      { path: '/kiosk/menu',                element: <KioskMenuScreen />    },
+      { path: '/kiosk/welcome',             element: <KioskWelcomeScreen /> },
+      { path: '/kiosk/waiver/:bookingId',   element: <KioskWaiverScreen />  },
 
       // ── Staff routes — inside AppLayout ────────────────────────
       {
