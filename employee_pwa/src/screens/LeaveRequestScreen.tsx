@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import { StatusBadge, Skeleton, EmptyState, useToastStore } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
@@ -86,7 +87,12 @@ export default function LeaveRequestScreen() {
   }
 
   return (
-    <div className="p-4 max-w-md mx-auto space-y-6">
+    <motion.div
+      className="p-4 max-w-md mx-auto space-y-6"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: 'easeOut' }}
+    >
 
       <div>
         <h1 className="text-xl font-bold text-ink-primary">Leave Request</h1>
@@ -212,11 +218,20 @@ export default function LeaveRequestScreen() {
         )}
 
         {history && history.length > 0 && (
-          <div className="space-y-2">
+          <motion.div
+            className="space-y-2"
+            initial="hidden"
+            animate="visible"
+            variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+          >
             {history.map((r) => (
-              <div key={r.id}
+              <motion.div
+                key={r.id}
+                variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
                 className="flex items-start justify-between gap-3 rounded-xl
-                  bg-cream-alt/30 border border-cream-alt px-4 py-3">
+                  bg-cream-alt/30 border border-cream-alt px-4 py-3"
+              >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-ink-primary capitalize">
                     {r.leave_type.charAt(0) + r.leave_type.slice(1).toLowerCase()} Leave
@@ -229,11 +244,11 @@ export default function LeaveRequestScreen() {
                   )}
                 </div>
                 <StatusBadge status={statusVal(r.status)} size="sm" />
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }

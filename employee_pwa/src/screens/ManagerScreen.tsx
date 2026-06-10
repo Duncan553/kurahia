@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { RequireRole } from '../components/AuthGate'
+import ScreenHero from '../components/ScreenHero'
+import { useAuthStore } from '../stores/authStore'
 
 interface Tile {
   label: string
@@ -90,25 +93,42 @@ const TILES: Tile[] = [
   },
 ]
 
+function roleName(level: number) {
+  if (level >= 10) return 'Owner'
+  if (level >= 5)  return 'Manager'
+  if (level >= 3)  return 'Gate Staff'
+  return 'Staff'
+}
+
 export default function ManagerScreen() {
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  const clearAuth = useAuthStore((s) => s.clearAuth)
+
+  function signOut() { clearAuth(); navigate('/pin') }
 
   return (
     <RequireRole minLevel={5}>
-      <div className="p-4 max-w-lg mx-auto space-y-4">
+      <div className="max-w-lg mx-auto">
 
-        <div>
-          <h1 className="text-xl font-bold text-ink-primary">Manager</h1>
-          <p className="text-sm text-ink-tertiary">Daily operations hub</p>
-        </div>
+        <ScreenHero title="MANAGER." subtitle="DAILY OPS" />
 
-        <div className="grid grid-cols-2 gap-3">
+        <motion.div
+          className="p-4 grid grid-cols-2 gap-3"
+          initial="hidden"
+          animate="visible"
+          variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+        >
           {TILES.map(({ label, description, path, Icon }) => (
-            <button
+            <motion.button
               key={path}
+              variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => navigate(path)}
               className="flex flex-col items-start gap-3 p-4 rounded-2xl border border-cream-alt
-                bg-cream-card hover:bg-cream-alt/40 active:bg-cream-alt/60 transition-colors text-left
+                bg-cream-card hover:bg-cream-alt/40 transition-colors text-left
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
             >
               <span className="text-primary-dark">
@@ -118,9 +138,40 @@ export default function ManagerScreen() {
                 <p className="text-sm font-semibold text-ink-primary">{label}</p>
                 <p className="text-xs text-ink-tertiary mt-0.5 leading-snug">{description}</p>
               </div>
-            </button>
+            </motion.button>
           ))}
-        </div>
+
+          {/* Account tile — spans full width, always last */}
+          <motion.div
+            variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="col-span-2 flex items-center justify-between gap-4 p-4
+              rounded-2xl border border-cream-alt bg-cream-card"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary-dark flex items-center justify-center
+                text-cream-card text-base font-bold shrink-0">
+                {user?.username?.[0]?.toUpperCase() ?? '?'}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-ink-primary">{user?.username}</p>
+                <p className="text-xs text-ink-tertiary">
+                  {roleName(user?.role_level ?? 0)}
+                  {user?.department ? ` · ${user.department}` : ''}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={signOut}
+              className="shrink-0 px-4 py-2 rounded-xl border-2 border-status-failed/30
+                text-status-failed text-xs font-semibold
+                hover:bg-status-failed/10 active:bg-status-failed/20 transition-colors
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed"
+            >
+              Sign out
+            </button>
+          </motion.div>
+        </motion.div>
       </div>
     </RequireRole>
   )

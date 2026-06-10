@@ -1,9 +1,20 @@
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Skeleton, EmptyState, useToastStore } from '@shared'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Drawer, Skeleton, EmptyState, useToastStore, Combobox } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
+import { useAuthStore } from '../stores/authStore'
 import { todayKey } from '../lib/format'
+
+const UNIT_SUGGESTIONS = [
+  'kg', 'g', 'litre', 'ml',
+  'bottle', 'crate of 24', 'crate of 12', 'can',
+  'piece', 'pieces', 'pack', 'bundle', 'roll',
+  'dozen', 'tray', 'bag', 'tablet', 'sachet',
+  'tot (25ml)', 'double (50ml)', 'half-litre',
+]
+
+interface Department { id: string; name: string }
 
 interface InventoryItem {
   id: string
@@ -65,8 +76,68 @@ function VarianceBadge({ adj, watchList }: { adj: string; watchList: boolean }) 
 }
 
 export default function InventoryCountScreen() {
-  const addToast = useToastStore((s) => s.addToast)
+  const addToast    = useToastStore((s) => s.addToast)
+  const queryClient = useQueryClient()
+  const user        = useAuthStore((s) => s.user)
+  const userDept    = user?.department ?? null
+  const isOwner     = (user?.role_level ?? 0) >= 10
+
+  // ── Department picker (owner selects dept; manager auto-scoped by backend) ─
+  const [selectedDeptId, setSelectedDeptId] = useState<string>('') // '' = All (owner only)
+
   const [tab, setTab] = useState<Tab>('count')
+
+  // ── Add-item drawer ────────────────────────────────────────────────────────
+  const [addOpen,    setAddOpen]    = useState(false)
+  const [newName,    setNewName]    = useState('')
+  const [newUnit,    setNewUnit]    = useState('')
+  const [newDeptId,  setNewDeptId]  = useState('')
+  const [newReorder, setNewReorder] = useState('')
+  const [newWatch,   setNewWatch]   = useState(false)
+
+  const { data: departments } = useQuery<Department[]>({
+    queryKey: ['departments'],
+    queryFn: () => api.get<Department[]>('/admin/departments').then((r) => Array.isArray(r.data) ? r.data : []),
+    staleTime: 5 * 60_000,
+  })
+
+  // Pre-select the currently viewed department when drawer opens
+  function openAddDrawer() {
+    if (selectedDeptId) {
+      setNewDeptId(selectedDeptId)
+    } else {
+      const match = departments?.find((d) => d.name === userDept)
+      setNewDeptId(match?.id ?? departments?.[0]?.id ?? '')
+    }
+    setNewName('')
+    setNewUnit('')
+    setNewReorder('')
+    setNewWatch(false)
+    setAddOpen(true)
+  }
+
+  const addItemMutation = useMutation({
+    mutationFn: () => api.post('/inventory/items', {
+      name:           newName.trim(),
+      unit:           newUnit.trim(),
+      department_id:  newDeptId,
+      reorder_level:  newReorder ? parseFloat(newReorder) : 0,
+      is_watch_list:  newWatch,
+    }).then((r) => r.data),
+    onSuccess: (data: { name: string }) => {
+      addToast({ type: 'success', message: `"${data.name}" added to inventory.` })
+      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+      setAddOpen(false)
+      setNewName(''); setNewUnit(''); setNewReorder(''); setNewWatch(false)
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Could not add item. Try again.'
+      addToast({ type: 'error', message: msg })
+    },
+  })
+
+  const addFormValid = newName.trim() && newUnit.trim() && newDeptId
 
   // Per-item input values and submission state
   const [inputs,  setInputs]  = useState<Record<string, string>>({})
@@ -80,9 +151,20 @@ export default function InventoryCountScreen() {
   const [toDate,   setToDate]   = useState(today)
   const [varTriggered, setVarTriggered] = useState(false)
 
+  const itemsQueryKey = isOwner && selectedDeptId
+    ? ['inventory-items', selectedDeptId]
+    : ['inventory-items']
+
   const { data: items, isLoading, isError } = useQuery<InventoryItem[]>({
-    queryKey: ['inventory-items'],
-    queryFn: () => api.get<InventoryItem[]>('/inventory/items').then((r) => r.data),
+    queryKey: itemsQueryKey,
+    queryFn: () => {
+      const url = isOwner && selectedDeptId
+        ? `/inventory/items?department=${selectedDeptId}`
+        : '/inventory/items'
+      return api.get<InventoryItem[]>(url).then((r) => Array.isArray(r.data) ? r.data : [])
+    },
+    // For owner with no dept selected, skip the query (show dept picker instead)
+    enabled: !isOwner || !!selectedDeptId,
   })
 
   const { data: variance, isFetching: varFetching, refetch: refetchVariance } = useQuery<VarianceReport>({
@@ -145,12 +227,63 @@ export default function InventoryCountScreen() {
     <RequireRole minLevel={5}>
       <div className="p-4 max-w-lg mx-auto space-y-4">
 
-        <div>
-          <h1 className="text-xl font-bold text-ink-primary">Inventory Count</h1>
-          <p className="text-sm text-ink-tertiary">Physical count per item — each saves independently</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-ink-primary">Inventory Count</h1>
+            <p className="text-sm text-ink-tertiary">Physical count per item — each saves independently</p>
+          </div>
+          <button
+            onClick={openAddDrawer}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl
+              bg-primary-dark text-cream-card text-xs font-semibold
+              hover:bg-primary-dark/90 transition-colors
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            Add item
+          </button>
         </div>
 
-        {/* ── Tab bar ─────────────────────────────────────────────── */}
+        {/* ── Department picker (owner only) ──────────────────────── */}
+        {isOwner && (
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-ink-tertiary font-medium mb-2">Department</p>
+            <div className="flex flex-wrap gap-2">
+              {departments?.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => setSelectedDeptId(d.id)}
+                  className={[
+                    'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
+                    selectedDeptId === d.id
+                      ? 'bg-primary-dark text-cream-card'
+                      : 'bg-cream-alt text-ink-secondary hover:bg-cream-deep',
+                  ].join(' ')}
+                >
+                  {d.name}
+                </button>
+              ))}
+            </div>
+            {!selectedDeptId && (
+              <p className="mt-3 text-sm text-ink-tertiary">Select a department to view its inventory.</p>
+            )}
+          </div>
+        )}
+
+        {/* ── Manager dept label ───────────────────────────────────── */}
+        {!isOwner && userDept && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-widest text-ink-tertiary font-medium">Dept</span>
+            <span className="px-3 py-1 rounded-lg bg-primary-dark/10 text-primary-dark text-xs font-semibold">
+              {userDept}
+            </span>
+          </div>
+        )}
+
+        {/* ── Tab bar + content (owner must select dept first) ────── */}
+        {(!isOwner || selectedDeptId) && (<>
         <div className="flex gap-1 bg-cream-alt/50 rounded-xl p-1">
           {(['count', 'variance'] as Tab[]).map((t) => (
             <button
@@ -380,7 +513,123 @@ export default function InventoryCountScreen() {
             )}
           </div>
         )}
+      </>)}
+
       </div>
+
+      {/* ── Add item drawer ─────────────────────────────────────────── */}
+      <Drawer open={addOpen} onClose={() => setAddOpen(false)} title="Add inventory item">
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (addFormValid) addItemMutation.mutate() }}
+          className="space-y-4"
+        >
+          {/* Name — combobox autocompletes from existing items */}
+          <Combobox
+            label="Item name *"
+            value={newName}
+            onChange={setNewName}
+            suggestions={(items ?? []).map((i) => i.name)}
+            placeholder="e.g. Tusker Lager, Cooking oil"
+            allowFreeEntry
+          />
+
+          {/* Unit — combobox with common units + free entry */}
+          <Combobox
+            label="Unit *"
+            value={newUnit}
+            onChange={setNewUnit}
+            suggestions={UNIT_SUGGESTIONS}
+            placeholder="e.g. bottle, kg, crate of 24"
+            allowFreeEntry
+          />
+
+          {/* Department */}
+          <div>
+            <label className="block text-sm font-medium text-ink-secondary mb-1.5">
+              Department *
+            </label>
+            <select
+              value={newDeptId}
+              onChange={(e) => setNewDeptId(e.target.value)}
+              className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3
+                text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+                focus:ring-2 focus:ring-primary-dark/20"
+            >
+              {!departments?.length && (
+                <option value="">Loading departments…</option>
+              )}
+              {departments?.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Reorder level */}
+          <div>
+            <label className="block text-sm font-medium text-ink-secondary mb-1.5">
+              Reorder level <span className="font-normal text-ink-tertiary">(optional)</span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              value={newReorder}
+              onChange={(e) => setNewReorder(e.target.value)}
+              placeholder="Alert threshold quantity"
+              className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3
+                text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+                focus:ring-2 focus:ring-primary-dark/20"
+            />
+          </div>
+
+          {/* Watch list toggle */}
+          <button
+            type="button"
+            onClick={() => setNewWatch((w) => !w)}
+            className={[
+              'w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-sm',
+              newWatch
+                ? 'border-status-failed/40 bg-status-failed/5 text-status-failed'
+                : 'border-cream-alt bg-cream-alt/30 text-ink-secondary',
+            ].join(' ')}
+          >
+            <span className="font-medium">Flag as watch-list item</span>
+            <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+              newWatch ? 'border-status-failed bg-status-failed' : 'border-cream-deep'
+            }`}>
+              {newWatch && (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </span>
+          </button>
+          <p className="text-xs text-ink-tertiary -mt-2 px-1">
+            Watch-list items show a red alert when stock drops below reorder level.
+          </p>
+
+          <button
+            type="submit"
+            disabled={!addFormValid || addItemMutation.isPending}
+            className="w-full py-4 rounded-2xl text-base font-semibold transition-all
+              bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2
+              disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {addItemMutation.isPending ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3"/>
+                  <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Adding…
+              </span>
+            ) : 'Add to inventory'}
+          </button>
+        </form>
+      </Drawer>
+
     </RequireRole>
   )
 }

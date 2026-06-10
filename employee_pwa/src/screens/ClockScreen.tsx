@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton, EmptyState, useToastStore } from '@shared'
 import api from '../lib/axios'
 import { formatTime, dutyTime } from '../lib/format'
 import { enqueueClockEvent, drainClockQueue } from '../lib/clockQueue'
 import type { ClockEventType } from '../lib/clockQueue'
+import ScreenHero from '../components/ScreenHero'
 
 interface LastEvent {
   id: string
@@ -164,37 +166,58 @@ export default function ClockScreen() {
   const isClockingIn = !isClockedIn
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] p-6 gap-6">
-
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
+    <ScreenHero title="CLOCK." subtitle="KURAHIA STAFF" />
+    <motion.div
+      className="flex-1 flex flex-col items-center justify-center p-6 gap-6"
+      initial="hidden"
+      animate="visible"
+      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
+    >
       {/* Status label */}
-      <p className="text-sm font-medium text-ink-tertiary uppercase tracking-widest">
+      <motion.p
+        variants={{ hidden: { opacity: 0, y: -8 }, visible: { opacity: 1, y: 0 } }}
+        className="text-sm font-medium text-ink-tertiary uppercase tracking-widest"
+      >
         {isClockedIn ? 'On Duty' : 'Off Duty'}
-      </p>
+      </motion.p>
 
       {/* Duty timer — only while clocked in */}
-      {isClockedIn && lastEvent && (
-        <div className="text-center">
-          <p className="text-4xl font-bold font-mono text-ink-primary tabular-nums">
-            {dutyTime(dutyMinutes)}
-          </p>
-          <p className="text-xs text-ink-tertiary mt-1">
-            since {formatTime(lastEvent.occurred_at)}
-          </p>
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {isClockedIn && lastEvent && (
+          <motion.div
+            key="timer"
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.85 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="text-center"
+          >
+            <p className="text-4xl font-bold font-mono text-ink-primary tabular-nums">
+              {dutyTime(dutyMinutes)}
+            </p>
+            <p className="text-xs text-ink-tertiary mt-1">
+              since {formatTime(lastEvent.occurred_at)}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main action button */}
-      <button
+      <motion.button
+        variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        whileTap={{ scale: 0.97 }}
         onClick={handleTap}
         disabled={btnDisabled || mutation.isPending}
         aria-label={isClockingIn ? 'Clock in' : 'Clock out'}
         className={[
-          'w-full max-w-xs h-16 rounded-2xl text-lg font-semibold transition-all',
+          'w-full max-w-xs h-16 rounded-2xl text-lg font-semibold transition-colors',
           'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           isClockingIn
-            ? 'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.98] focus-visible:ring-primary-dark'
-            : 'bg-ink-tertiary/10 text-ink-primary border border-ink-tertiary/20 hover:bg-ink-tertiary/20 active:scale-[0.98] focus-visible:ring-ink-tertiary',
+            ? 'bg-primary-dark text-cream-card hover:bg-primary-dark/90 focus-visible:ring-primary-dark'
+            : 'bg-cream-card text-primary-dark border-2 border-primary-dark hover:bg-primary-dark/5 focus-visible:ring-primary-dark',
         ].join(' ')}
       >
         {mutation.isPending ? (
@@ -208,17 +231,25 @@ export default function ClockScreen() {
         ) : (
           isClockingIn ? 'Clock In' : 'Clock Out'
         )}
-      </button>
+      </motion.button>
 
       {/* Offline badge */}
-      {!navigator.onLine && (
-        <p className="text-xs text-status-pending flex items-center gap-1.5">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
-            <circle cx="6" cy="6" r="5" />
-          </svg>
-          Offline — tap to queue event
-        </p>
-      )}
+      <AnimatePresence>
+        {!navigator.onLine && (
+          <motion.p
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="text-xs text-status-pending flex items-center gap-1.5"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+              <circle cx="6" cy="6" r="5" />
+            </svg>
+            Offline — tap to queue event
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </motion.div>
     </div>
   )
 }

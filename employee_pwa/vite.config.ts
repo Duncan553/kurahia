@@ -37,6 +37,7 @@ export default defineConfig({
       '/equipment':     { target: 'http://localhost:5000', changeOrigin: true },
       '/finance':       { target: 'http://localhost:5000', changeOrigin: true },
       '/feedback':      { target: 'http://localhost:5000', changeOrigin: true },
+      '/admin':         { target: 'http://localhost:5000', changeOrigin: true },
     },
   },
 })
