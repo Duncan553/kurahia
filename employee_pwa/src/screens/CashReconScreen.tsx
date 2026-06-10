@@ -202,8 +202,9 @@ function ReconForm({
         <div>
           <button
             onClick={() => setExpanded((e) => !e)}
-            className="w-full flex items-center justify-between text-sm text-ink-secondary
-              hover:text-ink-primary transition-colors py-1"
+            className="w-full min-h-[44px] flex items-center justify-between text-sm text-ink-secondary
+              hover:text-ink-primary transition-colors
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark rounded"
           >
             <span>Payment breakdown</span>
             <svg
@@ -411,7 +412,9 @@ export default function CashReconScreen() {
                 <p>Couldn't load cash data for {selectedProfile.full_name}.</p>
                 <button
                   onClick={() => refetchPending()}
-                  className="text-primary-dark underline text-xs"
+                  className="min-h-[44px] inline-flex items-center text-primary-dark underline text-xs
+                    hover:text-primary-main transition-colors
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark rounded"
                 >
                   Retry
                 </button>

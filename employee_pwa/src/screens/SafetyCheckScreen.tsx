@@ -316,7 +316,8 @@ export default function SafetyCheckScreen() {
       <div className="flex items-start gap-3">
         <button
           onClick={clearSelection}
-          className="mt-0.5 p-1.5 rounded-lg hover:bg-cream-alt transition-colors shrink-0
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg
+            hover:bg-cream-alt transition-colors shrink-0
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           aria-label="Back to equipment list"
         >

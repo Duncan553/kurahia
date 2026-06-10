@@ -185,8 +185,8 @@ export default function ConductScreen() {
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                       scrollReady
                         ? 'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.98]'
-                        : 'bg-ink-tertiary/15 text-ink-tertiary cursor-not-allowed',
-                      'disabled:opacity-60 disabled:cursor-not-allowed',
+                        : 'bg-cream-alt text-ink-secondary cursor-not-allowed',
+                      'disabled:opacity-50 disabled:cursor-not-allowed',
                     ].join(' ')}
                   >
                     {signMutation.isPending ? 'Signing…' : 'Sign Now'}

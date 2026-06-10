@@ -117,7 +117,7 @@ export default function FrontDeskScreen() {
               key={t}
               onClick={() => setTab(t)}
               className={[
-                'flex-1 py-2 rounded-lg text-xs font-medium capitalize transition-all',
+                'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
                 tab === t ? 'bg-cream-card shadow-sm text-ink-primary' : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >

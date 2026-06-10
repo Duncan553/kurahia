@@ -170,7 +170,9 @@ export default function PinEntryScreen() {
         <button
           type="button"
           onClick={() => navigate('/login')}
-          className="mt-4 w-full text-sm text-ink-tertiary hover:text-ink-secondary text-center"
+          className="mt-4 min-h-[44px] w-full text-sm text-ink-secondary hover:text-primary-dark
+            text-center transition-colors flex items-center justify-center
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark rounded"
         >
           Use password instead
         </button>

@@ -234,7 +234,7 @@ export default function InventoryCountScreen() {
           </div>
           <button
             onClick={openAddDrawer}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl
+            className="shrink-0 min-h-[44px] flex items-center gap-1.5 px-3 rounded-xl
               bg-primary-dark text-cream-card text-xs font-semibold
               hover:bg-primary-dark/90 transition-colors
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
@@ -256,7 +256,7 @@ export default function InventoryCountScreen() {
                   key={d.id}
                   onClick={() => setSelectedDeptId(d.id)}
                   className={[
-                    'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
+                    'px-3 py-1.5 min-h-[44px] rounded-lg text-xs font-semibold transition-all',
                     selectedDeptId === d.id
                       ? 'bg-primary-dark text-cream-card'
                       : 'bg-cream-alt text-ink-secondary hover:bg-cream-deep',
@@ -290,7 +290,7 @@ export default function InventoryCountScreen() {
               key={t}
               onClick={() => setTab(t)}
               className={[
-                'flex-1 py-2 rounded-lg text-xs font-medium capitalize transition-all',
+                'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
                 tab === t
                   ? 'bg-cream-card shadow-sm text-ink-primary'
                   : 'text-ink-tertiary hover:text-ink-secondary',
@@ -396,7 +396,7 @@ export default function InventoryCountScreen() {
                       onClick={() => submitCount(item)}
                       disabled={pending.has(item.id) || !inputs[item.id]?.trim()}
                       className={[
-                        'px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0',
+                        'px-4 py-2 min-h-[44px] rounded-xl text-sm font-semibold transition-all shrink-0',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                         'disabled:opacity-40 disabled:cursor-not-allowed',
                         submitted

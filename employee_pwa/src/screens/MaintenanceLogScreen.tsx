@@ -120,7 +120,7 @@ export default function MaintenanceLogScreen() {
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={[
-                'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0',
+                'px-3 py-1.5 min-h-[44px] rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0',
                 filter === f.key
                   ? 'bg-primary-dark text-cream-card'
                   : 'bg-cream-alt text-ink-secondary hover:bg-cream-alt/60',

@@ -241,8 +241,9 @@ export default function PinSetupScreen() {
               </motion.form>
 
               <button type="button" onClick={() => navigate('/login')}
-                className="mt-6 text-xs text-ink-secondary hover:text-primary-dark font-medium
-                  tracking-widest uppercase transition-colors flex items-center gap-2">
+                className="mt-6 min-h-[44px] text-xs text-ink-secondary hover:text-primary-dark font-medium
+                  tracking-widest uppercase transition-colors flex items-center gap-2
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark rounded">
                 Back to login <span className="text-primary-main" aria-hidden="true">↗</span>
               </button>
             </div>
