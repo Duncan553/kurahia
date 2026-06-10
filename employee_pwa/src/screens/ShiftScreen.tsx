@@ -145,8 +145,9 @@ export default function ShiftScreen() {
         {!cancelled && (
           <button
             onClick={() => setCancelId(shift.id)}
-            className="shrink-0 text-xs text-status-failed/70 hover:text-status-failed
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed px-2 py-1 rounded-lg"
+            className="shrink-0 min-h-[44px] text-xs text-status-failed hover:text-status-failed/80
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed
+              px-3 flex items-center rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -184,7 +185,7 @@ export default function ShiftScreen() {
               key={t}
               onClick={() => setTab(t)}
               className={[
-                'flex-1 py-2 rounded-lg text-xs font-medium capitalize transition-all',
+                'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
                 tab === t ? 'bg-cream-card shadow-sm text-ink-primary' : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >

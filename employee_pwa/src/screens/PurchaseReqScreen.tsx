@@ -108,7 +108,7 @@ export default function PurchaseReqScreen() {
               key={f}
               onClick={() => setFilter(f)}
               className={[
-                'flex-1 py-2 px-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
+                'flex-1 py-2 min-h-[44px] px-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
                 filter === f
                   ? 'bg-cream-card shadow-sm text-ink-primary'
                   : 'text-ink-tertiary hover:text-ink-secondary',
@@ -204,7 +204,7 @@ export default function PurchaseReqScreen() {
                   {req.status === 'PENDING' && (
                     <button
                       onClick={() => openPropose(req)}
-                      className="w-full mt-1 py-2.5 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+                      className="w-full mt-1 py-2.5 min-h-[44px] rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
                         hover:bg-primary-dark/90 transition-colors
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                     >
@@ -215,7 +215,7 @@ export default function PurchaseReqScreen() {
                   {req.status === 'PROPOSED' && (
                     <button
                       onClick={() => openPropose(req)}
-                      className="w-full mt-1 py-2 rounded-xl border-2 border-primary-dark/40 text-primary-dark
+                      className="w-full mt-1 py-2 min-h-[44px] rounded-xl border-2 border-primary-dark/40 text-primary-dark
                         text-sm font-semibold hover:bg-primary-dark/5 transition-colors"
                     >
                       Update estimate

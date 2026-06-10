@@ -152,7 +152,12 @@ export default function ScheduleScreen() {
         <div className="mx-4 mt-4 px-3 py-2 rounded-lg bg-status-pending/10 text-status-pending text-xs">
           Showing cached schedule — last updated{' '}
           {Math.floor((Date.now() - dataUpdatedAt) / 60_000)} min ago.
-          <button onClick={() => refetch()} className="ml-2 underline font-medium">Retry</button>
+          <button
+            onClick={() => refetch()}
+            className="ml-2 min-h-[44px] inline-flex items-center underline font-medium
+              text-status-pending hover:text-status-pending/80 transition-colors
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-pending rounded"
+          >Retry</button>
         </div>
       )}
 

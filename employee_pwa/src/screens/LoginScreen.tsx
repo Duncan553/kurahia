@@ -223,8 +223,9 @@ export default function LoginScreen() {
               <button
                 type="button"
                 onClick={() => navigate('/pin')}
-                className="mt-6 text-xs text-white/70 hover:text-white font-medium
-                  tracking-widest uppercase transition-colors flex items-center gap-2"
+                className="mt-6 min-h-[44px] text-xs text-white/70 hover:text-white font-medium
+                  tracking-widest uppercase transition-colors flex items-center gap-2
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-light"
               >
                 Use PIN instead <span className="text-primary-light" aria-hidden="true">↗</span>
               </button>

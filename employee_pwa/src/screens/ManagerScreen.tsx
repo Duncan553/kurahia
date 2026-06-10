@@ -163,7 +163,7 @@ export default function ManagerScreen() {
             </div>
             <button
               onClick={signOut}
-              className="shrink-0 px-4 py-2 rounded-xl border-2 border-status-failed/30
+              className="shrink-0 min-h-[44px] px-4 rounded-xl border border-status-failed/60
                 text-status-failed text-xs font-semibold
                 hover:bg-status-failed/10 active:bg-status-failed/20 transition-colors
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed"

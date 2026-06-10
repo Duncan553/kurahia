@@ -112,7 +112,7 @@ export default function LeaveRequestScreen() {
                 type="button"
                 onClick={() => setLeaveType(lt.value)}
                 className={[
-                  'py-2.5 px-3 rounded-xl border text-sm font-medium transition-all text-left',
+                  'py-2.5 min-h-[44px] px-3 rounded-xl border text-sm font-medium transition-all text-left',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                   leaveType === lt.value
                     ? 'border-primary-dark bg-primary-dark/10 text-primary-dark'

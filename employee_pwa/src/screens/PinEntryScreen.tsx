@@ -238,7 +238,7 @@ export default function PinEntryScreen() {
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main',
                           'disabled:opacity-40',
                           key === '⌫'
-                            ? 'bg-transparent text-ink-tertiary active:text-ink-primary active:scale-95'
+                            ? 'bg-transparent text-ink-secondary active:text-ink-primary active:scale-95'
                             : 'bg-white shadow-sm border border-cream-alt text-ink-primary active:bg-primary-light/30 active:shadow-none active:scale-95',
                         ].join(' ')}
                       >
@@ -257,8 +257,9 @@ export default function PinEntryScreen() {
                 <button
                   type="button"
                   onClick={() => navigate('/login')}
-                  className="w-full text-xs text-ink-secondary hover:text-primary-dark
-                    tracking-widest uppercase transition-colors flex items-center justify-center gap-2 pt-1 font-medium"
+                  className="w-full min-h-[44px] text-xs text-ink-secondary hover:text-primary-dark
+                    tracking-widest uppercase transition-colors flex items-center justify-center gap-2 font-medium
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark rounded"
                 >
                   Use password instead <span className="text-primary-main" aria-hidden="true">↗</span>
                 </button>
