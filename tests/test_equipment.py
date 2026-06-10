@@ -41,15 +41,17 @@ FULL_JETSKI_CHECKLIST = {
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
 def test_safety_check_rejected_with_missing_item(client, jetski, manager_token):
-    """4 of 5 items submitted (fuel_level_ok missing) → 400."""
+    """4 of 5 items submitted (fuel_level_ok missing) → 400 with unchecked_items list."""
     items = {k: v for k, v in FULL_JETSKI_CHECKLIST.items() if k != "fuel_level_ok"}
     rv = client.post(f"/equipment/{jetski}/safety-check",
                      json={"check_items": items},
                      headers=auth(manager_token))
     assert rv.status_code == 400
     body = rv.get_json()
-    assert "fuel_level_ok" in body["error"]
-    assert "not confirmed" in body["error"].lower()
+    # Item names now surface in unchecked_items list, not in the error string
+    assert "unchecked_items" in body
+    assert "fuel_level_ok" in body["unchecked_items"]
+    assert "Safety check failed" in body["error"]
 
 
 def test_safety_check_rejected_with_unchecked_item(client, jetski, manager_token):
@@ -61,7 +63,8 @@ def test_safety_check_rejected_with_unchecked_item(client, jetski, manager_token
                      headers=auth(manager_token))
     assert rv.status_code == 400
     body = rv.get_json()
-    assert "life_jackets_on_board" in body["error"]
+    assert "unchecked_items" in body
+    assert "life_jackets_on_board" in body["unchecked_items"]
 
 
 def test_safety_check_succeeds_with_all_items_checked(client, jetski, manager_token, app):

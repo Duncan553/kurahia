@@ -60,6 +60,7 @@ def list_requests():
         "status":         r.status,
         "created_at":     r.created_at.isoformat(),
         "requested_by":   r.requested_by.username if r.requested_by else None,
+        "department":     r.requested_by.department.name if r.requested_by and r.requested_by.department else "General",
         "notes":          r.manager_notes,
         "estimated_cost": str(r.estimated_cost) if r.estimated_cost else None,
     } for r in reqs]), 200

@@ -72,6 +72,23 @@ html {
   font-variant-numeric: tabular-nums;
 }
 
+/* Screen hero torn-paper bottom edge — active always */
+.screen-hero-torn {
+  clip-path: polygon(
+    0% 0%, 100% 0%, 100% 84%,
+    96% 91%, 100% 96%,
+    93% 100%, 88% 93%,
+    83% 100%, 77% 92%,
+    72% 100%, 66% 92%,
+    60% 100%, 54% 93%,
+    48% 100%, 42% 92%,
+    36% 100%, 30% 93%,
+    24% 100%, 18% 92%,
+    12% 100%, 6% 93%,
+    0% 100%
+  );
+}
+
 /* Login torn-paper edge — only active at md+ (tablet/desktop) */
 .login-torn-edge {
   clip-path: none;
