@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import { Skeleton, EmptyState, StatusBadge } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
@@ -155,7 +156,12 @@ export default function ScheduleScreen() {
         </div>
       )}
 
-      <div className="p-4 space-y-4">
+      <motion.div
+        className="p-4 space-y-4"
+        initial="hidden"
+        animate="visible"
+        variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+      >
         {DAYS.map((dayKey) => {
           const isToday = dayKey === TODAY
           const dayShifts = byDay.get(dayKey) ?? []
@@ -163,7 +169,11 @@ export default function ScheduleScreen() {
           const label = formatDayLabel(dayKey + 'T12:00:00')
 
           return (
-            <div key={dayKey}>
+            <motion.div
+              key={dayKey}
+              variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+            >
               {/* Day header */}
               <p className={[
                 'text-xs font-semibold uppercase tracking-wider mb-2',
@@ -205,10 +215,10 @@ export default function ScheduleScreen() {
                   ))}
                 </div>
               )}
-            </div>
+            </motion.div>
           )
         })}
-      </div>
+      </motion.div>
     </div>
   )
 }

@@ -18,7 +18,7 @@ interface JWTClaims extends Record<string, unknown> {
 const KEYPAD = ['1','2','3','4','5','6','7','8','9','','0','⌫'] as const
 
 const HERO_URL =
-  'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?auto=format&fit=crop&w=1400&q=80'
+  'https://waterfrontcountryclub.com/wp-content/uploads/2025/08/DJI_0669-scaled.jpg'
 
 export default function PinEntryScreen() {
   const navigate = useNavigate()
@@ -82,9 +82,14 @@ export default function PinEntryScreen() {
     pinMutation.mutate({ username, pin: digits })
   }
 
-  // Auto-submit when 4 digits entered
+  // Auto-submit when 4 digits entered + username filled
   useEffect(() => {
-    if (digits.length === 4 && username) handleSubmit()
+    if (digits.length !== 4) return
+    if (!username.trim()) {
+      setErrorMsg('Enter your username above first.')
+      return
+    }
+    handleSubmit()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [digits])
 
@@ -118,10 +123,10 @@ export default function PinEntryScreen() {
           className="font-serif text-5xl font-bold tracking-widest text-white leading-none"
           style={{ textShadow: '0 2px 20px rgba(0,0,0,0.55)' }}
         >
-          WATERFRONT<br />KURAHIA
+          WATERFRONT<br />COUNTRY CLUB
         </p>
         <p className="mt-2 text-[10px] tracking-[0.3em] uppercase text-white/60 font-medium">
-          DAM RESORT · KENYA
+          JUJA · KIAMBU · KENYA
         </p>
       </motion.div>
 
@@ -252,8 +257,8 @@ export default function PinEntryScreen() {
                 <button
                   type="button"
                   onClick={() => navigate('/login')}
-                  className="w-full text-xs text-ink-tertiary hover:text-primary-main
-                    tracking-widest uppercase transition-colors flex items-center justify-center gap-2 pt-1"
+                  className="w-full text-xs text-ink-secondary hover:text-primary-dark
+                    tracking-widest uppercase transition-colors flex items-center justify-center gap-2 pt-1 font-medium"
                 >
                   Use password instead <span className="text-primary-main" aria-hidden="true">↗</span>
                 </button>

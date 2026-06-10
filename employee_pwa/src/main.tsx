@@ -94,6 +94,9 @@ const router = createBrowserRouter([
           ],
         },
 
+        // ── Staff meals: any staff (level 1+) ───────────────────
+        { path: '/inventory/quick-entry', element: <QuickEntryScreen /> },
+
         // ── Manager (level 5+) ───────────────────────────────────
         {
           element: <RoleGate minLevel={5} />,
@@ -101,7 +104,6 @@ const router = createBrowserRouter([
             { path: '/manager',                    element: <ManagerScreen />         },
             { path: '/inventory/count',            element: <InventoryCountScreen />  },
             { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
-            { path: '/inventory/quick-entry',      element: <QuickEntryScreen />      },
             { path: '/equipment/maintenance',      element: <MaintenanceLogScreen />  },
             // F-11: Manager sub-screens
             { path: '/manager/cash',       element: <CashReconScreen />     },

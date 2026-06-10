@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import { Skeleton, EmptyState, useToastStore } from '@shared'
 import api from '../lib/axios'
 import { timeAgo } from '../lib/format'
@@ -130,13 +131,20 @@ export default function NotificationsScreen() {
 
   // ── SUCCESS ──────────────────────────────────────────────────────────────────
   return (
-    <div className="divide-y divide-cream-alt">
+    <motion.div
+      className="divide-y divide-cream-alt"
+      initial="hidden"
+      animate="visible"
+      variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+    >
       {notifications.map((notif) => {
         const isUnread = !notif.read_at
         const isGrayed = grayedIds.has(notif.id)
         return (
-          <button
+          <motion.button
             key={notif.id}
+            variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
             onClick={() => handleTap(notif)}
             disabled={isGrayed}
             className={[
@@ -160,9 +168,9 @@ export default function NotificationsScreen() {
                 <p className="text-[10px] text-ink-tertiary/60 mt-1">{timeAgo(notif.sent_at)}</p>
               )}
             </div>
-          </button>
+          </motion.button>
         )
       })}
-    </div>
+    </motion.div>
   )
 }

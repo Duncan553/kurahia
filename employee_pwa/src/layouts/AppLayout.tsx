@@ -176,7 +176,7 @@ const NAV_ITEMS: NavItem[] = [
     path: '/schedule',
     label: 'Schedule',
     Icon: ScheduleIcon,
-    visible: () => true,
+    visible: (level) => level >= 5,  // GET /hr/shifts requires manager (level 5+)
   },
   {
     id: 'alerts',
@@ -191,7 +191,7 @@ const NAV_ITEMS: NavItem[] = [
     path: '/profile',
     label: 'Profile',
     Icon: ProfileIcon,
-    visible: () => true,
+    visible: (level) => level < 5,  // managers use the Account tile in Manager hub instead
   },
 
   // ── Waiver + Safety: water activities station only ──────────────────────────
@@ -249,13 +249,13 @@ const NAV_ITEMS: NavItem[] = [
     Icon: RestockIcon,
     visible: (level) => level >= 5,
   },
-  // Spoilage + staff meals both live in QuickEntryScreen — managers own both
+  // Staff meals: any staff (level 1+) can log; spoilage requires manager
   {
     id: 'meals',
     path: '/inventory/quick-entry',
     label: 'Meals',
     Icon: MealsIcon,
-    visible: (level) => level >= 5,
+    visible: (level) => level >= 1,  // POST /inventory/movements/staff-meal allows level 1+
   },
   {
     id: 'maintenance',

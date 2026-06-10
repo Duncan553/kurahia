@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/authStore'
+import ScreenHero from '../components/ScreenHero'
 
 function roleName(level: number): string {
   if (level >= 10) return 'Owner'
@@ -48,13 +50,32 @@ export default function ProfileScreen() {
 
   function signOut() { clearAuth(); navigate('/pin') }
 
+  const containerVariants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.07 } },
+  }
+  const itemVariants = {
+    hidden: { opacity: 0, y: 12 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' as const } },
+  }
+
   return (
-    <div className="p-4 space-y-6 max-w-md mx-auto">
+    <motion.div
+      className="max-w-md mx-auto"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+
+      {/* ── Photo hero ────────────────────────────────────────────── */}
+      <ScreenHero title="PROFILE." subtitle="KURAHIA STAFF" />
+
+      <div className="p-4 space-y-6">
 
       {/* ── Identity card ─────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 pt-2">
+      <motion.div variants={itemVariants} className="flex items-center gap-4 -mt-2">
         <div className="w-14 h-14 rounded-full bg-primary-dark flex items-center justify-center
-          text-cream-card text-xl font-bold shrink-0">
+          text-cream-card text-xl font-bold shrink-0 ring-4 ring-cream-card">
           {user?.username?.[0]?.toUpperCase() ?? '?'}
         </div>
         <div>
@@ -64,10 +85,10 @@ export default function ProfileScreen() {
             {user?.department ? ` · ${user.department}` : ''}
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── HR actions ────────────────────────────────────────────── */}
-      <div className="space-y-2">
+      <motion.div variants={itemVariants} className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary px-1">
           Leave & Attendance
         </p>
@@ -95,10 +116,10 @@ export default function ProfileScreen() {
             </svg>
           }
         />
-      </div>
+      </motion.div>
 
       {/* ── Company actions ───────────────────────────────────────── */}
-      <div className="space-y-2">
+      <motion.div variants={itemVariants} className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary px-1">
           Company
         </p>
@@ -127,10 +148,10 @@ export default function ProfileScreen() {
             </svg>
           }
         />
-      </div>
+      </motion.div>
 
       {/* ── Sign out ──────────────────────────────────────────────── */}
-      <div className="pt-2 border-t border-cream-alt">
+      <motion.div variants={itemVariants} className="pt-2 border-t border-cream-alt">
         <button
           onClick={signOut}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl
@@ -144,7 +165,9 @@ export default function ProfileScreen() {
           </svg>
           Sign Out
         </button>
+      </motion.div>
+
       </div>
-    </div>
+    </motion.div>
   )
 }

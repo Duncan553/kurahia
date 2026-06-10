@@ -36,3 +36,6 @@ export { EmptyState } from './components/EmptyState'
 export type { EmptyStateProps } from './components/EmptyState'
 
 export { Logo } from './components/Logo'
+
+export { Combobox } from './components/Combobox'
+export type { ComboboxProps } from './components/Combobox'

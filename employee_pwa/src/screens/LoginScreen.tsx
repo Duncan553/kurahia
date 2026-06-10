@@ -19,13 +19,8 @@ interface JWTClaims extends Record<string, unknown> {
   requires_pin_setup?: boolean
 }
 
-/*
- * Aerial waterfront photo — Unsplash source API, keyword-matched.
- * Owner can replace HERO_URL constant with a real Kurahia drone shot path.
- * e.g. HERO_URL = '/assets/kurahia-aerial.jpg'  (drop file in employee_pwa/public/assets/)
- */
 const HERO_URL =
-  'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?auto=format&fit=crop&w=1400&q=80'
+  'https://waterfrontcountryclub.com/wp-content/uploads/2025/08/DJI_0669-scaled.jpg'
 
 export default function LoginScreen() {
   const navigate = useNavigate()
@@ -67,10 +62,9 @@ export default function LoginScreen() {
   }
 
   return (
-    /* Hero fills the full viewport behind everything */
     <div className="relative min-h-screen overflow-hidden">
 
-      {/* ── Hero: aerial water photo ─────────────────────────────── */}
+      {/* ── Hero: full-bleed aerial, darker overlay for glass contrast ── */}
       <motion.div
         className="absolute inset-0"
         initial={{ opacity: 0, scale: 1.04 }}
@@ -83,64 +77,62 @@ export default function LoginScreen() {
           aria-hidden="true"
           className="w-full h-full object-cover object-center"
         />
-        {/* Terracotta tint — ties the photo to our brand palette */}
-        <div className="absolute inset-0 bg-primary-dark/20 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-primary-dark/45" />
       </motion.div>
 
-      {/* ── Wordmark bottom-right (desktop only) ─────────────────── */}
+      {/* ── Wordmark bottom-right (desktop only) ─────────────────────── */}
       <motion.div
         className="absolute bottom-10 right-10 hidden md:block text-right z-10 pointer-events-none"
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.8, ease: 'easeOut' }}
+        transition={{ duration: 0.6, delay: 0.9, ease: 'easeOut' }}
       >
         <p
           className="font-serif text-5xl font-bold tracking-widest text-white leading-none"
-          style={{ textShadow: '0 2px 20px rgba(0,0,0,0.55)' }}
+          style={{ textShadow: '0 2px 24px rgba(0,0,0,0.6)' }}
         >
-          WATERFRONT<br />KURAHIA
+          WATERFRONT<br />COUNTRY CLUB
         </p>
-        <p className="mt-2 text-[10px] tracking-[0.3em] uppercase text-white/60 font-medium">
-          DAM RESORT · KENYA
+        <p className="mt-2 text-[10px] tracking-[0.3em] uppercase text-white/50 font-medium">
+          JUJA · KIAMBU · KENYA
         </p>
       </motion.div>
 
-      {/* ── Form card — torn edge on desktop, full-overlay on mobile ─ */}
-      <div className="relative z-10 flex min-h-screen">
+      {/* ── Floating glass card — left on desktop, full-screen on mobile ─ */}
+      <div className="relative z-10 flex items-center min-h-screen md:pl-12">
 
-        {/*
-         * login-torn-edge class defined in index.css:
-         *   mobile  → clip-path: none   (card is full-width overlay)
-         *   md+     → clip-path: polygon (organic torn right edge bleeds into photo)
-         */}
         <motion.div
-          className="login-torn-edge w-full md:w-[52%] bg-cream-card min-h-screen"
+          className="login-torn-edge w-full md:max-w-[480px]
+            bg-cream-card/30 backdrop-blur-xl border-0 md:border md:border-white/20
+            min-h-screen md:min-h-0"
           initial={{ x: -60, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.25, ease: 'easeOut' }}
         >
-          {/* Centered form content — padded clear of the torn right edge */}
-          <div className="flex items-center min-h-screen">
+          <div className="flex items-center min-h-screen md:min-h-0">
             <div className="w-full max-w-[360px] mx-auto md:ml-14 px-8 md:px-0 py-16">
 
-              {/* Wordmark — "artists." editorial scale from the reference */}
+              {/* Eyebrow + heading */}
               <motion.div
                 className="mb-8"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.45, ease: 'easeOut' }}
               >
-                <p className="text-[10px] tracking-[0.3em] uppercase text-ink-tertiary font-medium mb-3">
+                <p className="text-[10px] tracking-[0.3em] uppercase text-white/60 font-medium mb-3">
                   KURAHIA STAFF
                 </p>
-                <h1 className="font-serif text-6xl font-bold tracking-tight text-ink-primary leading-[0.92]">
+                <h1
+                  className="font-serif text-6xl font-bold tracking-tight text-white leading-[0.92]"
+                  style={{ textShadow: '0 2px 16px rgba(0,0,0,0.4)' }}
+                >
                   SIGN<br />IN.
                 </h1>
               </motion.div>
 
-              {/* Terracotta accent rule */}
+              {/* Accent rule */}
               <motion.div
-                className="w-10 h-[2px] bg-primary-main mb-8"
+                className="w-10 h-[2px] bg-primary-light mb-8"
                 initial={{ scaleX: 0, originX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 0.35, delay: 0.6, ease: 'easeOut' }}
@@ -156,7 +148,7 @@ export default function LoginScreen() {
                 transition={{ duration: 0.35, delay: 0.65, ease: 'easeOut' }}
               >
                 <div>
-                  <label className="block text-[10px] tracking-[0.2em] uppercase text-ink-tertiary font-medium mb-1.5">
+                  <label className="block text-[10px] tracking-[0.2em] uppercase text-white/60 font-medium mb-1.5">
                     Username
                   </label>
                   <input
@@ -167,17 +159,17 @@ export default function LoginScreen() {
                     disabled={loginMutation.isPending}
                     className="
                       w-full rounded-xl px-4 py-3
-                      bg-cream-alt border border-cream-deep
+                      bg-cream-card/70 backdrop-blur-sm border border-white/30
                       text-ink-primary text-sm font-medium
                       placeholder:text-ink-tertiary
-                      focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-main/20
+                      focus:outline-none focus:border-primary-light focus:ring-2 focus:ring-primary-light/30
                       disabled:opacity-50 transition-all
                     "
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] tracking-[0.2em] uppercase text-ink-tertiary font-medium mb-1.5">
+                  <label className="block text-[10px] tracking-[0.2em] uppercase text-white/60 font-medium mb-1.5">
                     Password
                   </label>
                   <input
@@ -188,17 +180,17 @@ export default function LoginScreen() {
                     disabled={loginMutation.isPending}
                     className="
                       w-full rounded-xl px-4 py-3
-                      bg-cream-alt border border-cream-deep
+                      bg-cream-card/70 backdrop-blur-sm border border-white/30
                       text-ink-primary text-sm font-medium
                       placeholder:text-ink-tertiary
-                      focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-main/20
+                      focus:outline-none focus:border-primary-light focus:ring-2 focus:ring-primary-light/30
                       disabled:opacity-50 transition-all
                     "
                   />
                 </div>
 
                 {errorMsg && (
-                  <p role="alert" className="text-sm text-status-failed font-medium">
+                  <p role="alert" className="text-sm text-status-failed font-semibold">
                     {errorMsg}
                   </p>
                 )}
@@ -211,7 +203,7 @@ export default function LoginScreen() {
                     bg-primary-dark text-cream-card
                     text-sm font-semibold tracking-widest uppercase
                     hover:bg-primary-main active:scale-[0.99]
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-light focus-visible:ring-offset-2 focus-visible:ring-offset-transparent
                     disabled:opacity-50 disabled:cursor-not-allowed
                     transition-all
                   "
@@ -228,14 +220,13 @@ export default function LoginScreen() {
                 </button>
               </motion.form>
 
-              {/* PIN link — spare, editorial arrow */}
               <button
                 type="button"
                 onClick={() => navigate('/pin')}
-                className="mt-6 text-xs text-ink-tertiary hover:text-primary-main
+                className="mt-6 text-xs text-white/70 hover:text-white font-medium
                   tracking-widest uppercase transition-colors flex items-center gap-2"
               >
-                Use PIN instead <span className="text-primary-main" aria-hidden="true">↗</span>
+                Use PIN instead <span className="text-primary-light" aria-hidden="true">↗</span>
               </button>
             </div>
           </div>

@@ -12,6 +12,7 @@ interface PurchaseRequest {
   status: string
   created_at: string
   requested_by: string | null
+  department: string
   notes: string | null
   estimated_cost: string | null
 }
@@ -51,6 +52,14 @@ export default function PurchaseReqScreen() {
 
   const filtered = (requests ?? []).filter((r) => r.status === filter)
   const pendingCount = (requests ?? []).filter((r) => r.status === 'PENDING').length
+
+  // Group filtered requests by department — preserves insertion order (desc by date)
+  const byDept = filtered.reduce<Record<string, PurchaseRequest[]>>((acc, r) => {
+    const key = r.department || 'General'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(r)
+    return acc
+  }, {})
 
   const proposeMutation = useMutation({
     mutationFn: ({ id }: { id: string }) =>
@@ -143,67 +152,80 @@ export default function PurchaseReqScreen() {
           />
         )}
 
-        {!isLoading && filtered.map((req) => {
-          const dim = req.status !== 'PENDING'
-          return (
-            <div
-              key={req.id}
-              className={[
-                'rounded-2xl border p-4 space-y-2',
-                dim ? 'border-cream-alt bg-cream-alt/20' : 'border-cream-alt bg-cream-card',
-              ].join(' ')}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className={`text-sm font-semibold text-ink-primary ${dim ? 'opacity-70' : ''}`}>
-                    {req.item_name ?? 'Unknown item'}
-                  </p>
-                  <p className="text-xs text-ink-tertiary mt-0.5">
-                    Qty: {parseFloat(req.quantity).toLocaleString()}
-                    {req.requested_by ? ` · by ${req.requested_by}` : ''}
-                  </p>
-                </div>
-                <StatusBadge status={statusValue(req.status)} />
-              </div>
+        {!isLoading && filtered.length === 0 && !isError && null}
 
-              {req.notes && (
-                <p className="text-xs text-ink-secondary italic">"{req.notes}"</p>
-              )}
-
-              {req.estimated_cost && (
-                <p className="text-xs text-ink-tertiary">
-                  Estimated cost:{' '}
-                  <span className="font-semibold text-ink-primary">
-                    KSh {parseFloat(req.estimated_cost).toLocaleString()}
-                  </span>
-                </p>
-              )}
-
-              {/* Only PENDING can be proposed */}
-              {req.status === 'PENDING' && (
-                <button
-                  onClick={() => openPropose(req)}
-                  className="w-full mt-1 py-2.5 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
-                    hover:bg-primary-dark/90 transition-colors
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
-                >
-                  Propose budget
-                </button>
-              )}
-
-              {/* PROPOSED: show re-propose option */}
-              {req.status === 'PROPOSED' && (
-                <button
-                  onClick={() => openPropose(req)}
-                  className="w-full mt-1 py-2 rounded-xl border border-primary-dark/30 text-primary-dark
-                    text-sm font-medium hover:bg-primary-dark/5 transition-colors"
-                >
-                  Update estimate
-                </button>
-              )}
+        {!isLoading && Object.entries(byDept).map(([dept, reqs]) => (
+          <div key={dept} className="space-y-2">
+            {/* Department header */}
+            <div className="flex items-center gap-3">
+              <p className="text-[10px] tracking-[0.2em] uppercase font-semibold text-ink-tertiary whitespace-nowrap">
+                {dept}
+              </p>
+              <div className="flex-1 h-px bg-cream-alt" />
+              <span className="text-[10px] text-ink-tertiary">{reqs.length}</span>
             </div>
-          )
-        })}
+
+            {reqs.map((req) => {
+              const dim = req.status !== 'PENDING'
+              return (
+                <div
+                  key={req.id}
+                  className={[
+                    'rounded-2xl border p-4 space-y-2',
+                    dim ? 'border-cream-alt bg-cream-alt/20' : 'border-cream-alt bg-cream-card',
+                  ].join(' ')}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className={`text-sm font-semibold text-ink-primary ${dim ? 'opacity-70' : ''}`}>
+                        {req.item_name ?? 'Unknown item'}
+                      </p>
+                      <p className="text-xs text-ink-tertiary mt-0.5">
+                        Qty: {parseFloat(req.quantity).toLocaleString()}
+                        {req.requested_by ? ` · by ${req.requested_by}` : ''}
+                      </p>
+                    </div>
+                    <StatusBadge status={statusValue(req.status)} />
+                  </div>
+
+                  {req.notes && (
+                    <p className="text-xs text-ink-secondary italic">"{req.notes}"</p>
+                  )}
+
+                  {req.estimated_cost && (
+                    <p className="text-xs text-ink-tertiary">
+                      Estimated:{' '}
+                      <span className="font-semibold text-ink-primary">
+                        KSh {parseFloat(req.estimated_cost).toLocaleString()}
+                      </span>
+                    </p>
+                  )}
+
+                  {req.status === 'PENDING' && (
+                    <button
+                      onClick={() => openPropose(req)}
+                      className="w-full mt-1 py-2.5 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+                        hover:bg-primary-dark/90 transition-colors
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
+                    >
+                      Propose budget
+                    </button>
+                  )}
+
+                  {req.status === 'PROPOSED' && (
+                    <button
+                      onClick={() => openPropose(req)}
+                      className="w-full mt-1 py-2 rounded-xl border-2 border-primary-dark/40 text-primary-dark
+                        text-sm font-semibold hover:bg-primary-dark/5 transition-colors"
+                    >
+                      Update estimate
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ))}
       </div>
 
       {/* Propose budget drawer */}
