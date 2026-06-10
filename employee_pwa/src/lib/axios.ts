@@ -32,7 +32,9 @@ api.interceptors.response.use(
     const status: number | undefined = error.response?.status
 
     // ── 401: try to refresh once, then retry the original request ──────────
-    if (status === 401 && !original._retry) {
+    // Skip refresh for auth endpoints — a 401 there means wrong credentials, not expired token
+    const isAuthEndpoint = original.url?.startsWith('/auth/')
+    if (status === 401 && !original._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         // Another refresh is already in flight — queue this request
         return new Promise<string>((resolve, reject) => {
