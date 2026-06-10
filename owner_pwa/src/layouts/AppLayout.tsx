@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react'
 import { useLocation, useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/authStore'
@@ -57,7 +58,7 @@ function SignOutIcon() {
 
 // ── Nav items ───────────────────────────────────────────────────────────────
 
-interface NavItem { path: string; label: string; Icon: () => JSX.Element }
+interface NavItem { path: string; label: string; Icon: () => ReactElement }
 
 const SIDEBAR_ITEMS: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', Icon: DashboardIcon },

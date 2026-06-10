@@ -91,7 +91,6 @@ function StarRow({
 export default function KioskFeedbackScreen() {
   const navigate        = useNavigate()
   const kioskMode       = useKioskStore((s) => s.kioskMode)
-  const kioskUser       = useKioskStore((s) => s.kioskUser)  // kept for future PIN exit
   const deactivateKiosk = useKioskStore((s) => s.deactivateKiosk)
   const addToast        = useToastStore((s) => s.addToast)
 
