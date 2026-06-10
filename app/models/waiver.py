@@ -22,7 +22,7 @@ class Waiver(db.Model):
                                   nullable=False, index=True)
     activity_type     = db.Column(db.String(20), nullable=False)   # WATER_ACTIVITY / GENERAL
     signed_by_name    = db.Column(db.String(200), nullable=False)
-    signature_proof   = db.Column(db.String(500), nullable=True)   # photo path or reference
+    signature_proof   = db.Column(db.Text, nullable=True)   # base64 PNG of drawn signature
     is_active         = db.Column(db.Boolean, nullable=False, default=True)
 
     signed_at_utc = db.Column(
