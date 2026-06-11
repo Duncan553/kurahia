@@ -116,7 +116,7 @@ function ChecklistItem({
             value={state.note}
             onChange={(e) => onNote(e.target.value)}
             placeholder="Optional note…"
-            className="w-full rounded-lg border border-cream-alt bg-white px-3 py-2
+            className="w-full rounded-lg border border-cream-alt bg-cream-card px-3 py-2
               text-sm text-ink-primary focus:outline-none focus:border-primary-dark
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />

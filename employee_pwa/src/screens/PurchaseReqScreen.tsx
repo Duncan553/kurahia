@@ -271,7 +271,7 @@ export default function PurchaseReqScreen() {
                 onChange={(e) => setCost(e.target.value)}
                 placeholder="0.00"
                 autoFocus
-                className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3 text-base
+                className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-base
                   text-ink-primary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
@@ -285,7 +285,7 @@ export default function PurchaseReqScreen() {
                 value={propNotes}
                 onChange={(e) => setPropNotes(e.target.value)}
                 placeholder="Supplier name, urgency, any caveats…"
-                className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3 text-sm
+                className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-sm
                   text-ink-primary focus:outline-none focus:border-primary-dark
                   focus:ring-2 focus:ring-primary-dark/20 resize-none"
               />

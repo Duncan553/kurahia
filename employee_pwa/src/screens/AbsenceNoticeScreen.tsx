@@ -102,7 +102,7 @@ export default function AbsenceNoticeScreen() {
               onChange={(e) => setCustom(e.target.value)}
               placeholder="Brief description…"
               autoFocus
-              className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3
+              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
                 text-sm text-ink-primary focus:outline-none focus:border-primary-dark
                 focus:ring-2 focus:ring-primary-dark/20 resize-none"
             />
