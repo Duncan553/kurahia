@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Skeleton, EmptyState, useToastStore } from '@shared'
 import api from '../lib/axios'
 import { timeAgo } from '../lib/format'
+import { routeFor } from '../lib/notificationRoutes'
 
 export interface Notification {
   id: string
@@ -17,17 +18,6 @@ export interface Notification {
   scheduled_for: string | null
   sent_at: string | null
   read_at: string | null
-}
-
-const ROUTE_MAP: Record<string, string> = {
-  leave_request: '/schedule',
-  shift: '/schedule',
-  conduct_rule: '/conduct',
-  conduct: '/conduct',
-  clock_event: '/clock',
-}
-function routeFor(type: string): string {
-  return ROUTE_MAP[type.toLowerCase().replace(/\s+/g, '_')] ?? '/notifications'
 }
 
 export default function NotificationsScreen() {
