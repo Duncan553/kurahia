@@ -454,9 +454,9 @@ function EquipmentTile() {
 // ── Top bar ───────────────────────────────────────────────────────────────────
 
 function TopBar({ onRefresh }: { onRefresh: () => void }) {
-  const overview  = useQuery<OverviewData>({ queryKey: ['dash-overview'],  staleTime: 5 * 60_000 })
-  const alerts    = useQuery<AlertItem[]>({ queryKey: ['dash-alerts'],    staleTime: 5 * 60_000 })
-  const bookings  = useQuery<BookingsData>({ queryKey: ['dash-bookings'],  staleTime: 5 * 60_000 })
+  const overview  = useQuery<OverviewData>({ queryKey: ['dash-overview'],  queryFn: () => api.get<OverviewData>('/dashboard/overview').then((r) => r.data),  staleTime: 5 * 60_000 })
+  const alerts    = useQuery<AlertItem[]>({ queryKey: ['dash-alerts'],    queryFn: () => api.get<AlertItem[]>('/dashboard/alerts').then((r) => r.data),    staleTime: 5 * 60_000 })
+  const bookings  = useQuery<BookingsData>({ queryKey: ['dash-bookings'],  queryFn: () => api.get<BookingsData>('/dashboard/bookings').then((r) => r.data),  staleTime: 5 * 60_000 })
 
   const revenue     = overview.data?.revenue.total
   const alertCount  = alerts.data?.length

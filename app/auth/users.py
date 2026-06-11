@@ -150,6 +150,22 @@ def list_users():
     ]), 200
 
 
+@users_bp.get("/meta")
+@require_active_user
+def get_meta():
+    """Return roles and departments — used by manager account-creation UI."""
+    from app.models.role import Role
+    from app.models.department import Department
+    actor = db.session.get(User, get_jwt_identity())
+    # Only return roles the actor is allowed to assign (strictly below their own level)
+    roles = db.session.query(Role).filter(Role.level < actor.role.level).all()
+    depts = db.session.query(Department).filter_by(is_active=True).all()
+    return jsonify({
+        "roles": [{"id": r.id, "name": r.name, "level": r.level} for r in roles],
+        "departments": [{"id": d.id, "name": d.name} for d in depts],
+    }), 200
+
+
 @users_bp.post("/<user_id>/activate")
 @require_active_user
 def activate_user(user_id):

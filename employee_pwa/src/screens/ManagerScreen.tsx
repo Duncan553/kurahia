@@ -46,6 +46,13 @@ function CashIcon() {
     <path d="M7 15h0M21 15h0" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
   </svg>
 }
+function StaffIcon() {
+  return <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+    <circle cx="10" cy="9" r="4" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M3 24c0-4 3.1-6.5 7-6.5s7 2.5 7 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M19 13v6M22 16h-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
 function PurchaseIcon() {
   return <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
     <path d="M4 5h3l2.5 11h12l2.5-8H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -55,6 +62,12 @@ function PurchaseIcon() {
 }
 
 const TILES: Tile[] = [
+  {
+    label: 'Staff',
+    description: 'Create accounts, manage access',
+    path: '/manager/staff',
+    Icon: StaffIcon,
+  },
   {
     label: 'Front Desk',
     description: 'Arrivals, departures, occupancy',
