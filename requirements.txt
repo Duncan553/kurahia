@@ -27,6 +27,7 @@ Pygments==2.20.0
 PyJWT==2.13.0
 pytest==9.0.3
 python-dotenv==1.2.2
+pywebpush==2.3.0
 SQLAlchemy==2.0.50
 typing_extensions==4.15.0
 waitress==3.0.2

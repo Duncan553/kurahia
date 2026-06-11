@@ -88,3 +88,75 @@ def list_notifications():
         q = q.filter_by(recipient_user_id=user_id)
     items = q.order_by(Notification.scheduled_for_utc.desc()).limit(100).all()
     return jsonify([_notif_dict(n) for n in items]), 200
+
+# ── Web Push (F-17) ───────────────────────────────────────────────────────────
+
+@notifications_bp.get("/push-config")
+@require_active_user
+def push_config():
+    """Public VAPID key for PushManager.subscribe(), or dormant status."""
+    import os
+    from app.services.notifications.webpush import webpush_status
+    status = webpush_status()
+    if status["configured"]:
+        status["public_key"] = os.environ["VAPID_PUBLIC_KEY"]
+    return jsonify(status), 200
+
+
+@notifications_bp.post("/push-subscribe")
+@require_active_user
+def push_subscribe():
+    """Store this browser's push subscription. Idempotent on endpoint."""
+    from app.models.push_subscription import PushSubscription
+    from app.models.audit_log import AuditLog
+
+    actor = db.session.get(User, get_jwt_identity())
+    data = request.get_json(silent=True) or {}
+    endpoint = (data.get("endpoint") or "").strip()
+    keys = data.get("keys") or {}
+    p256dh, auth = keys.get("p256dh"), keys.get("auth")
+
+    if not endpoint or not p256dh or not auth:
+        return jsonify({"error": "endpoint and keys (p256dh, auth) are required. "
+                                 "Send the object returned by PushManager.subscribe()."}), 400
+
+    # Idempotency: endpoint is globally unique — same browser re-subscribing
+    # updates the existing row (it may now belong to a different user on a shared tablet)
+    existing = db.session.query(PushSubscription).filter_by(endpoint=endpoint).first()
+    with db.session.begin_nested():
+        if existing:
+            existing.user_id, existing.p256dh, existing.auth = actor.id, p256dh, auth
+            existing.is_active = True
+            sub = existing
+        else:
+            sub = PushSubscription(user_id=actor.id, endpoint=endpoint, p256dh=p256dh, auth=auth)
+            db.session.add(sub)
+
+    AuditLog.log(actor=actor.username, action="push.subscribe", target=sub.id)
+    db.session.commit()
+    return jsonify({"id": sub.id, "duplicate": existing is not None}), 200 if existing else 201
+
+
+@notifications_bp.post("/push-unsubscribe")
+@require_active_user
+def push_unsubscribe():
+    """Deactivate this browser's subscription (disable, never delete)."""
+    from app.models.push_subscription import PushSubscription
+    from app.models.audit_log import AuditLog
+
+    actor = db.session.get(User, get_jwt_identity())
+    data = request.get_json(silent=True) or {}
+    endpoint = (data.get("endpoint") or "").strip()
+    if not endpoint:
+        return jsonify({"error": "endpoint is required."}), 400
+
+    sub = db.session.query(PushSubscription).filter_by(endpoint=endpoint).first()
+    if not sub:
+        return jsonify({"error": "No subscription found for that endpoint."}), 404
+
+    with db.session.begin_nested():
+        sub.is_active = False
+
+    AuditLog.log(actor=actor.username, action="push.unsubscribe", target=sub.id)
+    db.session.commit()
+    return jsonify({"id": sub.id, "is_active": False}), 200
