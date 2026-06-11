@@ -136,11 +136,18 @@ def list_menu_items():
     include_disabled = request.args.get("include_disabled", "false").lower() == "true"
     dept_filter      = request.args.get("department")
 
+    dept_name_filter = request.args.get("dept_name")
+
     query = db.session.query(MenuItem)
     if not include_disabled:
         query = query.filter_by(is_active=True)
     if dept_filter:
         query = query.filter_by(department_id=dept_filter)
+    if dept_name_filter:
+        dept = db.session.query(Department).filter_by(name=dept_name_filter).first()
+        if not dept:
+            return jsonify([]), 200
+        query = query.filter_by(department_id=dept.id)
 
     return jsonify([
         {

@@ -118,6 +118,60 @@ function ManagerIcon() {
   </svg>
 }
 
+// Waiter pad: notepad + fork
+function WaiterIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <rect x="4" y="3" width="14" height="17" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M7 7h8M7 10h8M7 13h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M16 18l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
+// Kitchen: pot/flame
+function KitchenIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path d="M4 10h14v7a2 2 0 01-2 2H6a2 2 0 01-2-2v-7z" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M3 10h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M8 10V7c0-1.5 1-2.5 1-4M12 10V7c0-1.5 1-2.5 1-4"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M8 15h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
+// Bar: cocktail glass
+function BarIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path d="M5 4l6 8 6-8H5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M11 12v6M7 18h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M7 8h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
+// Spa/Gym: leaf + dumbbell
+function SpaGymIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path d="M11 18C11 18 4 14 4 8.5a7 7 0 0114 0C18 14 11 18 11 18z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M11 18V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
+// Water: wave
+function WaterIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path d="M2 12c1.5-3 3-3 4.5 0S9.5 15 11 12s3-3 4.5 0 3 3 4.5 0"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 7c1.5-3 3-3 4.5 0S9.5 10 11 7s3-3 4.5 0 3 3 4.5 0"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 17c1.5-3 3-3 4.5 0S9.5 20 11 17s3-3 4.5 0 3 3 4.5 0"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+}
+// Villa: house
+function VillaIcon() {
+  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path d="M3 10L11 3l8 7v9a1 1 0 01-1 1H4a1 1 0 01-1-1V10z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <rect x="8" y="14" width="6" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.5"/>
+  </svg>
+}
+
 // ── Department helper ──────────────────────────────────────────────────────────
 
 function deptIs(dept: string | null, ...keywords: string[]): boolean {
@@ -194,7 +248,43 @@ const NAV_ITEMS: NavItem[] = [
     visible: (level) => level < 5,  // managers use the Account tile in Manager hub instead
   },
 
-  // ── Waiver + Safety: water activities station only ──────────────────────────
+  // ── POS: waiter tablet ───────────────────────────────────────────────────────
+  {
+    id: 'waiter',
+    path: '/pos/tabs',
+    label: 'Tables',
+    Icon: WaiterIcon,
+    visible: (_level, dept) => deptIs(dept, 'waiter', 'restaurant', 'food', 'beverage', 'f&b', 'fb'),
+  },
+
+  // ── POS: kitchen queue (full-screen, department-restricted) ─────────────────
+  {
+    id: 'kitchen',
+    path: '/pos/kitchen',
+    label: 'Kitchen',
+    Icon: KitchenIcon,
+    visible: (_level, dept) => deptIs(dept, 'kitchen'),
+  },
+
+  // ── POS: bar queue ───────────────────────────────────────────────────────────
+  {
+    id: 'bar',
+    path: '/pos/bar',
+    label: 'Bar',
+    Icon: BarIcon,
+    visible: (_level, dept) => deptIs(dept, 'bar'),
+  },
+
+  // ── POS: spa + gym service payment ──────────────────────────────────────────
+  {
+    id: 'spa-gym',
+    path: '/pos/spa',
+    label: 'Services',
+    Icon: SpaGymIcon,
+    visible: (_level, dept) => deptIs(dept, 'spa', 'gym', 'wellness', 'massage', 'beauty', 'fitness'),
+  },
+
+  // ── Waiver + Safety + Payment: water activities ──────────────────────────────
   {
     id: 'waiver',
     path: '/gate/waiver',
@@ -208,6 +298,23 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Safety',
     Icon: SafetyIcon,
     visible: (_level, dept) => deptIs(dept, 'water', 'activit', 'aqua'),
+  },
+  {
+    id: 'water-pay',
+    path: '/pos/water-pay',
+    label: 'Payment',
+    Icon: WaterIcon,
+    visible: (_level, dept) => deptIs(dept, 'water', 'activit', 'aqua'),
+  },
+
+  // ── Villa: villa staff + front desk (level 3-4) ──────────────────────────────
+  {
+    id: 'villa',
+    path: '/villa',
+    label: 'Villa',
+    Icon: VillaIcon,
+    visible: (level, dept) =>
+      deptIs(dept, 'villa', 'housekeep') || (level >= 3 && level <= 4),
   },
 
   // ── Gate / Front Desk tablet (level 3–4) ────────────────────────────────────
@@ -225,13 +332,13 @@ const NAV_ITEMS: NavItem[] = [
     Icon: CheckInIcon,
     visible: (level) => level >= 3 && level <= 4,
   },
-  // Band Lookup — level 1+: any staff can look up a band (waiter charging to tab, spa, etc.)
+  // Band Lookup — gate tablets only (level 3–4): staff on personal phones don't need this
   {
     id: 'band-lookup',
     path: '/gate/band-lookup',
     label: 'Band',
     Icon: BandIcon,
-    visible: (level) => level >= 1,
+    visible: (level) => level >= 3 && level < 5,
   },
 
   // ── Manager / Department Head tablet (level 5+) ──────────────────────────────
@@ -249,13 +356,13 @@ const NAV_ITEMS: NavItem[] = [
     Icon: RestockIcon,
     visible: (level) => level >= 5,
   },
-  // Staff meals: any staff (level 1+) can log; spoilage requires manager
+  // Staff meals: only on manager tablets — level 1 staff use shared station devices
   {
     id: 'meals',
     path: '/inventory/quick-entry',
     label: 'Meals',
     Icon: MealsIcon,
-    visible: (level) => level >= 1,  // POST /inventory/movements/staff-meal allows level 1+
+    visible: (level) => level >= 5,
   },
   {
     id: 'maintenance',
