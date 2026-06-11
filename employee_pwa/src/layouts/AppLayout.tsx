@@ -6,6 +6,7 @@ import { OfflineBanner, InstallPrompt } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 import { kvGet, kvSet } from '../lib/idb'
+import PushPrompt from '../components/PushPrompt'
 import type { Notification } from '../screens/NotificationsScreen'
 
 // ── Icons (inline SVG — no library dependency) ─────────────────────────────
@@ -434,8 +435,13 @@ export default function AppLayout() {
 
       {/* ── Page content ────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto">
-        {/* Install card on the home screen only — polite, 7-day dismiss cooldown */}
-        {location.pathname === '/clock' && <InstallPrompt kvGet={kvGet} kvSet={kvSet} />}
+        {/* Install + push cards on the home screen only — polite, never an ambush */}
+        {location.pathname === '/clock' && (
+          <>
+            <InstallPrompt kvGet={kvGet} kvSet={kvSet} />
+            <PushPrompt />
+          </>
+        )}
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
