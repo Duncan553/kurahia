@@ -1,7 +1,9 @@
 import type { ReactElement } from 'react'
 import { useLocation, useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { OfflineBanner, InstallPrompt } from '@shared'
 import { useAuthStore } from '../stores/authStore'
+import { kvGet, kvSet } from '../lib/idb'
 
 // ── Sidebar + bottom nav icons ──────────────────────────────────────────────
 
@@ -177,6 +179,10 @@ export default function AppLayout() {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
+          <OfflineBanner />
+          {/* Install card on the dashboard only — polite, 7-day dismiss cooldown */}
+          {(location.pathname === '/' || location.pathname.startsWith('/dashboard')) &&
+            <InstallPrompt kvGet={kvGet} kvSet={kvSet} />}
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
