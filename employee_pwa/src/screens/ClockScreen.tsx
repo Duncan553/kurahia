@@ -41,10 +41,14 @@ export default function ClockScreen() {
   const [showLogout, setShowLogout] = useState(false)
 
   // Staff-accessible endpoint — returns only the current user's own status
-  const { data, isLoading, isError, refetch } = useQuery<ClockStatus>({
+  const { data, isLoading, isError, error, refetch } = useQuery<ClockStatus>({
     queryKey: ['clock-status'],
     queryFn: () => api.get<ClockStatus>('/hr/clock-status').then((r) => r.data),
+    retry: (count, err) =>
+      (err as { response?: { status?: number } })?.response?.status === 404 ? false : count < 1,
   })
+  // 404 = account exists but no EmployeeProfile yet — clocking in is impossible
+  const noProfile = (error as { response?: { status?: number } } | null)?.response?.status === 404
 
   const isClockedIn = data?.status === 'CLOCK_IN'
   const lastEvent   = data?.last_event ?? null
@@ -145,6 +149,24 @@ export default function ClockScreen() {
         <Skeleton variant="text" className="w-48" />
         <Skeleton variant="row" className="w-full max-w-xs h-16" />
         <Skeleton variant="text" className="w-32" />
+      </div>
+    )
+  }
+
+  // ── NO PROFILE ────────────────────────────────────────────────────────────
+  if (noProfile) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] p-6">
+        <EmptyState
+          icon={
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <circle cx="24" cy="17" r="8" stroke="currentColor" strokeWidth="2" />
+              <path d="M8 40c0-8 7.2-13 16-13s16 5 16 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          }
+          title="Your profile isn't set up yet."
+          description="Ask your manager to complete your employee profile under Manager → Staff. You can't clock in until then."
+        />
       </div>
     )
   }

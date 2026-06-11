@@ -61,12 +61,25 @@ function PurchaseIcon() {
   </svg>
 }
 
+function MenuIcon() {
+  return <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+    <rect x="5" y="3" width="18" height="22" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M9 9h10M9 14h10M9 19h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
+
 const TILES: Tile[] = [
   {
     label: 'Staff',
     description: 'Create accounts, manage access',
     path: '/manager/staff',
     Icon: StaffIcon,
+  },
+  {
+    label: 'Menu',
+    description: 'Add, price, remove items & services',
+    path: '/manager/menu',
+    Icon: MenuIcon,
   },
   {
     label: 'Front Desk',

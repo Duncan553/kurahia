@@ -58,6 +58,22 @@ export default function BandLookupScreen() {
     if (e.key === 'Enter') lookup()
   }
 
+  async function deactivate() {
+    if (!result) return
+    setLoading(true)
+    try {
+      const r = await api.post<BandResult>(`/gate/deactivate-band/${result.band_number}`)
+      setResult(r.data)
+      addToast({ type: 'success', message: `Band #${result.band_number} deactivated.` })
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Could not deactivate the band.'
+      addToast({ type: 'error', message: msg })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const balance = result ? parseFloat(result.tab_balance) : 0
 
   return (
@@ -161,6 +177,19 @@ export default function BandLookupScreen() {
               <p className="text-xs text-status-failed font-medium">
                 Outstanding balance — guest must settle before leaving.
               </p>
+            </div>
+          )}
+
+          {/* Guest leaving — close the band. Backend refuses if balance > 0. */}
+          {result.status.toUpperCase() === 'ACTIVE' && (
+            <div className="px-5 py-3 border-t border-cream-alt">
+              <button
+                onClick={deactivate}
+                disabled={loading}
+                className="w-full py-3 rounded-xl text-sm font-semibold border border-status-failed/40
+                  text-status-failed hover:bg-status-failed/5 disabled:opacity-50 transition-colors">
+                Deactivate Band — guest leaving
+              </button>
             </div>
           )}
         </div>

@@ -8,6 +8,7 @@ interface Tab {
   id: string; reference: string | null; tab_type: string
   status: string; opened_at: string; balance: string
 }
+interface Ping { id: string; reference_type: string; subject: string; body: string }
 
 const kes = (v: string) =>
   `KSh ${parseFloat(v).toLocaleString('en-KE', { minimumFractionDigits: 0 })}`
@@ -20,6 +21,7 @@ export default function WaiterTabsScreen() {
   const addToast = useToastStore(s => s.addToast)
   const [ref, setRef] = useState('')
   const [open, setOpen] = useState(false)
+  const [band, setBand] = useState('')
   const idem = useState(() => crypto.randomUUID())[0]
 
   const { data: tabs = [], isLoading } = useQuery<Tab[]>({
@@ -27,6 +29,19 @@ export default function WaiterTabsScreen() {
     queryFn: () => api.get<Tab[]>('/tabs?mine=true&status=OPEN').then(r => r.data),
     staleTime: 15_000,
     refetchOnWindowFocus: true,
+  })
+
+  // Kitchen/bar "order ready" pings — shown right here, no separate alerts tab
+  const { data: pings = [] } = useQuery<Ping[]>({
+    queryKey: ['notifications', 'inbox'],
+    queryFn: () => api.get<Ping[]>('/notifications/inbox').then(r => r.data),
+    refetchInterval: 15_000,
+    select: (all) => all.filter(n => n.reference_type === 'order_ready'),
+  })
+
+  const dismissPing = useMutation({
+    mutationFn: (id: string) => api.post(`/notifications/${id}/mark-read`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications', 'inbox'] }),
   })
 
   const openMut = useMutation({
@@ -40,12 +55,56 @@ export default function WaiterTabsScreen() {
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
 
+  // Wristband redemption: guest paid KSh 3,000 at the gate — that credit sits
+  // on the band's tab. Look the band up, order straight against its credit.
+  const bandMut = useMutation({
+    mutationFn: (num: string) =>
+      api.get<{ tab_id: string; status: string }>(`/gate/bands/${num.trim()}`).then(r => r.data),
+    onSuccess: (band) => {
+      if (band.status !== 'ACTIVE') {
+        addToast({ type: 'error', message: 'That band is not active. Send the guest to the gate.' })
+        return
+      }
+      navigate(`/pos/tabs/${band.tab_id}`)
+    },
+    onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
+  })
+
   return (
     <div className="p-4 max-w-lg mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold font-serif text-ink-primary">My Tables</h1>
         <Button variant="primary" size="sm" onClick={() => setOpen(true)}>+ New Table</Button>
       </div>
+
+      {/* Wristband redemption — order against the guest's KSh 3,000 gate credit */}
+      <div className="flex gap-2">
+        <input
+          type="number" min="1" inputMode="numeric"
+          placeholder="Wristband # — charge to band credit"
+          value={band}
+          onChange={e => setBand(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && band && bandMut.mutate(band)}
+          className="flex-1 rounded-xl border border-cream-alt bg-cream-card px-4 py-2.5
+            text-sm text-ink-primary focus:outline-none focus:border-primary-dark"
+        />
+        <Button variant="ghost" size="sm" loading={bandMut.isPending}
+          onClick={() => band && bandMut.mutate(band)}>
+          Open Band
+        </Button>
+      </div>
+
+      {/* Ready-for-pickup pings from kitchen/bar — tap to dismiss */}
+      {pings.map(n => (
+        <button key={n.id}
+          onClick={() => dismissPing.mutate(n.id)}
+          className="w-full text-left p-3 rounded-2xl border border-status-paid/40 bg-status-paid/10
+            flex items-center gap-3 animate-pulse">
+          <span className="text-lg" aria-hidden="true">🔔</span>
+          <span className="flex-1 text-sm font-semibold text-ink-primary">{n.body}</span>
+          <span className="text-[10px] uppercase tracking-widest text-status-paid font-bold">tap when picked up</span>
+        </button>
+      ))}
 
       {isLoading && <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} variant="row" />)}</div>}
 
