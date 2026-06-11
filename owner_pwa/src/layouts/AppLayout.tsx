@@ -13,12 +13,7 @@ function DashboardIcon() {
     <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
   </svg>
 }
-function FinanceIcon() {
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-    <path d="M3 14l4-4 3 3 4-5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M3 17h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-}
+
 function AlertsIcon() {
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
     <path d="M10 3a6 6 0 00-6 6v3.5L2.5 15h15L16 12.5V9a6 6 0 00-6-6z"
@@ -42,6 +37,20 @@ function BookingsIcon() {
     <path d="M7 13h2M11 13h2M7 16h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 }
+function PayrollIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <circle cx="8" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M2 17c0-3.3 2.7-6 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M13 10v7M10 13h6M10 17h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
+function ReconIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="2" y="5" width="16" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M6 5V3.5M14 5V3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M5 10h3M9 10h6M5 13h4M11 13h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
 function SettingsIcon() {
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
     <circle cx="10" cy="10" r="3" stroke="currentColor" strokeWidth="1.5" />
@@ -61,12 +70,13 @@ function SignOutIcon() {
 interface NavItem { path: string; label: string; Icon: () => ReactElement }
 
 const SIDEBAR_ITEMS: NavItem[] = [
-  { path: '/dashboard', label: 'Dashboard', Icon: DashboardIcon },
-  { path: '/finance',   label: 'Finance',   Icon: FinanceIcon   },
-  { path: '/alerts',    label: 'Alerts',    Icon: AlertsIcon    },
-  { path: '/staff',     label: 'Staff',     Icon: StaffIcon     },
-  { path: '/bookings',  label: 'Bookings',  Icon: BookingsIcon  },
-  { path: '/settings',  label: 'Settings',  Icon: SettingsIcon  },
+  { path: '/dashboard',       label: 'Dashboard', Icon: DashboardIcon },
+  { path: '/alerts',          label: 'Alerts',    Icon: AlertsIcon    },
+  { path: '/reconciliation',  label: 'Recon',     Icon: ReconIcon     },
+  { path: '/payroll',         label: 'Payroll',   Icon: PayrollIcon   },
+  { path: '/staff',           label: 'Staff',     Icon: StaffIcon     },
+  { path: '/bookings',        label: 'Bookings',  Icon: BookingsIcon  },
+  { path: '/settings',        label: 'Settings',  Icon: SettingsIcon  },
 ]
 
 // ── Page transition ─────────────────────────────────────────────────────────

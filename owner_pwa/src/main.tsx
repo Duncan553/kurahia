@@ -9,12 +9,14 @@ import AppLayout from './layouts/AppLayout'
 import LoginScreen from './screens/LoginScreen'
 import PinEntryScreen from './screens/PinEntryScreen'
 import PinSetupScreen from './screens/PinSetupScreen'
-import DashboardScreen from './screens/DashboardScreen'
-import FinanceScreen from './screens/FinanceScreen'
-import AlertsScreen from './screens/AlertsScreen'
-import StaffScreen from './screens/StaffScreen'
-import BookingsScreen from './screens/BookingsScreen'
-import SettingsScreen from './screens/SettingsScreen'
+import DashboardScreen       from './screens/DashboardScreen'
+import FinanceScreen          from './screens/FinanceScreen'
+import AlertsScreen           from './screens/AlertsScreen'
+import PayrollDraftScreen     from './screens/PayrollDraftScreen'
+import ReconciliationScreen   from './screens/ReconciliationScreen'
+import StaffScreen            from './screens/StaffScreen'
+import BookingsScreen         from './screens/BookingsScreen'
+import SettingsScreen         from './screens/SettingsScreen'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -34,9 +36,11 @@ const router = createBrowserRouter([
       children: [
         { path: '/',          element: <DashboardScreen /> },
         { path: '/dashboard', element: <DashboardScreen /> },
-        { path: '/finance',   element: <FinanceScreen />   },
-        { path: '/alerts',    element: <AlertsScreen />    },
-        { path: '/staff',     element: <StaffScreen />     },
+        { path: '/finance',          element: <FinanceScreen />        },
+        { path: '/alerts',           element: <AlertsScreen />         },
+        { path: '/payroll',          element: <PayrollDraftScreen />   },
+        { path: '/reconciliation',   element: <ReconciliationScreen /> },
+        { path: '/staff',            element: <StaffScreen />          },
         { path: '/bookings',  element: <BookingsScreen />  },
         { path: '/settings',  element: <SettingsScreen />  },
       ],
