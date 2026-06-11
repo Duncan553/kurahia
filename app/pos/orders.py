@@ -147,6 +147,37 @@ def send_order(order_id):
     return jsonify({"id": order.id, "status": order.status}), 200
 
 
+def _notify_waiter_ready(oi: OrderItem):
+    """
+    Kitchen/bar marked an item READY → ping the waiter who created the order.
+    In-app delivery is immediate (waiter is on shift, tablet polls the inbox);
+    Web Push fires best-effort on top. Called inside the caller's transaction.
+    """
+    from app.models.notification import Notification, NotificationStatus, NotificationChannel
+    from app.services.notifications.webpush import push_to_user
+
+    order = oi.order
+    if not order or not order.created_by_id:
+        return
+    tab_ref   = order.tab.reference if order.tab and order.tab.reference else "Walk-in"
+    item_name = oi.menu_item.name if oi.menu_item else "Item"
+    body = f"{tab_ref}: {oi.quantity}x {item_name} is ready for pickup."
+
+    db.session.add(Notification(
+        recipient_user_id=order.created_by_id,
+        reference_type="order_ready",
+        reference_id=oi.id,
+        subject=f"Order ready — {tab_ref}",
+        body=body,
+        status=NotificationStatus.DELIVERED.value,
+        channel=NotificationChannel.IN_APP.value,
+        scheduled_for_utc=datetime.now(timezone.utc),
+        sent_at_utc=datetime.now(timezone.utc),
+        idempotency_key=f"order-ready-{oi.id}",
+    ))
+    push_to_user(order.created_by_id, f"Order ready — {tab_ref}", body, "order_ready")
+
+
 # ── Order Item transitions ────────────────────────────────────────────────────
 
 def _transition_item(order_item_id: str, new_status: OrderItemStatus, actor: User,
@@ -196,6 +227,7 @@ def mark_ready(oi_id):
     with db.session.begin_nested():
         oi.status   = OrderItemStatus.READY.value
         oi.ready_at = datetime.now(timezone.utc)
+        _notify_waiter_ready(oi)
     AuditLog.log(actor=actor.username, action="order_item.ready", target=oi_id)
     db.session.commit()
     return jsonify({"id": oi.id, "status": oi.status}), 200

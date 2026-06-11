@@ -354,3 +354,27 @@ def test_invalid_payment_method_returns_error_field(client, owner_token, food_it
     rv = _pay(client, owner_token, tab_id, "100", method="CHEQUE")
     assert rv.status_code == 400
     assert "error" in rv.get_json()
+
+
+# ── F-17.5: READY notifies the waiter who created the order ──────────────────
+
+def test_ready_notifies_order_creator(client, waiter_token, kitchen_token, food_item_id):
+    """Kitchen marks an item READY → the waiter gets an in-app notification."""
+    tab_id   = _open_tab(client, waiter_token, reference="Table 9")
+    order_id = _create_order(client, waiter_token, tab_id, food_item_id)
+    _send_order(client, waiter_token, order_id)
+
+    # Find the order item and walk it to READY as kitchen staff
+    rv = client.get(f"/tabs/{tab_id}", headers={"Authorization": f"Bearer {waiter_token}"})
+    oi_id = rv.get_json()["orders"][0]["items"][0]["id"]
+    kh = {"Authorization": f"Bearer {kitchen_token}"}
+    assert client.post(f"/order-items/{oi_id}/receive", headers=kh).status_code == 200
+    assert client.post(f"/order-items/{oi_id}/ready",   headers=kh).status_code == 200
+
+    # Waiter's inbox now contains the order_ready notification
+    inbox = client.get("/notifications/inbox",
+                       headers={"Authorization": f"Bearer {waiter_token}"}).get_json()
+    ready = [n for n in inbox if n["reference_type"] == "order_ready"]
+    assert len(ready) == 1
+    assert "Table 9" in ready[0]["subject"]
+    assert "ready for pickup" in ready[0]["body"]
