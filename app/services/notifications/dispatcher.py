@@ -62,8 +62,14 @@ def deliver_notification(notif: Notification) -> str:
     """
     from app.services.notifications.whatsapp import send_whatsapp
     from app.services.notifications.sms import send_sms
+    from app.services.notifications.webpush import push_to_user
 
     now = datetime.now(timezone.utc)
+
+    # Supplementary Web Push — fires alongside whatever channel delivers below.
+    # Dormant when VAPID env vars are unset (returns 0, never raises),
+    # so inbox delivery is completely unaffected either way.
+    push_to_user(notif.recipient_user_id, notif.subject, notif.body, notif.reference_type)
 
     # Path 1: recipient is on-site and clocked in → deliver in-app immediately
     if is_user_present(notif.recipient_user_id):

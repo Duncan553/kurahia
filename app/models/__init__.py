@@ -54,6 +54,7 @@ from .dispute import Dispute, DisputeSubject, DisputeCategory, DisputeStatus, VA
 from .guest_feedback import GuestFeedback
 from .calendar_entry import CalendarEntry, CalendarEntryType
 from .equipment import Equipment, MaintenanceLog, SafetyCheck, EquipmentStatus
+from .push_subscription import PushSubscription
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",
@@ -103,4 +104,5 @@ __all__ = [
     "GuestFeedback",
     "CalendarEntry", "CalendarEntryType",
     "Equipment", "MaintenanceLog", "SafetyCheck", "EquipmentStatus",
+    "PushSubscription",
 ]
