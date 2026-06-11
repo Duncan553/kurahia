@@ -257,7 +257,8 @@ const NAV_ITEMS: NavItem[] = [
     path: '/pos/tabs',
     label: 'Tables',
     Icon: WaiterIcon,
-    visible: (_level, dept) => deptIs(dept, 'waiter', 'restaurant', 'food', 'beverage', 'f&b', 'fb'),
+    visible: (_level, dept) =>
+      deptIs(dept, 'waiter', 'restaurant', 'food', 'beverage', 'f&b', 'front-of-house'),
   },
 
   // ── POS: kitchen queue (full-screen, department-restricted) ─────────────────
