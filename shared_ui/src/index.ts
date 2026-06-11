@@ -39,3 +39,8 @@ export { Logo } from './components/Logo'
 
 export { Combobox } from './components/Combobox'
 export type { ComboboxProps } from './components/Combobox'
+
+export { OfflineBanner } from './components/OfflineBanner'
+
+export { InstallPrompt } from './components/InstallPrompt'
+export type { InstallPromptProps } from './components/InstallPrompt'

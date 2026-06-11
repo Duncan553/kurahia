@@ -1,27 +1,13 @@
 // IndexedDB offline queue for clock events.
 // Token storage taught us localStorage is off-limits → IndexedDB for any offline state.
 
-const DB_NAME = 'kurahia-offline'
-const STORE = 'clock-queue'
+import { openDB, STORE_CLOCK_QUEUE as STORE } from './idb'
 
 export type ClockEventType = 'CLOCK_IN' | 'CLOCK_OUT'
 
 interface QueuedEvent {
   type: ClockEventType
   queued_at: string  // ISO
-}
-
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1)
-    req.onupgradeneeded = () => {
-      if (!req.result.objectStoreNames.contains(STORE)) {
-        req.result.createObjectStore(STORE, { autoIncrement: true })
-      }
-    }
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
 }
 
 export async function enqueueClockEvent(type: ClockEventType): Promise<void> {

@@ -2,8 +2,10 @@ import type { ReactElement } from 'react'
 import { useLocation, useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
+import { OfflineBanner, InstallPrompt } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
+import { kvGet, kvSet } from '../lib/idb'
 import type { Notification } from '../screens/NotificationsScreen'
 
 // ── Icons (inline SVG — no library dependency) ─────────────────────────────
@@ -413,6 +415,8 @@ export default function AppLayout() {
   return (
     <div className="h-screen flex flex-col bg-cream-card">
 
+      <OfflineBanner />
+
       {/* ── Top bar ─────────────────────────────────────────────── */}
       <header className="h-14 shrink-0 flex items-center justify-between px-4
         bg-cream-card border-b border-cream-alt">
@@ -430,6 +434,8 @@ export default function AppLayout() {
 
       {/* ── Page content ────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto">
+        {/* Install card on the home screen only — polite, 7-day dismiss cooldown */}
+        {location.pathname === '/clock' && <InstallPrompt kvGet={kvGet} kvSet={kvSet} />}
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
