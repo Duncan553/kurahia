@@ -55,7 +55,9 @@ export default function PinSetupScreen() {
     mutationFn: () => {
       if (!setupToken) return Promise.reject(new Error('No setup token'))
       return axiosBase.post<SetPinResponse>(
-        `${import.meta.env.VITE_API_URL as string}/auth/set-pin`,
+        // Fall back to relative URL (dev/preview proxy) when VITE_API_URL is unset —
+        // interpolating undefined produced "undefined/auth/set-pin" in prod builds
+        `${import.meta.env.VITE_API_URL ?? ''}/auth/set-pin`,
         { pin },
         { headers: { Authorization: `Bearer ${setupToken}` }, withCredentials: true }
       ).then((r) => r.data)

@@ -47,7 +47,7 @@ export default function PinSetupScreen() {
       // Use a plain axios call with the setup token directly — the interceptor
       // would overwrite Authorization with the (empty) in-memory token otherwise
       return axiosBase.post<SetPinResponse>(
-        `${import.meta.env.VITE_API_URL as string}/auth/set-pin`,
+        `${import.meta.env.VITE_API_URL ?? ''}/auth/set-pin`,
         { pin },
         { headers: { Authorization: `Bearer ${setupToken}` }, withCredentials: true }
       ).then((r) => r.data)
