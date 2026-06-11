@@ -22,6 +22,7 @@ export default defineConfig({
       '/bookings':      { target: 'http://localhost:5000', changeOrigin: true },
       '/equipment':     { target: 'http://localhost:5000', changeOrigin: true },
       '/dashboard':     { target: 'http://localhost:5000', changeOrigin: true },
+      '/judge':         { target: 'http://localhost:5000', changeOrigin: true },
       '/admin':         { target: 'http://localhost:5000', changeOrigin: true },
       '/health':        { target: 'http://localhost:5000', changeOrigin: true },
     },
