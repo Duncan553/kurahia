@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react'
-import { useLocation, useNavigate, NavLink, Outlet } from 'react-router-dom'
+import { useLocation, useNavigate, NavLink, Outlet, Navigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import { OfflineBanner, InstallPrompt } from '@shared'
@@ -183,6 +183,16 @@ function deptIs(dept: string | null, ...keywords: string[]): boolean {
   return keywords.some((k) => d.includes(k))
 }
 
+// Station departments work on SHARED tablets — those screens show only the
+// station's tools. Clock/alerts/profile live on personal phones (no dept) and
+// manager tablets (level 5+), never on a station device.
+function isStation(dept: string | null): boolean {
+  return deptIs(dept, 'kitchen', 'bar', 'front-of-house', 'waiter', 'restaurant',
+    'spa', 'gym', 'wellness', 'water', 'activit', 'aqua', 'villa', 'housekeep')
+}
+// Personal chrome: managers always; staff only when NOT on a station tablet
+const personal = (level: number, dept: string | null) => level >= 5 || !isStation(dept)
+
 // ── Role-aware top bar stats ────────────────────────────────────────────────
 
 function TopBarStats({ roleLevel }: { roleLevel: number }) {
@@ -226,7 +236,7 @@ const NAV_ITEMS: NavItem[] = [
     path: '/clock',
     label: 'Clock',
     Icon: ClockIcon,
-    visible: () => true,
+    visible: personal,
   },
   {
     id: 'schedule',
@@ -241,14 +251,14 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Alerts',
     Icon: BellIcon,
     badge: true,
-    visible: () => true,
+    visible: personal,
   },
   {
     id: 'profile',
     path: '/profile',
     label: 'Profile',
     Icon: ProfileIcon,
-    visible: (level) => level < 5,  // managers use the Account tile in Manager hub instead
+    visible: (level, dept) => level < 5 && personal(level, dept),
   },
 
   // ── POS: waiter tablet ───────────────────────────────────────────────────────
@@ -413,6 +423,18 @@ export default function AppLayout() {
   const badgeCount = inbox?.length ?? 0
 
   function signOut() { clearAuth(); navigate('/pin') }
+
+  // Station tablets skip the clock screen — login drops each straight on its
+  // station home. Must stay BELOW every hook: an early return above a hook
+  // crashes React with error #310 (hooks order changed between renders).
+  if (location.pathname === '/clock' && roleLevel < 5) {
+    if (deptIs(department, 'kitchen'))                          return <Navigate to="/pos/kitchen" replace />
+    if (deptIs(department, 'bar'))                              return <Navigate to="/pos/bar" replace />
+    if (deptIs(department, 'front-of-house', 'waiter', 'restaurant')) return <Navigate to="/pos/tabs" replace />
+    if (deptIs(department, 'spa', 'gym', 'wellness'))           return <Navigate to="/pos/spa" replace />
+    if (deptIs(department, 'water', 'activit', 'aqua'))         return <Navigate to="/gate/waiver" replace />
+    if (deptIs(department, 'villa', 'housekeep'))               return <Navigate to="/villa" replace />
+  }
 
   return (
     <div className="h-screen flex flex-col bg-cream-card">

@@ -1,14 +1,27 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import { Skeleton, Button, useToastStore } from '@shared'
 import api from '../lib/axios'
 
 interface MenuItem { id: string; name: string; price: string; category: string | null; prep_station: string }
+interface OrderItem { id: string; name: string | null; quantity: string; status: string }
 interface TabDetail {
   id: string; reference: string | null; status: string; balance: string
   charges: { id: string; description: string; amount: string }[]
   payments: { id: string; method: string; amount: string }[]
+  orders: { id: string; status: string; items: OrderItem[] }[]
+}
+
+// Item lifecycle: PENDING/RECEIVED → kitchen/bar working; READY → waiter serves;
+// SERVED/CANCELLED → resolved. Tabs only close once every item is resolved.
+const ITEM_BADGE: Record<string, string> = {
+  PENDING:   'bg-cream-alt text-ink-tertiary',
+  RECEIVED:  'bg-status-pending/10 text-status-pending',
+  READY:     'bg-status-paid/10 text-status-paid',
+  SERVED:    'bg-cream-alt text-ink-tertiary',
+  CANCELLED: 'bg-status-failed/10 text-status-failed',
 }
 
 const kes = (v: string | number) =>
@@ -31,13 +44,15 @@ export default function WaiterTabDetailScreen() {
   const { data: tab, isLoading } = useQuery<TabDetail>({
     queryKey: ['tab', tabId],
     queryFn: () => api.get<TabDetail>(`/tabs/${tabId}`).then(r => r.data),
-    staleTime: 10_000,
+    refetchInterval: 15_000, // READY badges appear without manual refresh
   })
 
   const { data: items = [] } = useQuery<MenuItem[]>({
     queryKey: ['menu-items'],
     queryFn: () => api.get<MenuItem[]>('/menu/items').then(r => r.data),
     staleTime: 5 * 60_000,
+    // Waiters sell food + drinks only — spa/gym/water services never appear here
+    select: (all) => all.filter(i => i.prep_station === 'KITCHEN' || i.prep_station === 'BAR'),
   })
 
   // Group items by category for the scrollable menu
@@ -89,6 +104,17 @@ export default function WaiterTabDetailScreen() {
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
 
+  const itemMut = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'serve' | 'cancel' }) =>
+      api.post(`/order-items/${id}/${action}`,
+        action === 'cancel' ? { reason: 'Cancelled by waiter' } : undefined),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tab', tabId] })
+      qc.invalidateQueries({ queryKey: ['notifications', 'inbox'] })
+    },
+    onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
+  })
+
   const closeMut = useMutation({
     mutationFn: () => api.post(`/tabs/${tabId}/close`),
     onSuccess: () => {
@@ -111,8 +137,9 @@ export default function WaiterTabDetailScreen() {
         <button onClick={() => navigate('/pos/tabs')}
           className="text-ink-tertiary hover:text-ink-primary text-sm">← Back</button>
         <p className="flex-1 font-bold text-ink-primary">{tab?.reference ?? 'Walk-in'}</p>
+        {/* Negative balance = unspent band credit (KSh 3,000 gate payment) */}
         <span className={`text-sm font-bold tabular-nums ${bal > 0 ? 'text-status-failed' : 'text-status-paid'}`}>
-          {kes(tab?.balance ?? '0')}
+          {bal < 0 ? `Credit ${kes(-bal)}` : kes(tab?.balance ?? '0')}
         </span>
       </div>
 
@@ -152,17 +179,17 @@ export default function WaiterTabDetailScreen() {
                         <div className="flex items-center gap-2 shrink-0">
                           {qty > 0 && (
                             <>
-                              <button
+                              <motion.button whileTap={{ scale: 0.85 }}
                                 onClick={() => setDraft(d => ({ ...d, [item.id]: Math.max(0, (d[item.id] ?? 0) - 1) }))}
                                 className="w-8 h-8 rounded-full bg-cream-alt text-ink-primary font-bold
-                                  flex items-center justify-center">−</button>
+                                  flex items-center justify-center">−</motion.button>
                               <span className="w-5 text-center text-sm font-bold tabular-nums">{qty}</span>
                             </>
                           )}
-                          <button
+                          <motion.button whileTap={{ scale: 0.85 }}
                             onClick={() => setDraft(d => ({ ...d, [item.id]: (d[item.id] ?? 0) + 1 }))}
                             className="w-8 h-8 rounded-full bg-primary-dark text-cream-card font-bold
-                              flex items-center justify-center">+</button>
+                              flex items-center justify-center">+</motion.button>
                         </div>
                       </div>
                     )
@@ -176,6 +203,42 @@ export default function WaiterTabDetailScreen() {
         {/* ── Bill ──────────────────────────────────────────── */}
         {view === 'bill' && (
           <div className="p-4 space-y-4">
+
+            {/* Order items — serve READY items, cancel mistakes. A tab can
+                only close once every item is SERVED or CANCELLED. */}
+            {(tab?.orders ?? []).some(o => o.items.length > 0) && (
+              <div>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Kitchen / Bar</p>
+                {tab!.orders.flatMap(o => o.items).map(oi => (
+                  <div key={oi.id} className="flex items-center gap-2 py-2 border-b border-cream-alt last:border-0">
+                    <span className="flex-1 text-sm text-ink-secondary truncate">
+                      {oi.quantity}× {oi.name}
+                    </span>
+                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${ITEM_BADGE[oi.status] ?? ''}`}>
+                      {oi.status}
+                    </span>
+                    {oi.status === 'READY' && (
+                      <motion.button whileTap={{ scale: 0.92 }}
+                        onClick={() => itemMut.mutate({ id: oi.id, action: 'serve' })}
+                        disabled={itemMut.isPending}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold
+                          bg-primary-dark text-cream-card disabled:opacity-50">
+                        Served ✓
+                      </motion.button>
+                    )}
+                    {(oi.status === 'PENDING' || oi.status === 'RECEIVED') && (
+                      <motion.button whileTap={{ scale: 0.92 }}
+                        onClick={() => itemMut.mutate({ id: oi.id, action: 'cancel' })}
+                        disabled={itemMut.isPending}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold
+                          border border-status-failed/40 text-status-failed disabled:opacity-50">
+                        Cancel
+                      </motion.button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Charges */}
             {(tab?.charges ?? []).length > 0 && (
@@ -207,10 +270,10 @@ export default function WaiterTabDetailScreen() {
               </div>
             )}
 
-            {/* Balance total */}
+            {/* Balance total — negative means the guest still has band credit */}
             <div className="flex justify-between items-center p-3 rounded-xl bg-ink-primary text-cream-card">
-              <span className="font-semibold text-sm">Balance due</span>
-              <span className="text-lg font-bold tabular-nums">{kes(tab?.balance ?? '0')}</span>
+              <span className="font-semibold text-sm">{bal < 0 ? 'Band credit left' : 'Balance due'}</span>
+              <span className="text-lg font-bold tabular-nums">{bal < 0 ? kes(-bal) : kes(tab?.balance ?? '0')}</span>
             </div>
 
             {/* Payment form */}

@@ -8,6 +8,7 @@ export const ROUTE_MAP: Record<string, string> = {
   conduct_rule: '/conduct',
   conduct: '/conduct',
   clock_event: '/clock',
+  order_ready: '/pos/tabs',
 }
 
 export function routeFor(type: string): string {

@@ -48,6 +48,7 @@ import QuickEntryScreen       from './screens/QuickEntryScreen'
 
 // Manager sub-screens (F-11)
 import StaffAccountsScreen  from './screens/StaffAccountsScreen'
+import MenuManageScreen     from './screens/MenuManageScreen'
 import CashReconScreen      from './screens/CashReconScreen'
 import LeaveApprovalScreen  from './screens/LeaveApprovalScreen'
 import ShiftScreen          from './screens/ShiftScreen'
@@ -152,6 +153,7 @@ const router = createBrowserRouter([
             { path: '/equipment/maintenance',      element: <MaintenanceLogScreen />  },
             // F-11: Manager sub-screens
             { path: '/manager/staff',      element: <StaffAccountsScreen /> },
+            { path: '/manager/menu',       element: <MenuManageScreen />    },
             { path: '/manager/cash',       element: <CashReconScreen />     },
             { path: '/manager/leave',      element: <LeaveApprovalScreen /> },
             { path: '/manager/shifts',     element: <ShiftScreen />         },

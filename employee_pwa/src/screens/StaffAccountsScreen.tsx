@@ -49,6 +49,13 @@ export default function StaffAccountsScreen() {
     onError: (e) => setErr(extractErr(e)),
   })
 
+  const toggleMut = useMutation({
+    mutationFn: (u: StaffUser) =>
+      api.post(u.is_active ? `/auth/deactivate/${u.id}` : `/auth/users/${u.id}/activate`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['staff-accounts'] }),
+    onError: (e) => setErr(extractErr(e)),
+  })
+
   const profileMut = useMutation({
     mutationFn: (b: object) => api.post('/hr/profiles', b).then(r => r.data),
     onSuccess: () => {
@@ -194,15 +201,24 @@ export default function StaffAccountsScreen() {
           <div className="space-y-2">
             {staff.length === 0 && <p className="text-sm text-ink-tertiary text-center py-8">No staff accounts yet.</p>}
             {staff.map(u => (
-              <div key={u.id} className="flex items-center justify-between px-4 py-3 rounded-2xl border border-cream-alt bg-cream-card">
-                <div>
-                  <p className="text-sm font-semibold text-ink-primary">{u.username}</p>
+              <div key={u.id} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border border-cream-alt bg-cream-card ${!u.is_active ? 'opacity-60' : ''}`}>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink-primary truncate">{u.username}</p>
                   <p className="text-xs text-ink-tertiary">{u.role}{u.department ? ` · ${u.department}` : ''}</p>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  {!hasProfile.has(u.id) && <span className="text-[10px] font-semibold tracking-wide text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">No profile</span>}
-                  {!u.pin_set && <span className="text-[10px] font-semibold tracking-wide text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">PIN not set</span>}
-                  {!u.is_active && <span className="text-[10px] font-semibold tracking-wide text-status-failed bg-status-failed/10 px-2 py-0.5 rounded-full">Inactive</span>}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex flex-col items-end gap-1">
+                    {!hasProfile.has(u.id) && <span className="text-[10px] font-semibold tracking-wide text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">No profile</span>}
+                    {!u.pin_set && <span className="text-[10px] font-semibold tracking-wide text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">PIN not set</span>}
+                    {!u.is_active && <span className="text-[10px] font-semibold tracking-wide text-status-failed bg-status-failed/10 px-2 py-0.5 rounded-full">Inactive</span>}
+                  </div>
+                  {/* Kill switch — deactivation locks them out on their next request */}
+                  <Button
+                    variant={u.is_active ? 'ghost' : 'primary'} size="sm"
+                    loading={toggleMut.isPending && toggleMut.variables?.id === u.id}
+                    onClick={() => toggleMut.mutate(u)}>
+                    {u.is_active ? 'Deactivate' : 'Reactivate'}
+                  </Button>
                 </div>
               </div>
             ))}
