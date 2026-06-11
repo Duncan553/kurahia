@@ -9,6 +9,7 @@ import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
 import { CacheFirst, NetworkFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
+import { routeFor } from './lib/notificationRoutes'
 
 // ── App shell: precached, version-keyed by the build ────────────────────────
 precacheAndRoute(self.__WB_MANIFEST)
@@ -60,3 +61,31 @@ registerRoute(
     plugins: [new ExpirationPlugin({ maxEntries: 5, maxAgeSeconds: 5 * 60 })],
   })
 )
+
+// ── Web Push ──────────────────────────────────────────────────────────────────
+
+self.addEventListener('push', (event: PushEvent) => {
+  if (!event.data) return
+  const payload = event.data.json() as { title?: string; body?: string; reference_type?: string }
+  event.waitUntil(
+    self.registration.showNotification(payload.title ?? 'Kurahia', {
+      body: payload.body ?? '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { reference_type: payload.reference_type ?? '' },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
+  event.notification.close()
+  // Same routing map as the in-app inbox — one shared module, can't drift
+  const route = routeFor((event.notification.data?.reference_type as string) ?? '')
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const open = clients[0]
+      if (open) { open.navigate(route); return open.focus() }
+      return self.clients.openWindow(route)
+    })
+  )
+})
