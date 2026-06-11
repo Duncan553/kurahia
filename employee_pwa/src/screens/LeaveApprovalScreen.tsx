@@ -276,7 +276,7 @@ export default function LeaveApprovalScreen() {
                   onChange={(e) => setRejectNotes(e.target.value)}
                   placeholder="Explain why this leave cannot be approved… (min 10 chars)"
                   autoFocus
-                  className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3 text-sm
+                  className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-sm
                     text-ink-primary focus:outline-none focus:border-primary-dark
                     focus:ring-2 focus:ring-primary-dark/20 resize-none"
                 />

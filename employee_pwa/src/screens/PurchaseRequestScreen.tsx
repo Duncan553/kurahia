@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Select, Skeleton, EmptyState, StatusBadge, useToastStore } from '@shared'
+import { Select, Skeleton, EmptyState, StatusBadge, useToastStore, Button } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
@@ -38,6 +38,8 @@ export default function PurchaseRequestScreen() {
   const addToast    = useToastStore((s) => s.addToast)
 
   const [itemId,   setItemId]   = useState('')
+  const [itemDesc, setItemDesc] = useState('')
+  const [freeText, setFreeText] = useState(false)
   const [qty,      setQty]      = useState('')
   const [notes,    setNotes]    = useState('')
   const [idemKey,  setIdemKey]  = useState(genKey)
@@ -45,10 +47,10 @@ export default function PurchaseRequestScreen() {
 
   const touch = (f: keyof typeof touched) => setTouched((p) => ({ ...p, [f]: true }))
 
-  const itemErr = touched.item && !itemId         ? 'Select an item.' : ''
-  const qtyErr  = touched.qty  && (!qty || parseFloat(qty) <= 0)
-    ? 'Enter a positive quantity.' : ''
-  const isValid = !!itemId && !!qty && parseFloat(qty) > 0
+  const itemVal  = freeText ? itemDesc.trim() : itemId
+  const itemErr  = touched.item && !itemVal    ? (freeText ? 'Describe the item.' : 'Select an item.') : ''
+  const qtyErr   = touched.qty  && (!qty || parseFloat(qty) <= 0) ? 'Enter a positive quantity.' : ''
+  const isValid  = !!itemVal && !!qty && parseFloat(qty) > 0
 
   // Shared cache with other screens using /inventory/items
   const { data: items, isLoading: itemsLoading } = useQuery<InventoryItem[]>({
@@ -66,7 +68,7 @@ export default function PurchaseRequestScreen() {
   const mutation = useMutation({
     mutationFn: () =>
       api.post('/inventory/purchase-requests', {
-        item_id:         itemId,
+        ...(freeText ? { item_description: itemDesc.trim() } : { item_id: itemId }),
         quantity:        parseFloat(qty),
         notes:           notes.trim() || undefined,
         idempotency_key: idemKey,
@@ -74,9 +76,7 @@ export default function PurchaseRequestScreen() {
 
     onSuccess: () => {
       addToast({ type: 'success', message: 'Purchase request submitted.' })
-      setItemId('')
-      setQty('')
-      setNotes('')
+      setItemId(''); setItemDesc(''); setQty(''); setNotes('')
       setTouched({ item: false, qty: false })
       setIdemKey(genKey())
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] })
@@ -109,6 +109,20 @@ export default function PurchaseRequestScreen() {
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           {itemsLoading ? (
             <Skeleton variant="row" />
+          ) : freeText ? (
+            <div>
+              <label className="block text-sm font-medium text-ink-secondary mb-1.5">Describe item *</label>
+              <input
+                value={itemDesc}
+                onChange={(e) => { setItemDesc(e.target.value); touch('item') }}
+                onBlur={() => touch('item')}
+                placeholder="e.g. 2kg Omo washing powder"
+                disabled={mutation.isPending}
+                className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
+                  text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+                  focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
+              />
+            </div>
           ) : (
             <Select
               label="Item *"
@@ -119,6 +133,13 @@ export default function PurchaseRequestScreen() {
               disabled={mutation.isPending}
             />
           )}
+          <button
+            type="button"
+            onClick={() => { setFreeText(p => !p); setItemId(''); setItemDesc(''); setTouched(p => ({...p, item: false})) }}
+            className="text-xs text-primary-dark underline font-medium -mt-1"
+          >
+            {freeText ? '← Back to item list' : 'Item not in list? Free-text it →'}
+          </button>
           {itemErr && <p className="text-sm text-status-failed -mt-2">{itemErr}</p>}
 
           <div>
@@ -133,7 +154,7 @@ export default function PurchaseRequestScreen() {
               onChange={(e) => setQty(e.target.value)}
               onBlur={() => touch('qty')}
               disabled={mutation.isPending}
-              className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3
+              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
                 text-base text-ink-primary focus:outline-none focus:border-primary-dark
                 focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
             />
@@ -148,32 +169,15 @@ export default function PurchaseRequestScreen() {
               onChange={(e) => setNotes(e.target.value)}
               disabled={mutation.isPending}
               placeholder="Reason, urgency, preferred supplier…"
-              className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3
+              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
                 text-sm text-ink-primary focus:outline-none focus:border-primary-dark
                 focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50 resize-none"
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className={[
-              'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-              'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-            ].join(' ')}
-          >
-            {mutation.isPending ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3"/>
-                  <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Submitting…
-              </span>
-            ) : 'Submit Request'}
-          </button>
+          <Button type="submit" variant="primary" size="lg" loading={mutation.isPending} className="w-full">
+            Submit Request
+          </Button>
         </form>
 
         {/* ── History ──────────────────────────────────────────────── */}

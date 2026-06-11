@@ -275,7 +275,7 @@ export default function ShiftScreen() {
             <select
               value={empId}
               onChange={(e) => setEmpId(e.target.value)}
-              className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3 text-sm
+              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-sm
                 text-ink-primary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
             >
               <option value="">Choose employee…</option>
@@ -292,7 +292,7 @@ export default function ShiftScreen() {
                 type="datetime-local"
                 value={startDT}
                 onChange={(e) => setStartDT(e.target.value)}
-                className="w-full rounded-xl border border-cream-alt bg-white px-3 py-2.5 text-sm
+                className="w-full rounded-xl border border-cream-alt bg-cream-card px-3 py-2.5 text-sm
                   text-ink-primary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
@@ -302,7 +302,7 @@ export default function ShiftScreen() {
                 type="datetime-local"
                 value={endDT}
                 onChange={(e) => setEndDT(e.target.value)}
-                className="w-full rounded-xl border border-cream-alt bg-white px-3 py-2.5 text-sm
+                className="w-full rounded-xl border border-cream-alt bg-cream-card px-3 py-2.5 text-sm
                   text-ink-primary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
@@ -317,7 +317,7 @@ export default function ShiftScreen() {
               value={role}
               onChange={(e) => setRole(e.target.value)}
               placeholder="e.g. Front gate, Kitchen…"
-              className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3 text-sm
+              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-sm
                 text-ink-primary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>

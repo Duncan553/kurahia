@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { Select, useToastStore } from '@shared'
+import { Select, useToastStore, Button } from '@shared'
 import api from '../lib/axios'
 
 interface InventoryItem {
@@ -90,7 +90,7 @@ function ItemQtyForm({
           onChange={(e) => setQty(e.target.value)}
           onBlur={() => touch('qty')}
           disabled={isPending}
-          className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3
+          className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
             text-base text-ink-primary focus:outline-none focus:border-primary-dark
             focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
         />
@@ -109,7 +109,7 @@ function ItemQtyForm({
             onBlur={() => touch('reason')}
             disabled={isPending}
             placeholder="e.g. Fridge failure overnight, chicken spoiled"
-            className="w-full rounded-xl border border-cream-alt bg-white px-4 py-3
+            className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
               text-sm text-ink-primary focus:outline-none focus:border-primary-dark
               focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50 resize-none"
           />
@@ -117,26 +117,9 @@ function ItemQtyForm({
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={isPending}
-        className={[
-          'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-          'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
-          'disabled:opacity-50 disabled:cursor-not-allowed',
-        ].join(' ')}
-      >
-        {isPending ? (
-          <span className="flex items-center justify-center gap-2">
-            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3"/>
-              <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            Saving…
-          </span>
-        ) : 'Record'}
-      </button>
+      <Button type="submit" variant="primary" size="lg" loading={isPending} className="w-full">
+        Record
+      </Button>
     </form>
   )
 }

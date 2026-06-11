@@ -78,7 +78,7 @@ export default function BandLookupScreen() {
           value={input}
           onChange={(e) => { setInput(e.target.value); setResult(null); setNotFound(false) }}
           onKeyDown={handleKey}
-          className="flex-1 rounded-xl border border-cream-alt bg-white px-4 py-3
+          className="flex-1 rounded-xl border border-cream-alt bg-cream-card px-4 py-3
             text-lg font-semibold tabular-nums text-ink-primary
             focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
         />
