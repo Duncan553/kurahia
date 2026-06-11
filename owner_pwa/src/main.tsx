@@ -2,7 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { registerSW } from 'virtual:pwa-register'
 import './index.css'
+
+// Service worker: auto-updates on new deploy (skipWaiting in sw.ts)
+registerSW({ immediate: true })
 import { ToastContainer } from '@shared'
 import { AuthGate } from './components/AuthGate'
 import AppLayout from './layouts/AppLayout'
