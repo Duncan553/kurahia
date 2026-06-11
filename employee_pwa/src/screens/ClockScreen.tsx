@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, EmptyState, useToastStore } from '@shared'
+import { Skeleton, EmptyState, Modal, Button, useToastStore } from '@shared'
 import api from '../lib/axios'
 import { formatTime, dutyTime } from '../lib/format'
 import { enqueueClockEvent, drainClockQueue } from '../lib/clockQueue'
 import type { ClockEventType } from '../lib/clockQueue'
 import ScreenHero from '../components/ScreenHero'
+import { useAuthStore } from '../stores/authStore'
 
 interface LastEvent {
   id: string
@@ -32,8 +34,11 @@ interface ClockResponse {
 export default function ClockScreen() {
   const queryClient = useQueryClient()
   const addToast = useToastStore((s) => s.addToast)
+  const navigate = useNavigate()
+  const clearAuth = useAuthStore((s) => s.clearAuth)
   const [btnDisabled, setBtnDisabled] = useState(false)
   const [dutyMinutes, setDutyMinutes] = useState(0)
+  const [showLogout, setShowLogout] = useState(false)
 
   // Staff-accessible endpoint — returns only the current user's own status
   const { data, isLoading, isError, refetch } = useQuery<ClockStatus>({
@@ -109,6 +114,7 @@ export default function ClockScreen() {
         if (event.no_shift) addToast({ type: 'warning', message: 'No shift scheduled — clock event recorded.' })
       } else {
         addToast({ type: 'success', message: `Clocked out at ${time}` })
+        setShowLogout(true)
       }
     },
   })
@@ -250,6 +256,25 @@ export default function ClockScreen() {
         )}
       </AnimatePresence>
     </motion.div>
+
+    {/* Shift-end logout prompt — tablet handover */}
+    <Modal open={showLogout} onClose={() => setShowLogout(false)} title="Shift ended" size="sm">
+      <div className="space-y-4">
+        <p className="text-sm text-ink-secondary">
+          Hand the tablet to your manager or the next person. Log out now to protect this account.
+        </p>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" className="flex-1" onClick={() => setShowLogout(false)}>
+            Stay Logged In
+          </Button>
+          <Button variant="primary" size="sm" className="flex-1"
+            onClick={() => { clearAuth(); navigate('/pin') }}>
+            Log Out
+          </Button>
+        </div>
+      </div>
+    </Modal>
+
     </div>
   )
 }

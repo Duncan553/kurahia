@@ -21,6 +21,42 @@ from app.services.tab import get_tab_balance, is_tab_closable
 tabs_bp = Blueprint("tabs", __name__, url_prefix="/tabs")
 
 
+@tabs_bp.get("")
+@require_active_user
+def list_tabs():
+    """List tabs. Optional filters: status=OPEN|CLOSED, mine=true, tab_type=WALK_IN|VILLA|BAND."""
+    actor     = db.session.get(User, get_jwt_identity())
+    status    = (request.args.get("status") or "").upper() or None
+    mine      = request.args.get("mine", "false").lower() == "true"
+    tab_type  = (request.args.get("tab_type") or "").upper() or None
+
+    query = db.session.query(Tab)
+    if status:
+        if status not in TabStatus.__members__:
+            return jsonify({"error": f"status must be one of {list(TabStatus.__members__)}."}), 400
+        query = query.filter_by(status=status)
+    if mine:
+        query = query.filter_by(opened_by_id=actor.id)
+    if tab_type:
+        if tab_type not in TabType.__members__:
+            return jsonify({"error": f"tab_type must be one of {list(TabType.__members__)}."}), 400
+        query = query.filter_by(tab_type=tab_type)
+
+    tabs = query.order_by(Tab.opened_at_utc.desc()).all()
+    return jsonify([
+        {
+            "id":        t.id,
+            "reference": t.reference,
+            "tab_type":  t.tab_type,
+            "status":    t.status,
+            "opened_at": t.opened_at_utc.isoformat(),
+            "opened_by": t.opened_by.username if t.opened_by else None,
+            "balance":   str(get_tab_balance(t.id)),
+        }
+        for t in tabs
+    ]), 200
+
+
 @tabs_bp.post("")
 @require_active_user
 def open_tab():

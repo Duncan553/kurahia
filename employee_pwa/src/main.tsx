@@ -43,12 +43,20 @@ import PurchaseRequestScreen  from './screens/PurchaseRequestScreen'
 import QuickEntryScreen       from './screens/QuickEntryScreen'
 
 // Manager sub-screens (F-11)
+import StaffAccountsScreen  from './screens/StaffAccountsScreen'
 import CashReconScreen      from './screens/CashReconScreen'
 import LeaveApprovalScreen  from './screens/LeaveApprovalScreen'
 import ShiftScreen          from './screens/ShiftScreen'
 import AttendanceScreen     from './screens/AttendanceScreen'
 import PurchaseReqScreen    from './screens/PurchaseReqScreen'
 import FrontDeskScreen      from './screens/FrontDeskScreen'
+
+// F-17: Department POS screens
+import WaiterTabsScreen       from './screens/WaiterTabsScreen'
+import WaiterTabDetailScreen  from './screens/WaiterTabDetailScreen'
+import { KitchenQueueScreen, BarQueueScreen } from './screens/StationQueues'
+import ServicePayScreen       from './screens/ServicePayScreen'
+import VillaScreen            from './screens/VillaScreen'
 
 // Kiosk (F-12/F-13/F-14) — outside AppLayout, inside AuthGate
 import KioskLaunchScreen         from './screens/kiosk/KioskLaunchScreen'
@@ -99,9 +107,24 @@ const router = createBrowserRouter([
         // ── Band lookup: all staff (level 1+) ────────────────────
         { path: '/gate/band-lookup', element: <BandLookupScreen /> },
 
-        // ── Water activities: waiver + safety check (any staff, nav filters by dept)
-        { path: '/gate/waiver',           element: <WaiverScreen />       },
-        { path: '/equipment/safety-check', element: <SafetyCheckScreen /> },
+        // ── Water activities: waiver + safety check + payment
+        { path: '/gate/waiver',            element: <WaiverScreen />       },
+        { path: '/equipment/safety-check', element: <SafetyCheckScreen />  },
+        { path: '/pos/water-pay',          element: <ServicePayScreen />    },
+
+        // ── POS: waiter tables + tab detail (level 1+, dept-filtered in nav)
+        { path: '/pos/tabs',     element: <WaiterTabsScreen />      },
+        { path: '/pos/tabs/:id', element: <WaiterTabDetailScreen /> },
+
+        // ── POS: kitchen + bar queues (dept-filtered in nav)
+        { path: '/pos/kitchen', element: <KitchenQueueScreen /> },
+        { path: '/pos/bar',     element: <BarQueueScreen />     },
+
+        // ── POS: spa / gym service payment (dept-filtered in nav)
+        { path: '/pos/spa', element: <ServicePayScreen /> },
+
+        // ── Villa: villa staff + front desk (level 3-4 or villa dept)
+        { path: '/villa', element: <VillaScreen /> },
 
         // ── Gate / Front Desk (level 3+) ─────────────────────────
         {
@@ -124,6 +147,7 @@ const router = createBrowserRouter([
             { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
             { path: '/equipment/maintenance',      element: <MaintenanceLogScreen />  },
             // F-11: Manager sub-screens
+            { path: '/manager/staff',      element: <StaffAccountsScreen /> },
             { path: '/manager/cash',       element: <CashReconScreen />     },
             { path: '/manager/leave',      element: <LeaveApprovalScreen /> },
             { path: '/manager/shifts',     element: <ShiftScreen />         },
