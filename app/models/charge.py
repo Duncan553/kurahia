@@ -4,6 +4,11 @@ Created when an Order is SENT (one Charge per OrderItem).
 amount = order_item.quantity × order_item.unit_price_snapshot.
 Never update or delete. Corrections = new rows.
 
+A correction is a NEGATIVE row mirroring the original charge, written ONLY by
+the cancel / send-back endpoints (one per cancelled item, enforced by the
+order-item state machine + an existing-reversal check). No API accepts an
+arbitrary negative amount — that would be the skim vector the judge watches.
+
 Tab balance formula: SUM(charges.amount) − SUM(payments.amount)
 That sum is computed on every balance query — never stored.
 
@@ -34,7 +39,8 @@ class Charge(db.Model):
     created_by = db.relationship("User",      foreign_keys=[created_by_id], lazy="select")
 
     __table_args__ = (
-        db.CheckConstraint("amount >= 0", name="ck_charge_amount_nonneg"),
+        # Negative rows are legal (cancel reversals); zero rows never are
+        db.CheckConstraint("amount != 0", name="ck_charge_amount_nonzero"),
     )
 
     def __repr__(self):

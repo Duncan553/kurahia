@@ -378,3 +378,81 @@ def test_ready_notifies_order_creator(client, waiter_token, kitchen_token, food_
     assert len(ready) == 1
     assert "Table 9" in ready[0]["subject"]
     assert "ready for pickup" in ready[0]["body"]
+
+
+# ── F-17.5: cancel reverses the charge (guest never pays for cancelled food) ──
+
+def test_cancel_after_send_reverses_charge(client, waiter_token, food_item_id, drink_item_id):
+    """Cancel a sent item → negative reversal charge → balance drops."""
+    wh = {"Authorization": f"Bearer {waiter_token}"}
+    tab_id = _open_tab(client, waiter_token, reference="Table R")
+    order_id = _create_order(client, waiter_token, tab_id, food_item_id)  # 1200
+    _send_order(client, waiter_token, order_id)
+
+    before = client.get(f"/tabs/{tab_id}", headers=wh).get_json()
+    assert before["balance"] == "1200.00"
+    oi_id = before["orders"][0]["items"][0]["id"]
+
+    rv = client.post(f"/order-items/{oi_id}/cancel", json={"reason": "guest changed mind"}, headers=wh)
+    assert rv.status_code == 200
+
+    after = client.get(f"/tabs/{tab_id}", headers=wh).get_json()
+    assert after["balance"] == "0.00"                       # reversal corrected it
+    amounts = sorted(c["amount"] for c in after["charges"])
+    assert amounts == ["-1200.00", "1200.00"]               # original frozen + mirror row
+    assert any("REVERSAL" in c["description"] for c in after["charges"])
+
+    # Fully reversed tab closes cleanly
+    assert client.post(f"/tabs/{tab_id}/close", headers=wh).status_code == 200
+
+
+def test_cancel_restricted_to_own_waiter_or_manager(client, waiter_token, kitchen_token,
+                                                    manager_token, food_item_id):
+    """Cancel moves money — only the order's waiter or a manager may do it."""
+    wh = {"Authorization": f"Bearer {waiter_token}"}
+    tab_id = _open_tab(client, waiter_token)
+    order_id = _create_order(client, waiter_token, tab_id, food_item_id)
+    _send_order(client, waiter_token, order_id)
+    oi_id = client.get(f"/tabs/{tab_id}", headers=wh).get_json()["orders"][0]["items"][0]["id"]
+
+    rv = client.post(f"/order-items/{oi_id}/cancel",
+                     headers={"Authorization": f"Bearer {kitchen_token}"})
+    assert rv.status_code == 403
+    assert "waiter who took this order" in rv.get_json()["error"]
+
+    # Manager can
+    rv = client.post(f"/order-items/{oi_id}/cancel",
+                     headers={"Authorization": f"Bearer {manager_token}"})
+    assert rv.status_code == 200
+
+
+def test_cancel_cannot_double_reverse(client, waiter_token, food_item_id):
+    """Second cancel is rejected by the state machine — exactly one reversal row."""
+    wh = {"Authorization": f"Bearer {waiter_token}"}
+    tab_id = _open_tab(client, waiter_token)
+    order_id = _create_order(client, waiter_token, tab_id, food_item_id)
+    _send_order(client, waiter_token, order_id)
+    oi_id = client.get(f"/tabs/{tab_id}", headers=wh).get_json()["orders"][0]["items"][0]["id"]
+
+    assert client.post(f"/order-items/{oi_id}/cancel", headers=wh).status_code == 200
+    assert client.post(f"/order-items/{oi_id}/cancel", headers=wh).status_code == 400
+
+    charges = client.get(f"/tabs/{tab_id}", headers=wh).get_json()["charges"]
+    assert len([c for c in charges if float(c["amount"]) < 0]) == 1
+
+
+def test_send_back_reverses_charge_too(client, waiter_token, manager_token, food_item_id):
+    """Manager send-back mirrors money the way it already mirrored stock."""
+    wh = {"Authorization": f"Bearer {waiter_token}"}
+    tab_id = _open_tab(client, waiter_token)
+    order_id = _create_order(client, waiter_token, tab_id, food_item_id)
+    _send_order(client, waiter_token, order_id)
+    oi_id = client.get(f"/tabs/{tab_id}", headers=wh).get_json()["orders"][0]["items"][0]["id"]
+    # walk to RECEIVED so send-back is a realistic mid-prep return
+    client.post(f"/order-items/{oi_id}/receive", headers={"Authorization": f"Bearer {manager_token}"})
+
+    rv = client.post(f"/order-items/{oi_id}/send-back",
+                     json={"idempotency_key": str(uuid.uuid4())},
+                     headers={"Authorization": f"Bearer {manager_token}"})
+    assert rv.status_code == 200
+    assert client.get(f"/tabs/{tab_id}", headers=wh).get_json()["balance"] == "0.00"
