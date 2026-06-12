@@ -147,6 +147,33 @@ def send_order(order_id):
     return jsonify({"id": order.id, "status": order.status}), 200
 
 
+def _reverse_charge(oi: OrderItem, actor: User):
+    """
+    Append-only money correction: a cancelled item gets a NEGATIVE charge
+    mirroring its original, so the guest never pays for cancelled food.
+    History stays frozen (original row untouched); balance is derived so it
+    corrects itself. One reversal per item — the state machine blocks a second
+    cancel, and the existing-reversal check is belt-and-braces on top.
+    Mirrors the inventory side: send-back already wrote a negative
+    StockMovement; this is the same pattern applied to money.
+    """
+    original = db.session.query(Charge).filter(
+        Charge.order_item_id == oi.id, Charge.amount > 0).first()
+    if not original:
+        return  # never sent → no charge exists → nothing to reverse
+    already = db.session.query(Charge).filter(
+        Charge.order_item_id == oi.id, Charge.amount < 0).first()
+    if already:
+        return
+    db.session.add(Charge(
+        tab_id=original.tab_id,
+        order_item_id=oi.id,
+        amount=-original.amount,
+        description=f"REVERSAL: {original.description}",
+        created_by_id=actor.id,
+    ))
+
+
 def _notify_waiter_ready(oi: OrderItem):
     """
     Kitchen/bar marked an item READY → ping the waiter who created the order.
@@ -261,14 +288,18 @@ def cancel_item(oi_id):
         return jsonify({"error": "Order item not found."}), 404
     if not oi.can_transition_to(OrderItemStatus.CANCELLED):
         return jsonify({"error": f"This item is {oi.status} — only Pending or Received items can be cancelled."}), 400
+    # Cancel now reverses money — restrict to the order's own waiter or manager+
+    if actor.role.level < MANAGER_LEVEL and (not oi.order or oi.order.created_by_id != actor.id):
+        return jsonify({"error": "Only the waiter who took this order or a manager can cancel it."}), 403
     data = request.get_json(silent=True) or {}
     with db.session.begin_nested():
         oi.status        = OrderItemStatus.CANCELLED.value
         oi.cancelled_at  = datetime.now(timezone.utc)
         oi.cancel_reason = data.get("reason", "")
+        _reverse_charge(oi, actor)
         _maybe_complete_order(oi.order)
     AuditLog.log(actor=actor.username, action="order_item.cancel", target=oi_id,
-                 details=oi.cancel_reason)
+                 details=f"{oi.cancel_reason} (charge reversed)")
     db.session.commit()
     return jsonify({"id": oi.id, "status": oi.status}), 200
 
@@ -297,6 +328,7 @@ def send_back_item(oi_id):
         oi.status        = OrderItemStatus.CANCELLED.value
         oi.cancelled_at  = datetime.now(timezone.utc)
         oi.cancel_reason = "sent-back"
+        _reverse_charge(oi, actor)  # money mirrors the stock reversal below
 
         # Inventory movement — write directly (same principle as service layer in inventory.movements)
         # Only possible if a linked inventory item exists (menu item → inventory item mapping is manual for now)
