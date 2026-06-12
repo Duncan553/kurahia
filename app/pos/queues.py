@@ -22,7 +22,7 @@ ACTIVE_STATUSES = [OrderItemStatus.PENDING.value, OrderItemStatus.RECEIVED.value
 
 def _queue_for_station(station: str, actor: User):
     dept_name = actor.department.name if actor.department else ""
-    if actor.role.level < MANAGER_LEVEL and dept_name != station.title():
+    if actor.role.level < MANAGER_LEVEL and dept_name.upper() != station:
         return None, (jsonify({"error": f"Only {station} staff or a manager can view the {station.lower()} queue."}), 403)
 
     now = datetime.now(timezone.utc)
@@ -53,6 +53,7 @@ def _queue_for_station(station: str, actor: User):
             "status":        oi.status,
             "created_at":    oi.created_at.isoformat(),
             "age_seconds":   _age(oi),
+            "ordered_by":    oi.order.created_by.username if oi.order and oi.order.created_by else None,
         }
         for oi in items
     ], None
