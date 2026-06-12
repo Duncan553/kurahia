@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -14,13 +14,16 @@ import LoginScreen from './screens/LoginScreen'
 import PinEntryScreen from './screens/PinEntryScreen'
 import PinSetupScreen from './screens/PinSetupScreen'
 import DashboardScreen       from './screens/DashboardScreen'
-import FinanceScreen          from './screens/FinanceScreen'
-import AlertsScreen           from './screens/AlertsScreen'
-import PayrollDraftScreen     from './screens/PayrollDraftScreen'
-import ReconciliationScreen   from './screens/ReconciliationScreen'
-import StaffScreen            from './screens/StaffScreen'
-import BookingsScreen         from './screens/BookingsScreen'
-import SettingsScreen         from './screens/SettingsScreen'
+
+
+// Code splitting: dashboard is the landing screen, the rest load on demand
+const FinanceScreen = lazy(() => import('./screens/FinanceScreen'))
+const AlertsScreen = lazy(() => import('./screens/AlertsScreen'))
+const PayrollDraftScreen = lazy(() => import('./screens/PayrollDraftScreen'))
+const ReconciliationScreen = lazy(() => import('./screens/ReconciliationScreen'))
+const StaffScreen = lazy(() => import('./screens/StaffScreen'))
+const BookingsScreen = lazy(() => import('./screens/BookingsScreen'))
+const SettingsScreen = lazy(() => import('./screens/SettingsScreen'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
