@@ -512,11 +512,13 @@ def suggestions_view():
     from app.models.suggestion import Suggestion, SuggestionCategory, SuggestionStatus
 
     mgmt = db.session.query(Suggestion).filter_by(
-        category=SuggestionCategory.MANAGEMENT.value
-    ).order_by(Suggestion.created_at_utc.desc()).limit(10).all()
+        category=SuggestionCategory.MANAGEMENT.value,
+        status=SuggestionStatus.NEW.value,
+    ).order_by(Suggestion.created_at_utc.desc()).limit(20).all()
     private = db.session.query(Suggestion).filter_by(
-        category=SuggestionCategory.OWNER_PRIVATE.value
-    ).order_by(Suggestion.created_at_utc.desc()).limit(10).all()
+        category=SuggestionCategory.OWNER_PRIVATE.value,
+        status=SuggestionStatus.NEW.value,
+    ).order_by(Suggestion.created_at_utc.desc()).limit(20).all()
 
     def _s(s: Suggestion) -> dict:
         return {"id": s.id, "subject": s.subject, "status": s.status,
