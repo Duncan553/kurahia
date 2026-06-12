@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -18,58 +18,64 @@ import PinSetupScreen    from './screens/PinSetupScreen'
 
 // Universal — all staff
 import ClockScreen         from './screens/ClockScreen'
-import ScheduleScreen      from './screens/ScheduleScreen'
-import NotificationsScreen from './screens/NotificationsScreen'
-import ProfileScreen       from './screens/ProfileScreen'
-import ConductScreen       from './screens/ConductScreen'
-import SuggestionsScreen   from './screens/SuggestionsScreen'
-import LeaveRequestScreen  from './screens/LeaveRequestScreen'
-import AbsenceNoticeScreen from './screens/AbsenceNoticeScreen'
 
 // All staff — band lookup (level 1+)
-import BandLookupScreen  from './screens/BandLookupScreen'
 
 // Gate / Front Desk (level 3+)
-import WristbandScreen from './screens/WristbandScreen'
-import CheckInScreen   from './screens/CheckInScreen'
 
 // Water activities (level 1, water dept) — nav filters by department
-import WaiverScreen        from './screens/WaiverScreen'
-import SafetyCheckScreen   from './screens/SafetyCheckScreen'
 
 // Equipment maintenance (level 5+ manager)
-import MaintenanceLogScreen from './screens/MaintenanceLogScreen'
 
 // Manager (level 5+)
-import ManagerScreen          from './screens/ManagerScreen'
-import InventoryCountScreen   from './screens/InventoryCountScreen'
-import PurchaseRequestScreen  from './screens/PurchaseRequestScreen'
-import QuickEntryScreen       from './screens/QuickEntryScreen'
 
 // Manager sub-screens (F-11)
-import StaffAccountsScreen  from './screens/StaffAccountsScreen'
-import MenuManageScreen     from './screens/MenuManageScreen'
-import CashReconScreen      from './screens/CashReconScreen'
-import LeaveApprovalScreen  from './screens/LeaveApprovalScreen'
-import ShiftScreen          from './screens/ShiftScreen'
-import AttendanceScreen     from './screens/AttendanceScreen'
-import PurchaseReqScreen    from './screens/PurchaseReqScreen'
-import FrontDeskScreen      from './screens/FrontDeskScreen'
 
 // F-17: Department POS screens
-import WaiterTabsScreen       from './screens/WaiterTabsScreen'
-import WaiterTabDetailScreen  from './screens/WaiterTabDetailScreen'
-import { KitchenQueueScreen, BarQueueScreen } from './screens/StationQueues'
-import ServicePayScreen       from './screens/ServicePayScreen'
-import VillaScreen            from './screens/VillaScreen'
+
 
 // Kiosk (F-12/F-13/F-14) — outside AppLayout, inside AuthGate
-import KioskLaunchScreen         from './screens/kiosk/KioskLaunchScreen'
-import KioskMenuScreen           from './screens/kiosk/KioskMenuScreen'
-import KioskWelcomeScreen        from './screens/kiosk/KioskWelcomeScreen'
-import KioskWaiverScreen         from './screens/kiosk/KioskWaiverScreen'
-import KioskFeedbackLaunchScreen from './screens/kiosk/KioskFeedbackLaunchScreen'
-import KioskFeedbackScreen       from './screens/kiosk/KioskFeedbackScreen'
+
+
+// Route-level code splitting: everything beyond login/PIN/clock loads on demand.
+// The SW precaches all chunks anyway, so offline still works.
+const ScheduleScreen = lazy(() => import('./screens/ScheduleScreen'))
+const NotificationsScreen = lazy(() => import('./screens/NotificationsScreen'))
+const ProfileScreen = lazy(() => import('./screens/ProfileScreen'))
+const ConductScreen = lazy(() => import('./screens/ConductScreen'))
+const SuggestionsScreen = lazy(() => import('./screens/SuggestionsScreen'))
+const LeaveRequestScreen = lazy(() => import('./screens/LeaveRequestScreen'))
+const AbsenceNoticeScreen = lazy(() => import('./screens/AbsenceNoticeScreen'))
+const BandLookupScreen = lazy(() => import('./screens/BandLookupScreen'))
+const WristbandScreen = lazy(() => import('./screens/WristbandScreen'))
+const CheckInScreen = lazy(() => import('./screens/CheckInScreen'))
+const WaiverScreen = lazy(() => import('./screens/WaiverScreen'))
+const SafetyCheckScreen = lazy(() => import('./screens/SafetyCheckScreen'))
+const MaintenanceLogScreen = lazy(() => import('./screens/MaintenanceLogScreen'))
+const ManagerScreen = lazy(() => import('./screens/ManagerScreen'))
+const InventoryCountScreen = lazy(() => import('./screens/InventoryCountScreen'))
+const PurchaseRequestScreen = lazy(() => import('./screens/PurchaseRequestScreen'))
+const QuickEntryScreen = lazy(() => import('./screens/QuickEntryScreen'))
+const StaffAccountsScreen = lazy(() => import('./screens/StaffAccountsScreen'))
+const MenuManageScreen = lazy(() => import('./screens/MenuManageScreen'))
+const CashReconScreen = lazy(() => import('./screens/CashReconScreen'))
+const LeaveApprovalScreen = lazy(() => import('./screens/LeaveApprovalScreen'))
+const ShiftScreen = lazy(() => import('./screens/ShiftScreen'))
+const AttendanceScreen = lazy(() => import('./screens/AttendanceScreen'))
+const PurchaseReqScreen = lazy(() => import('./screens/PurchaseReqScreen'))
+const FrontDeskScreen = lazy(() => import('./screens/FrontDeskScreen'))
+const WaiterTabsScreen = lazy(() => import('./screens/WaiterTabsScreen'))
+const WaiterTabDetailScreen = lazy(() => import('./screens/WaiterTabDetailScreen'))
+const ServicePayScreen = lazy(() => import('./screens/ServicePayScreen'))
+const VillaScreen = lazy(() => import('./screens/VillaScreen'))
+const KioskLaunchScreen = lazy(() => import('./screens/kiosk/KioskLaunchScreen'))
+const KioskMenuScreen = lazy(() => import('./screens/kiosk/KioskMenuScreen'))
+const KioskWelcomeScreen = lazy(() => import('./screens/kiosk/KioskWelcomeScreen'))
+const KioskWaiverScreen = lazy(() => import('./screens/kiosk/KioskWaiverScreen'))
+const KioskFeedbackLaunchScreen = lazy(() => import('./screens/kiosk/KioskFeedbackLaunchScreen'))
+const KioskFeedbackScreen = lazy(() => import('./screens/kiosk/KioskFeedbackScreen'))
+const KitchenQueueScreen = lazy(() => import('./screens/StationQueues').then(m => ({ default: m.KitchenQueueScreen })))
+const BarQueueScreen = lazy(() => import('./screens/StationQueues').then(m => ({ default: m.BarQueueScreen })))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },

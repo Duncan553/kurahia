@@ -1,12 +1,20 @@
+import { Suspense } from 'react'
 import { Navigate, Outlet, useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import { EmptyState } from '@shared'
 
+const chunkFallback = (
+  <div className="min-h-screen flex items-center justify-center bg-cream-card">
+    <div className="w-8 h-8 rounded-full border-2 border-primary-dark border-t-transparent animate-spin" />
+  </div>
+)
+
 export function AuthGate() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   if (!isAuthenticated) return <Navigate to="/pin" replace />
-  return <Outlet />
+  // Lazy route chunks load behind this boundary
+  return <Suspense fallback={chunkFallback}><Outlet /></Suspense>
 }
 
 // Role gate for nested routes — shows EmptyState (not redirect) so nav shell stays.
