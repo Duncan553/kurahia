@@ -143,6 +143,9 @@ const router = createBrowserRouter([
           element: <RoleGate minLevel={3} />,
           children: [
             { path: '/gate/hub',           element: <GateHubScreen />   },
+            // /gate/issue kept as a direct deep-link for managers navigating
+            // back to the standalone issue screen (e.g. from ManagerScreen).
+            // GateHubScreen (/gate/hub) is the primary gate-staff landing.
             { path: '/gate/issue',         element: <WristbandScreen /> },
             { path: '/front-desk/checkin', element: <CheckInScreen />   },
           ],
