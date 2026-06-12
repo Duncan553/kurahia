@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { ReactElement } from 'react'
 import { useLocation, useNavigate, NavLink, Outlet, Navigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -475,7 +476,14 @@ export default function AppLayout() {
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="min-h-full"
           >
-            <Outlet />
+            {/* Lazy screen chunks load behind this — nav stays put */}
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-24">
+                <div className="w-7 h-7 rounded-full border-2 border-primary-dark border-t-transparent animate-spin" />
+              </div>
+            }>
+              <Outlet />
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </main>
