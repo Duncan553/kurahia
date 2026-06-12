@@ -328,7 +328,7 @@ function LowStockTile() {
   const lowItems = data!.items.filter((i) => i.is_low).slice(0, 3).map((i) => i.name)
 
   return (
-    <TileCard title="Low Stock" href="/settings">
+    <TileCard title="Low Stock">
       <p className={`text-3xl font-bold tabular-nums ${low === 0 ? 'text-status-paid' : 'text-status-failed'}`}>
         {low}
       </p>
@@ -381,7 +381,7 @@ function FeedbackTile() {
   const commentCount = data!.recent_comments.length
 
   return (
-    <TileCard title="Feedback Score" href="/finance">
+    <TileCard title="Feedback Score" href="/staff">
       <p className={`text-3xl font-bold tabular-nums ${avg ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
         {formatAvg(avg)}
       </p>
@@ -403,13 +403,13 @@ function SuggestionsTile() {
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Suggestions" />
 
-  // Backend returns ALL suggestions; filter for NEW (unread) on frontend
-  const newMgmt    = data!.management.filter((s) => s.status === 'NEW').length
-  const newPrivate = data!.owner_private.filter((s) => s.status === 'NEW').length
+  // Backend now returns only NEW suggestions (status=NEW filter applied there)
+  const newMgmt    = data!.management.length
+  const newPrivate = data!.owner_private.length
   const total      = newMgmt + newPrivate
 
   return (
-    <TileCard title="Suggestions" href="/settings">
+    <TileCard title="Suggestions">
       <p className={`text-3xl font-bold tabular-nums ${total === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
         {total}
       </p>
@@ -435,7 +435,7 @@ function EquipmentTile() {
   const inMx = data!.in_maintenance.length
 
   return (
-    <TileCard title="Equipment" href="/settings">
+    <TileCard title="Equipment">
       <p className={`text-3xl font-bold tabular-nums ${due.length > 0 ? 'text-status-pending' : 'text-status-paid'}`}>
         {due.length}
       </p>

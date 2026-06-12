@@ -2,9 +2,11 @@ import { Suspense } from 'react'
 import type { ReactElement } from 'react'
 import { useLocation, useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
 import { OfflineBanner, InstallPrompt } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import { kvGet, kvSet } from '../lib/idb'
+import api from '../lib/axios'
 
 // ── Sidebar + bottom nav icons ──────────────────────────────────────────────
 
@@ -113,11 +115,32 @@ function SideLink({ path, label, Icon }: NavItem) {
 
 // ── AppLayout ───────────────────────────────────────────────────────────────
 
+function formatKsh(v: string | undefined): string {
+  if (!v) return '—'
+  const n = parseFloat(v)
+  if (isNaN(n)) return '—'
+  if (n >= 1_000_000) return `KSh ${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000)     return `KSh ${(n / 1_000).toFixed(0)}k`
+  return `KSh ${n.toFixed(0)}`
+}
+
 export default function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const clearAuth = useAuthStore((s) => s.clearAuth)
+
+  // Read from the same cache the dashboard tiles use — no extra requests
+  const { data: overview } = useQuery({
+    queryKey: ['dash-overview'],
+    queryFn: () => api.get<{ revenue: { total: string }; bookings: { active: number } }>('/dashboard/overview').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
+  const { data: alerts } = useQuery({
+    queryKey: ['dash-alerts'],
+    queryFn: () => api.get<{ id: string }[]>('/dashboard/alerts').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
 
   function signOut() { clearAuth(); navigate('/pin') }
 
@@ -165,9 +188,21 @@ export default function AppLayout() {
           bg-cream-card border-b border-cream-alt">
           <span className="sm:hidden text-lg font-bold font-serif text-ink-primary">Kurahia</span>
           <div className="hidden sm:flex items-center gap-5 text-xs text-ink-tertiary">
-            <span><span className="font-semibold text-ink-primary">—</span> revenue today</span>
-            <span><span className="font-semibold text-ink-primary">—</span> alerts open</span>
-            <span><span className="font-semibold text-ink-primary">—</span> bookings this weekend</span>
+            <span>
+              <span className="font-semibold text-ink-primary">
+                {formatKsh(overview?.revenue.total)}
+              </span>{' '}revenue today
+            </span>
+            <span>
+              <span className={`font-semibold ${(alerts?.length ?? 0) > 0 ? 'text-status-failed' : 'text-ink-primary'}`}>
+                {alerts !== undefined ? alerts.length : '—'}
+              </span>{' '}alerts open
+            </span>
+            <span>
+              <span className="font-semibold text-ink-primary">
+                {overview?.bookings.active ?? '—'}
+              </span>{' '}active bookings
+            </span>
           </div>
           {/* Mobile sign-out */}
           <button onClick={signOut}
