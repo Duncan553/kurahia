@@ -76,6 +76,7 @@ const KioskFeedbackLaunchScreen = lazy(() => import('./screens/kiosk/KioskFeedba
 const KioskFeedbackScreen = lazy(() => import('./screens/kiosk/KioskFeedbackScreen'))
 const KitchenQueueScreen = lazy(() => import('./screens/StationQueues').then(m => ({ default: m.KitchenQueueScreen })))
 const BarQueueScreen = lazy(() => import('./screens/StationQueues').then(m => ({ default: m.BarQueueScreen })))
+const GateHubScreen = lazy(() => import('./screens/GateHubScreen'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -141,6 +142,7 @@ const router = createBrowserRouter([
         {
           element: <RoleGate minLevel={3} />,
           children: [
+            { path: '/gate/hub',           element: <GateHubScreen />   },
             { path: '/gate/issue',         element: <WristbandScreen /> },
             { path: '/front-desk/checkin', element: <CheckInScreen />   },
           ],
