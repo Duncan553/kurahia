@@ -334,9 +334,9 @@ const NAV_ITEMS: NavItem[] = [
 
   // ── Gate / Front Desk tablet (level 3–4) ────────────────────────────────────
   {
-    id: 'issue',
-    path: '/gate/issue',
-    label: 'Issue',
+    id: 'gate-hub',
+    path: '/gate/hub',
+    label: 'Gate',
     Icon: GateIcon,
     visible: (level) => level >= 3 && level <= 4,
   },
@@ -435,6 +435,7 @@ export default function AppLayout() {
     if (deptIs(department, 'spa', 'gym', 'wellness'))           return <Navigate to="/pos/spa" replace />
     if (deptIs(department, 'water', 'activit', 'aqua'))         return <Navigate to="/gate/waiver" replace />
     if (deptIs(department, 'villa', 'housekeep'))               return <Navigate to="/villa" replace />
+    if (deptIs(department, 'gate', 'entry', 'secur'))           return <Navigate to="/gate/hub" replace />
   }
 
   return (

@@ -82,6 +82,27 @@ def issue_band_route():
     return jsonify(_band_dict(band, include_balance=True)), 201
 
 
+# ── Today stats (level 3+ — no reconciliation detail) ───────────────────────
+
+@gate_bp.get("/today-stats")
+@require_active_user
+def today_stats():
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < GATE_LEVEL:
+        return jsonify({"error": "Gate staff or above required."}), 403
+
+    from app.services.gate import ENTRY_FEE
+    today = datetime.now(timezone.utc).date().isoformat()
+    all_today = db.session.query(Wristband).filter_by(issue_date=today).all()
+    active_count = sum(1 for b in all_today if b.status == WristbandStatus.ACTIVE.value)
+
+    return jsonify({
+        "issued_today": len(all_today),
+        "inside_now":   active_count,
+        "total_entry_fees": str(ENTRY_FEE * len(all_today)),
+    }), 200
+
+
 # ── Deactivate band (customer leaves normally) ────────────────────────────────
 
 @gate_bp.post("/deactivate-band/<int:band_number>")
