@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { Skeleton, EmptyState, StatusBadge } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
@@ -57,6 +58,7 @@ function depositStatus(paid: string, required: string): 'paid' | 'pending' {
 
 export default function FrontDeskScreen() {
   const [tab, setTab] = useState<Tab>('arrivals')
+  const navigate = useNavigate()
 
   const { data, isLoading, isError, dataUpdatedAt } = useQuery<FrontDeskData>({
     queryKey: ['front-desk-today'],
@@ -258,10 +260,22 @@ export default function FrontDeskScreen() {
                 {data!.occupancy.map((o) => {
                   const bal = parseFloat(o.tab_balance)
                   const hasBalance = !isNaN(bal) && bal > 0
+                  const clickable = !!o.tab_id
                   return (
-                    <div key={o.booking_id}
-                      className="rounded-2xl border border-cream-alt bg-cream-card px-4 py-3 space-y-1.5">
-                      <p className="text-sm font-semibold text-ink-primary">{o.guest_name}</p>
+                    <div
+                      key={o.booking_id}
+                      onClick={() => o.tab_id && navigate(`/pos/tabs/${o.tab_id}`)}
+                      className={[
+                        'rounded-2xl border border-cream-alt bg-cream-card px-4 py-3 space-y-1.5',
+                        clickable ? 'cursor-pointer hover:bg-cream-alt/60 transition-colors' : '',
+                      ].join(' ')}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-semibold text-ink-primary">{o.guest_name}</p>
+                        {clickable && (
+                          <span className="text-[10px] text-ink-tertiary">View tab →</span>
+                        )}
+                      </div>
                       {o.resource && (
                         <p className="text-xs text-ink-tertiary">{o.resource}</p>
                       )}

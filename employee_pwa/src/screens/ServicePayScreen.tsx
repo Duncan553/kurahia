@@ -40,6 +40,11 @@ export default function ServicePayScreen() {
 
   const checkoutMut = useMutation({
     mutationFn: async () => {
+      const paid = parseFloat(pay.amount)
+      if (!pay.amount || isNaN(paid) || paid <= 0)
+        throw new Error('Enter the amount collected.')
+      if (paid < total)
+        throw new Error(`Amount KSh ${paid.toLocaleString()} is less than total KSh ${total.toLocaleString()}.`)
       const orderItems = Object.entries(draft)
         .filter(([, q]) => q > 0)
         .map(([menu_item_id, quantity]) => ({ menu_item_id, quantity }))
@@ -47,7 +52,7 @@ export default function ServicePayScreen() {
       const { data: order } = await api.post('/orders', { tab_id: tab.id, items: orderItems })
       await api.post(`/orders/${order.id}/send`)
       await api.post(`/tabs/${tab.id}/payments`, {
-        method: pay.method, amount: pay.amount,
+        method: pay.method, amount: String(total),
         idempotency_key: crypto.randomUUID(),
       })
       await api.post(`/tabs/${tab.id}/close`)
@@ -56,7 +61,10 @@ export default function ServicePayScreen() {
       setDraft({}); setPay(p => ({ ...p, amount: '' })); setStage('select')
       addToast({ type: 'success', message: 'Payment recorded.' })
     },
-    onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : extractErr(e)
+      addToast({ type: 'error', message: msg })
+    },
   })
 
   return (
@@ -127,9 +135,9 @@ export default function ServicePayScreen() {
       {/* Payment stage */}
       {stage === 'pay' && (
         <div className="space-y-4">
-          <div className="p-4 rounded-2xl bg-ink-primary text-cream-card">
-            <p className="text-sm text-cream-card/60 mb-1">Total to collect</p>
-            <p className="text-2xl font-bold tabular-nums">{kes(total)}</p>
+          <div className="p-4 rounded-2xl border border-cream-alt bg-cream-card">
+            <p className="text-sm text-ink-tertiary mb-1">Total to collect</p>
+            <p className="text-2xl font-bold tabular-nums text-ink-primary">{kes(total)}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -145,14 +153,23 @@ export default function ServicePayScreen() {
             ))}
           </div>
 
-          <input
-            type="number" min="0" step="0.01" inputMode="decimal"
-            placeholder={`Amount (KSh) — ${kes(total)}`}
-            value={pay.amount}
-            onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
-            className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-              text-base text-ink-primary focus:outline-none focus:border-primary-dark"
-          />
+          <div className="space-y-2">
+            <input
+              type="number" min="0" step="0.01" inputMode="decimal"
+              placeholder={`Amount received (KSh)`}
+              value={pay.amount}
+              onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
+              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
+                text-base text-ink-primary focus:outline-none focus:border-primary-dark"
+            />
+            <button
+              type="button"
+              onClick={() => setPay(p => ({ ...p, amount: String(total) }))}
+              className="w-full py-2 rounded-xl text-sm font-semibold border border-cream-alt
+                text-ink-secondary hover:bg-cream-alt transition-colors">
+              Exact — {kes(total)}
+            </button>
+          </div>
 
           <div className="flex gap-2">
             <Button variant="ghost" size="lg" className="flex-1" onClick={() => setStage('select')}>
