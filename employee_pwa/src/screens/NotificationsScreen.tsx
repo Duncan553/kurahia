@@ -112,7 +112,7 @@ export default function NotificationsScreen() {
                 strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           }
-          title="You're all caught up."
+          title="You're all caught up · Uko sawa"
           description="No new notifications."
         />
       </div>

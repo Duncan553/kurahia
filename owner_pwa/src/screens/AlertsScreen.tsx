@@ -165,7 +165,7 @@ export default function AlertsScreen() {
             <circle cx="20" cy="20" r="14" stroke="currentColor" strokeWidth="1.5"/>
             <path d="M20 13v8M20 25h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>}
-          title={view.filter === 'open' ? 'All clear. Judge found no anomalies.' : 'No alerts in this view.'}
+          title={view.filter === 'open' ? 'All clear · Hakuna shida' : 'No alerts in this view.'}
         />
       )}
 
