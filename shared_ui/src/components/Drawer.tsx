@@ -2,6 +2,33 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import type { ReactNode } from 'react'
 
+const FOCUSABLE = [
+  'a[href]', 'button:not([disabled])', 'textarea:not([disabled])',
+  'input:not([disabled])', 'select:not([disabled])', '[tabindex]:not([tabindex="-1"])',
+].join(',')
+
+function useFocusTrap(ref: React.RefObject<HTMLElement | null>, active: boolean) {
+  useEffect(() => {
+    if (!active || !ref.current) return
+    const el = ref.current
+    const focusable = Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE))
+    if (focusable.length === 0) return
+    focusable[0].focus()
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus() }
+      }
+    }
+    el.addEventListener('keydown', handleKeyDown)
+    return () => el.removeEventListener('keydown', handleKeyDown)
+  }, [active, ref])
+}
+
 export interface DrawerProps {
   open: boolean
   onClose: () => void
@@ -17,6 +44,19 @@ function BottomDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'sid
   const [snapIndex, setSnapIndex] = useState(1) // default: 85%
   const dragControls = useDragControls()
   const constraintsRef = useRef<HTMLDivElement>(null)
+  const drawerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      triggerRef.current = document.activeElement as HTMLElement
+    } else if (triggerRef.current) {
+      triggerRef.current.focus()
+      triggerRef.current = null
+    }
+  }, [open])
+
+  useFocusTrap(drawerRef, open)
 
   useEffect(() => {
     if (!open) return
@@ -63,6 +103,7 @@ function BottomDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'sid
           <div ref={constraintsRef} className="fixed inset-0 z-50 pointer-events-none" aria-hidden="true" />
           <motion.div
             key="bottom-drawer"
+            ref={drawerRef}
             role="dialog"
             aria-modal="true"
             drag="y"
@@ -95,6 +136,20 @@ function BottomDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'sid
 }
 
 function RightDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'side'>) {
+  const drawerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      triggerRef.current = document.activeElement as HTMLElement
+    } else if (triggerRef.current) {
+      triggerRef.current.focus()
+      triggerRef.current = null
+    }
+  }, [open])
+
+  useFocusTrap(drawerRef, open)
+
   useEffect(() => {
     if (!open) return
     function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
@@ -123,6 +178,7 @@ function RightDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'side
           />
           <motion.div
             key="right-drawer"
+            ref={drawerRef}
             role="dialog"
             aria-modal="true"
             initial={{ x: '100%' }}

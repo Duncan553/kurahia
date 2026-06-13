@@ -74,6 +74,13 @@ function HoldToConfirm({
   }
   useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current) }, [])
 
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === ' ' && !e.repeat) { e.preventDefault(); startHold() }
+  }
+  function handleKeyUp(e: React.KeyboardEvent) {
+    if (e.key === ' ') { e.preventDefault(); stopHold() }
+  }
+
   return (
     <button
       onMouseDown={startHold}
@@ -82,7 +89,10 @@ function HoldToConfirm({
       onPointerDown={startHold}
       onPointerUp={stopHold}
       onPointerLeave={stopHold}
+      onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
       disabled={disabled}
+      aria-label={`${label}. Hold Space for 2 seconds to confirm.`}
       className={[
         'relative w-full py-4 rounded-2xl overflow-hidden',
         'bg-status-failed text-cream-card font-semibold text-base select-none',
