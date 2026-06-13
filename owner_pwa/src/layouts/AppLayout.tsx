@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import type { ReactElement } from 'react'
 import { useLocation, useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { OfflineBanner, InstallPrompt } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import { kvGet, kvSet } from '../lib/idb'
+import { loadFontSizePref } from '../lib/fontSizePref'
 import api from '../lib/axios'
 
 // ── Sidebar + bottom nav icons ──────────────────────────────────────────────
@@ -144,6 +145,9 @@ export default function AppLayout() {
   })
 
   function signOut() { clearAuth(); navigate('/pin') }
+
+  // Apply saved font-size preference from IDB at session start
+  useEffect(() => { void loadFontSizePref() }, [])
 
   return (
     <div className="h-screen flex bg-cream-card">

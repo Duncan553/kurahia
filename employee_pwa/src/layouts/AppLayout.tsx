@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import type { ReactElement } from 'react'
 import { useLocation, useNavigate, NavLink, Outlet, Navigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -7,6 +7,7 @@ import { OfflineBanner, InstallPrompt } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 import { kvGet, kvSet } from '../lib/idb'
+import { loadFontSizePref } from '../lib/fontSizePref'
 import PushPrompt from '../components/PushPrompt'
 import type { Notification } from '../screens/NotificationsScreen'
 
@@ -424,6 +425,9 @@ export default function AppLayout() {
   const badgeCount = inbox?.length ?? 0
 
   function signOut() { clearAuth(); navigate('/pin') }
+
+  // Apply saved font-size preference from IDB at session start
+  useEffect(() => { void loadFontSizePref() }, [])
 
   // Station tablets skip the clock screen — login drops each straight on its
   // station home. Must stay BELOW every hook: an early return above a hook
