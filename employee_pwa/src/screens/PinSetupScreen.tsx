@@ -133,14 +133,14 @@ export default function PinSetupScreen() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.45, ease: 'easeOut' }}>
-                <p className="text-[10px] tracking-[0.3em] uppercase text-ink-tertiary font-medium mb-3">
+                <p className="text-[10px] tracking-[0.3em] uppercase text-ink-secondary font-medium mb-3">
                   KURAHIA STAFF
                 </p>
                 <h1 className="font-serif text-5xl font-bold tracking-tight text-ink-primary leading-[0.92]">
                   SET YOUR<br />PIN.
                 </h1>
                 {username && (
-                  <p className="mt-3 text-xs text-ink-tertiary tracking-wide">
+                  <p className="mt-3 text-xs text-ink-secondary tracking-wide">
                     Account: <span className="text-ink-primary font-medium">{username}</span>
                   </p>
                 )}
@@ -161,7 +161,7 @@ export default function PinSetupScreen() {
                 transition={{ duration: 0.35, delay: 0.65, ease: 'easeOut' }}
               >
                 <div>
-                  <label className="block text-[10px] tracking-[0.2em] uppercase text-ink-tertiary font-medium mb-1.5">
+                  <label className="block text-[10px] tracking-[0.2em] uppercase text-ink-secondary font-medium mb-1.5">
                     New PIN
                   </label>
                   <input
@@ -184,7 +184,7 @@ export default function PinSetupScreen() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] tracking-[0.2em] uppercase text-ink-tertiary font-medium mb-1.5">
+                  <label className="block text-[10px] tracking-[0.2em] uppercase text-ink-secondary font-medium mb-1.5">
                     Confirm PIN
                   </label>
                   <input

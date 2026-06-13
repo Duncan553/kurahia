@@ -118,7 +118,7 @@ export default function ReconciliationScreen() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-ink-primary font-serif">Three-Way Reconciliation</h1>
-          <p className="text-xs text-ink-tertiary mt-0.5">Receipts · Cash · Stock</p>
+          <p className="text-xs text-ink-secondary mt-0.5">Receipts · Cash · Stock</p>
         </div>
         {/* Date picker */}
         <input
@@ -160,7 +160,7 @@ export default function ReconciliationScreen() {
 
             {/* Corner 1: Receipts */}
             <div className="rounded-2xl border border-cream-alt bg-cream-card p-4 space-y-1">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-3">Receipts</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Receipts</p>
               <Row label="Cash"   value={kes(data.receipts.cash)} />
               <Row label="Card"   value={kes(data.receipts.card)} />
               <Row label="M-Pesa" value={kes(data.receipts.mpesa)} />
@@ -172,7 +172,7 @@ export default function ReconciliationScreen() {
 
             {/* Corner 2: Cash Reconciliation */}
             <div className="rounded-2xl border border-cream-alt bg-cream-card p-4 space-y-1">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-3">Cash Reconciliation</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Cash Reconciliation</p>
               <Row label="Collected" value={kes(data.cash_reconciliation.total_collected)} />
               <Row label="Expected"  value={kes(data.cash_reconciliation.total_expected)} />
               <Row label="Handed in" value={kes(data.cash_reconciliation.total_handed_in)} />
@@ -203,18 +203,18 @@ export default function ReconciliationScreen() {
 
             {/* Corner 3: Stock / Judge */}
             <div className="rounded-2xl border border-cream-alt bg-cream-card p-4">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-3">Stock Alerts</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Stock Alerts</p>
               <p className="text-2xl font-bold text-ink-primary tabular-nums">
                 {data.stock.open_alerts_count}
               </p>
-              <p className="text-xs text-ink-tertiary mb-3">open alert{data.stock.open_alerts_count !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-ink-secondary mb-3">open alert{data.stock.open_alerts_count !== 1 ? 's' : ''}</p>
               {data.stock.alerts.map((a, i) => (
                 <div key={i} className="py-1.5 border-b border-cream-alt last:border-0">
                   <div className="flex items-center gap-1.5">
                     <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
                       a.severity === 'HIGH' ? 'bg-status-failed/10 text-status-failed' : 'bg-status-pending/10 text-status-pending'
                     }`}>{a.severity}</span>
-                    <span className="text-[10px] text-ink-tertiary">{a.type.replace(/_/g,' ')}</span>
+                    <span className="text-[10px] text-ink-secondary">{a.type.replace(/_/g,' ')}</span>
                   </div>
                   <p className="text-[11px] text-ink-secondary mt-0.5 line-clamp-2">{a.description}</p>
                 </div>
@@ -238,7 +238,7 @@ export default function ReconciliationScreen() {
           {/* Close Period */}
           {!data.period_closed && (
             <div className="pt-2">
-              <p className="text-xs text-ink-tertiary mb-2">
+              <p className="text-xs text-ink-secondary mb-2">
                 Hold the button for 2 seconds to close this period.
               </p>
               <div className="relative overflow-hidden rounded-2xl">
@@ -286,7 +286,7 @@ export default function ReconciliationScreen() {
             Count the physical cash in the safe for <strong>{view.date}</strong> and enter the total.
           </p>
           <div>
-            <label className="block text-[10px] tracking-widest uppercase text-ink-tertiary mb-1">
+            <label className="block text-[10px] tracking-widest uppercase text-ink-secondary mb-1">
               Safe count (KSh)
             </label>
             <input

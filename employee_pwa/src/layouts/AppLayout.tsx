@@ -198,20 +198,20 @@ const personal = (level: number, dept: string | null) => level >= 5 || !isStatio
 
 function TopBarStats({ roleLevel }: { roleLevel: number }) {
   if (roleLevel >= 5) return (
-    <div className="hidden sm:flex items-center gap-4 text-xs text-ink-tertiary">
+    <div className="hidden sm:flex items-center gap-4 text-xs text-ink-secondary">
       <span><span className="font-semibold text-ink-primary">—</span> approvals</span>
       <span><span className="font-semibold text-ink-primary">—</span> alerts</span>
       <span><span className="font-semibold text-ink-primary">—</span> on duty</span>
     </div>
   )
   if (roleLevel >= 3) return (
-    <div className="hidden sm:flex items-center gap-4 text-xs text-ink-tertiary">
+    <div className="hidden sm:flex items-center gap-4 text-xs text-ink-secondary">
       <span><span className="font-semibold text-ink-primary">—</span> wristbands</span>
       <span><span className="font-semibold text-ink-primary">—</span> headcount</span>
     </div>
   )
   return (
-    <div className="hidden sm:flex items-center gap-4 text-xs text-ink-tertiary">
+    <div className="hidden sm:flex items-center gap-4 text-xs text-ink-secondary">
       <span><span className="font-semibold text-ink-primary">—</span> open tabs</span>
       <span><span className="font-semibold text-ink-primary">—</span> tables</span>
     </div>
@@ -501,7 +501,7 @@ export default function AppLayout() {
               'flex-1 flex flex-col items-center justify-center gap-0.5 py-2',
               'min-h-[56px] relative transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-inset',
-              isActive ? 'text-primary-dark' : 'text-ink-tertiary hover:text-ink-secondary',
+              isActive ? 'text-primary-dark' : 'text-ink-secondary hover:text-ink-primary',
             ].join(' ')}
           >
             <span className="relative">

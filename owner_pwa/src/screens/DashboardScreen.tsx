@@ -143,7 +143,7 @@ function TileCard({
         href ? 'cursor-pointer hover:shadow-sm hover:border-primary-light/40 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main' : '',
       ].join(' ')}
     >
-      <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-tertiary">{title}</p>
+      <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">{title}</p>
       {children}
     </div>
   )
@@ -190,9 +190,9 @@ function RevenueTile() {
         {formatKsh(data!.revenue.total)}
       </p>
       {parts ? (
-        <p className="text-xs text-ink-tertiary truncate">{parts}</p>
+        <p className="text-xs text-ink-secondary truncate">{parts}</p>
       ) : (
-        <p className="text-xs text-ink-tertiary">No payments recorded yet</p>
+        <p className="text-xs text-ink-secondary">No payments recorded yet</p>
       )}
     </TileCard>
   )
@@ -216,7 +216,7 @@ function ActiveGuestsTile() {
       <p className={`text-3xl font-bold tabular-nums ${active === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
         {active}
       </p>
-      <p className="text-xs text-ink-tertiary">
+      <p className="text-xs text-ink-secondary">
         {data!.bookings.arrivals_today} arriving · {data!.bookings.departures_today} departing today
       </p>
     </TileCard>
@@ -241,7 +241,7 @@ function OpenBookingsTile() {
       <p className={`text-3xl font-bold tabular-nums ${total === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
         {total}
       </p>
-      <p className="text-xs text-ink-tertiary">
+      <p className="text-xs text-ink-secondary">
         {data!.arrivals_today.length} arrivals · {data!.departures_today.length} departures today
       </p>
       {data!.pending_deposits.length > 0 && (
@@ -269,7 +269,7 @@ function StaffOnDutyTile() {
   return (
     <TileCard title="Staff On Duty" href="/staff">
       <p className="text-3xl font-bold tabular-nums text-ink-primary">{on_duty}</p>
-      <p className="text-xs text-ink-tertiary">
+      <p className="text-xs text-ink-secondary">
         of {active_employees} active · {absent_today} absent today
       </p>
     </TileCard>
@@ -296,7 +296,7 @@ function AlertsTile() {
         {count}
       </p>
       {count === 0 ? (
-        <p className="text-xs text-ink-tertiary">No open alerts</p>
+        <p className="text-xs text-ink-secondary">No open alerts</p>
       ) : (
         <div className="space-y-1 mt-1">
           {alerts.slice(0, 3).map((a) => (
@@ -333,9 +333,9 @@ function LowStockTile() {
         {low}
       </p>
       {low === 0 ? (
-        <p className="text-xs text-ink-tertiary">All {data!.total_skus} SKUs stocked</p>
+        <p className="text-xs text-ink-secondary">All {data!.total_skus} SKUs stocked</p>
       ) : (
-        <p className="text-xs text-ink-tertiary truncate">{lowItems.join(', ')}{low > 3 ? ` +${low - 3} more` : ''}</p>
+        <p className="text-xs text-ink-secondary truncate">{lowItems.join(', ')}{low > 3 ? ` +${low - 3} more` : ''}</p>
       )}
     </TileCard>
   )
@@ -357,7 +357,7 @@ function FinanceTile() {
   return (
     <TileCard title="Financial Health" href="/finance">
       <StatusBadge status={reconBadge(reconciliation_status)} />
-      <div className="text-xs text-ink-tertiary space-y-0.5">
+      <div className="text-xs text-ink-secondary space-y-0.5">
         <p>Shortfalls: <span className={open_shortfalls > 0 ? 'text-status-failed font-semibold' : ''}>{open_shortfalls}</span></p>
         <p>Unmatched M-Pesa: <span className={unmatched_mpesa > 0 ? 'text-status-pending font-semibold' : ''}>{unmatched_mpesa}</span></p>
         <p>Pending approvals: {pending_approvals}</p>
@@ -385,7 +385,7 @@ function FeedbackTile() {
       <p className={`text-3xl font-bold tabular-nums ${avg ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
         {formatAvg(avg)}
       </p>
-      <p className="text-xs text-ink-tertiary">
+      <p className="text-xs text-ink-secondary">
         {commentCount > 0 ? `${commentCount} recent comment${commentCount !== 1 ? 's' : ''}` : 'No feedback this period'}
       </p>
     </TileCard>
@@ -413,7 +413,7 @@ function SuggestionsTile() {
       <p className={`text-3xl font-bold tabular-nums ${total === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
         {total}
       </p>
-      <p className="text-xs text-ink-tertiary">
+      <p className="text-xs text-ink-secondary">
         Owner-private: {newPrivate} · Management: {newMgmt}
       </p>
     </TileCard>
@@ -439,7 +439,7 @@ function EquipmentTile() {
       <p className={`text-3xl font-bold tabular-nums ${due.length > 0 ? 'text-status-pending' : 'text-status-paid'}`}>
         {due.length}
       </p>
-      <p className="text-xs text-ink-tertiary">
+      <p className="text-xs text-ink-secondary">
         {due.length === 0 ? `All ${data!.total} items serviced` : `due service · ${inMx} in maintenance`}
       </p>
       {due.length > 0 && (
@@ -468,21 +468,21 @@ function TopBar({ onRefresh }: { onRefresh: () => void }) {
     <div className="flex items-center gap-4 bg-cream-card rounded-2xl border border-cream-alt p-3 mb-4">
       <div className="flex-1 flex items-center gap-6 overflow-x-auto scrollbar-none min-w-0">
         <div className="shrink-0">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-tertiary">Revenue</p>
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Revenue</p>
           <p className="text-base font-bold tabular-nums text-ink-primary leading-tight">
             {revenue !== undefined ? formatKsh(revenue) : '—'}
           </p>
         </div>
         <div className="w-px h-8 bg-cream-alt shrink-0" />
         <div className="shrink-0">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-tertiary">Alerts Open</p>
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Alerts Open</p>
           <p className={`text-base font-bold tabular-nums leading-tight ${alertCount !== undefined ? alertCountColor(alertCount) : 'text-ink-tertiary'}`}>
             {alertCount !== undefined ? alertCount : '—'}
           </p>
         </div>
         <div className="w-px h-8 bg-cream-alt shrink-0" />
         <div className="shrink-0">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-tertiary">Active Bookings</p>
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Active Bookings</p>
           <p className="text-base font-bold tabular-nums text-ink-primary leading-tight">
             {activeGuests !== undefined ? activeGuests : '—'}
           </p>

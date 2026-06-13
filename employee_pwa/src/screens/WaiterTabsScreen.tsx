@@ -128,7 +128,7 @@ export default function WaiterTabsScreen() {
                 bg-cream-card hover:bg-cream-alt transition-colors text-left">
               <div>
                 <p className="font-semibold text-ink-primary">{t.reference ?? 'Walk-in'}</p>
-                <p className="text-xs text-ink-tertiary mt-0.5">
+                <p className="text-xs text-ink-secondary mt-0.5">
                   {new Date(t.opened_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -136,7 +136,7 @@ export default function WaiterTabsScreen() {
                 <p className={`text-sm font-bold tabular-nums ${bal > 0 ? 'text-status-failed' : 'text-status-paid'}`}>
                   {kes(t.balance)}
                 </p>
-                <p className="text-[10px] text-ink-tertiary">{bal > 0 ? 'outstanding' : 'settled'}</p>
+                <p className="text-[10px] text-ink-secondary">{bal > 0 ? 'outstanding' : 'settled'}</p>
               </div>
             </button>
           )
@@ -146,7 +146,7 @@ export default function WaiterTabsScreen() {
       <Modal open={open} onClose={() => setOpen(false)} title="New Table" size="sm">
         <div className="space-y-4">
           <div>
-            <label className="block text-[10px] tracking-widest uppercase text-ink-tertiary mb-1">
+            <label className="block text-[10px] tracking-widest uppercase text-ink-secondary mb-1">
               Table / Reference
             </label>
             <input

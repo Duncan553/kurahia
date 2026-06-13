@@ -224,7 +224,7 @@ export default function ClockScreen() {
             <p className="text-4xl font-bold font-mono text-ink-primary tabular-nums">
               {dutyTime(dutyMinutes)}
             </p>
-            <p className="text-xs text-ink-tertiary mt-1">
+            <p className="text-xs text-ink-secondary mt-1">
               since {formatTime(lastEvent.occurred_at)}
             </p>
           </motion.div>

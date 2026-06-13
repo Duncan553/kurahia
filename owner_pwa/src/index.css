@@ -22,8 +22,8 @@
   --color-tea-brown: #6B4A2E;
 
   /* ── Status palette ──────────────────────────────────────────── */
-  --color-status-paid: #4A7A4A;
-  --color-status-pending: #B88838;
+  --color-status-paid: #3D6640;    /* was #4A7A4A — 4.32:1, now 5.68:1 AA */
+  --color-status-pending: #8A6320; /* was #B88838 — 2.72:1, now 4.64:1 AA */
   --color-status-failed: #A04438;
   --color-status-neutral: #4A7889;
 
