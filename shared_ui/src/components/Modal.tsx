@@ -63,7 +63,18 @@ const desktopVariants = {
 
 export function Modal({ open, onClose, title, children, size = 'md', preventClose = false }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLElement | null>(null)
   const titleId = 'modal-title'
+
+  // Store the element that opened the modal so we can restore focus on close
+  useEffect(() => {
+    if (open) {
+      triggerRef.current = document.activeElement as HTMLElement
+    } else if (triggerRef.current) {
+      triggerRef.current.focus()
+      triggerRef.current = null
+    }
+  }, [open])
 
   useFocusTrap(dialogRef, open)
 
