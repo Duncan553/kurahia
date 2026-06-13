@@ -148,10 +148,11 @@ export default function LoginScreen() {
                 transition={{ duration: 0.35, delay: 0.65, ease: 'easeOut' }}
               >
                 <div>
-                  <label className="block text-[10px] tracking-[0.2em] uppercase text-white/60 font-medium mb-1.5">
+                  <label htmlFor="login-username" className="block text-[10px] tracking-[0.2em] uppercase text-white/60 font-medium mb-1.5">
                     Username
                   </label>
                   <input
+                    id="login-username"
                     type="text"
                     autoComplete="username"
                     value={username}
@@ -169,10 +170,11 @@ export default function LoginScreen() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] tracking-[0.2em] uppercase text-white/60 font-medium mb-1.5">
+                  <label htmlFor="login-password" className="block text-[10px] tracking-[0.2em] uppercase text-white/60 font-medium mb-1.5">
                     Password
                   </label>
                   <input
+                    id="login-password"
                     type="password"
                     autoComplete="current-password"
                     value={password}
