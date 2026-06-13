@@ -35,10 +35,13 @@ function toUtcISO(localDT: string) {
 }
 
 function StatusDot({ status }: { status: string }) {
-  if (status === 'CANCELLED') return (
-    <span className="inline-block w-2 h-2 rounded-full bg-status-failed/60 mr-1.5" />
+  const isCancelled = status === 'CANCELLED'
+  return (
+    <>
+      <span aria-hidden="true" className={`inline-block w-2 h-2 rounded-full mr-1 ${isCancelled ? 'bg-status-failed/60' : 'bg-status-paid'}`} />
+      <span className="mr-1.5">{isCancelled ? 'Cancelled' : 'Scheduled'}</span>
+    </>
   )
-  return <span className="inline-block w-2 h-2 rounded-full bg-status-paid mr-1.5" />
 }
 
 export default function ShiftScreen() {

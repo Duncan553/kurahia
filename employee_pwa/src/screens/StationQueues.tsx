@@ -26,6 +26,12 @@ function ageCls(s: number) {
   return 'text-status-failed'                // > 15 min — red
 }
 const ageLabel = (s: number) => s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`
+// Icon + text label so age urgency is never color-only (WCAG 1.4.1)
+function ageBadge(s: number): { icon: string; text: string } {
+  if (s < 480) return { icon: '○', text: '<8m' }
+  if (s < 900) return { icon: '◐', text: '8-15m' }
+  return { icon: '●', text: '>15m' }
+}
 
 // ── Stock view ────────────────────────────────────────────────────────────────
 
@@ -163,8 +169,11 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
                   </>
                 )}
                 <span className="text-ink-tertiary">·</span>
-                <span className={`font-semibold tabular-nums ${ageCls(item.age_seconds)}`}>
+                <span className={`font-semibold tabular-nums ${ageCls(item.age_seconds)}`}
+                  aria-label={`Age: ${ageLabel(item.age_seconds)}, ${ageBadge(item.age_seconds).text}`}>
+                  <span aria-hidden="true">{ageBadge(item.age_seconds).icon} </span>
                   {ageLabel(item.age_seconds)}
+                  <span className="ml-1 font-normal" aria-hidden="true">{ageBadge(item.age_seconds).text}</span>
                 </span>
               </div>
             </div>
