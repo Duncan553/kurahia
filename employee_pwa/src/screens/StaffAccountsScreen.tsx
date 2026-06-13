@@ -14,7 +14,7 @@ const inp = 'w-full rounded-xl px-3 py-2.5 border border-cream-alt bg-cream-card
 const toE164 = (p: string) => { const s = p.replace(/\s+/g,''); return s.startsWith('+254')?s : s.startsWith('254')?'+'+s : s.startsWith('0')?'+254'+s.slice(1):s }
 const extractErr = (e: unknown) => (e as {response?:{data?:{error?:string}}})?.response?.data?.error ?? 'Something went wrong.'
 const LBL = ({ children }: { children: React.ReactNode }) => (
-  <label className="block text-[10px] tracking-widest uppercase text-ink-tertiary mb-1">{children}</label>
+  <label className="block text-[10px] tracking-widest uppercase text-ink-secondary mb-1">{children}</label>
 )
 
 export default function StaffAccountsScreen() {
@@ -103,7 +103,7 @@ export default function StaffAccountsScreen() {
                   <p><span className="text-ink-tertiary">Username:</span> {credentials.u}</p>
                   <p><span className="text-ink-tertiary">Password:</span> {credentials.p}</p>
                 </div>
-                <p className="text-xs text-ink-tertiary">Staff will set their PIN on first login.</p>
+                <p className="text-xs text-ink-secondary">Staff will set their PIN on first login.</p>
                 <button onClick={() => setCredentials(null)} className="text-xs text-primary-dark underline font-medium">Dismiss</button>
               </motion.div>
             )}
@@ -204,7 +204,7 @@ export default function StaffAccountsScreen() {
               <div key={u.id} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border border-cream-alt bg-cream-card ${!u.is_active ? 'opacity-60' : ''}`}>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink-primary truncate">{u.username}</p>
-                  <p className="text-xs text-ink-tertiary">{u.role}{u.department ? ` · ${u.department}` : ''}</p>
+                  <p className="text-xs text-ink-secondary">{u.role}{u.department ? ` · ${u.department}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="flex flex-col items-end gap-1">

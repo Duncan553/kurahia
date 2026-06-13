@@ -122,7 +122,7 @@ export default function AlertsScreen() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-ink-primary font-serif">Judge Alerts</h1>
         {!isLoading && (
-          <span className="text-xs text-ink-tertiary">
+          <span className="text-xs text-ink-secondary">
             {alerts.length} {view.filter === 'all' ? 'total' : view.filter}
           </span>
         )}
@@ -172,7 +172,7 @@ export default function AlertsScreen() {
       {/* Grouped alerts */}
       {groups.map(({ severity, items }) => (
         <div key={severity} className="space-y-2">
-          <p className={`text-[10px] font-semibold tracking-widest uppercase ${SEV_TEXT[severity] ?? 'text-ink-tertiary'}`}>
+          <p className={`text-[10px] font-semibold tracking-widest uppercase ${SEV_TEXT[severity] ?? 'text-ink-secondary'}`}>
             {severity}
           </p>
           {items.map(alert => (
@@ -191,15 +191,15 @@ export default function AlertsScreen() {
                     <span className={`shrink-0 ${SEV_TEXT[alert.severity] ?? 'text-ink-tertiary'}`}>
                       <AlertTypeIcon type={alert.alert_type} />
                     </span>
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary font-serif">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary font-serif">
                       {alert.alert_type.replace(/_/g, ' ')}
                     </span>
                     {alert.item_name && (
-                      <span className="text-[10px] text-ink-tertiary truncate">· {alert.item_name}</span>
+                      <span className="text-[10px] text-ink-secondary truncate">· {alert.item_name}</span>
                     )}
                   </div>
                   <p className="text-sm text-ink-primary leading-snug">{alert.description}</p>
-                  <p className="text-[10px] text-ink-tertiary mt-1.5">{timeAgo(alert.created_at)}</p>
+                  <p className="text-[10px] text-ink-secondary mt-1.5">{timeAgo(alert.created_at)}</p>
                 </div>
                 {/* Acknowledge / done */}
                 {alert.status === 'ACKNOWLEDGED' ? (
@@ -231,7 +231,7 @@ export default function AlertsScreen() {
         {ackingAlert && (
           <div className="space-y-4">
             <p className="text-sm text-ink-secondary">{ackingAlert.description}</p>
-            <p className="text-xs text-ink-tertiary">This cannot be undone.</p>
+            <p className="text-xs text-ink-secondary">This cannot be undone.</p>
             <div className="flex gap-2 justify-end">
               <Button variant="ghost" size="sm" onClick={() => setView(v => ({ ...v, ackingId: null }))}>
                 Cancel

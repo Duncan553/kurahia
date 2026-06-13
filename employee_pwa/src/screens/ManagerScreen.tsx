@@ -162,7 +162,7 @@ export default function ManagerScreen() {
               </span>
               <div>
                 <p className="text-sm font-semibold text-ink-primary">{label}</p>
-                <p className="text-xs text-ink-tertiary mt-0.5 leading-snug">{description}</p>
+                <p className="text-xs text-ink-secondary mt-0.5 leading-snug">{description}</p>
               </div>
             </motion.button>
           ))}
@@ -181,7 +181,7 @@ export default function ManagerScreen() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-ink-primary">{user?.username}</p>
-                <p className="text-xs text-ink-tertiary">
+                <p className="text-xs text-ink-secondary">
                   {roleName(user?.role_level ?? 0)}
                   {user?.department ? ` · ${user.department}` : ''}
                 </p>

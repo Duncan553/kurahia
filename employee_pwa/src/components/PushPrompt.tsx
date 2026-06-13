@@ -29,7 +29,7 @@ export default function PushPrompt() {
       flex items-center gap-3">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-ink-primary">Get notified about shifts and approvals</p>
-        <p className="text-xs text-ink-tertiary mt-0.5">Even when the app is closed.</p>
+        <p className="text-xs text-ink-secondary mt-0.5">Even when the app is closed.</p>
       </div>
       <Button variant="ghost" size="sm" onClick={() => setHidden(true)}>Not now</Button>
       <Button variant="primary" size="sm" loading={busy} onClick={onEnable}>Enable</Button>

@@ -57,7 +57,7 @@ function StatsBar({ stats }: { stats: Stats | undefined }) {
       {items.map(({ label, value }) => (
         <div key={label} className="rounded-2xl border border-cream-alt bg-cream-card p-3 text-center">
           <p className="text-lg font-bold tabular-nums text-ink-primary">{value}</p>
-          <p className="text-[10px] text-ink-tertiary uppercase tracking-wide mt-0.5">{label}</p>
+          <p className="text-[10px] text-ink-secondary uppercase tracking-wide mt-0.5">{label}</p>
         </div>
       ))}
     </div>
@@ -208,7 +208,7 @@ function LookupSection() {
               {kes(data.tab_balance)} credit
             </p>
             {data.issued_by && (
-              <p className="text-[10px] text-ink-tertiary">by {data.issued_by}</p>
+              <p className="text-[10px] text-ink-secondary">by {data.issued_by}</p>
             )}
           </div>
         </div>
@@ -280,7 +280,7 @@ export default function GateHubScreen() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-base font-bold tracking-widest uppercase text-ink-primary">Gate</h1>
-          <p className="text-xs text-ink-tertiary">
+          <p className="text-xs text-ink-secondary">
             {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>

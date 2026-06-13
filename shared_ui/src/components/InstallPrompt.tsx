@@ -40,7 +40,7 @@ export function InstallPrompt({ kvGet, kvSet }: InstallPromptProps) {
       flex items-center gap-3">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-ink-primary">Add Kurahia to your home screen</p>
-        <p className="text-xs text-ink-tertiary mt-0.5">Faster access, works like a real app.</p>
+        <p className="text-xs text-ink-secondary mt-0.5">Faster access, works like a real app.</p>
       </div>
       <Button variant="ghost" size="sm"
         onClick={() => { void kvSet(DISMISS_KEY, Date.now()); setEligible(false) }}>
