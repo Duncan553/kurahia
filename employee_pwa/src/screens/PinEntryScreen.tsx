@@ -148,7 +148,7 @@ export default function PinEntryScreen() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.45, ease: 'easeOut' }}
               >
-                <p className="text-[10px] tracking-[0.3em] uppercase text-ink-tertiary font-medium mb-3">
+                <p className="text-[10px] tracking-[0.3em] uppercase text-ink-secondary font-medium mb-3">
                   KURAHIA STAFF
                 </p>
                 <h1 className="font-serif text-5xl font-bold tracking-tight text-ink-primary leading-[0.92]">
@@ -172,10 +172,11 @@ export default function PinEntryScreen() {
               >
                 {/* Username field */}
                 <div>
-                  <label className="block text-[10px] tracking-[0.2em] uppercase text-ink-tertiary font-medium mb-1.5">
+                  <label htmlFor="pin-username" className="block text-[10px] tracking-[0.2em] uppercase text-ink-secondary font-medium mb-1.5">
                     Username
                   </label>
                   <input
+                    id="pin-username"
                     type="text"
                     autoComplete="username"
                     value={username}
@@ -194,6 +195,7 @@ export default function PinEntryScreen() {
 
                 {/* PIN dots */}
                 <div
+                  role="group"
                   className="flex justify-center gap-4 py-2"
                   aria-label="PIN entry"
                   aria-live="polite"

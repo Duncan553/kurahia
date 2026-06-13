@@ -284,7 +284,7 @@ export default function GateHubScreen() {
             {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-        <button onClick={refresh}
+        <button onClick={refresh} aria-label="Refresh gate stats"
           className="w-9 h-9 flex items-center justify-center rounded-xl border border-cream-alt
             hover:bg-cream-alt transition-colors text-ink-tertiary">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">

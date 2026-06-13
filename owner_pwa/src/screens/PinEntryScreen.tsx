@@ -110,7 +110,7 @@ export default function PinEntryScreen() {
         </div>
 
         {/* PIN dots */}
-        <div className="flex justify-center gap-4 mb-6" aria-label="PIN entry" aria-live="polite">
+        <div role="group" className="flex justify-center gap-4 mb-6" aria-label="PIN entry" aria-live="polite">
           {[0,1,2,3].map((i) => (
             <div
               key={i}

@@ -99,6 +99,7 @@ function SideLink({ path, label, Icon }: NavItem) {
     <NavLink
       to={path}
       end={path === '/dashboard'}
+      aria-label={label}
       className={({ isActive }) => [
         'flex items-center gap-3 px-4 py-3 rounded-lg mx-2 transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
@@ -108,7 +109,7 @@ function SideLink({ path, label, Icon }: NavItem) {
       ].join(' ')}
     >
       <span className="shrink-0"><Icon /></span>
-      <span className="hidden lg:block text-sm font-medium">{label}</span>
+      <span className="hidden lg:block text-sm font-medium" aria-hidden="true">{label}</span>
     </NavLink>
   )
 }
