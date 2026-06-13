@@ -102,7 +102,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
       <div className="grid grid-cols-4 gap-1.5">
         {METHODS.map(({ value, label }) => (
           <button key={value} onClick={() => setMethod(value)}
-            className={`py-2 rounded-xl text-xs font-semibold border transition-colors ${
+            className={`min-h-[44px] rounded-xl text-xs font-semibold border transition-colors ${
               method === value
                 ? 'bg-ink-primary text-cream-card border-ink-primary'
                 : 'border-cream-alt text-ink-secondary hover:bg-cream-alt'
@@ -285,7 +285,7 @@ export default function GateHubScreen() {
           </p>
         </div>
         <button onClick={refresh} aria-label="Refresh gate stats"
-          className="w-9 h-9 flex items-center justify-center rounded-xl border border-cream-alt
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-cream-alt
             hover:bg-cream-alt transition-colors text-ink-tertiary">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M13.5 8A5.5 5.5 0 112.5 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>

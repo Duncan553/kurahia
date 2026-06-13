@@ -135,7 +135,7 @@ export default function AlertsScreen() {
             key={key}
             onClick={() => setView(v => ({ ...v, filter: key }))}
             className={[
-              'px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
+              'px-3 py-1.5 min-h-[44px] rounded-full text-xs font-semibold transition-colors',
               view.filter === key
                 ? 'bg-ink-primary text-cream-card'
                 : 'bg-cream-alt text-ink-secondary hover:bg-cream-deep',
