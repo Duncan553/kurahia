@@ -128,7 +128,7 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
   if (items.length === 0) return (
     <div className="flex flex-col items-center justify-center py-24 gap-2">
       <span className="text-4xl">✓</span>
-      <p className="text-ink-tertiary text-lg font-medium">Queue is clear</p>
+      <p className="text-ink-secondary text-lg font-medium">Queue clear · Kazi safi</p>
     </div>
   )
 
