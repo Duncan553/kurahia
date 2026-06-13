@@ -179,7 +179,9 @@ function LookupSection() {
     <section className="rounded-2xl border border-cream-alt bg-cream-card p-4 space-y-3 mb-4">
       <p className="text-sm font-semibold text-ink-primary">Look Up Band</p>
       <div className="flex gap-2">
+        <label htmlFor="gate-band-number" className="sr-only">Band number</label>
         <input
+          id="gate-band-number"
           type="number" min="1" inputMode="numeric"
           placeholder="Band number"
           value={input}
