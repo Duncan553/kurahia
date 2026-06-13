@@ -154,7 +154,9 @@ export default function ServicePayScreen() {
           </div>
 
           <div className="space-y-2">
+            <label htmlFor="service-pay-amount" className="sr-only">Amount received (KSh)</label>
             <input
+              id="service-pay-amount"
               type="number" min="0" step="0.01" inputMode="decimal"
               placeholder={`Amount received (KSh)`}
               value={pay.amount}

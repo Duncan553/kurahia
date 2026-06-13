@@ -87,16 +87,19 @@ export default function MenuManageScreen() {
         <form
           onSubmit={e => { e.preventDefault(); createMut.mutate() }}
           className="p-4 rounded-2xl border border-cream-alt bg-cream-card space-y-3">
-          <input required placeholder="Name — e.g. Grilled Tilapia, 60-min Massage"
+          <label htmlFor="menu-item-name" className="sr-only">Item name</label>
+          <input id="menu-item-name" required placeholder="Name — e.g. Grilled Tilapia, 60-min Massage"
             value={f.name} onChange={e => setF({ ...f, name: e.target.value })}
             className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-sm
               focus:outline-none focus:border-primary-dark" />
           <div className="grid grid-cols-2 gap-2">
-            <input required type="number" min="0" step="0.01" inputMode="decimal" placeholder="Price (KSh)"
+            <label htmlFor="menu-item-price" className="sr-only">Price (KSh)</label>
+            <input id="menu-item-price" required type="number" min="0" step="0.01" inputMode="decimal" placeholder="Price (KSh)"
               value={f.price} onChange={e => setF({ ...f, price: e.target.value })}
               className="rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-sm
                 focus:outline-none focus:border-primary-dark" />
-            <input placeholder="Category (optional)"
+            <label htmlFor="menu-item-category" className="sr-only">Category (optional)</label>
+            <input id="menu-item-category" placeholder="Category (optional)"
               value={f.category} onChange={e => setF({ ...f, category: e.target.value })}
               className="rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-sm
                 focus:outline-none focus:border-primary-dark" />
@@ -134,6 +137,7 @@ export default function MenuManageScreen() {
                 {priceEdit?.id === it.id ? (
                   <>
                     <input autoFocus type="number" min="0" step="0.01" inputMode="decimal"
+                      aria-label={`New price for ${it.name} (KSh)`}
                       value={priceEdit.price}
                       onChange={e => setPriceEdit({ id: it.id, price: e.target.value })}
                       onKeyDown={e => e.key === 'Enter' && priceMut.mutate(priceEdit)}
