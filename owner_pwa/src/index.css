@@ -27,6 +27,9 @@
   --color-status-failed: #A04438;
   --color-status-neutral: #4A7889;
 
+  /* ── Data-viz accent (cool teal — charts only, ≤10% of any screen) ── */
+  --color-accent-cool: #3C7A8C;
+
   /* ── Font families ───────────────────────────────────────────── */
   --font-sans: Inter, sans-serif;
   --font-serif: 'Cormorant Garamond', Georgia, serif;
