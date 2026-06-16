@@ -1,20 +1,26 @@
 """
-pos/menu.py — Menu item CRUD.
+pos/menu.py — Menu item CRUD + recipe management.
 POST   /menu/items
 PATCH  /menu/items/:id
 POST   /menu/items/:id/disable
 POST   /menu/items/:id/enable
 GET    /menu/items
+GET    /menu/items/:id/recipe
+POST   /menu/items/:id/recipe  (set/replace)
 """
+import uuid
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.menu_item import MenuItem, PrepStation
+from app.models.recipe_line import RecipeLine
+from app.models.inventory_item import InventoryItem
 from app.models.department import Department
 from app.models.user import User
 from app.models.audit_log import AuditLog
+from app.services.stock import get_current_stock
 
 menu_bp = Blueprint("menu", __name__, url_prefix="/menu/items")
 
@@ -135,7 +141,6 @@ def enable_menu_item(item_id):
 def list_menu_items():
     include_disabled = request.args.get("include_disabled", "false").lower() == "true"
     dept_filter      = request.args.get("department")
-
     dept_name_filter = request.args.get("dept_name")
 
     query = db.session.query(MenuItem)
@@ -149,15 +154,155 @@ def list_menu_items():
             return jsonify([]), 200
         query = query.filter_by(department_id=dept.id)
 
-    return jsonify([
-        {
-            "id":           i.id,
-            "name":         i.name,
-            "price":        str(i.price),
-            "category":     i.category,
-            "prep_station": i.prep_station,
+    result = []
+    for i in query.all():
+        result.append({
+            "id":            i.id,
+            "name":          i.name,
+            "price":         str(i.price),
+            "category":      i.category,
+            "prep_station":  i.prep_station,
             "department_id": i.department_id,
-            "is_active":    i.is_active,
-        }
-        for i in query.all()
-    ]), 200
+            "is_active":     i.is_active,
+            **_compute_menu_item_cost_fields(i),
+        })
+    return jsonify(result), 200
+
+
+def _compute_menu_item_cost_fields(item: MenuItem) -> dict:
+    """
+    Compute food_cost, gross_margin, food_cost_pct, in_stock from recipe lines.
+    Returns all-None dict when the item has no recipe or any cost is missing.
+    """
+    lines = db.session.query(RecipeLine).filter_by(
+        menu_item_id=item.id, is_active=True
+    ).all()
+
+    if not lines:
+        return {"food_cost": None, "gross_margin": None, "food_cost_pct": None, "in_stock": None}
+
+    food_cost = Decimal("0")
+    all_have_cost = True
+    in_stock = True
+
+    for line in lines:
+        inv = line.inventory_item
+        if inv is None or inv.cost_per_unit is None:
+            all_have_cost = False
+        else:
+            food_cost += Decimal(str(line.quantity)) * Decimal(str(inv.cost_per_unit))
+
+        # Stock check: current_stock must cover this recipe's required quantity
+        current = get_current_stock(inv.id if inv else line.inventory_item_id)
+        if current < Decimal(str(line.quantity)):
+            in_stock = False
+
+    if not all_have_cost:
+        return {"food_cost": None, "gross_margin": None, "food_cost_pct": None, "in_stock": in_stock}
+
+    price = Decimal(str(item.price))
+    gross_margin = price - food_cost
+    food_cost_pct = (food_cost / price * 100) if price > 0 else None
+
+    return {
+        "food_cost":      str(food_cost.quantize(Decimal("0.01"))),
+        "gross_margin":   str(gross_margin.quantize(Decimal("0.01"))),
+        "food_cost_pct":  str(food_cost_pct.quantize(Decimal("0.01"))) if food_cost_pct is not None else None,
+        "in_stock":       in_stock,
+    }
+
+
+# ── Recipe management ─────────────────────────────────────────────────────────
+
+@menu_bp.get("/<item_id>/recipe")
+@require_active_user
+def get_recipe(item_id):
+    item = db.session.get(MenuItem, item_id)
+    if not item:
+        return jsonify({"error": "Menu item not found."}), 404
+
+    lines = db.session.query(RecipeLine).filter_by(
+        menu_item_id=item_id, is_active=True
+    ).all()
+
+    return jsonify([{
+        "id":                l.id,
+        "inventory_item_id": l.inventory_item_id,
+        "inventory_item_name": l.inventory_item.name if l.inventory_item else None,
+        "quantity":          str(l.quantity),
+        "unit":              l.unit,
+    } for l in lines]), 200
+
+
+@menu_bp.post("/<item_id>/recipe")
+@require_active_user
+def set_recipe(item_id):
+    """
+    Set/replace a menu item's recipe. Deactivates all previous lines and creates new ones.
+    Auth: manager (level >= 5) OR head chef (level >= 5, dept=KITCHEN).
+    Both map to role.level >= 5 — the head chef distinction is structural, not a separate check.
+    """
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or head chef required."}), 403
+
+    item = db.session.get(MenuItem, item_id)
+    if not item:
+        return jsonify({"error": "Menu item not found."}), 404
+
+    data = request.get_json(silent=True) or {}
+    lines_data = data.get("lines", [])
+
+    if not isinstance(lines_data, list):
+        return jsonify({"error": "lines must be an array."}), 400
+
+    # Validate all inventory items before writing anything
+    parsed_lines = []
+    for idx, ld in enumerate(lines_data):
+        inv_id = ld.get("inventory_item_id")
+        raw_qty = ld.get("quantity")
+        if not inv_id or raw_qty is None:
+            return jsonify({"error": f"Line {idx}: inventory_item_id and quantity required."}), 400
+        try:
+            qty = Decimal(str(raw_qty))
+        except InvalidOperation:
+            return jsonify({"error": f"Line {idx}: quantity must be a number."}), 400
+        if qty <= 0:
+            return jsonify({"error": f"Line {idx}: quantity must be positive."}), 400
+        inv_item = db.session.get(InventoryItem, inv_id)
+        if not inv_item or not inv_item.is_active:
+            return jsonify({"error": f"Inventory item '{inv_id}' not found or inactive."}), 404
+        parsed_lines.append((inv_item, qty))
+
+    with db.session.begin_nested():
+        # Deactivate existing recipe lines (append-only spirit — rows stay in DB)
+        existing = db.session.query(RecipeLine).filter_by(
+            menu_item_id=item_id, is_active=True
+        ).all()
+        for old_line in existing:
+            old_line.is_active = False
+
+        # Write new lines
+        new_lines = []
+        for inv_item, qty in parsed_lines:
+            line = RecipeLine(
+                menu_item_id=item_id,
+                inventory_item_id=inv_item.id,
+                quantity=qty,
+                unit=inv_item.unit,
+            )
+            db.session.add(line)
+            new_lines.append(line)
+
+    AuditLog.log(
+        actor=actor.username,
+        action="menu.recipe.set",
+        target=item.name,
+        details=f"{len(new_lines)} lines",
+    )
+    db.session.commit()
+
+    return jsonify({
+        "menu_item_id": item_id,
+        "lines":        len(new_lines),
+    }), 201
