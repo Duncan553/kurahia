@@ -19,7 +19,9 @@ from app.models.stock_movement import StockMovement, MovementReason
 from app.models.inventory_item import InventoryItem
 from app.models.user import User
 from app.models.audit_log import AuditLog
+from app.models.count_demotion import CountDemotion
 from app.services.stock import get_current_stock
+from app.services.trust import compute_trust_tier, AUTO_CONFIRMED
 
 counts_bp = Blueprint("inv_counts", __name__, url_prefix="/inventory/counts")
 
@@ -61,6 +63,13 @@ def submit_count():
     if not item or not item.is_active:
         return jsonify({"error": "This item is disabled or does not exist. Re-enable it or choose another."}), 404
 
+    # Dept-scoped access: non-owners can only count items in their own department
+    if actor.role.level < 10 and actor.department_id and item.department_id != actor.department_id:
+        return jsonify({"error": "You can only count items in your own department."}), 403
+
+    # Capture trust tier BEFORE this count changes anything (for auto-demotion detection)
+    prior_tier, _ = compute_trust_tier(item)
+
     with db.session.begin_nested():
         # Snapshot record for variance anchoring
         count = StockCount(
@@ -88,16 +97,32 @@ def submit_count():
             )
             db.session.add(reconciliation)
 
+    # Auto-demote: if a previously-trusted item shows variance, flag it for 4 weeks
+    demoted = False
+    if adjustment != Decimal("0") and prior_tier == AUTO_CONFIRMED:
+        demotion_idem = f"demote-{idem_key}"
+        if not db.session.query(CountDemotion).filter_by(idempotency_key=demotion_idem).first():
+            db.session.add(CountDemotion(
+                item_id=item.id,
+                demoted_by_id=actor.id,
+                reason="SPOT_CHECK_VARIANCE",
+                idempotency_key=demotion_idem,
+            ))
+            demoted = True
+
     AuditLog.log(
         actor=actor.username, action="inventory.count",
-        target=item.name, details=f"counted={counted} prior={current}",
+        target=item.name,
+        details=f"counted={counted} prior={current} adj={adjustment} tier={prior_tier}{' DEMOTED' if demoted else ''}",
     )
     db.session.commit()
 
     return jsonify({
-        "id":            count.id,
-        "item":          item.name,
-        "counted":       str(counted),
-        "prior_stock":   str(current),
-        "adjustment":    str(adjustment if adjustment != Decimal("0") else Decimal("0")),
+        "id":          count.id,
+        "item":        item.name,
+        "counted":     str(counted),
+        "prior_stock": str(current),
+        "adjustment":  str(adjustment),
+        "prior_tier":  prior_tier,
+        "demoted":     demoted,
     }), 201

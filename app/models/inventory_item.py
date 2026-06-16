@@ -5,6 +5,7 @@ is_watch_list → tighter tolerance + daily count cadence.
 is_staff_food  → lives in Staff dept, excluded from sale-stock variance and judge.
 """
 import uuid
+from datetime import datetime, timezone
 from decimal import Decimal
 from app.extensions import db
 
@@ -28,6 +29,12 @@ class InventoryItem(db.Model):
     is_staff_food = db.Column(db.Boolean, nullable=False, default=False)
 
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+    # Server-stamped at catalog creation — used for "new item" trust-tier criterion
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=True,
+        default=lambda: datetime.now(timezone.utc),
+    )
 
     # Weighted-average cost, updated on every PURCHASE movement. NULL until first purchase.
     cost_per_unit = db.Column(db.Numeric(14, 4), nullable=True)

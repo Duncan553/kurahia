@@ -125,9 +125,11 @@ def edit_item(item_id):
 @items_bp.get("")
 @require_active_user
 def list_items():
+    from app.services.trust import compute_trust_tier
     actor = db.session.get(User, get_jwt_identity())
     dept_filter       = request.args.get("department")
     include_disabled  = request.args.get("include_disabled", "false").lower() == "true"
+    for_count         = request.args.get("for_count", "false").lower() == "true"
 
     query = db.session.query(InventoryItem)
     if not include_disabled:
@@ -143,7 +145,7 @@ def list_items():
     result = []
     for it in items:
         stock = get_current_stock(it.id)
-        result.append({
+        row = {
             "id":             it.id,
             "name":           it.name,
             "unit":           it.unit,
@@ -155,7 +157,25 @@ def list_items():
             "is_watch_list":  it.is_watch_list,
             "is_staff_food":  it.is_staff_food,
             "cost_per_unit":  str(it.cost_per_unit) if it.cost_per_unit is not None else None,
-        })
+        }
+        if for_count:
+            tier, reason = compute_trust_tier(it)
+            row["trust_tier"]   = tier
+            row["trust_reason"] = reason
+        result.append(row)
+
+    if for_count:
+        from collections import Counter
+        tier_counts = Counter(r["trust_tier"] for r in result)
+        return jsonify({
+            "summary": {
+                "MUST_COUNT":     tier_counts.get("MUST_COUNT", 0),
+                "QUICK_VERIFY":   tier_counts.get("QUICK_VERIFY", 0),
+                "AUTO_CONFIRMED": tier_counts.get("AUTO_CONFIRMED", 0),
+                "total":          len(result),
+            },
+            "items": result,
+        }), 200
 
     return jsonify(result), 200
 
