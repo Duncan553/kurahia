@@ -18,13 +18,14 @@ import DashboardScreen       from './screens/DashboardScreen'
 
 
 // Code splitting: dashboard is the landing screen, the rest load on demand
-const FinanceScreen = lazy(() => import('./screens/FinanceScreen'))
-const AlertsScreen = lazy(() => import('./screens/AlertsScreen'))
-const PayrollDraftScreen = lazy(() => import('./screens/PayrollDraftScreen'))
-const ReconciliationScreen = lazy(() => import('./screens/ReconciliationScreen'))
-const StaffScreen = lazy(() => import('./screens/StaffScreen'))
-const BookingsScreen = lazy(() => import('./screens/BookingsScreen'))
-const SettingsScreen = lazy(() => import('./screens/SettingsScreen'))
+const FinanceScreen            = lazy(() => import('./screens/FinanceScreen'))
+const AlertsScreen             = lazy(() => import('./screens/AlertsScreen'))
+const PayrollDraftScreen       = lazy(() => import('./screens/PayrollDraftScreen'))
+const ReconciliationScreen     = lazy(() => import('./screens/ReconciliationScreen'))
+const StaffScreen              = lazy(() => import('./screens/StaffScreen'))
+const BookingsScreen           = lazy(() => import('./screens/BookingsScreen'))
+const SettingsScreen           = lazy(() => import('./screens/SettingsScreen'))
+const PurchaseApprovalsScreen  = lazy(() => import('./screens/PurchaseApprovalsScreen'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -49,8 +50,9 @@ const router = createBrowserRouter([
         { path: '/payroll',          element: <PayrollDraftScreen />   },
         { path: '/reconciliation',   element: <ReconciliationScreen /> },
         { path: '/staff',            element: <StaffScreen />          },
-        { path: '/bookings',  element: <BookingsScreen />  },
-        { path: '/settings',  element: <SettingsScreen />  },
+        { path: '/bookings',              element: <BookingsScreen />            },
+        { path: '/settings',              element: <SettingsScreen />            },
+        { path: '/purchase-approvals',    element: <PurchaseApprovalsScreen />  },
       ],
     }],
   },
