@@ -11,7 +11,8 @@ Lifecycle:
   Routed (KITCHEN/BAR): PENDING → RECEIVED → READY → SERVED
   Direct (NONE):        PENDING → (immediately SERVED on order.send)
 
-Valid cancel targets: PENDING or RECEIVED (not SERVED).
+Valid cancel targets: PENDING, RECEIVED, or READY (manager-only for READY — triggers stock reversal).
+SERVED is terminal — use send-back endpoint for returned dishes.
 """
 import uuid
 import enum
@@ -31,7 +32,7 @@ class OrderItemStatus(str, enum.Enum):
 VALID_TRANSITIONS = {
     OrderItemStatus.PENDING:  {OrderItemStatus.RECEIVED, OrderItemStatus.CANCELLED},
     OrderItemStatus.RECEIVED: {OrderItemStatus.READY,    OrderItemStatus.CANCELLED},
-    OrderItemStatus.READY:    {OrderItemStatus.SERVED},
+    OrderItemStatus.READY:    {OrderItemStatus.SERVED, OrderItemStatus.CANCELLED},
     OrderItemStatus.SERVED:   set(),   # terminal
     OrderItemStatus.CANCELLED: set(),  # terminal
 }

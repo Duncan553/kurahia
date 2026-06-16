@@ -4,7 +4,7 @@ APPEND-ONLY. Never update or delete rows.
 
 change_amount is signed:
   positive → stock in  (PURCHASE)
-  negative → stock out (SPOILAGE, STAFF_MEAL, SENT_BACK, SALE_PLACEHOLDER)
+  negative → stock out (SPOILAGE, STAFF_MEAL, SENT_BACK, SALE_PLACEHOLDER, SALE)
   either   → COUNT (reconciliation), TRANSFER, ADJUSTMENT
 
 current_stock(item) = SELECT SUM(change_amount) WHERE item_id = ?
@@ -24,7 +24,8 @@ class MovementReason(str, enum.Enum):
     SENT_BACK        = "SENT_BACK"
     TRANSFER         = "TRANSFER"
     ADJUSTMENT       = "ADJUSTMENT"
-    SALE_PLACEHOLDER = "SALE_PLACEHOLDER"  # POS will write here when built
+    SALE_PLACEHOLDER = "SALE_PLACEHOLDER"  # legacy; kept for existing data/tests
+    SALE             = "SALE"              # real POS sale auto-consumption (Stage 2+)
     # Event movements are NOT in CONSUMPTION_REASONS — judge ignores them automatically.
     # 50 kg beef going to a wedding doesn't look like theft.
     EVENT_ALLOCATION = "EVENT_ALLOCATION"
@@ -36,6 +37,7 @@ CONSUMPTION_REASONS = {
     MovementReason.STAFF_MEAL,
     MovementReason.SENT_BACK,
     MovementReason.SALE_PLACEHOLDER,
+    MovementReason.SALE,
 }
 
 

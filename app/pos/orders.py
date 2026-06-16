@@ -26,9 +26,9 @@ from app.models.tab import Tab, TabStatus
 from app.models.order import Order, OrderStatus
 from app.models.order_item import OrderItem, OrderItemStatus, VALID_TRANSITIONS
 from app.models.charge import Charge
-from app.models.stock_movement import StockMovement, MovementReason
 from app.models.user import User
 from app.models.audit_log import AuditLog
+from app.services.consumption import consume_order_item, reverse_consumption
 
 orders_bp = Blueprint("orders", __name__)
 
@@ -255,6 +255,7 @@ def mark_ready(oi_id):
         oi.status   = OrderItemStatus.READY.value
         oi.ready_at = datetime.now(timezone.utc)
         _notify_waiter_ready(oi)
+        consume_order_item(oi, actor)   # auto-deduct recipe ingredients
     AuditLog.log(actor=actor.username, action="order_item.ready", target=oi_id)
     db.session.commit()
     return jsonify({"id": oi.id, "status": oi.status}), 200
@@ -287,19 +288,26 @@ def cancel_item(oi_id):
     if not oi:
         return jsonify({"error": "Order item not found."}), 404
     if not oi.can_transition_to(OrderItemStatus.CANCELLED):
-        return jsonify({"error": f"This item is {oi.status} — only Pending or Received items can be cancelled."}), 400
-    # Cancel now reverses money — restrict to the order's own waiter or manager+
-    if actor.role.level < MANAGER_LEVEL and (not oi.order or oi.order.created_by_id != actor.id):
-        return jsonify({"error": "Only the waiter who took this order or a manager can cancel it."}), 403
+        return jsonify({"error": f"This item is {oi.status} — it cannot be cancelled."}), 400
+    # READY items were already consumed — only a manager can cancel (triggers stock reversal)
+    if oi.status == OrderItemStatus.READY.value and actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Items that are ready to serve can only be cancelled by a manager."}), 403
+    # PENDING/RECEIVED: waiter who owns the order OR manager+
+    elif oi.status != OrderItemStatus.READY.value:
+        if actor.role.level < MANAGER_LEVEL and (not oi.order or oi.order.created_by_id != actor.id):
+            return jsonify({"error": "Only the waiter who took this order or a manager can cancel it."}), 403
     data = request.get_json(silent=True) or {}
+    was_ready = oi.ready_at is not None
     with db.session.begin_nested():
         oi.status        = OrderItemStatus.CANCELLED.value
         oi.cancelled_at  = datetime.now(timezone.utc)
         oi.cancel_reason = data.get("reason", "")
         _reverse_charge(oi, actor)
+        if was_ready:
+            reverse_consumption(oi, actor)  # undo ingredient deduction
         _maybe_complete_order(oi.order)
     AuditLog.log(actor=actor.username, action="order_item.cancel", target=oi_id,
-                 details=f"{oi.cancel_reason} (charge reversed)")
+                 details=f"{oi.cancel_reason} (charge reversed{', stock reversed' if was_ready else ''})")
     db.session.commit()
     return jsonify({"id": oi.id, "status": oi.status}), 200
 
@@ -328,23 +336,9 @@ def send_back_item(oi_id):
         oi.status        = OrderItemStatus.CANCELLED.value
         oi.cancelled_at  = datetime.now(timezone.utc)
         oi.cancel_reason = "sent-back"
-        _reverse_charge(oi, actor)  # money mirrors the stock reversal below
-
-        # Inventory movement — write directly (same principle as service layer in inventory.movements)
-        # Only possible if a linked inventory item exists (menu item → inventory item mapping is manual for now)
-        # The movement records the loss regardless of stock link
-        inv_idem = f"sentback-{idem_key}"
-        if not db.session.query(StockMovement).filter_by(idempotency_key=inv_idem).first():
-            movement = StockMovement(
-                item_id=None,  # placeholder until menu↔inventory mapping is built
-                change_amount=Decimal("-1"),
-                reason=MovementReason.SENT_BACK.value,
-                actor_id=actor.id,
-                notes=f"Sent-back: order_item={oi_id}",
-                idempotency_key=inv_idem,
-            )
-            # Only write movement if there's a real item to link (skip if item_id is None)
-            # This avoids FK violation; full link comes when MenuItem↔InventoryItem FK is built
+        _reverse_charge(oi, actor)
+        # No stock reversal for send-back: ingredients were consumed on READY and the dish was
+        # already plated and served. The loss is real. Only money is reversed, not stock.
         _maybe_complete_order(oi.order)
 
     AuditLog.log(actor=actor.username, action="order_item.send_back", target=oi_id)
