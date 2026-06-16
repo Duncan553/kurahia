@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { BarChart, Bar, ResponsiveContainer, Tooltip } from 'recharts'
 import { Skeleton, StatusBadge } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
@@ -16,6 +17,8 @@ interface OverviewData {
   top_alerts: { id: string; type: string; severity: string; description: string }[]
   week_calendar: { title: string; date: string; is_peak: boolean; type: string }[]
 }
+
+interface RevenueHistoryRow { date: string; revenue: string }
 
 interface InventoryData {
   total_skus: number
@@ -64,22 +67,23 @@ interface FeedbackData {
   recent_comments: { score: number; comment: string; guest: string }[]
 }
 
-interface SuggestionItem {
-  id: string
-  subject: string
-  status: string
-  submitted_by: string
-}
-
-interface SuggestionsData {
-  management: SuggestionItem[]
-  owner_private: SuggestionItem[]
-}
+interface SuggestionItem { id: string; subject: string; status: string; submitted_by: string }
+interface SuggestionsData { management: SuggestionItem[]; owner_private: SuggestionItem[] }
 
 interface EquipmentData {
   total: number
   due_service: { id: string; name: string; type: string; last_service: string | null }[]
   in_maintenance: { id: string; name: string }[]
+}
+
+interface PurchaseRequest {
+  id: string; item_name: string; quantity: string; status: string
+  department: string; requested_by: string; estimated_cost: string | null
+}
+
+interface BudgetRow {
+  department: string; budget: string; spent: string; remaining: string
+  pct_used: number; over_budget: boolean
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -111,25 +115,18 @@ function reconBadge(status: string): StatusValue {
 
 // ── Tile animation variants ───────────────────────────────────────────────────
 
-const gridVariants = {
-  animate: { transition: { staggerChildren: 0.05 } },
-}
-
+const gridVariants = { animate: { transition: { staggerChildren: 0.04 } } }
 const tileVariants = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.28, ease: 'easeOut' as const } },
+  initial: { opacity: 0, y: 14 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' as const } },
 }
 
-// ── Shared tile wrappers ──────────────────────────────────────────────────────
+// ── Shared tile primitives ────────────────────────────────────────────────────
 
 function TileCard({
-  title,
-  href,
-  children,
+  title, href, children, className = '',
 }: {
-  title: string
-  href?: string
-  children: React.ReactNode
+  title: string; href?: string; children: React.ReactNode; className?: string
 }) {
   const navigate = useNavigate()
   return (
@@ -141,6 +138,7 @@ function TileCard({
       className={[
         'rounded-2xl bg-cream-card border border-cream-alt p-4 space-y-2',
         href ? 'cursor-pointer hover:shadow-sm hover:border-primary-light/40 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main' : '',
+        className,
       ].join(' ')}
     >
       <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">{title}</p>
@@ -149,9 +147,9 @@ function TileCard({
   )
 }
 
-function TileSkeleton() {
+function TileSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className="rounded-2xl bg-cream-card border border-cream-alt p-4 space-y-3">
+    <div className={`rounded-2xl bg-cream-card border border-cream-alt p-4 space-y-3 ${className}`}>
       <Skeleton variant="text" className="w-24 h-3" />
       <Skeleton variant="text" className="w-32 h-8" />
       <Skeleton variant="text" className="w-40 h-3" />
@@ -159,65 +157,247 @@ function TileSkeleton() {
   )
 }
 
-function TileError({ label }: { label: string }) {
+function TileError({ label, className = '' }: { label: string; className?: string }) {
   return (
-    <TileCard title={label}>
+    <TileCard title={label} className={className}>
       <p className="text-2xl font-bold tabular-nums text-ink-tertiary">—</p>
       <p className="text-xs text-status-failed">Couldn't load</p>
     </TileCard>
   )
 }
 
-// ── Tiles ─────────────────────────────────────────────────────────────────────
+// ── Hero tile — revenue + 7-day bar chart ────────────────────────────────────
 
-function RevenueTile() {
-  const { data, isLoading, isError } = useQuery<OverviewData>({
+function HeroTile() {
+  const { data: overview, isLoading: ovLoad, isError: ovErr } = useQuery<OverviewData>({
     queryKey: ['dash-overview'],
-    queryFn: () => api.get<OverviewData>('/dashboard/overview').then((r) => r.data),
+    queryFn: () => api.get<OverviewData>('/dashboard/overview').then(r => r.data),
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
+  })
+  const { data: hist, isLoading: hLoad } = useQuery<RevenueHistoryRow[]>({
+    queryKey: ['dash-revenue-history'],
+    queryFn: () => api.get<RevenueHistoryRow[]>('/finance/revenue-history?days=7').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
+
+  const isLoading = ovLoad || hLoad
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl p-5 space-y-3 col-span-full"
+        style={{ background: 'linear-gradient(135deg, #B4533C 0%, #8C3E2C 100%)' }}>
+        <Skeleton variant="text" className="w-32 h-3 bg-white/20" />
+        <Skeleton variant="text" className="w-48 h-10 bg-white/20" />
+        <Skeleton variant="text" className="w-full h-16 bg-white/20" />
+      </div>
+    )
+  }
+
+  const chartData = (hist ?? []).map(r => ({
+    date: r.date.slice(5),   // MM-DD
+    rev: parseFloat(r.revenue),
+  }))
+  const today = parseFloat(overview?.revenue.total ?? '0')
+  const byMethod = overview?.revenue.by_method ?? {}
+  const parts = Object.entries(byMethod).map(([k, v]) => `${k} ${formatKsh(v)}`).join(' · ')
+
+  return (
+    <div
+      className="rounded-2xl p-5 col-span-full"
+      style={{ background: 'linear-gradient(135deg, #B4533C 0%, #8C3E2C 100%)' }}
+    >
+      <p className="text-[10px] font-semibold tracking-widest uppercase text-white/70 mb-1">Revenue Today</p>
+      {ovErr ? (
+        <p className="text-3xl font-bold tabular-nums text-white/50">KSh —</p>
+      ) : (
+        <>
+          <p className="text-4xl font-bold tabular-nums text-white leading-tight">
+            {formatKsh(today)}
+          </p>
+          {parts && (
+            <p className="text-xs text-white/60 mt-0.5 truncate">{parts}</p>
+          )}
+        </>
+      )}
+
+      {/* 7-day bar chart */}
+      <div className="mt-4 h-16" aria-label="7-day revenue trend">
+        {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+              <Bar dataKey="rev" fill="rgba(255,255,255,0.35)" radius={[3, 3, 0, 0]}
+                activeBar={{ fill: 'rgba(255,255,255,0.6)' }} />
+              <Tooltip
+                contentStyle={{ background: '#1F1B14', border: 'none', borderRadius: 8, fontSize: 11 }}
+                labelStyle={{ color: '#ECE3D0' }}
+                formatter={(v: unknown) => [formatKsh(v as number), 'Revenue']}
+                labelFormatter={(label: unknown) => String(label)}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-full flex items-end gap-1">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="flex-1 bg-white/15 rounded-sm" style={{ height: '40%' }} />
+            ))}
+          </div>
+        )}
+      </div>
+      <p className="text-[10px] text-white/50 mt-1">Last 7 days</p>
+    </div>
+  )
+}
+
+// ── Pending Approvals tile ────────────────────────────────────────────────────
+
+function PendingApprovalsTile() {
+  const { data, isLoading, isError } = useQuery<PurchaseRequest[]>({
+    queryKey: ['purchase-requests'],
+    queryFn: () => api.get<PurchaseRequest[]>('/inventory/purchase-requests').then(r => r.data),
+    staleTime: 2 * 60_000,
   })
 
   if (isLoading) return <TileSkeleton />
-  if (isError)   return <TileError label="Revenue Today" />
+  if (isError)   return <TileError label="Purchase Approvals" />
 
-  const byMethod = data!.revenue.by_method
-  const parts    = Object.entries(byMethod).map(([k, v]) => `${k} ${formatKsh(v)}`).join(' · ')
+  const pending = (data ?? []).filter(r => r.status === 'PENDING' && r.estimated_cost !== null)
 
   return (
-    <TileCard title="Revenue Today" href="/finance">
-      <p className="text-3xl font-bold tabular-nums text-ink-primary">
-        {formatKsh(data!.revenue.total)}
+    <TileCard title="Purchase Approvals" href="/purchase-approvals">
+      <p className={`text-3xl font-bold tabular-nums ${pending.length === 0 ? 'text-ink-tertiary' : 'text-status-pending'}`}>
+        {pending.length}
       </p>
-      {parts ? (
-        <p className="text-xs text-ink-secondary truncate">{parts}</p>
+      {pending.length === 0 ? (
+        <p className="text-xs text-ink-secondary">No approvals waiting</p>
       ) : (
-        <p className="text-xs text-ink-secondary">No payments recorded yet</p>
+        <div className="space-y-1">
+          {pending.slice(0, 2).map(r => (
+            <p key={r.id} className="text-xs text-ink-secondary truncate">
+              <span className="font-medium text-ink-primary">{r.item_name}</span>
+              {r.estimated_cost && <span className="text-status-pending"> · {formatKsh(r.estimated_cost)}</span>}
+            </p>
+          ))}
+          {pending.length > 2 && (
+            <p className="text-xs text-ink-tertiary">+{pending.length - 2} more</p>
+          )}
+        </div>
       )}
     </TileCard>
   )
 }
 
-function ActiveGuestsTile() {
-  const { data, isLoading, isError } = useQuery<OverviewData>({
-    queryKey: ['dash-overview'],   // shares cache with RevenueTile — no extra request
-    queryFn: () => api.get<OverviewData>('/dashboard/overview').then((r) => r.data),
+// ── Budget burn tile ──────────────────────────────────────────────────────────
+
+function BudgetBurnTile() {
+  const period = new Date().toISOString().slice(0, 7)
+  const { data, isLoading, isError } = useQuery<BudgetRow[]>({
+    queryKey: ['dash-budgets', period],
+    queryFn: () => api.get<BudgetRow[]>(`/finance/budgets/status?period=${period}`).then(r => r.data),
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
   })
 
   if (isLoading) return <TileSkeleton />
+  if (isError)   return <TileError label="Budget Burn" />
+
+  const rows = (data ?? []).filter(r => parseFloat(r.budget) > 0)
+
+  return (
+    <TileCard title="Budget Burn" href="/finance">
+      {rows.length === 0 ? (
+        <p className="text-xs text-ink-tertiary">No budgets set — go to Finance to configure.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.slice(0, 3).map(r => (
+            <div key={r.department}>
+              <div className="flex justify-between text-xs mb-0.5">
+                <span className="text-ink-secondary truncate">{r.department}</span>
+                <span className={`font-semibold tabular-nums ${r.over_budget ? 'text-status-failed' : 'text-ink-primary'}`}>
+                  {Math.round(r.pct_used)}%
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-cream-alt overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${r.over_budget ? 'bg-status-failed' : 'bg-accent-cool'}`}
+                  style={{ width: `${Math.min(r.pct_used, 100)}%` }}
+                />
+              </div>
+            </div>
+          ))}
+          {rows.length > 3 && (
+            <p className="text-xs text-ink-tertiary">+{rows.length - 3} more depts</p>
+          )}
+        </div>
+      )}
+    </TileCard>
+  )
+}
+
+// ── Calendar tile ─────────────────────────────────────────────────────────────
+
+interface CalendarEntry { id: string; title: string; date: string; is_peak: boolean; type: string }
+interface CalendarData { calendar_entries: CalendarEntry[]; events: { id: string; name: string; date: string }[] }
+
+function CalendarTile() {
+  const { data, isLoading, isError } = useQuery<CalendarData>({
+    queryKey: ['dash-calendar'],
+    queryFn: () => api.get<CalendarData>('/dashboard/calendar').then(r => r.data),
+    staleTime: 10 * 60_000,
+  })
+
+  if (isLoading) return <TileSkeleton />
+  if (isError)   return <TileError label="Calendar" />
+
+  const entries = (data?.calendar_entries ?? []).slice(0, 3)
+  const events  = (data?.events ?? []).slice(0, 2)
+
+  return (
+    <TileCard title="Upcoming">
+      {entries.length === 0 && events.length === 0 ? (
+        <p className="text-xs text-ink-tertiary">No upcoming events</p>
+      ) : (
+        <div className="space-y-1.5">
+          {entries.map(e => (
+            <div key={e.id} className="flex items-start gap-2">
+              <span className={`shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full ${e.is_peak ? 'bg-status-failed' : 'bg-status-neutral'}`} />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-ink-primary truncate">{e.title}</p>
+                <p className="text-[10px] text-ink-tertiary">{e.date}</p>
+              </div>
+            </div>
+          ))}
+          {events.map(e => (
+            <div key={e.id} className="flex items-start gap-2">
+              <span className="shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full bg-primary-main" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-ink-primary truncate">{e.name}</p>
+                <p className="text-[10px] text-ink-tertiary">{e.date}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </TileCard>
+  )
+}
+
+// ── Existing tiles (kept, some hrefs fixed) ───────────────────────────────────
+
+function ActiveGuestsTile() {
+  const { data, isLoading, isError } = useQuery<OverviewData>({
+    queryKey: ['dash-overview'],
+    queryFn: () => api.get<OverviewData>('/dashboard/overview').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
+  if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Active Guests" />
-
   const active = data!.bookings.active
-
   return (
     <TileCard title="Active Guests" href="/bookings">
       <p className={`text-3xl font-bold tabular-nums ${active === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
         {active}
       </p>
       <p className="text-xs text-ink-secondary">
-        {data!.bookings.arrivals_today} arriving · {data!.bookings.departures_today} departing today
+        {data!.bookings.arrivals_today} arriving · {data!.bookings.departures_today} departing
       </p>
     </TileCard>
   )
@@ -226,16 +406,12 @@ function ActiveGuestsTile() {
 function OpenBookingsTile() {
   const { data, isLoading, isError } = useQuery<BookingsData>({
     queryKey: ['dash-bookings'],
-    queryFn: () => api.get<BookingsData>('/dashboard/bookings').then((r) => r.data),
+    queryFn: () => api.get<BookingsData>('/dashboard/bookings').then(r => r.data),
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
   })
-
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Bookings" />
-
   const total = Object.values(data!.occupancy_by_type).reduce((a, b) => a + b, 0)
-
   return (
     <TileCard title="Open Bookings" href="/bookings">
       <p className={`text-3xl font-bold tabular-nums ${total === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
@@ -256,16 +432,12 @@ function OpenBookingsTile() {
 function StaffOnDutyTile() {
   const { data, isLoading, isError } = useQuery<StaffData>({
     queryKey: ['dash-staff'],
-    queryFn: () => api.get<StaffData>('/dashboard/staff').then((r) => r.data),
+    queryFn: () => api.get<StaffData>('/dashboard/staff').then(r => r.data),
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
   })
-
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Staff On Duty" />
-
   const { on_duty, active_employees, absent_today } = data!
-
   return (
     <TileCard title="Staff On Duty" href="/staff">
       <p className="text-3xl font-bold tabular-nums text-ink-primary">{on_duty}</p>
@@ -279,32 +451,24 @@ function StaffOnDutyTile() {
 function AlertsTile() {
   const { data, isLoading, isError } = useQuery<AlertItem[]>({
     queryKey: ['dash-alerts'],
-    queryFn: () => api.get<AlertItem[]>('/dashboard/alerts').then((r) => r.data),
+    queryFn: () => api.get<AlertItem[]>('/dashboard/alerts').then(r => r.data),
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
   })
-
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Judge Alerts" />
-
-  const alerts = data!
-  const count  = alerts.length
-
+  const count = data!.length
   return (
     <TileCard title="Judge Alerts" href="/alerts">
-      <p className={`text-3xl font-bold tabular-nums ${alertCountColor(count)}`}>
-        {count}
-      </p>
+      <p className={`text-3xl font-bold tabular-nums ${alertCountColor(count)}`}>{count}</p>
       {count === 0 ? (
         <p className="text-xs text-ink-secondary">No open alerts</p>
       ) : (
         <div className="space-y-1 mt-1">
-          {alerts.slice(0, 3).map((a) => (
+          {data!.slice(0, 3).map(a => (
             <p key={a.id} className="text-xs text-ink-secondary truncate">
               <span className={`font-semibold ${a.severity === 'HIGH' ? 'text-status-failed' : 'text-status-pending'}`}>
                 {a.severity}
-              </span>
-              {' · '}{a.description.slice(0, 55)}{a.description.length > 55 ? '…' : ''}
+              </span>{' · '}{a.description.slice(0, 52)}{a.description.length > 52 ? '…' : ''}
             </p>
           ))}
         </div>
@@ -316,22 +480,16 @@ function AlertsTile() {
 function LowStockTile() {
   const { data, isLoading, isError } = useQuery<InventoryData>({
     queryKey: ['dash-inventory'],
-    queryFn: () => api.get<InventoryData>('/dashboard/inventory').then((r) => r.data),
+    queryFn: () => api.get<InventoryData>('/dashboard/inventory').then(r => r.data),
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
   })
-
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Inventory" />
-
   const low = data!.low_stock_count
-  const lowItems = data!.items.filter((i) => i.is_low).slice(0, 3).map((i) => i.name)
-
+  const lowItems = data!.items.filter(i => i.is_low).slice(0, 3).map(i => i.name)
   return (
     <TileCard title="Low Stock">
-      <p className={`text-3xl font-bold tabular-nums ${low === 0 ? 'text-status-paid' : 'text-status-failed'}`}>
-        {low}
-      </p>
+      <p className={`text-3xl font-bold tabular-nums ${low === 0 ? 'text-status-paid' : 'text-status-failed'}`}>{low}</p>
       {low === 0 ? (
         <p className="text-xs text-ink-secondary">All {data!.total_skus} SKUs stocked</p>
       ) : (
@@ -344,23 +502,18 @@ function LowStockTile() {
 function FinanceTile() {
   const { data, isLoading, isError } = useQuery<FinanceData>({
     queryKey: ['dash-finance'],
-    queryFn: () => api.get<FinanceData>('/dashboard/finance').then((r) => r.data),
+    queryFn: () => api.get<FinanceData>('/dashboard/finance').then(r => r.data),
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
   })
-
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Financial Health" />
-
-  const { reconciliation_status, open_shortfalls, unmatched_mpesa, pending_approvals } = data!
-
+  const { reconciliation_status, open_shortfalls, unmatched_mpesa } = data!
   return (
     <TileCard title="Financial Health" href="/finance">
       <StatusBadge status={reconBadge(reconciliation_status)} />
-      <div className="text-xs text-ink-secondary space-y-0.5">
+      <div className="text-xs text-ink-secondary space-y-0.5 mt-1">
         <p>Shortfalls: <span className={open_shortfalls > 0 ? 'text-status-failed font-semibold' : ''}>{open_shortfalls}</span></p>
         <p>Unmatched M-Pesa: <span className={unmatched_mpesa > 0 ? 'text-status-pending font-semibold' : ''}>{unmatched_mpesa}</span></p>
-        <p>Pending approvals: {pending_approvals}</p>
       </div>
     </TileCard>
   )
@@ -369,19 +522,15 @@ function FinanceTile() {
 function FeedbackTile() {
   const { data, isLoading, isError } = useQuery<FeedbackData>({
     queryKey: ['dash-feedback'],
-    queryFn: () => api.get<FeedbackData>('/dashboard/feedback').then((r) => r.data),
+    queryFn: () => api.get<FeedbackData>('/dashboard/feedback').then(r => r.data),
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
   })
-
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Guest Feedback" />
-
-  const avg          = data!.overall_avg
+  const avg = data!.overall_avg
   const commentCount = data!.recent_comments.length
-
   return (
-    <TileCard title="Feedback Score" href="/staff">
+    <TileCard title="Feedback Score">
       <p className={`text-3xl font-bold tabular-nums ${avg ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
         {formatAvg(avg)}
       </p>
@@ -395,27 +544,20 @@ function FeedbackTile() {
 function SuggestionsTile() {
   const { data, isLoading, isError } = useQuery<SuggestionsData>({
     queryKey: ['dash-suggestions'],
-    queryFn: () => api.get<SuggestionsData>('/dashboard/suggestions').then((r) => r.data),
+    queryFn: () => api.get<SuggestionsData>('/dashboard/suggestions').then(r => r.data),
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
   })
-
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Suggestions" />
-
-  // Backend now returns only NEW suggestions (status=NEW filter applied there)
   const newMgmt    = data!.management.length
   const newPrivate = data!.owner_private.length
   const total      = newMgmt + newPrivate
-
   return (
     <TileCard title="Suggestions">
       <p className={`text-3xl font-bold tabular-nums ${total === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
         {total}
       </p>
-      <p className="text-xs text-ink-secondary">
-        Owner-private: {newPrivate} · Management: {newMgmt}
-      </p>
+      <p className="text-xs text-ink-secondary">Owner-private: {newPrivate} · Management: {newMgmt}</p>
     </TileCard>
   )
 }
@@ -423,73 +565,70 @@ function SuggestionsTile() {
 function EquipmentTile() {
   const { data, isLoading, isError } = useQuery<EquipmentData>({
     queryKey: ['dash-equipment'],
-    queryFn: () => api.get<EquipmentData>('/dashboard/equipment').then((r) => r.data),
+    queryFn: () => api.get<EquipmentData>('/dashboard/equipment').then(r => r.data),
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
   })
-
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Equipment" />
-
-  const due  = data!.due_service      // array, not count
+  const due = data!.due_service
   const inMx = data!.in_maintenance.length
-
   return (
     <TileCard title="Equipment">
       <p className={`text-3xl font-bold tabular-nums ${due.length > 0 ? 'text-status-pending' : 'text-status-paid'}`}>
         {due.length}
       </p>
       <p className="text-xs text-ink-secondary">
-        {due.length === 0 ? `All ${data!.total} items serviced` : `due service · ${inMx} in maintenance`}
+        {due.length === 0
+          ? `All ${data!.total} items serviced`
+          : `due service · ${inMx} in maintenance`}
       </p>
       {due.length > 0 && (
         <p className="text-xs text-ink-secondary truncate">
-          {due.slice(0, 2).map((e) => e.name).join(', ')}{due.length > 2 ? ` +${due.length - 2} more` : ''}
+          {due.slice(0, 2).map(e => e.name).join(', ')}{due.length > 2 ? ` +${due.length - 2} more` : ''}
         </p>
       )}
     </TileCard>
   )
 }
 
-// ── Top bar ───────────────────────────────────────────────────────────────────
+// ── Top bar strip ─────────────────────────────────────────────────────────────
 
 function TopBar({ onRefresh }: { onRefresh: () => void }) {
-  const overview  = useQuery<OverviewData>({ queryKey: ['dash-overview'],  queryFn: () => api.get<OverviewData>('/dashboard/overview').then((r) => r.data),  staleTime: 5 * 60_000 })
-  const alerts    = useQuery<AlertItem[]>({ queryKey: ['dash-alerts'],    queryFn: () => api.get<AlertItem[]>('/dashboard/alerts').then((r) => r.data),    staleTime: 5 * 60_000 })
-  const bookings  = useQuery<BookingsData>({ queryKey: ['dash-bookings'],  queryFn: () => api.get<BookingsData>('/dashboard/bookings').then((r) => r.data),  staleTime: 5 * 60_000 })
-
-  const revenue     = overview.data?.revenue.total
-  const alertCount  = alerts.data?.length
-  const activeGuests = bookings.data
-    ? Object.values(bookings.data.occupancy_by_type).reduce((a, b) => a + b, 0)
-    : undefined
+  const overview = useQuery<OverviewData>({
+    queryKey: ['dash-overview'],
+    queryFn: () => api.get<OverviewData>('/dashboard/overview').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
+  const alerts = useQuery<AlertItem[]>({
+    queryKey: ['dash-alerts'],
+    queryFn: () => api.get<AlertItem[]>('/dashboard/alerts').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
 
   return (
     <div className="flex items-center gap-4 bg-cream-card rounded-2xl border border-cream-alt p-3 mb-4">
       <div className="flex-1 flex items-center gap-6 overflow-x-auto scrollbar-none min-w-0">
         <div className="shrink-0">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Revenue</p>
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Revenue Today</p>
           <p className="text-base font-bold tabular-nums text-ink-primary leading-tight">
-            {revenue !== undefined ? formatKsh(revenue) : '—'}
+            {overview.data ? formatKsh(overview.data.revenue.total) : '—'}
           </p>
         </div>
         <div className="w-px h-8 bg-cream-alt shrink-0" />
         <div className="shrink-0">
           <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Alerts Open</p>
-          <p className={`text-base font-bold tabular-nums leading-tight ${alertCount !== undefined ? alertCountColor(alertCount) : 'text-ink-tertiary'}`}>
-            {alertCount !== undefined ? alertCount : '—'}
+          <p className={`text-base font-bold tabular-nums leading-tight ${alerts.data !== undefined ? alertCountColor(alerts.data.length) : 'text-ink-tertiary'}`}>
+            {alerts.data !== undefined ? alerts.data.length : '—'}
           </p>
         </div>
         <div className="w-px h-8 bg-cream-alt shrink-0" />
         <div className="shrink-0">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Active Bookings</p>
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Staff on Duty</p>
           <p className="text-base font-bold tabular-nums text-ink-primary leading-tight">
-            {activeGuests !== undefined ? activeGuests : '—'}
+            {overview.data?.staff.on_duty ?? '—'}
           </p>
         </div>
       </div>
-
-      {/* Refresh all button */}
       <button
         onClick={onRefresh}
         className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl
@@ -509,29 +648,38 @@ function TopBar({ onRefresh }: { onRefresh: () => void }) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 const DASHBOARD_QUERY_KEYS = [
-  ['dash-overview'],
-  ['dash-inventory'],
-  ['dash-finance'],
-  ['dash-bookings'],
-  ['dash-staff'],
-  ['dash-alerts'],
-  ['dash-feedback'],
-  ['dash-suggestions'],
-  ['dash-equipment'],
+  ['dash-overview'], ['dash-revenue-history'], ['dash-inventory'], ['dash-finance'],
+  ['dash-bookings'], ['dash-staff'], ['dash-alerts'], ['dash-feedback'],
+  ['dash-suggestions'], ['dash-equipment'], ['dash-calendar'], ['purchase-requests'],
 ]
 
 export default function DashboardScreen() {
   const queryClient = useQueryClient()
 
   function refreshAll() {
-    DASHBOARD_QUERY_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: key }))
+    DASHBOARD_QUERY_KEYS.forEach(key => queryClient.invalidateQueries({ queryKey: key }))
   }
+
+  const tiles = [
+    <ActiveGuestsTile    key="guests"     />,
+    <OpenBookingsTile    key="bookings"   />,
+    <StaffOnDutyTile     key="staff"      />,
+    <AlertsTile          key="alerts"     />,
+    <LowStockTile        key="stock"      />,
+    <PendingApprovalsTile key="approvals" />,
+    <BudgetBurnTile      key="budget"     />,
+    <FinanceTile         key="finance"    />,
+    <FeedbackTile        key="feedback"   />,
+    <SuggestionsTile     key="suggestions"/>,
+    <EquipmentTile       key="equipment"  />,
+    <CalendarTile        key="calendar"   />,
+  ]
 
   return (
     <div className="p-4 max-w-5xl mx-auto">
       <div className="mb-4">
-        <h1 className="text-xl font-bold text-ink-primary">Dashboard</h1>
-        <p className="text-sm text-ink-tertiary">Waterfront Kurahia · Owner view</p>
+        <h1 className="font-serif text-2xl text-ink-primary">Dashboard</h1>
+        <p className="text-xs text-ink-tertiary mt-0.5">Waterfront Kurahia · Owner view</p>
       </div>
 
       <TopBar onRefresh={refreshAll} />
@@ -542,18 +690,13 @@ export default function DashboardScreen() {
         animate="animate"
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
       >
-        {[
-          <RevenueTile    key="revenue"    />,
-          <ActiveGuestsTile key="guests"  />,
-          <OpenBookingsTile key="bookings" />,
-          <StaffOnDutyTile  key="staff"   />,
-          <AlertsTile       key="alerts"  />,
-          <LowStockTile     key="stock"   />,
-          <FinanceTile      key="finance" />,
-          <FeedbackTile     key="feedback"/>,
-          <SuggestionsTile  key="suggestions"/>,
-          <EquipmentTile    key="equipment" />,
-        ].map((tile, i) => (
+        {/* Hero tile spans full width */}
+        <motion.div variants={tileVariants} className="col-span-full">
+          <HeroTile />
+        </motion.div>
+
+        {/* Remaining tiles */}
+        {tiles.map((tile, i) => (
           <motion.div key={i} variants={tileVariants}>
             {tile}
           </motion.div>
