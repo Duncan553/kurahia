@@ -32,6 +32,42 @@ MANAGER_LEVEL = 5
 OWNER_LEVEL   = 10
 
 
+# ── Daily revenue history ────────────────────────────────────────────────────
+
+@reports_bp.get("/revenue-history")
+@require_active_user
+def revenue_history():
+    """
+    GET /finance/revenue-history?days=7
+    Owner-only. Returns per-day Payment sums for the last N days (max 90).
+    """
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < OWNER_LEVEL:
+        return jsonify({"error": "Only the owner can view revenue history."}), 403
+
+    try:
+        days = min(int(request.args.get("days", 7)), 90)
+        if days < 1:
+            raise ValueError
+    except (ValueError, TypeError):
+        return jsonify({"error": "days must be a positive integer (max 90)."}), 400
+
+    now = datetime.now(timezone.utc)
+    result = []
+    for i in range(days - 1, -1, -1):
+        day_start = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end   = day_start + timedelta(days=1)
+        raw = db.session.query(func.sum(Payment.amount)).filter(
+            Payment.created_at_utc >= day_start,
+            Payment.created_at_utc <  day_end,
+        ).scalar()
+        result.append({
+            "date":    day_start.strftime("%Y-%m-%d"),
+            "revenue": str(Decimal(str(raw)) if raw is not None else Decimal("0")),
+        })
+    return jsonify(result), 200
+
+
 # ── Three-way reconciliation report ──────────────────────────────────────────
 
 @reports_bp.get("/reconciliation")
