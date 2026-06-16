@@ -69,11 +69,11 @@ function StaffCard({
         </p>
         <p className="text-xs text-ink-secondary truncate">
           @{user.username}
-          {user.role && <span className="ml-1 text-ink-tertiary">· {user.role}</span>}
-          {user.department && <span className="ml-1 text-ink-tertiary">· {user.department}</span>}
+          {user.role && <span className="ml-1">· {user.role}</span>}
+          {user.department && <span className="ml-1">· {user.department}</span>}
         </p>
         {!profile && (
-          <span className="inline-block mt-0.5 text-[10px] px-1.5 py-0.5 rounded bg-status-pending/15 text-status-pending font-medium">
+          <span className="inline-block mt-0.5 text-xs px-1.5 py-0.5 rounded bg-status-pending text-cream-card font-bold">
             No profile
           </span>
         )}
@@ -82,12 +82,12 @@ function StaffCard({
       {/* Status badges */}
       <div className="shrink-0 flex flex-col items-end gap-1">
         {!user.is_active && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-ink-tertiary/10 text-ink-tertiary font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-ink-tertiary/20 text-ink-secondary font-semibold">
             Inactive
           </span>
         )}
         {!user.pin_set && user.is_active && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-status-pending/15 text-status-pending font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-status-pending text-cream-card font-bold">
             No PIN
           </span>
         )}
@@ -365,7 +365,7 @@ export default function StaffScreen() {
       <div className="flex items-center justify-between mb-5 gap-3">
         <div>
           <h1 className="font-serif text-2xl text-ink-primary">Staff</h1>
-          <p className="text-xs text-ink-tertiary mt-0.5">{users.length} total · {users.filter(u => u.is_active).length} active</p>
+          <p className="text-xs text-ink-secondary mt-0.5">{users.length} total · {users.filter(u => u.is_active).length} active</p>
         </div>
         <Button
           variant="primary"
@@ -409,7 +409,7 @@ export default function StaffScreen() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="text-ink-tertiary text-sm">No {filter === 'active' ? 'active' : ''} staff accounts.</p>
+          <p className="text-ink-secondary text-sm">No {filter === 'active' ? 'active' : ''} staff accounts.</p>
         </div>
       ) : (
         <div className="space-y-2">

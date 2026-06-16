@@ -116,7 +116,7 @@ function RevenueSection({ period }: { period: string }) {
           <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#8C7E6F' }} tickLine={false} axisLine={false}
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#5C5147' }} tickLine={false} axisLine={false}
                   interval={Math.floor(chartData.length / 6)} />
                 <Tooltip
                   contentStyle={{ background: '#1F1B14', border: 'none', borderRadius: 8, fontSize: 11 }}
@@ -131,7 +131,7 @@ function RevenueSection({ period }: { period: string }) {
           </div>
         ) : (
           <div className="h-32 flex items-center justify-center">
-            <p className="text-xs text-ink-tertiary">No revenue data yet</p>
+            <p className="text-xs text-ink-secondary">No revenue data yet</p>
           </div>
         )}
       </div>
@@ -285,12 +285,15 @@ export default function FinanceScreen() {
       <div className="flex items-center justify-between gap-3 mb-5">
         <div>
           <h1 className="font-serif text-2xl text-ink-primary">Finance</h1>
-          <p className="text-xs text-ink-tertiary mt-0.5">Revenue and department spending</p>
+          <p className="text-xs text-ink-secondary mt-0.5">Revenue and department spending</p>
         </div>
         {/* Period picker */}
+        <label className="sr-only" htmlFor="finance-period">Period</label>
         <select
+          id="finance-period"
           value={period}
           onChange={e => setPeriod(e.target.value)}
+          aria-label="Select period"
           className="text-xs border border-cream-alt bg-cream-card rounded-lg px-2 py-1.5
             text-ink-secondary focus:outline-none focus:ring-2 focus:ring-primary-main"
         >

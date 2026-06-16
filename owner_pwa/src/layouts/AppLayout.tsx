@@ -64,6 +64,19 @@ function SettingsIcon() {
       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 }
+function ApprovalsIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M7 10l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+}
+function FinanceIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M10 6v1.5M10 12.5V14M7.5 8.5C7.5 7.5 8.5 7 10 7s2.5.5 2.5 1.5-1 1.5-2.5 1.5-2.5.5-2.5 1.5S8 13 10 13s2.5-.5 2.5-1.5"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
 function SignOutIcon() {
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
     <path d="M8 10h9M14 7l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -76,13 +89,15 @@ function SignOutIcon() {
 interface NavItem { path: string; label: string; Icon: () => ReactElement }
 
 const SIDEBAR_ITEMS: NavItem[] = [
-  { path: '/dashboard',       label: 'Dashboard', Icon: DashboardIcon },
-  { path: '/alerts',          label: 'Alerts',    Icon: AlertsIcon    },
-  { path: '/reconciliation',  label: 'Recon',     Icon: ReconIcon     },
-  { path: '/payroll',         label: 'Payroll',   Icon: PayrollIcon   },
-  { path: '/staff',           label: 'Staff',     Icon: StaffIcon     },
-  { path: '/bookings',        label: 'Bookings',  Icon: BookingsIcon  },
-  { path: '/settings',        label: 'Settings',  Icon: SettingsIcon  },
+  { path: '/dashboard',           label: 'Dashboard', Icon: DashboardIcon  },
+  { path: '/alerts',              label: 'Alerts',    Icon: AlertsIcon     },
+  { path: '/finance',             label: 'Finance',   Icon: FinanceIcon    },
+  { path: '/purchase-approvals',  label: 'Approvals', Icon: ApprovalsIcon  },
+  { path: '/reconciliation',      label: 'Recon',     Icon: ReconIcon      },
+  { path: '/payroll',             label: 'Payroll',   Icon: PayrollIcon    },
+  { path: '/staff',               label: 'Staff',     Icon: StaffIcon      },
+  { path: '/bookings',            label: 'Bookings',  Icon: BookingsIcon   },
+  { path: '/settings',            label: 'Settings',  Icon: SettingsIcon   },
 ]
 
 // ── Page transition ─────────────────────────────────────────────────────────

@@ -247,7 +247,7 @@ export default function BookingsScreen() {
       <div className="mb-5">
         <h1 className="font-serif text-2xl text-ink-primary">Bookings</h1>
         {!isLoading && (
-          <p className="text-xs text-ink-tertiary mt-0.5">
+          <p className="text-xs text-ink-secondary mt-0.5">
             {confirmed} confirmed · {inHouse} in house
           </p>
         )}
@@ -275,8 +275,9 @@ export default function BookingsScreen() {
 
         {/* Date filter */}
         <div className="flex items-center gap-2">
-          <label className="text-xs text-ink-secondary shrink-0">Check-in date:</label>
+          <label htmlFor="booking-date" className="text-xs text-ink-secondary shrink-0">Check-in date:</label>
           <input
+            id="booking-date"
             type="date"
             value={dateFilter}
             onChange={e => setDateFilter(e.target.value)}
@@ -316,7 +317,7 @@ export default function BookingsScreen() {
 
       {!isLoading && !isError && (data ?? []).length === 0 && (
         <div className="py-12 text-center">
-          <p className="text-ink-tertiary text-sm">
+          <p className="text-ink-secondary text-sm">
             {dateFilter ? `No ${statusFilter || 'bookings'} on ${dateFilter}` : `No ${statusFilter.toLowerCase() || 'bookings'}`}
           </p>
         </div>

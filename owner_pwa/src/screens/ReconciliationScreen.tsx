@@ -121,7 +121,9 @@ export default function ReconciliationScreen() {
           <p className="text-xs text-ink-secondary mt-0.5">Receipts · Cash · Stock</p>
         </div>
         {/* Date picker */}
+        <label className="sr-only" htmlFor="recon-date">Reconciliation date</label>
         <input
+          id="recon-date"
           type="date"
           value={view.date}
           max={todayNairobi()}
@@ -289,10 +291,11 @@ export default function ReconciliationScreen() {
             Count the physical cash in the safe for <strong>{view.date}</strong> and enter the total.
           </p>
           <div>
-            <label className="block text-[10px] tracking-widest uppercase text-ink-secondary mb-1">
+            <label htmlFor="safe-count" className="block text-[10px] tracking-widest uppercase text-ink-secondary mb-1">
               Safe count (KSh)
             </label>
             <input
+              id="safe-count"
               type="number"
               min="0"
               step="0.01"
