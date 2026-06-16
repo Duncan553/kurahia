@@ -164,10 +164,10 @@ function RolesTab() {
                 <span className={`w-2 h-2 rounded-full shrink-0 ${r.is_active ? 'bg-status-paid' : 'bg-ink-tertiary'}`} />
                 <div>
                   <p className={`text-sm font-medium ${r.is_active ? 'text-ink-primary' : 'text-ink-tertiary'}`}>{r.name}</p>
-                  <p className="text-[10px] text-ink-tertiary">Level {r.level} · {levelLabel(r.level)}</p>
+                  <p className="text-xs text-ink-secondary">Level {r.level} · {levelLabel(r.level)}</p>
                 </div>
               </div>
-              {!r.is_active && <span className="text-[10px] text-ink-tertiary">Disabled</span>}
+              {!r.is_active && <span className="text-xs text-ink-secondary">Disabled</span>}
             </div>
           ))
       }
@@ -225,11 +225,11 @@ function BaselinesTab() {
                   <p className={`text-sm font-medium truncate ${b.is_active ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
                     {b.item_name ?? b.item_id}
                   </p>
-                  <p className="text-[10px] text-ink-tertiary">{b.business_driver}</p>
+                  <p className="text-xs text-ink-secondary">{b.business_driver}</p>
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-xs font-semibold tabular-nums text-ink-primary">{b.expected_ratio}</p>
-                  <p className="text-[10px] text-ink-tertiary">±{b.tolerance_percent}%</p>
+                  <p className="text-xs text-ink-secondary">±{b.tolerance_percent}%</p>
                 </div>
               </div>
               <div className="flex gap-1">
@@ -313,8 +313,8 @@ function SocketRow({ label, endpoint }: { label: string; endpoint: string }) {
         )}
       </div>
       {!isLoading && (
-        <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full
-          ${data?.configured ? 'bg-status-paid/15 text-status-paid' : 'bg-ink-tertiary/10 text-ink-tertiary'}`}>
+        <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full
+          ${data?.configured ? 'bg-status-paid/25 text-status-paid' : 'bg-ink-tertiary/20 text-ink-secondary'}`}>
           {data?.configured ? 'LIVE' : 'OFF'}
         </span>
       )}
@@ -392,7 +392,7 @@ export default function SettingsScreen() {
     <div className="p-4 max-w-2xl mx-auto">
       <div className="mb-5">
         <h1 className="font-serif text-2xl text-ink-primary">Settings</h1>
-        <p className="text-xs text-ink-tertiary mt-0.5">Admin controls and personal preferences</p>
+        <p className="text-xs text-ink-secondary mt-0.5">Admin controls and personal preferences</p>
       </div>
 
       {/* Tab strip */}

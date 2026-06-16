@@ -226,7 +226,7 @@ function RequestCard({
       )}
 
       {isPending && !hasCost && (
-        <p className="mt-2 text-xs text-ink-tertiary italic">Awaiting manager cost estimate</p>
+        <p className="mt-2 text-xs text-ink-secondary italic">Awaiting manager cost estimate</p>
       )}
     </button>
   )
@@ -286,8 +286,8 @@ export default function PurchaseApprovalsScreen() {
           >
             {label}
             {key === 'pending' && pendingCount > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full
-                bg-status-pending text-[9px] font-bold text-cream-card">
+              <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full
+                bg-status-pending text-xs font-bold text-cream-card">
                 {pendingCount}
               </span>
             )}

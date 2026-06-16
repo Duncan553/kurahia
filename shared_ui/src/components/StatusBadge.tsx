@@ -83,14 +83,14 @@ const CONFIG: Record<StatusValue, StatusConfig> = {
   active:       { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25',       icon: <Check />,    label: 'Active'      },
   confirmed:    { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25',       icon: <Check />,    label: 'Confirmed'   },
   'checked-in': { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25',       icon: <ArrowIn />,  label: 'Checked In'  },
-  pending:      { colorClass: 'bg-status-pending/15 text-status-pending border border-status-pending/25', icon: <Clock />,  label: 'Pending'     },
-  held:         { colorClass: 'bg-status-pending/15 text-status-pending border border-status-pending/25', icon: <Pause />,  label: 'Held'        },
+  pending:      { colorClass: 'bg-transparent text-status-pending border border-status-pending/50',    icon: <Clock />,    label: 'Pending'     },
+  held:         { colorClass: 'bg-transparent text-status-pending border border-status-pending/50',    icon: <Pause />,    label: 'Held'        },
   failed:       { colorClass: 'bg-status-failed/15 text-status-failed border border-status-failed/25', icon: <XCircle />,  label: 'Failed'      },
   info:         { colorClass: 'bg-status-neutral/15 text-status-neutral border border-status-neutral/25', icon: <Info />,  label: 'Info'        },
   'checked-out':{ colorClass: 'bg-status-neutral/15 text-status-neutral border border-status-neutral/25', icon: <ArrowOut />, label: 'Checked Out' },
-  inactive:     { colorClass: 'bg-ink-tertiary/10 text-ink-tertiary border border-ink-tertiary/20',    icon: <Minus />,    label: 'Inactive'    },
-  cancelled:    { colorClass: 'bg-ink-tertiary/10 text-ink-tertiary border border-ink-tertiary/20',    icon: <XCircle />,  label: 'Cancelled'   },
-  'no-show':    { colorClass: 'bg-ink-tertiary/10 text-ink-tertiary border border-ink-tertiary/20',    icon: <UserX />,    label: 'No Show'     },
+  inactive:     { colorClass: 'bg-ink-tertiary/10 text-ink-secondary border border-ink-tertiary/20',   icon: <Minus />,    label: 'Inactive'    },
+  cancelled:    { colorClass: 'bg-ink-tertiary/10 text-ink-secondary border border-ink-tertiary/20',   icon: <XCircle />,  label: 'Cancelled'   },
+  'no-show':    { colorClass: 'bg-ink-tertiary/10 text-ink-secondary border border-ink-tertiary/20',   icon: <UserX />,    label: 'No Show'     },
 }
 
 const SIZE: Record<BadgeSize, string> = {
