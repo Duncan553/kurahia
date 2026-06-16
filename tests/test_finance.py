@@ -607,3 +607,44 @@ def test_correction_creates_new_record(client, owner_token, waiter_token, app):
             staff_id=waiter_id
         ).count()
     assert count == 2
+
+
+# ── Revenue history endpoint (F-O-1a) ────────────────────────────────────────
+
+def test_revenue_history_owner_only(client, owner_token, waiter_token):
+    """Non-owners are rejected."""
+    rv = client.get("/finance/revenue-history?days=7",
+                    headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code == 403
+    assert "owner" in rv.get_json()["error"].lower()
+
+
+def test_revenue_history_shape(client, owner_token, waiter_token):
+    """Returns a list of {date, revenue} for the last 7 days."""
+    _make_tab_and_pay(client, waiter_token, "1500")
+    rv = client.get("/finance/revenue-history?days=7",
+                    headers={"Authorization": f"Bearer {owner_token}"})
+    assert rv.status_code == 200
+    data = rv.get_json()
+    assert isinstance(data, list)
+    assert len(data) == 7
+    for row in data:
+        assert "date" in row and "revenue" in row
+    # Today should include the payment just made
+    today_row = data[-1]
+    assert Decimal(today_row["revenue"]) >= Decimal("1500")
+
+
+def test_revenue_history_days_cap(client, owner_token):
+    """days > 90 is capped to 90."""
+    rv = client.get("/finance/revenue-history?days=200",
+                    headers={"Authorization": f"Bearer {owner_token}"})
+    assert rv.status_code == 200
+    assert len(rv.get_json()) == 90
+
+
+def test_revenue_history_bad_days(client, owner_token):
+    """Invalid days param returns 400."""
+    rv = client.get("/finance/revenue-history?days=abc",
+                    headers={"Authorization": f"Bearer {owner_token}"})
+    assert rv.status_code == 400
