@@ -235,6 +235,10 @@ def record_purchase():
         # Mark request as fulfilled
         pr.status = RequestStatus.FULFILLED
 
+    # Capture old stock BEFORE writing the movement (for weighted-average cost)
+    from app.services.stock import get_current_stock
+    old_stock = get_current_stock(item.id)
+
     with db.session.begin_nested():
         # The stock movement is the system of record for the stock increase
         movement = StockMovement(
@@ -247,6 +251,14 @@ def record_purchase():
         )
         db.session.add(movement)
         db.session.flush()
+
+        # Weighted-average cost: (old_stock × old_cpu + qty × new_cpu) / (old_stock + qty)
+        new_cpu = cost / qty
+        if old_stock > Decimal("0") and item.cost_per_unit is not None:
+            old_cpu = Decimal(str(item.cost_per_unit))
+            item.cost_per_unit = (old_stock * old_cpu + qty * new_cpu) / (old_stock + qty)
+        else:
+            item.cost_per_unit = new_cpu
 
         purchase = Purchase(
             item_id=item.id,

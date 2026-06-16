@@ -1,7 +1,10 @@
 """
 items.py — Create, edit, and list inventory items.
 Disable never delete — is_active=False removes from operational views.
+Catalog changes (add / disable / enable) notify the owner via the notification dispatcher.
 """
+import uuid
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
@@ -9,6 +12,8 @@ from app.extensions import db
 from app.models.inventory_item import InventoryItem
 from app.models.user import User
 from app.models.audit_log import AuditLog
+from app.models.notification import Notification, NotificationStatus, NotificationReferenceType
+from app.models.role import Role
 from app.services.stock import get_current_stock
 
 items_bp = Blueprint("inv_items", __name__, url_prefix="/inventory/items")
@@ -20,6 +25,26 @@ def _require_manager(actor: User):
     if actor.role.level < MANAGER_LEVEL:
         return jsonify({"error": "Manager or above required."}), 403
     return None
+
+
+def _notify_owner_catalog_change(actor_name: str, verb: str, item_name: str, dept_name: str):
+    """Queue an informational notification to the owner about a catalog change."""
+    owner = db.session.query(User).join(User.role).filter(
+        Role.level >= 10, User.is_active == True
+    ).first()
+    if not owner:
+        return
+    body = f"{actor_name} {verb} '{item_name}' in {dept_name} inventory."
+    notif = Notification(
+        recipient_user_id=owner.id,
+        reference_type=NotificationReferenceType.GENERAL.value,
+        subject=f"Inventory catalog change: {item_name}",
+        body=body,
+        status=NotificationStatus.QUEUED.value,
+        scheduled_for_utc=datetime.now(timezone.utc),
+        idempotency_key=str(uuid.uuid4()),
+    )
+    db.session.add(notif)
 
 
 @items_bp.post("")
@@ -57,6 +82,8 @@ def create_item():
         db.session.add(item)
 
     AuditLog.log(actor=actor.username, action="inventory.item.create", target=name)
+    dept_name = item.department.name if item.department else "unknown"
+    _notify_owner_catalog_change(actor.username, "added", name, dept_name)
     db.session.commit()
 
     return jsonify({"id": item.id, "name": item.name, "unit": item.unit}), 201
@@ -117,16 +144,17 @@ def list_items():
     for it in items:
         stock = get_current_stock(it.id)
         result.append({
-            "id":            it.id,
-            "name":          it.name,
-            "unit":          it.unit,
-            "department_id": it.department_id,
-            "is_active":     it.is_active,
-            "current_stock": str(stock),
-            "reorder_level": str(it.reorder_level),
-            "below_reorder": stock < it.reorder_level,
-            "is_watch_list": it.is_watch_list,
-            "is_staff_food": it.is_staff_food,
+            "id":             it.id,
+            "name":           it.name,
+            "unit":           it.unit,
+            "department_id":  it.department_id,
+            "is_active":      it.is_active,
+            "current_stock":  str(stock),
+            "reorder_level":  str(it.reorder_level),
+            "below_reorder":  stock < it.reorder_level,
+            "is_watch_list":  it.is_watch_list,
+            "is_staff_food":  it.is_staff_food,
+            "cost_per_unit":  str(it.cost_per_unit) if it.cost_per_unit is not None else None,
         })
 
     return jsonify(result), 200
@@ -144,6 +172,8 @@ def disable_item(item_id):
     with db.session.begin_nested():
         item.is_active = False
     AuditLog.log(actor=actor.username, action="inventory.item.disable", target=item.name)
+    dept_name = item.department.name if item.department else "unknown"
+    _notify_owner_catalog_change(actor.username, "deactivated", item.name, dept_name)
     db.session.commit()
     return jsonify({"id": item.id, "is_active": False}), 200
 
@@ -160,5 +190,7 @@ def enable_item(item_id):
     with db.session.begin_nested():
         item.is_active = True
     AuditLog.log(actor=actor.username, action="inventory.item.enable", target=item.name)
+    dept_name = item.department.name if item.department else "unknown"
+    _notify_owner_catalog_change(actor.username, "re-enabled", item.name, dept_name)
     db.session.commit()
     return jsonify({"id": item.id, "is_active": True}), 200

@@ -29,6 +29,9 @@ class InventoryItem(db.Model):
 
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
+    # Weighted-average cost, updated on every PURCHASE movement. NULL until first purchase.
+    cost_per_unit = db.Column(db.Numeric(14, 4), nullable=True)
+
     department = db.relationship("Department", lazy="select")
 
     __table_args__ = (

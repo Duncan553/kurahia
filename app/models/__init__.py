@@ -11,6 +11,7 @@ from .purchase import Purchase
 from .judge_baseline import JudgeBaseline
 from .judge_alert import JudgeAlert, AlertStatus, AlertSeverity
 from .menu_item import MenuItem, PrepStation
+from .recipe_line import RecipeLine
 from .tab import Tab, TabType, TabStatus
 from .order import Order, OrderStatus
 from .order_item import OrderItem, OrderItemStatus, VALID_TRANSITIONS
@@ -66,6 +67,7 @@ __all__ = [
     "JudgeBaseline",
     "JudgeAlert", "AlertStatus", "AlertSeverity",
     "MenuItem", "PrepStation",
+    "RecipeLine",
     "Tab", "TabType", "TabStatus",
     "Order", "OrderStatus",
     "OrderItem", "OrderItemStatus", "VALID_TRANSITIONS",
