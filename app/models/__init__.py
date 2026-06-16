@@ -6,6 +6,7 @@ from .audit_log import AuditLog
 from .inventory_item import InventoryItem
 from .stock_movement import StockMovement, MovementReason, CONSUMPTION_REASONS
 from .stock_count import StockCount, CountType
+from .count_demotion import CountDemotion
 from .purchase_request import PurchaseRequest, RequestStatus
 from .purchase import Purchase
 from .judge_baseline import JudgeBaseline
@@ -62,6 +63,7 @@ __all__ = [
     "InventoryItem",
     "StockMovement", "MovementReason", "CONSUMPTION_REASONS",
     "StockCount", "CountType",
+    "CountDemotion",
     "PurchaseRequest", "RequestStatus",
     "Purchase",
     "JudgeBaseline",
