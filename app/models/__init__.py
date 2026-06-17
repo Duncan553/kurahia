@@ -57,6 +57,7 @@ from .guest_feedback import GuestFeedback
 from .calendar_entry import CalendarEntry, CalendarEntryType
 from .equipment import Equipment, MaintenanceLog, SafetyCheck, EquipmentStatus
 from .push_subscription import PushSubscription
+from .system_setting import SystemSetting
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",

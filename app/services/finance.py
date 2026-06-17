@@ -19,9 +19,9 @@ from app.models.charge import Charge
 
 
 def parse_date_bounds(date_str: str) -> tuple[datetime, datetime]:
-    """'YYYY-MM-DD' → (start_of_day UTC, start_of_next_day UTC)."""
-    d = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-    return d, d + timedelta(days=1)
+    """'YYYY-MM-DD' → (start UTC, end UTC) using business-day cutoff."""
+    from app.services.business_day import business_day_bounds
+    return business_day_bounds(date_str)
 
 
 def parse_month_bounds(period_str: str) -> tuple[datetime, datetime]:

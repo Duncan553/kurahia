@@ -39,9 +39,9 @@ def attendance_today():
     if actor.role.level < MANAGER_LEVEL:
         return jsonify({"error": "Manager or above required."}), 403
 
-    today = _today_utc()
-    day_start = datetime(today.year, today.month, today.day)
-    day_end   = day_start + timedelta(days=1)
+    from app.services.business_day import business_day_bounds_today, business_day_for
+    day_start, day_end = business_day_bounds_today()
+    today = business_day_for(datetime.now(timezone.utc)).date()
 
     shifts = db.session.query(Shift).filter(
         Shift.status == ShiftStatus.SCHEDULED.value,

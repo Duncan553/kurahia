@@ -96,9 +96,8 @@ def overview():
         status=BookingStatus.CHECKED_IN.value
     ).count()
 
-    # Today's arrivals + departures
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end   = today_start + timedelta(days=1)
+    from app.services.business_day import business_day_bounds_today
+    today_start, today_end = business_day_bounds_today()
     arrivals = db.session.query(Booking).filter(
         Booking.check_in_planned_utc >= today_start,
         Booking.check_in_planned_utc < today_end,
@@ -292,10 +291,9 @@ def bookings_view():
     from app.models.tab import Tab, TabType
     from app.services.booking import get_deposit_total
 
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end   = today_start + timedelta(days=1)
+    from app.services.business_day import business_day_bounds_today as _bdt
+    today_start, today_end = _bdt()
 
-    # Arrivals + departures today
     arrivals = db.session.query(Booking).filter(
         Booking.check_in_planned_utc >= today_start,
         Booking.check_in_planned_utc < today_end,
