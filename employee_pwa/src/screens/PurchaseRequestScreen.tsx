@@ -207,7 +207,7 @@ export default function PurchaseRequestScreen() {
               {history.map((r) => (
                 <div key={r.id}
                   className="flex items-center justify-between rounded-xl
-                    bg-cream-alt/30 border border-cream-alt px-4 py-3 gap-2">
+                    glass-card px-4 py-3 gap-2">
                   <div className="min-w-0">
                     <p className="font-medium text-ink-primary text-sm truncate">
                       {r.item_name ?? 'Item'}

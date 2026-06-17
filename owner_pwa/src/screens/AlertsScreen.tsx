@@ -199,7 +199,7 @@ export default function AlertsScreen() {
             <div
               key={alert.id}
               className={[
-                'border-l-4 rounded-r-2xl rounded-l-sm bg-cream-card border border-cream-alt p-4',
+                'border-l-4 rounded-r-2xl rounded-l-sm glass-card glass-shine p-4',
                 SEV_BORDER[alert.severity] ?? 'border-l-ink-tertiary',
                 alert.status === 'ACKNOWLEDGED' ? 'opacity-50' : '',
               ].join(' ')}

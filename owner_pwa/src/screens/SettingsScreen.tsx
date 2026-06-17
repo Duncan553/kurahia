@@ -83,7 +83,7 @@ function DepartmentsTab() {
         ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-12 rounded-xl" />)
         : (data ?? []).map(d => (
           <div key={d.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-cream-alt bg-cream-card px-4 py-3">
+            className="flex items-center justify-between gap-3 rounded-xl glass-card px-4 py-3">
             <div className="flex items-center gap-2 min-w-0">
               <span className={`w-2 h-2 rounded-full shrink-0 ${d.is_active ? 'bg-status-paid' : 'bg-ink-tertiary'}`} />
               <span className={`text-sm font-medium truncate ${d.is_active ? 'text-ink-primary' : 'text-ink-tertiary line-through'}`}>
@@ -159,7 +159,7 @@ function RolesTab() {
           .sort((a, b) => b.level - a.level)
           .map(r => (
             <div key={r.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-cream-alt bg-cream-card px-4 py-3">
+              className="flex items-center justify-between gap-3 rounded-xl glass-card px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className={`w-2 h-2 rounded-full shrink-0 ${r.is_active ? 'bg-status-paid' : 'bg-ink-tertiary'}`} />
                 <div>
@@ -219,7 +219,7 @@ function BaselinesTab() {
         : (data ?? []).length === 0
           ? <p className="text-sm text-ink-tertiary py-4 text-center">No baselines configured.</p>
           : (data ?? []).map(b => (
-            <div key={b.id} className="rounded-xl border border-cream-alt bg-cream-card px-4 py-3 space-y-2">
+            <div key={b.id} className="rounded-xl glass-card px-4 py-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className={`text-sm font-medium truncate ${b.is_active ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
@@ -300,7 +300,7 @@ function SocketRow({ label, endpoint }: { label: string; endpoint: string }) {
   })
 
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-cream-alt bg-cream-card px-4 py-3">
+    <div className="flex items-start gap-3 rounded-xl glass-card px-4 py-3">
       <span className={`w-2 h-2 rounded-full shrink-0 mt-1 ${
         isLoading ? 'bg-cream-alt' : data?.configured ? 'bg-status-paid' : 'bg-ink-tertiary'
       }`} />

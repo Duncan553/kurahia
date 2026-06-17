@@ -51,8 +51,8 @@ function StaffCard({
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left flex items-center gap-3 rounded-xl border border-cream-alt
-        bg-cream-card px-4 py-3 hover:border-primary-light/50 hover:shadow-sm transition-all
+      className="w-full text-left flex items-center gap-3 rounded-xl glass-card glass-shine
+        px-4 py-3 hover:border-primary-light/50 hover:shadow-sm transition-all
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
     >
       {/* Avatar */}

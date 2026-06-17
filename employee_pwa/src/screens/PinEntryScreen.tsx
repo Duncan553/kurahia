@@ -28,6 +28,7 @@ export default function PinEntryScreen() {
   const [errorMsg, setErrorMsg] = useState('')
   const [lockoutOpen, setLockoutOpen] = useState(false)
   const [lockoutMsg,  setLockoutMsg]  = useState('')
+  const [focused, setFocused] = useState(false)
 
   const pushDigit = useCallback((d: string) => {
     setDigits((prev) => (prev.length < 4 ? prev + d : prev))
@@ -82,7 +83,6 @@ export default function PinEntryScreen() {
     pinMutation.mutate({ username, pin: digits })
   }
 
-  // Auto-submit when 4 digits entered + username filled
   useEffect(() => {
     if (digits.length !== 4) return
     if (!username.trim()) {
@@ -96,182 +96,132 @@ export default function PinEntryScreen() {
   return (
     <div className="relative min-h-screen overflow-hidden">
 
-      {/* ── Hero: same aerial photo as LoginScreen ─────────────────── */}
+      {/* Background — same aerial as login */}
       <motion.div
         className="absolute inset-0"
-        initial={{ opacity: 0, scale: 1.04 }}
+        initial={{ opacity: 0, scale: 1.03 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.1, ease: 'easeOut' }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
       >
-        <img
-          src={HERO_URL}
-          alt=""
-          aria-hidden="true"
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-primary-dark/20 mix-blend-multiply" />
+        <img src={HERO_URL} alt="" aria-hidden="true"
+          className="w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/60 via-primary-dark/40 to-primary-dark/70" />
       </motion.div>
 
-      {/* ── Wordmark bottom-right (desktop only) ─────────────────── */}
-      <motion.div
-        className="absolute bottom-10 right-10 hidden md:block text-right z-10 pointer-events-none"
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.8, ease: 'easeOut' }}
-      >
-        <p
-          className="font-serif text-5xl font-bold tracking-widest text-white leading-none"
-          style={{ textShadow: '0 2px 20px rgba(0,0,0,0.55)' }}
-        >
-          WATERFRONT<br />COUNTRY CLUB
-        </p>
-        <p className="mt-2 text-[10px] tracking-[0.3em] uppercase text-white/60 font-medium">
-          JUJA · KIAMBU · KENYA
-        </p>
-      </motion.div>
-
-      {/* ── Torn card ────────────────────────────────────────────────── */}
-      <div className="relative z-10 flex min-h-screen">
+      {/* Glass PIN card */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-6 py-8">
         <motion.div
-          className="login-torn-edge w-full md:w-[52%] bg-cream-card min-h-screen"
-          initial={{ x: -60, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.25, ease: 'easeOut' }}
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3, ease: 'easeOut' }}
+          className="w-full max-w-[360px]"
         >
-          <div className="flex items-center min-h-screen">
-            <div className="w-full max-w-[360px] mx-auto md:ml-14 px-8 md:px-0 py-12">
+          {/* Brand */}
+          <div className="text-center mb-6">
+            <h1 className="font-serif text-3xl font-bold text-white tracking-tight
+              drop-shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
+              Enter PIN
+            </h1>
+            <p className="text-sm text-white/60 mt-1">Kurahia Staff</p>
+          </div>
 
-              {/* Heading */}
-              <motion.div
-                className="mb-6"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.45, ease: 'easeOut' }}
-              >
-                <p className="text-[10px] tracking-[0.3em] uppercase text-ink-secondary font-medium mb-3">
-                  KURAHIA STAFF
-                </p>
-                <h1 className="font-serif text-5xl font-bold tracking-tight text-ink-primary leading-[0.92]">
-                  ENTER<br />PIN.
-                </h1>
-              </motion.div>
+          {/* Frosted glass card */}
+          <div className="rounded-3xl p-6 border border-white/20 shadow-2xl
+            bg-cream-card/25 backdrop-blur-xl relative overflow-hidden">
 
-              {/* Terracotta rule */}
-              <motion.div
-                className="w-10 h-[2px] bg-primary-main mb-6"
-                initial={{ scaleX: 0, originX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.35, delay: 0.6, ease: 'easeOut' }}
-              />
+            <div className="relative space-y-5">
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.35, delay: 0.65, ease: 'easeOut' }}
-                className="space-y-5"
-              >
-                {/* Username field */}
-                <div>
-                  <label htmlFor="pin-username" className="block text-[10px] tracking-[0.2em] uppercase text-ink-secondary font-medium mb-1.5">
-                    Username
-                  </label>
+              {/* Username */}
+              <div>
+                <label htmlFor="pin-username"
+                  className="block text-xs font-semibold text-white/80 mb-1.5 uppercase tracking-wider">
+                  Username
+                </label>
+                <div className={`rounded-xl border transition-all ${
+                  focused ? 'border-white/50 shadow-[0_0_0_3px_rgba(255,255,255,0.1)]' : 'border-white/20'
+                }`}>
                   <input
                     id="pin-username"
                     type="text"
                     autoComplete="username"
                     value={username}
-                    onChange={(e) => { setUsername(e.target.value); setDigits('') }}
+                    onChange={e => { setUsername(e.target.value); setDigits('') }}
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
                     disabled={pinMutation.isPending}
-                    className="
-                      w-full rounded-xl px-4 py-3
-                      bg-cream-alt border border-cream-deep
-                      text-ink-primary text-sm font-medium
-                      placeholder:text-ink-tertiary
-                      focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-main/20
-                      disabled:opacity-50 transition-all
-                    "
+                    placeholder="e.g. wachira"
+                    className="w-full rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3
+                      text-sm text-white font-medium placeholder:text-white/40
+                      focus:outline-none disabled:opacity-50"
                   />
                 </div>
+              </div>
 
-                {/* PIN dots */}
-                <div
-                  role="group"
-                  className="flex justify-center gap-4 py-2"
-                  aria-label="PIN entry"
-                  aria-live="polite"
-                >
-                  {[0,1,2,3].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{
-                        scale: i < digits.length ? 1.15 : 1,
-                        backgroundColor: i < digits.length ? 'var(--color-primary-dark)' : 'transparent',
-                      }}
-                      transition={{ duration: 0.1 }}
-                      className="w-4 h-4 rounded-full border-2"
-                      style={{ borderColor: i < digits.length ? 'var(--color-primary-dark)' : 'var(--color-cream-deep)' }}
-                    />
-                  ))}
-                </div>
+              {/* PIN dots */}
+              <div role="group" className="flex justify-center gap-4 py-3" aria-label="PIN entry" aria-live="polite">
+                {[0,1,2,3].map(i => (
+                  <motion.div key={i}
+                    animate={{
+                      scale: i < digits.length ? 1.2 : 1,
+                      backgroundColor: i < digits.length ? '#ffffff' : 'transparent',
+                    }}
+                    transition={{ duration: 0.1 }}
+                    className="w-4 h-4 rounded-full border-2"
+                    style={{ borderColor: i < digits.length ? '#ffffff' : 'rgba(255,255,255,0.35)' }}
+                  />
+                ))}
+              </div>
 
-                {/* Error */}
-                {errorMsg && (
-                  <p role="alert" className="text-sm text-status-failed font-medium text-center">
-                    {errorMsg}
-                  </p>
-                )}
+              {/* Error */}
+              {errorMsg && (
+                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-center gap-2 p-2 rounded-xl bg-status-failed/20 border border-status-failed/30">
+                  <p role="alert" className="text-xs text-white font-medium">{errorMsg}</p>
+                </motion.div>
+              )}
 
-                {/* Keypad */}
-                <div className="grid grid-cols-3 gap-2.5">
-                  {KEYPAD.map((key, i) => (
-                    key === '' ? (
-                      <div key={i} />
-                    ) : (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => handleKey(key)}
-                        disabled={pinMutation.isPending}
-                        aria-label={key === '⌫' ? 'Backspace' : key}
-                        className={[
-                          'min-h-[64px] w-full rounded-2xl text-2xl font-semibold',
-                          'flex items-center justify-center select-none',
-                          'transition-all duration-75',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main',
-                          'disabled:opacity-40',
+              {/* Keypad */}
+              <div className="grid grid-cols-3 gap-2">
+                {KEYPAD.map((key, i) => (
+                  key === '' ? <div key={i} /> : (
+                    <motion.button key={i} type="button"
+                      onClick={() => handleKey(key)}
+                      disabled={pinMutation.isPending}
+                      whileTap={{ scale: 0.92 }}
+                      aria-label={key === '⌫' ? 'Backspace' : key}
+                      className={`min-h-[56px] w-full rounded-2xl text-xl font-semibold
+                        flex items-center justify-center select-none transition-all
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40
+                        disabled:opacity-40 ${
                           key === '⌫'
-                            ? 'bg-transparent text-ink-secondary active:text-ink-primary active:scale-95'
-                            : 'bg-white shadow-sm border border-cream-alt text-ink-primary active:bg-primary-light/30 active:shadow-none active:scale-95',
-                        ].join(' ')}
-                      >
-                        {key === '⌫' ? (
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M21 7H9.5L3 12l6.5 5H21V7z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-                            <path d="M15 10l-4 4M11 10l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                          </svg>
-                        ) : key}
-                      </button>
-                    )
-                  ))}
-                </div>
+                            ? 'bg-transparent text-white/60 active:text-white'
+                            : 'bg-white/12 backdrop-blur-sm border border-white/15 text-white hover:bg-white/20'
+                        }`}
+                    >
+                      {key === '⌫' ? (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M21 7H9.5L3 12l6.5 5H21V7z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                          <path d="M15 10l-4 4M11 10l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                      ) : key}
+                    </motion.button>
+                  )
+                ))}
+              </div>
 
-                {/* Switch to password */}
-                <button
-                  type="button"
-                  onClick={() => navigate('/login')}
-                  className="w-full min-h-[44px] text-xs text-ink-secondary hover:text-primary-dark
-                    tracking-widest uppercase transition-colors flex items-center justify-center gap-2 font-medium
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark rounded"
-                >
-                  Use password instead <span className="text-primary-main" aria-hidden="true">↗</span>
+              {/* Switch to password */}
+              <div className="text-center pt-1">
+                <button type="button" onClick={() => navigate('/login')}
+                  className="text-xs text-white/60 hover:text-white font-medium transition-colors
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded">
+                  Use password instead &rarr;
                 </button>
-              </motion.div>
+              </div>
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Lockout modal — logic unchanged */}
       <Modal open={lockoutOpen} onClose={() => setLockoutOpen(false)} title="Account Locked" preventClose>
         <p className="text-base text-ink-secondary mb-6">{lockoutMsg}</p>
         <div className="flex justify-end">

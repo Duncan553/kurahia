@@ -136,7 +136,7 @@ function TileCard({
       onClick={href ? () => navigate(href) : undefined}
       onKeyDown={href ? (e) => { if (e.key === 'Enter') navigate(href) } : undefined}
       className={[
-        'rounded-2xl bg-cream-card border border-cream-alt p-4 space-y-2',
+        'rounded-2xl glass-card glass-shine p-4 space-y-2',
         href ? 'cursor-pointer hover:shadow-sm hover:border-primary-light/40 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main' : '',
         className,
       ].join(' ')}
@@ -149,7 +149,7 @@ function TileCard({
 
 function TileSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`rounded-2xl bg-cream-card border border-cream-alt p-4 space-y-3 ${className}`}>
+    <div className={`rounded-2xl glass-card p-4 space-y-3 ${className}`}>
       <Skeleton variant="text" className="w-24 h-3" />
       <Skeleton variant="text" className="w-32 h-8" />
       <Skeleton variant="text" className="w-40 h-3" />
@@ -607,7 +607,7 @@ function TopBar({ onRefresh }: { onRefresh: () => void }) {
   })
 
   return (
-    <div className="flex items-center gap-4 bg-cream-card rounded-2xl border border-cream-alt p-3 mb-4">
+    <div className="flex items-center gap-4 glass-card glass-shine rounded-2xl p-3 mb-4">
       <div className="flex-1 flex items-center gap-6 overflow-x-auto scrollbar-none min-w-0">
         <div className="shrink-0">
           <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Revenue Today</p>

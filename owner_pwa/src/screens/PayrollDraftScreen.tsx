@@ -135,7 +135,7 @@ export default function PayrollDraftScreen() {
               return (
                 <div key={e.employee_id}
                   className="flex items-center justify-between gap-4 px-4 py-3
-                    rounded-2xl border border-cream-alt bg-cream-card">
+                    rounded-2xl glass-card glass-shine">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-ink-primary truncate">{e.employee_name}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">

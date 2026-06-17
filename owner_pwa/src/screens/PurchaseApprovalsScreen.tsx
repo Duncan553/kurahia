@@ -202,7 +202,7 @@ function RequestCard({
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left rounded-xl border border-cream-alt bg-cream-card p-4
+      className="w-full text-left rounded-xl glass-card glass-shine p-4
         hover:border-primary-light/50 hover:shadow-sm transition-all
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
     >
