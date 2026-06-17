@@ -9,6 +9,7 @@ from app.extensions import db
 
 
 class RequestStatus(str, enum.Enum):
+    DRAFT     = "DRAFT"
     PENDING   = "PENDING"
     APPROVED  = "APPROVED"
     REJECTED  = "REJECTED"
@@ -27,8 +28,9 @@ class PurchaseRequest(db.Model):
     quantity = db.Column(db.Numeric(12, 4), nullable=False)
     estimated_cost = db.Column(db.Numeric(14, 2), nullable=True)  # set by manager at propose step
 
-    requested_by_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    requested_by_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
     status = db.Column(db.String(20), nullable=False, default=RequestStatus.PENDING)
+    system_generated = db.Column(db.Boolean, nullable=False, default=False)
 
     # Set at propose step
     manager_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)

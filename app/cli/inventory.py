@@ -1,9 +1,11 @@
 """
-CLI: flask inventory seed-items
+CLI: flask inventory seed-items / flask inventory auto-draft
 Seeds a starter catalogue across Kitchen, Bar, Staff departments.
+Auto-draft creates DRAFT purchase requests for items below reorder level.
 Run after `flask seed roles-depts` and `flask db upgrade`.
 """
 import click
+from decimal import Decimal
 from flask import Blueprint
 from app.extensions import db
 from app.models.inventory_item import InventoryItem
@@ -61,3 +63,53 @@ def seed_items():
 
     db.session.commit()
     click.echo(f"Done. {created} items created.")
+
+
+@inventory_cli_bp.cli.command("auto-draft")
+def auto_draft():
+    """Create DRAFT purchase requests for items below reorder level.
+
+    Runs nightly via cron (23:00 Africa/Nairobi). Skips items that already
+    have an open DRAFT or PENDING request. Suggested qty = (reorder × 2) − current.
+    """
+    from app.models.purchase_request import PurchaseRequest, RequestStatus
+    from app.models.audit_log import AuditLog
+    from app.services.stock import get_current_stock
+
+    items = db.session.query(InventoryItem).filter_by(is_active=True).all()
+    drafted = 0
+
+    for item in items:
+        if item.reorder_level <= Decimal("0"):
+            continue
+        current = get_current_stock(item.id)
+        if current >= item.reorder_level:
+            continue
+
+        existing = db.session.query(PurchaseRequest).filter(
+            PurchaseRequest.item_id == item.id,
+            PurchaseRequest.status.in_([RequestStatus.DRAFT.value, RequestStatus.PENDING.value]),
+        ).first()
+        if existing:
+            continue
+
+        suggested_qty = (item.reorder_level * Decimal("2")) - current
+        if suggested_qty <= Decimal("0"):
+            continue
+
+        with db.session.begin_nested():
+            pr = PurchaseRequest(
+                item_id=item.id,
+                quantity=suggested_qty,
+                status=RequestStatus.DRAFT.value,
+                system_generated=True,
+                requested_by_id=None,
+            )
+            db.session.add(pr)
+
+        AuditLog.log(actor="system", action="purchase_request.auto_draft",
+                     target=item.name, details=f"qty={suggested_qty}")
+        drafted += 1
+
+    db.session.commit()
+    click.echo(f"Auto-draft: {drafted} DRAFT request(s) created.")

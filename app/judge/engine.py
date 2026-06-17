@@ -80,47 +80,115 @@ def _fire_alert(item_id: str | None, alert_type: str, severity: AlertSeverity,
     return alert
 
 
+def _run_cost_variance(period_start: datetime, period_end: datetime) -> int:
+    """
+    Per-ingredient cost variance: expected spend (qty_served × recipe × cost_per_unit)
+    vs actual consumption movements × cost_per_unit. Default threshold 15%.
+    """
+    from app.models.recipe_line import RecipeLine
+    from app.models.order_item import OrderItem, OrderItemStatus
+    from app.models.menu_item import MenuItem
+
+    COST_VARIANCE_THRESHOLD = Decimal("15")
+    HIGH_THRESHOLD = Decimal("25")
+
+    ingredients = db.session.query(InventoryItem).filter_by(
+        is_active=True, is_staff_food=False
+    ).all()
+
+    alerts_fired = 0
+    for ing in ingredients:
+        if ing.cost_per_unit is None:
+            continue
+
+        recipe_lines = db.session.query(RecipeLine).filter_by(
+            inventory_item_id=ing.id, is_active=True
+        ).all()
+        if not recipe_lines:
+            continue
+
+        expected_qty = Decimal("0")
+        for rl in recipe_lines:
+            served_qty = db.session.query(func.sum(OrderItem.quantity)).filter(
+                OrderItem.menu_item_id == rl.menu_item_id,
+                OrderItem.status == OrderItemStatus.SERVED.value,
+                OrderItem.served_at >= period_start,
+                OrderItem.served_at <= period_end,
+            ).scalar()
+            if served_qty:
+                expected_qty += Decimal(str(served_qty)) * rl.quantity
+
+        if expected_qty == Decimal("0"):
+            continue
+
+        actual_qty = _get_period_consumption(ing.id, period_start, period_end)
+        if actual_qty == Decimal("0"):
+            continue
+
+        expected_cost = expected_qty * Decimal(str(ing.cost_per_unit))
+        actual_cost = actual_qty * Decimal(str(ing.cost_per_unit))
+
+        if expected_cost == Decimal("0"):
+            continue
+
+        deviation_pct = abs(actual_cost - expected_cost) / expected_cost * 100
+        if deviation_pct <= COST_VARIANCE_THRESHOLD:
+            continue
+
+        direction = "overspent" if actual_cost > expected_cost else "underspent"
+        severity = AlertSeverity.HIGH if deviation_pct > HIGH_THRESHOLD else AlertSeverity.MEDIUM
+        desc = (
+            f"{ing.name} ingredients {direction} by {deviation_pct:.0f}% this week. "
+            f"Expected KSh {expected_cost:,.0f}, actual KSh {actual_cost:,.0f}."
+        )
+        _fire_alert(ing.id, "COST_VARIANCE", severity, desc, period_start, period_end)
+        alerts_fired += 1
+
+    return alerts_fired
+
+
 def run_weekly(period_start: datetime, period_end: datetime) -> int:
     """
-    Compute consumption-to-revenue ratios for all active non-staff-food items.
-    Returns the number of alerts fired. Zero if no sales data (dormant state).
+    Weekly judge analysis:
+    1. Ratio analysis — consumption vs revenue (dormant if no payment data)
+    2. Cost variance — expected vs actual ingredient spend (runs if orders exist)
     """
-    revenue = _get_sales_revenue(period_start, period_end)
-    if revenue is None or revenue == Decimal("0"):
-        # No sales data yet — stay dormant, generate zero alerts
-        return 0
+    alerts_fired = 0
 
+    # 1. Ratio analysis — requires payment data
+    revenue = _get_sales_revenue(period_start, period_end)
     baselines = db.session.query(JudgeBaseline).filter_by(
         business_driver="restaurant_revenue", is_active=True
     ).all()
 
-    alerts_fired = 0
-    for baseline in baselines:
-        item = db.session.get(InventoryItem, baseline.item_id)
-        if not item or not item.is_active or item.is_staff_food:
-            continue
+    if revenue and revenue > Decimal("0"):
+        for baseline in baselines:
+            item = db.session.get(InventoryItem, baseline.item_id)
+            if not item or not item.is_active or item.is_staff_food:
+                continue
 
-        consumption = _get_period_consumption(item.id, period_start, period_end)
-        if consumption == Decimal("0"):
-            continue
+            consumption = _get_period_consumption(item.id, period_start, period_end)
+            if consumption == Decimal("0"):
+                continue
 
-        # Expected consumption based on the baseline ratio and actual revenue
-        # ratio is "units consumed per driver_unit of revenue"
-        expected = baseline.expected_ratio * (revenue / Decimal("10000"))
-        deviation_pct = abs(consumption - expected) / expected * 100
+            expected = baseline.expected_ratio * (revenue / Decimal("10000"))
+            deviation_pct = abs(consumption - expected) / expected * 100
 
-        if deviation_pct > baseline.tolerance_percent:
-            severity = (
-                AlertSeverity.HIGH   if deviation_pct > baseline.tolerance_percent * 2
-                else AlertSeverity.MEDIUM
-            )
-            desc = (
-                f"{item.name}: consumed {consumption}{item.unit}, "
-                f"expected ~{expected:.2f}{item.unit} "
-                f"({deviation_pct:.1f}% deviation vs {baseline.tolerance_percent}% tolerance)"
-            )
-            _fire_alert(item.id, "RATIO", severity, desc, period_start, period_end)
-            alerts_fired += 1
+            if deviation_pct > baseline.tolerance_percent:
+                severity = (
+                    AlertSeverity.HIGH   if deviation_pct > baseline.tolerance_percent * 2
+                    else AlertSeverity.MEDIUM
+                )
+                desc = (
+                    f"{item.name}: consumed {consumption}{item.unit}, "
+                    f"expected ~{expected:.2f}{item.unit} "
+                    f"({deviation_pct:.1f}% deviation vs {baseline.tolerance_percent}% tolerance)"
+                )
+                _fire_alert(item.id, "RATIO", severity, desc, period_start, period_end)
+                alerts_fired += 1
+
+    # Cost variance analysis: expected vs actual ingredient spend
+    alerts_fired += _run_cost_variance(period_start, period_end)
 
     if alerts_fired:
         db.session.flush()
