@@ -54,9 +54,17 @@ function SafeIcon() {
   </svg>
 }
 
+function CostVarianceIcon() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <path d="M8 1v14M4.5 4.5h5a2 2 0 010 4H5.5M5.5 8.5h4a2 2 0 010 4h-5"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+}
+
 function AlertTypeIcon({ type }: { type: string }) {
   if (type === 'RATIO') return <RatioIcon />
   if (type === 'SPOILAGE_SPIKE') return <SpoilageIcon />
+  if (type === 'COST_VARIANCE') return <CostVarianceIcon />
   return <SafeIcon />
 }
 

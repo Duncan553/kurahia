@@ -37,7 +37,12 @@ OWNER_LEVEL   = 10
 @purchases_bp.get("/purchase-requests")
 @require_active_user
 def list_requests():
-    """Recent purchase requests — manager sees their department's; owner sees all."""
+    """Recent purchase requests — manager sees their department's; owner sees all.
+
+    Query params:
+      ?status=DRAFT          — filter by status
+      ?system_generated=true — only system-generated auto-drafts
+    """
     from datetime import datetime, timezone, timedelta
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
@@ -46,23 +51,39 @@ def list_requests():
     since = datetime.now(timezone.utc) - timedelta(days=30)
     query = db.session.query(PurchaseRequest).filter(PurchaseRequest.created_at >= since)
 
+    status_filter = request.args.get("status")
+    if status_filter:
+        query = query.filter(PurchaseRequest.status == status_filter)
+
+    sg = request.args.get("system_generated")
+    if sg and sg.lower() == "true":
+        query = query.filter(PurchaseRequest.system_generated == True)
+
     if actor.role.level < 10 and actor.department_id:
         from app.models.user import User as U
         dept_ids = [u.id for u in db.session.query(U).filter_by(department_id=actor.department_id).all()]
-        query = query.filter(PurchaseRequest.requested_by_id.in_(dept_ids))
+        query = query.filter(
+            db.or_(
+                PurchaseRequest.requested_by_id.in_(dept_ids),
+                PurchaseRequest.requested_by_id.is_(None),
+            )
+        )
 
     reqs = query.order_by(PurchaseRequest.created_at.desc()).all()
     return jsonify([{
-        "id":             r.id,
-        "item_id":        r.item_id,
-        "item_name":      r.item.name if r.item else r.item_description,
-        "quantity":       str(r.quantity),
-        "status":         r.status,
-        "created_at":     r.created_at.isoformat(),
-        "requested_by":   r.requested_by.username if r.requested_by else None,
-        "department":     r.requested_by.department.name if r.requested_by and r.requested_by.department else "General",
-        "notes":          r.manager_notes,
-        "estimated_cost": str(r.estimated_cost) if r.estimated_cost else None,
+        "id":               r.id,
+        "item_id":          r.item_id,
+        "item_name":        r.item.name if r.item else r.item_description,
+        "quantity":         str(r.quantity),
+        "unit":             r.item.unit if r.item else None,
+        "status":           r.status,
+        "system_generated": r.system_generated,
+        "created_at":       r.created_at.isoformat(),
+        "requested_by":     r.requested_by.username if r.requested_by else "system",
+        "department":       r.item.department.name if r.item and r.item.department else (
+                            r.requested_by.department.name if r.requested_by and r.requested_by.department else "General"),
+        "notes":            r.manager_notes,
+        "estimated_cost":   str(r.estimated_cost) if r.estimated_cost else None,
     } for r in reqs]), 200
 
 
@@ -107,6 +128,60 @@ def create_request():
     db.session.commit()
 
     return jsonify({"id": pr.id, "status": pr.status}), 201
+
+
+@purchases_bp.post("/purchase-requests/<pr_id>/submit")
+@require_active_user
+def submit_draft(pr_id):
+    """Manager submits a DRAFT → PENDING, optionally editing quantity first."""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    pr = db.session.get(PurchaseRequest, pr_id)
+    if not pr:
+        return jsonify({"error": "Purchase request not found."}), 404
+    if pr.status != RequestStatus.DRAFT.value:
+        return jsonify({"error": f"Only DRAFT requests can be submitted. This one is {pr.status}."}), 400
+
+    data = request.get_json(silent=True) or {}
+    with db.session.begin_nested():
+        if "quantity" in data:
+            try:
+                qty = Decimal(str(data["quantity"]))
+            except InvalidOperation:
+                return jsonify({"error": "quantity must be a number."}), 400
+            if qty <= 0:
+                return jsonify({"error": "quantity must be positive."}), 400
+            pr.quantity = qty
+        pr.status = RequestStatus.PENDING.value
+        pr.requested_by_id = actor.id
+
+    AuditLog.log(actor=actor.username, action="purchase_request.submit", target=pr.id)
+    db.session.commit()
+    return jsonify({"id": pr.id, "status": pr.status, "quantity": str(pr.quantity)}), 200
+
+
+@purchases_bp.post("/purchase-requests/<pr_id>/dismiss")
+@require_active_user
+def dismiss_draft(pr_id):
+    """Manager dismisses a DRAFT suggestion → REJECTED."""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    pr = db.session.get(PurchaseRequest, pr_id)
+    if not pr:
+        return jsonify({"error": "Purchase request not found."}), 404
+    if pr.status != RequestStatus.DRAFT.value:
+        return jsonify({"error": f"Only DRAFT requests can be dismissed. This one is {pr.status}."}), 400
+
+    with db.session.begin_nested():
+        pr.status = RequestStatus.REJECTED.value
+
+    AuditLog.log(actor=actor.username, action="purchase_request.dismiss", target=pr.id)
+    db.session.commit()
+    return jsonify({"id": pr.id, "status": pr.status}), 200
 
 
 @purchases_bp.post("/purchase-requests/<pr_id>/propose")

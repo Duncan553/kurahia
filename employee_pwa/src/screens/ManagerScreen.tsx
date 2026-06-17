@@ -77,6 +77,12 @@ function StockAlertIcon() {
     <circle cx="14" cy="19.5" r="0.75" fill="currentColor"/>
   </svg>
 }
+function ReorderIcon() {
+  return <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+    <path d="M6 8h16M6 14h16M6 20h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M22 17v6M19 20h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
 
 const TILES: Tile[] = [
   {
@@ -141,7 +147,6 @@ export default function ManagerScreen() {
   const user = useAuthStore((s) => s.user)
   const clearAuth = useAuthStore((s) => s.clearAuth)
 
-  // Stock alerts: poll every 30s, auto-pauses when tab is hidden (refetchIntervalInBackground default = false)
   const { data: alertCount = 0 } = useQuery<number>({
     queryKey: ['stock-alerts-count'],
     queryFn: () =>
@@ -149,6 +154,16 @@ export default function ManagerScreen() {
         .then(r => (Array.isArray(r.data) ? r.data : []).filter(i => i.below_reorder).length),
     refetchInterval: 30_000,
     staleTime: 25_000,
+  })
+
+  const { data: reorderCount = 0 } = useQuery<number>({
+    queryKey: ['suggested-reorders-count'],
+    queryFn: () =>
+      api.get<{ id: string }[]>('/inventory/purchase-requests', {
+        params: { status: 'DRAFT', system_generated: 'true' },
+      }).then(r => (Array.isArray(r.data) ? r.data : []).length),
+    refetchInterval: 60_000,
+    staleTime: 55_000,
   })
 
   function signOut() { clearAuth(); navigate('/pin') }
@@ -218,6 +233,38 @@ export default function ManagerScreen() {
               </span>
             )}
           </motion.button>
+
+          {/* Suggested Reorders tile — auto-drafted purchase suggestions */}
+          {reorderCount > 0 && (
+            <motion.button
+              variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate('/inventory/purchase-request')}
+              className="relative flex flex-col items-start gap-3 p-4 rounded-2xl border border-cream-alt
+                bg-cream-card hover:bg-cream-alt/40 transition-colors text-left
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
+              aria-label={`Suggested Reorders — ${reorderCount} suggestion${reorderCount !== 1 ? 's' : ''}`}
+            >
+              <span className="text-primary-dark">
+                <ReorderIcon />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-ink-primary">Suggested Reorders</p>
+                <p className="text-xs text-ink-secondary mt-0.5 leading-snug">
+                  {reorderCount} suggestion{reorderCount !== 1 ? 's' : ''} from nightly scan
+                </p>
+              </div>
+              <span
+                aria-hidden="true"
+                className="absolute top-3 right-3 min-w-[20px] h-5 rounded-full bg-primary-dark
+                  flex items-center justify-center text-[10px] font-bold text-white tabular-nums px-1"
+              >
+                {reorderCount > 9 ? '9+' : reorderCount}
+              </span>
+            </motion.button>
+          )}
 
           {/* Account tile — spans full width, always last */}
           <motion.div
