@@ -166,7 +166,11 @@ def list_items():
     include_disabled  = request.args.get("include_disabled", "false").lower() == "true"
     for_count         = request.args.get("for_count", "false").lower() == "true"
 
+    q = (request.args.get("q") or "").strip()
+
     query = db.session.query(InventoryItem)
+    if q:
+        query = query.filter(InventoryItem.name.ilike(f"%{q}%"))
     if not include_disabled:
         query = query.filter_by(is_active=True)
 

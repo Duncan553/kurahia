@@ -130,7 +130,11 @@ def list_users():
     actor = db.session.get(User, get_jwt_identity())
     include_disabled = request.args.get("include_disabled", "false").lower() == "true"
 
+    q = (request.args.get("q") or "").strip()
+
     query = db.session.query(User)
+    if q:
+        query = query.filter(User.username.ilike(f"%{q}%"))
     if not include_disabled:
         query = query.filter_by(is_active=True)
 

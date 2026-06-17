@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { useToastStore } from '@shared'
+import { useToastStore, SearchInput } from '@shared'
 import api from '../lib/axios'
 import { playOrderAlert, isMuted, setMuted as setAudioMuted } from '../lib/audio'
 import AudioEnableSplash from '../components/AudioEnableSplash'
@@ -99,6 +99,7 @@ function StockBoard() {
 function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: (n: number) => void }) {
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
+  const [searchQ, setSearchQ] = useState('')
   const endpoint = station === 'KITCHEN' ? '/kitchen/queue' : '/bar/queue'
   const prevIdsRef = useRef<Set<string>>(new Set())
 
@@ -130,6 +131,15 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
 
+  // Client-side filter by menu_item name or tab_reference
+  const filteredItems = searchQ
+    ? items.filter(i => {
+        const q = searchQ.toLowerCase()
+        return (i.menu_item ?? '').toLowerCase().includes(q) ||
+               (i.tab_reference ?? '').toLowerCase().includes(q)
+      })
+    : items
+
   if (isLoading) return (
     <div className="space-y-3">
       {[1,2,3].map(i => <div key={i} className="h-24 rounded-2xl bg-cream-alt animate-pulse" />)}
@@ -147,7 +157,13 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
 
   return (
     <div className="space-y-3">
-      {items.map(item => (
+      <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search orders..." label="Search orders" />
+
+      {searchQ && filteredItems.length === 0 && (
+        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+      )}
+
+      {filteredItems.map(item => (
         <motion.div
           key={item.order_item_id}
           layout

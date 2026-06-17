@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Skeleton, EmptyState } from '@shared'
+import { Skeleton, EmptyState, SearchInput } from '@shared'
 import api from '../lib/axios'
 
 interface VillaTab {
@@ -13,6 +14,7 @@ const kes = (v: string) =>
 
 export default function VillaScreen() {
   const navigate = useNavigate()
+  const [searchQ, setSearchQ] = useState('')
 
   const { data: tabs = [], isLoading } = useQuery<VillaTab[]>({
     queryKey: ['villa-tabs'],
@@ -21,13 +23,24 @@ export default function VillaScreen() {
     refetchOnWindowFocus: true,
   })
 
+  // Client-side filter by reference or "Villa Guest"
+  const filteredTabs = searchQ
+    ? tabs.filter(t => (t.reference ?? 'Villa Guest').toLowerCase().includes(searchQ.toLowerCase()))
+    : tabs
+
   return (
     <div className="p-4 max-w-lg mx-auto space-y-4">
       <h1 className="text-xl font-bold font-serif text-ink-primary">Villa Guests</h1>
 
+      <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search guests..." label="Search guests" />
+
+      {searchQ && filteredTabs.length === 0 && !isLoading && (
+        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+      )}
+
       {isLoading && <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} variant="row" />)}</div>}
 
-      {!isLoading && tabs.length === 0 && (
+      {!isLoading && tabs.length === 0 && !searchQ && (
         <EmptyState
           icon={<svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
             <path d="M6 20L20 8l14 12v16a2 2 0 01-2 2H8a2 2 0 01-2-2V20z"
@@ -39,7 +52,7 @@ export default function VillaScreen() {
       )}
 
       <div className="space-y-2">
-        {tabs.map(t => {
+        {filteredTabs.map(t => {
           const bal = parseFloat(t.balance)
           return (
             <button key={t.id} onClick={() => navigate(`/pos/tabs/${t.id}`)}

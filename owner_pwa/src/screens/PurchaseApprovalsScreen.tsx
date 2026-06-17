@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Drawer, Button, useToastStore, EmptyState, Skeleton, StatusBadge } from '@shared'
+import { Drawer, Button, useToastStore, EmptyState, Skeleton, StatusBadge, SearchInput } from '@shared'
 import api from '../lib/axios'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -242,12 +242,13 @@ const TAB_LABELS: { key: TabFilter; label: string }[] = [
 ]
 
 export default function PurchaseApprovalsScreen() {
+  const [searchQ, setSearchQ] = useState('')
   const [tab, setTab] = useState<TabFilter>('pending')
   const [selected, setSelected] = useState<PurchaseRequest | null>(null)
 
   const { data, isLoading, isError } = useQuery<PurchaseRequest[]>({
-    queryKey: ['purchase-requests'],
-    queryFn: () => api.get<PurchaseRequest[]>('/inventory/purchase-requests').then(r => r.data),
+    queryKey: ['purchase-requests', searchQ],
+    queryFn: () => api.get<PurchaseRequest[]>(`/inventory/purchase-requests${searchQ ? `?q=${encodeURIComponent(searchQ)}` : ''}`).then(r => r.data),
     staleTime: 60_000,
   })
 
@@ -294,6 +295,12 @@ export default function PurchaseApprovalsScreen() {
           </button>
         ))}
       </div>
+
+      <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search requests..." label="Search requests" />
+
+      {searchQ && filtered.length === 0 && !isLoading && (
+        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+      )}
 
       {/* List */}
       {isLoading && (

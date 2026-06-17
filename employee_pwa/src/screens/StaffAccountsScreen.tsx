@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RequireRole } from '../components/AuthGate'
 import ScreenHero from '../components/ScreenHero'
-import { Button } from '@shared'
+import { Button, SearchInput } from '@shared'
 import api from '../lib/axios'
 
 interface StaffUser { id: string; username: string; role: string; department: string | null; is_active: boolean; pin_set: boolean }
@@ -19,6 +19,7 @@ const LBL = ({ children }: { children: React.ReactNode }) => (
 
 export default function StaffAccountsScreen() {
   const qc = useQueryClient()
+  const [searchQ, setSearchQ] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [step, setStep] = useState<1|2>(1)
   const [uid, setUid] = useState('')
@@ -29,9 +30,9 @@ export default function StaffAccountsScreen() {
   const set = (k: keyof typeof BLANK) => (e: React.ChangeEvent<HTMLInputElement|HTMLSelectElement>) =>
     setF(p => ({...p, [k]: e.target.value}))
 
-  const { data: staff = [] } = useQuery<StaffUser[]>({
-    queryKey: ['staff-accounts'],
-    queryFn: () => api.get<StaffUser[]>('/auth/users').then(r => r.data),
+  const { data: staff = [], isLoading: staffLoading } = useQuery<StaffUser[]>({
+    queryKey: ['staff-accounts', searchQ],
+    queryFn: () => api.get<StaffUser[]>(`/auth/users${searchQ ? `?q=${encodeURIComponent(searchQ)}` : ''}`).then(r => r.data),
   })
   const { data: meta } = useQuery<Meta>({
     queryKey: ['auth-meta'],
@@ -197,9 +198,16 @@ export default function StaffAccountsScreen() {
             </button>
           )}
 
+          {/* Search */}
+          <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search staff..." label="Search staff" />
+
+          {searchQ && staff.length === 0 && !staffLoading && (
+            <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+          )}
+
           {/* Staff list */}
           <div className="space-y-2">
-            {staff.length === 0 && <p className="text-sm text-ink-tertiary text-center py-8">No staff accounts yet.</p>}
+            {!searchQ && staff.length === 0 && <p className="text-sm text-ink-tertiary text-center py-8">No staff accounts yet.</p>}
             {staff.map(u => (
               <div key={u.id} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border border-cream-alt bg-cream-card ${!u.is_active ? 'opacity-60' : ''}`}>
                 <div className="min-w-0">

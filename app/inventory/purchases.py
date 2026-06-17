@@ -48,8 +48,18 @@ def list_requests():
     if actor.role.level < MANAGER_LEVEL:
         return jsonify({"error": "Manager or above required."}), 403
 
+    q = (request.args.get("q") or "").strip()
+
     since = datetime.now(timezone.utc) - timedelta(days=30)
     query = db.session.query(PurchaseRequest).filter(PurchaseRequest.created_at >= since)
+
+    if q:
+        query = query.outerjoin(InventoryItem, PurchaseRequest.item_id == InventoryItem.id).filter(
+            db.or_(
+                InventoryItem.name.ilike(f"%{q}%"),
+                PurchaseRequest.item_description.ilike(f"%{q}%"),
+            )
+        )
 
     status_filter = request.args.get("status")
     if status_filter:

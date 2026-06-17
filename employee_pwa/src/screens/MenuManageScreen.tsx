@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Select, Skeleton, useToastStore, Drawer, Combobox } from '@shared'
+import { Button, Select, Skeleton, useToastStore, Drawer, Combobox, SearchInput } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 
@@ -57,6 +57,7 @@ export default function MenuManageScreen() {
   const user       = useAuthStore(s => s.user)
   const isOwner    = (user?.role_level ?? 0) >= 10
 
+  const [searchQ, setSearchQ]    = useState('')
   const [f, setF]               = useState(BLANK)
   const [adding, setAdding]     = useState(false)
   const [priceEdit, setPriceEdit] = useState<{ id: string; price: string } | null>(null)
@@ -72,8 +73,10 @@ export default function MenuManageScreen() {
   // ── Data ──────────────────────────────────────────────────────────────────
 
   const { data: items = [], isLoading } = useQuery<MenuItem[]>({
-    queryKey: ['menu-manage'],
-    queryFn: () => api.get<MenuItem[]>('/menu/items?include_disabled=true').then(r => r.data),
+    queryKey: ['menu-manage', searchQ],
+    queryFn: () => api.get<MenuItem[]>('/menu/items', {
+      params: { include_disabled: 'true', ...(searchQ ? { q: searchQ } : {}) },
+    }).then(r => r.data),
   })
   const { data: meta } = useQuery<Meta>({
     queryKey: ['users-meta'],
@@ -264,6 +267,8 @@ export default function MenuManageScreen() {
         </Button>
       </div>
 
+      <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search menu items…" label="Search menu" />
+
       {/* ── Add form ───────────────────────────────────────────────────── */}
       {adding && (
         <form
@@ -320,6 +325,11 @@ export default function MenuManageScreen() {
       )}
 
       {/* ── Item list grouped by department ────────────────────────────── */}
+      {searchQ && items.length === 0 && !isLoading && (
+        <p className="text-sm text-ink-tertiary text-center py-8">
+          No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu
+        </p>
+      )}
       {Object.entries(grouped).map(([dept, deptItems]) => (
         <div key={dept}>
           <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">{dept}</p>

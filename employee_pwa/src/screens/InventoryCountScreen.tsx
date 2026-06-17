@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Drawer, Skeleton, EmptyState, useToastStore, Combobox } from '@shared'
+import { Drawer, Skeleton, EmptyState, useToastStore, Combobox, SearchInput } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
 import { useAuthStore } from '../stores/authStore'
@@ -85,6 +85,7 @@ export default function InventoryCountScreen() {
   // ── Department picker (owner selects dept; manager auto-scoped by backend) ─
   const [selectedDeptId, setSelectedDeptId] = useState<string>('') // '' = All (owner only)
 
+  const [searchQ, setSearchQ] = useState('')
   const [tab, setTab] = useState<Tab>('count')
 
   // ── Add-item drawer ────────────────────────────────────────────────────────
@@ -152,15 +153,16 @@ export default function InventoryCountScreen() {
   const [varTriggered, setVarTriggered] = useState(false)
 
   const itemsQueryKey = isOwner && selectedDeptId
-    ? ['inventory-items', selectedDeptId]
-    : ['inventory-items']
+    ? ['inventory-items', selectedDeptId, searchQ]
+    : ['inventory-items', searchQ]
 
   const { data: items, isLoading, isError } = useQuery<InventoryItem[]>({
     queryKey: itemsQueryKey,
     queryFn: () => {
-      const url = isOwner && selectedDeptId
-        ? `/inventory/items?department=${selectedDeptId}`
-        : '/inventory/items'
+      const params = new URLSearchParams()
+      if (isOwner && selectedDeptId) params.set('department', selectedDeptId)
+      if (searchQ) params.set('q', searchQ)
+      const url = `/inventory/items${params.toString() ? `?${params}` : ''}`
       return api.get<InventoryItem[]>(url).then((r) => Array.isArray(r.data) ? r.data : [])
     },
     // For owner with no dept selected, skip the query (show dept picker instead)
@@ -304,6 +306,12 @@ export default function InventoryCountScreen() {
         {/* ── COUNT TAB ────────────────────────────────────────────── */}
         {tab === 'count' && (
           <>
+            <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search inventory..." label="Search inventory" />
+
+            {searchQ && countItems.length === 0 && !isLoading && (
+              <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+            )}
+
             {isLoading && (
               <div className="space-y-3">
                 {[1,2,3,4].map((i) => (
