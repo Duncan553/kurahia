@@ -53,10 +53,11 @@ def create_app(config_name: str = None) -> Flask:
     from app.judge import judge_bp
     app.register_blueprint(judge_bp)
 
-    from app.admin import dept_bp, roles_bp, baselines_bp
+    from app.admin import dept_bp, roles_bp, baselines_bp, settings_bp
     app.register_blueprint(dept_bp)
     app.register_blueprint(roles_bp)
     app.register_blueprint(baselines_bp)
+    app.register_blueprint(settings_bp)
 
     from app.pos import menu_bp, tabs_bp, orders_bp, payments_bp, queues_bp, receipts_bp
     app.register_blueprint(menu_bp)

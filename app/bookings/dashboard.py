@@ -26,9 +26,8 @@ def front_desk_today():
     if actor.role.level < FRONT_DESK_LEVEL:
         return jsonify({"error": "Staff or above required."}), 403
 
-    today     = datetime.now(timezone.utc).date()
-    day_start = datetime(today.year, today.month, today.day)
-    day_end   = day_start + timedelta(days=1)
+    from app.services.business_day import business_day_bounds_today
+    day_start, day_end = business_day_bounds_today()
 
     # Arrivals expected today (CONFIRMED or HELD)
     arrivals = db.session.query(Booking).filter(
