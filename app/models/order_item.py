@@ -60,6 +60,7 @@ class OrderItem(db.Model):
     cancelled_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     cancel_reason = db.Column(db.Text, nullable=True)
+    notes         = db.Column(db.String(200), nullable=True)
 
     order     = db.relationship("Order", back_populates="items", lazy="select")
     menu_item = db.relationship("MenuItem", lazy="select")

@@ -9,7 +9,7 @@ interface MenuItem {
   id: string; name: string; price: string; category: string | null
   prep_station: string; in_stock: boolean | null
 }
-interface OrderItem { id: string; name: string | null; quantity: string; status: string }
+interface OrderItem { id: string; name: string | null; quantity: string; status: string; notes: string | null }
 interface TabDetail {
   id: string; reference: string | null; status: string; balance: string
   charges: { id: string; description: string; amount: string }[]
@@ -52,6 +52,7 @@ export default function WaiterTabDetailScreen() {
   const addToast = useToastStore(s => s.addToast)
 
   const [draft, setDraft] = useState<Record<string, number>>({})
+  const [draftNotes, setDraftNotes] = useState<Record<string, string>>({})
   const [mobilePane, setMobilePane] = useState<'menu' | 'order'>('menu')
   const [searchQ, setSearchQ] = useState('')
   const [activeCat, setActiveCat] = useState('All')
@@ -105,7 +106,10 @@ export default function WaiterTabDetailScreen() {
 
   const sendMut = useMutation({
     mutationFn: async () => {
-      const orderItems = draftEntries.map(e => ({ menu_item_id: e.id, quantity: e.qty }))
+      const orderItems = draftEntries.map(e => ({
+        menu_item_id: e.id, quantity: e.qty,
+        ...(draftNotes[e.id] ? { notes: draftNotes[e.id] } : {}),
+      }))
       const { data: order } = await api.post('/orders', { tab_id: tabId, items: orderItems })
       await api.post(`/orders/${order.id}/send`)
     },
@@ -113,6 +117,7 @@ export default function WaiterTabDetailScreen() {
       qc.invalidateQueries({ queryKey: ['tab', tabId] })
       qc.invalidateQueries({ queryKey: ['my-tabs'] })
       setDraft({})
+      setDraftNotes({})
       addToast({ type: 'success', message: 'Order sent to kitchen / bar.' })
     },
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
@@ -316,6 +321,18 @@ export default function WaiterTabDetailScreen() {
                   <span className="text-sm font-bold tabular-nums text-ink-primary w-16 text-right shrink-0">
                     {kes(e.price * e.qty)}
                   </span>
+                  <div className="w-full mt-1">
+                    <input
+                      type="text" maxLength={200}
+                      placeholder="Add note (e.g. no onions)"
+                      aria-label={`Note for ${e.name}`}
+                      value={draftNotes[e.id] ?? ''}
+                      onChange={ev => setDraftNotes(n => ({ ...n, [e.id]: ev.target.value }))}
+                      className="w-full text-xs rounded-lg border border-cream-alt bg-cream-card/50 px-2 py-1.5
+                        text-ink-secondary placeholder:text-ink-tertiary/50
+                        focus:outline-none focus:border-primary-dark"
+                    />
+                  </div>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -342,9 +359,16 @@ export default function WaiterTabDetailScreen() {
               const badge = ITEM_BADGE[oi.status] ?? ITEM_BADGE.PENDING
               return (
                 <div key={oi.id} className="flex items-center gap-2 py-2 border-b border-cream-alt last:border-0">
-                  <span className="flex-1 text-sm text-ink-secondary truncate">
-                    {oi.quantity}× {oi.name}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-ink-secondary truncate block">
+                      {oi.quantity}× {oi.name}
+                    </span>
+                    {oi.notes && (
+                      <span className="text-xs italic text-ink-tertiary block truncate">
+                        {oi.notes}
+                      </span>
+                    )}
+                  </div>
                   <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${badge.bg}`}>
                     {badge.icon} {oi.status}
                   </span>

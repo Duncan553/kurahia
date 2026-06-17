@@ -97,8 +97,9 @@ def create_order():
                 order_id=order.id,
                 menu_item_id=mi.id,
                 quantity=qty,
-                unit_price_snapshot=mi.price,          # price locked at order time
-                prep_station_snapshot=mi.prep_station,  # routing locked at order time
+                unit_price_snapshot=mi.price,
+                prep_station_snapshot=mi.prep_station,
+                notes=(line.get("notes") or "").strip()[:200] or None,
             )
             db.session.add(order_item)
 
