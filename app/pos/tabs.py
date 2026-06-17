@@ -110,7 +110,8 @@ def get_tab(tab_id):
                 "status": o.status,
                 "items": [
                     {"id": oi.id, "name": oi.menu_item.name if oi.menu_item else None,
-                     "quantity": str(oi.quantity), "status": oi.status}
+                     "quantity": str(oi.quantity), "status": oi.status,
+                     "notes": oi.notes}
                     for oi in o.items
                 ],
             }

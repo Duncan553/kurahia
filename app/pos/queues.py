@@ -54,6 +54,7 @@ def _queue_for_station(station: str, actor: User):
             "created_at":    oi.created_at.isoformat(),
             "age_seconds":   _age(oi),
             "ordered_by":    oi.order.created_by.username if oi.order and oi.order.created_by else None,
+            "notes":         oi.notes,
         }
         for oi in items
     ], None
