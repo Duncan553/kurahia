@@ -385,9 +385,13 @@ class TestCrossRoleEndpoints:
         rv = client.get("/judge/alerts", headers=auth(manager_token))
         assert rv.status_code == 403, f"GET /judge/alerts returned {rv.status_code} for manager"
 
-    def test_manager_cannot_view_dashboard(self, app, client, manager_token):
+    def test_manager_can_view_overview(self, app, client, manager_token):
         rv = client.get("/dashboard/overview", headers=auth(manager_token))
-        assert rv.status_code == 403, f"GET /dashboard/overview returned {rv.status_code} for manager"
+        assert rv.status_code == 200, "Manager should access /dashboard/overview (lowered from owner-only)"
+
+    def test_staff_cannot_view_dashboard(self, app, client, waiter_token):
+        rv = client.get("/dashboard/overview", headers=auth(waiter_token))
+        assert rv.status_code == 403, f"GET /dashboard/overview returned {rv.status_code} for staff"
 
 
 # ══════════════════════════════════════════════════════════════════════════════

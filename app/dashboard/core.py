@@ -41,9 +41,8 @@ def _period_bounds(period: str) -> tuple[datetime, datetime]:
 @require_active_user
 def overview():
     actor = db.session.get(User, get_jwt_identity())
-    err = _require_owner(actor)
-    if err:
-        return err
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
 
     period = request.args.get("period", "today")
     period_start, period_end = _period_bounds(period)

@@ -68,11 +68,18 @@ def list_equipment():
         return jsonify({"error": "Staff login required."}), 403
     include_disabled = request.args.get("include_disabled", "false").lower() == "true"
     include_retired = request.args.get("include_retired", "false").lower() == "true"
+    dept_filter = request.args.get("department_id")
+    type_filter = request.args.get("equipment_type")
+
     q = db.session.query(Equipment)
     if not include_disabled:
         q = q.filter_by(is_active=True)
     if not include_retired:
         q = q.filter(Equipment.status != EquipmentStatus.RETIRED.value)
+    if dept_filter:
+        q = q.filter(Equipment.department_id == dept_filter)
+    if type_filter:
+        q = q.filter(db.func.lower(Equipment.equipment_type) == type_filter.lower())
     return jsonify([_eq_dict(e) for e in q.order_by(Equipment.name).all()]), 200
 
 
