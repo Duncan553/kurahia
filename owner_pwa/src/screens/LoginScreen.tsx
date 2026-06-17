@@ -12,12 +12,13 @@ interface LoginResponse {
   refresh_token?: string
   requires_pin_setup?: true
 }
-
 interface JWTClaims {
   sub: string
   role_level: number
-  requires_pin_setup?: boolean
 }
+
+const HERO_URL =
+  'https://waterfrontcountryclub.com/wp-content/uploads/2025/08/DJI_0669-scaled.jpg'
 
 export default function LoginScreen() {
   const navigate = useNavigate()
@@ -57,44 +58,57 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-card flex flex-col">
+    <div className="relative min-h-screen overflow-hidden">
 
-      <div className="h-1 gradient-hero" />
+      <motion.div
+        className="absolute inset-0"
+        initial={{ opacity: 0, scale: 1.03 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
+      >
+        <img src={HERO_URL} alt="" aria-hidden="true"
+          className="w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/60 via-primary-dark/40 to-primary-dark/70" />
+      </motion.div>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-6 py-12">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="w-full max-w-[380px]"
+          transition={{ duration: 0.6, delay: 0.3, ease: 'easeOut' }}
+          className="w-full max-w-[400px]"
         >
-          {/* Brand */}
-          <div className="text-center mb-10">
+          <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="w-16 h-16 mx-auto mb-5 rounded-2xl gradient-hero flex items-center justify-center shadow-lg"
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/15 backdrop-blur-md
+                border border-white/20 flex items-center justify-center shadow-lg"
             >
               <span className="text-2xl font-serif font-bold text-white tracking-tight">K</span>
             </motion.div>
-            <h1 className="font-serif text-3xl font-bold text-ink-primary tracking-tight">
+            <h1 className="font-serif text-4xl font-bold text-white tracking-tight
+              drop-shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
               Kurahia
             </h1>
-            <p className="text-sm text-ink-secondary mt-1">Owner portal &middot; Waterfront</p>
+            <p className="text-sm text-white/70 mt-1">Owner Portal</p>
           </div>
 
-          {/* Card */}
-          <div className="bg-cream-alt/40 rounded-3xl p-8 border border-cream-alt shadow-sm">
-            <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          <div className="rounded-3xl p-8 border border-white/20 shadow-2xl
+            bg-cream-card/25 backdrop-blur-xl relative overflow-hidden">
+
+            <form onSubmit={handleSubmit} noValidate className="relative space-y-5">
 
               <div>
                 <label htmlFor="login-username"
-                  className="block text-xs font-semibold text-ink-secondary mb-1.5 uppercase tracking-wider">
+                  className="block text-xs font-semibold text-white/80 mb-1.5 uppercase tracking-wider">
                   Username
                 </label>
-                <div className={`relative rounded-xl border-2 transition-all ${
-                  focused === 'user' ? 'border-primary-main shadow-[0_0_0_3px_rgba(64,83,76,0.12)]' : 'border-cream-alt'
+                <div className={`rounded-xl border transition-all ${
+                  focused === 'user'
+                    ? 'border-white/50 shadow-[0_0_0_3px_rgba(255,255,255,0.1)]'
+                    : 'border-white/20'
                 }`}>
                   <input
                     id="login-username"
@@ -106,9 +120,8 @@ export default function LoginScreen() {
                     onBlur={() => setFocused(null)}
                     disabled={loginMutation.isPending}
                     placeholder="e.g. wachira"
-                    className="w-full rounded-xl bg-cream-card px-4 py-3.5
-                      text-sm text-ink-primary font-medium
-                      placeholder:text-ink-tertiary/50
+                    className="w-full rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3.5
+                      text-sm text-white font-medium placeholder:text-white/40
                       focus:outline-none disabled:opacity-50"
                   />
                 </div>
@@ -116,11 +129,13 @@ export default function LoginScreen() {
 
               <div>
                 <label htmlFor="login-password"
-                  className="block text-xs font-semibold text-ink-secondary mb-1.5 uppercase tracking-wider">
+                  className="block text-xs font-semibold text-white/80 mb-1.5 uppercase tracking-wider">
                   Password
                 </label>
-                <div className={`relative rounded-xl border-2 transition-all ${
-                  focused === 'pass' ? 'border-primary-main shadow-[0_0_0_3px_rgba(64,83,76,0.12)]' : 'border-cream-alt'
+                <div className={`rounded-xl border transition-all ${
+                  focused === 'pass'
+                    ? 'border-white/50 shadow-[0_0_0_3px_rgba(255,255,255,0.1)]'
+                    : 'border-white/20'
                 }`}>
                   <input
                     id="login-password"
@@ -131,9 +146,8 @@ export default function LoginScreen() {
                     onFocus={() => setFocused('pass')}
                     onBlur={() => setFocused(null)}
                     disabled={loginMutation.isPending}
-                    className="w-full rounded-xl bg-cream-card px-4 py-3.5
-                      text-sm text-ink-primary font-medium
-                      placeholder:text-ink-tertiary/50
+                    className="w-full rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3.5
+                      text-sm text-white font-medium placeholder:text-white/40
                       focus:outline-none disabled:opacity-50"
                   />
                 </div>
@@ -143,10 +157,10 @@ export default function LoginScreen() {
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-2 p-3 rounded-xl bg-status-failed/10 border border-status-failed/20"
+                  className="flex items-start gap-2 p-3 rounded-xl bg-status-failed/20 border border-status-failed/30"
                 >
-                  <span className="text-status-failed text-sm shrink-0 mt-0.5">!</span>
-                  <p role="alert" className="text-sm text-status-failed font-medium">{errorMsg}</p>
+                  <span className="text-white text-sm shrink-0 mt-0.5">!</span>
+                  <p role="alert" className="text-sm text-white font-medium">{errorMsg}</p>
                 </motion.div>
               )}
 
@@ -154,12 +168,12 @@ export default function LoginScreen() {
                 type="submit"
                 disabled={!username || !password || loginMutation.isPending}
                 whileTap={{ scale: 0.97 }}
-                className="w-full py-4 rounded-2xl gradient-hero text-white
-                  text-sm font-bold tracking-widest uppercase
-                  shadow-md hover:shadow-lg
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  transition-shadow"
+                className="w-full py-4 rounded-2xl
+                  bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/25
+                  text-white text-sm font-bold tracking-widest uppercase
+                  shadow-lg hover:shadow-xl
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40
+                  disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
                 {loginMutation.isPending ? (
                   <span className="flex items-center justify-center gap-2">
@@ -174,8 +188,8 @@ export default function LoginScreen() {
             </form>
           </div>
 
-          <p className="text-center text-[10px] text-ink-tertiary mt-6 tracking-wide">
-            JUJA &middot; KIAMBU &middot; KENYA
+          <p className="text-center text-[10px] text-white/40 mt-6 tracking-widest uppercase">
+            Waterfront Country Club &middot; Juja
           </p>
         </motion.div>
       </div>
