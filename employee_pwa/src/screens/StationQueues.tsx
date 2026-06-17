@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { useToastStore } from '@shared'
 import api from '../lib/axios'
+import { playOrderAlert, isMuted, setMuted as setAudioMuted } from '../lib/audio'
+import AudioEnableSplash from '../components/AudioEnableSplash'
 
 // Station dashboard for kitchen + bar tablets: live order queue + own-dept
 // stock levels. No clock/alerts chrome — this is a shared station screen.
@@ -98,6 +100,7 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
   const endpoint = station === 'KITCHEN' ? '/kitchen/queue' : '/bar/queue'
+  const prevIdsRef = useRef<Set<string>>(new Set())
 
   const { data: items = [], isLoading, isError } = useQuery<QueueItem[]>({
     queryKey: ['queue', station],
@@ -106,6 +109,16 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
     staleTime: 0,
     select: (data) => { onCount(data.length); return data },
   })
+
+  useEffect(() => {
+    if (!items.length) return
+    const currentIds = new Set(items.map(i => i.order_item_id))
+    if (prevIdsRef.current.size > 0) {
+      const hasNew = items.some(i => !prevIdsRef.current.has(i.order_item_id))
+      if (hasNew) playOrderAlert(station)
+    }
+    prevIdsRef.current = currentIds
+  }, [items, station])
 
   const actMut = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'receive' | 'ready' }) =>
@@ -210,13 +223,45 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
 
 // ── Station shell ─────────────────────────────────────────────────────────────
 
+function MuteButton() {
+  const [muted, setMutedState] = useState(isMuted)
+  function toggle() {
+    const next = !muted
+    setAudioMuted(next)
+    setMutedState(next)
+    localStorage.setItem('kurahia-audio-muted', next ? '1' : '0')
+  }
+  useEffect(() => {
+    const saved = localStorage.getItem('kurahia-audio-muted')
+    if (saved === '1') { setAudioMuted(true); setMutedState(true) }
+  }, [])
+  return (
+    <button onClick={toggle}
+      aria-label={muted ? 'Unmute audio alerts' : 'Mute audio alerts'}
+      className="w-9 h-9 rounded-xl border border-cream-alt flex items-center justify-center
+        text-ink-secondary hover:bg-cream-alt/40 transition-colors">
+      {muted ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      )}
+    </button>
+  )
+}
+
 function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
   const [view, setView]   = useState<'queue' | 'stock'>('queue')
   const [count, setCount] = useState(0)
 
   return (
-    // 60% cream background, 30% ink content, 10% terracotta highlights
     <div className="min-h-screen bg-cream-card text-ink-primary">
+      <AudioEnableSplash station={station} />
 
       {/* Header */}
       <div className="sticky top-0 z-10 bg-cream-card border-b border-cream-alt px-4 py-3
@@ -225,18 +270,21 @@ function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
           {station === 'KITCHEN' ? 'Kitchen' : 'Bar'}
         </h1>
 
-        {/* Tab switcher */}
-        <div className="flex rounded-xl overflow-hidden border border-cream-alt">
-          {(['queue', 'stock'] as const).map(v => (
-            <button key={v} onClick={() => setView(v)}
-              className={`px-4 py-2 text-sm font-semibold capitalize transition-colors ${
-                view === v
-                  ? 'bg-ink-primary text-cream-card'
-                  : 'text-ink-secondary hover:bg-cream-alt'
-              }`}>
-              {v === 'queue' ? `Orders${count ? ` (${count})` : ''}` : 'Stock'}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <MuteButton />
+          {/* Tab switcher */}
+          <div className="flex rounded-xl overflow-hidden border border-cream-alt">
+            {(['queue', 'stock'] as const).map(v => (
+              <button key={v} onClick={() => setView(v)}
+                className={`px-4 py-2 text-sm font-semibold capitalize transition-colors ${
+                  view === v
+                    ? 'bg-ink-primary text-cream-card'
+                    : 'text-ink-secondary hover:bg-cream-alt'
+                }`}>
+                {v === 'queue' ? `Orders${count ? ` (${count})` : ''}` : 'Stock'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

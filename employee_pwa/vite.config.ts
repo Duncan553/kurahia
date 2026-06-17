@@ -15,6 +15,9 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       registerType: 'autoUpdate',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2,wav}'],
+      },
       manifest: {
         name: 'Kurahia Staff',
         short_name: 'Kurahia',
