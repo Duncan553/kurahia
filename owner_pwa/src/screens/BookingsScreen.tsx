@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Drawer, Button, StatusBadge, useToastStore, Skeleton } from '@shared'
+import { Drawer, Button, StatusBadge, useToastStore, Skeleton, SearchInput } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
 
@@ -225,6 +225,7 @@ const STATUS_TABS: { key: StatusFilter; label: string }[] = [
 ]
 
 export default function BookingsScreen() {
+  const [searchQ, setSearchQ] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('CONFIRMED')
   const [dateFilter, setDateFilter] = useState('')
   const [selected, setSelected] = useState<Booking | null>(null)
@@ -232,9 +233,10 @@ export default function BookingsScreen() {
   const params = new URLSearchParams()
   if (statusFilter) params.set('status', statusFilter)
   if (dateFilter)   params.set('date', dateFilter)
+  if (searchQ)      params.set('q', searchQ)
 
   const { data, isLoading, isError } = useQuery<Booking[]>({
-    queryKey: ['bookings', statusFilter, dateFilter],
+    queryKey: ['bookings', statusFilter, dateFilter, searchQ],
     queryFn: () => api.get<Booking[]>(`/bookings?${params}`).then(r => r.data),
     staleTime: 60_000,
   })
@@ -292,6 +294,12 @@ export default function BookingsScreen() {
           )}
         </div>
       </div>
+
+      <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search bookings..." label="Search bookings" />
+
+      {searchQ && (data ?? []).length === 0 && !isLoading && (
+        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+      )}
 
       {/* List */}
       {isLoading && (

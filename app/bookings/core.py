@@ -313,7 +313,11 @@ def list_bookings():
     status      = (request.args.get("status") or "").upper() or None
     date_str    = request.args.get("date")
 
+    q = (request.args.get("q") or "").strip()
+
     query = db.session.query(Booking)
+    if q:
+        query = query.filter(Booking.guest_name.ilike(f"%{q}%"))
     if resource_id:
         query = query.filter_by(resource_id=resource_id)
     if status:

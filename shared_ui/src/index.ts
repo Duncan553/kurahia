@@ -44,3 +44,6 @@ export { OfflineBanner } from './components/OfflineBanner'
 
 export { InstallPrompt } from './components/InstallPrompt'
 export type { InstallPromptProps } from './components/InstallPrompt'
+
+export { SearchInput } from './components/SearchInput'
+export type { SearchInputProps } from './components/SearchInput'

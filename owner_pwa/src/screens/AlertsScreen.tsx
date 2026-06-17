@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Skeleton, EmptyState, Modal, Button, useToastStore } from '@shared'
+import { Skeleton, EmptyState, Modal, Button, useToastStore, SearchInput } from '@shared'
 import api from '../lib/axios'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -90,6 +90,7 @@ const SEVERITY_ORDER = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
 export default function AlertsScreen() {
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
+  const [searchQ, setSearchQ] = useState('')
   const [view, setView] = useState({ filter: 'open' as Filter, ackingId: null as string | null })
 
   const { data: alerts = [], isLoading, isError } = useQuery<JudgeAlert[]>({
@@ -109,9 +110,14 @@ export default function AlertsScreen() {
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
 
+  // Client-side filter by description
+  const filteredAlerts = searchQ
+    ? alerts.filter(a => a.description.toLowerCase().includes(searchQ.toLowerCase()))
+    : alerts
+
   // Group by severity in priority order
   const groups = SEVERITY_ORDER.reduce<{ severity: string; items: JudgeAlert[] }[]>((acc, sev) => {
-    const items = alerts.filter(a => a.severity === sev)
+    const items = filteredAlerts.filter(a => a.severity === sev)
     if (items.length) acc.push({ severity: sev, items })
     return acc
   }, [])
@@ -153,6 +159,12 @@ export default function AlertsScreen() {
           </button>
         ))}
       </div>
+
+      <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search alerts..." label="Search alerts" />
+
+      {searchQ && filteredAlerts.length === 0 && !isLoading && (
+        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+      )}
 
       {/* States */}
       {isLoading && (

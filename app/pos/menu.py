@@ -167,7 +167,11 @@ def list_menu_items():
     dept_filter      = request.args.get("department")
     dept_name_filter = request.args.get("dept_name")
 
+    q = (request.args.get("q") or "").strip()
+
     query = db.session.query(MenuItem)
+    if q:
+        query = query.filter(MenuItem.name.ilike(f"%{q}%"))
     if not include_disabled:
         query = query.filter_by(is_active=True)
     if dept_filter:
