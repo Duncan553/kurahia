@@ -169,10 +169,11 @@ function TileError({ label, className = '' }: { label: string; className?: strin
 // ── Hero tile — revenue + 7-day bar chart ────────────────────────────────────
 
 function HeroTile() {
-  const { data: overview, isLoading: ovLoad, isError: ovErr } = useQuery<OverviewData>({
+  const { data: overview, isLoading: ovLoad, isError: ovErr, dataUpdatedAt } = useQuery<OverviewData>({
     queryKey: ['dash-overview'],
     queryFn: () => api.get<OverviewData>('/dashboard/overview').then(r => r.data),
-    staleTime: 5 * 60_000,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   })
   const { data: hist, isLoading: hLoad } = useQuery<RevenueHistoryRow[]>({
     queryKey: ['dash-revenue-history'],
@@ -184,8 +185,7 @@ function HeroTile() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl p-5 space-y-3 col-span-full"
-        style={{ background: 'linear-gradient(135deg, #B4533C 0%, #8C3E2C 100%)' }}>
+      <div className="rounded-2xl p-5 space-y-3 col-span-full gradient-hero">
         <Skeleton variant="text" className="w-32 h-3 bg-white/20" />
         <Skeleton variant="text" className="w-48 h-10 bg-white/20" />
         <Skeleton variant="text" className="w-full h-16 bg-white/20" />
@@ -200,12 +200,12 @@ function HeroTile() {
   const today = parseFloat(overview?.revenue.total ?? '0')
   const byMethod = overview?.revenue.by_method ?? {}
   const parts = Object.entries(byMethod).map(([k, v]) => `${k} ${formatKsh(v)}`).join(' · ')
+  const yesterday = chartData.length >= 2 ? chartData[chartData.length - 2]?.rev ?? 0 : 0
+  const delta = yesterday > 0 ? ((today - yesterday) / yesterday * 100) : 0
+  const updatedAgo = dataUpdatedAt ? Math.floor((Date.now() - dataUpdatedAt) / 1000) : null
 
   return (
-    <div
-      className="rounded-2xl p-5 col-span-full"
-      style={{ background: 'linear-gradient(135deg, #B4533C 0%, #8C3E2C 100%)' }}
-    >
+    <div className="rounded-2xl p-5 col-span-full gradient-hero">
       <p className="text-[10px] font-semibold tracking-widest uppercase text-white/70 mb-1">Revenue Today</p>
       {ovErr ? (
         <p className="text-3xl font-bold tabular-nums text-white/50">KSh —</p>
@@ -214,8 +214,22 @@ function HeroTile() {
           <p className="text-4xl font-bold tabular-nums text-white leading-tight">
             {formatKsh(today)}
           </p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {delta !== 0 && (
+              <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                delta > 0 ? 'bg-white/15 text-white' : 'bg-status-failed/30 text-white'
+              }`}>
+                {delta > 0 ? '↗' : '↘'} {Math.abs(delta).toFixed(0)}% vs yesterday
+              </span>
+            )}
+            {updatedAgo !== null && updatedAgo < 120 && (
+              <span className="text-[10px] text-white/40">
+                updated {updatedAgo < 5 ? 'just now' : `${updatedAgo}s ago`}
+              </span>
+            )}
+          </div>
           {parts && (
-            <p className="text-xs text-white/60 mt-0.5 truncate">{parts}</p>
+            <p className="text-xs text-white/50 mt-1 truncate">{parts}</p>
           )}
         </>
       )}
@@ -228,8 +242,8 @@ function HeroTile() {
               <Bar dataKey="rev" fill="rgba(255,255,255,0.35)" radius={[3, 3, 0, 0]}
                 activeBar={{ fill: 'rgba(255,255,255,0.6)' }} />
               <Tooltip
-                contentStyle={{ background: '#1F1B14', border: 'none', borderRadius: 8, fontSize: 11 }}
-                labelStyle={{ color: '#ECE3D0' }}
+                contentStyle={{ background: '#1A3636', border: 'none', borderRadius: 8, fontSize: 11 }}
+                labelStyle={{ color: '#E4D2B0' }}
                 formatter={(v: unknown) => [formatKsh(v as number), 'Revenue']}
                 labelFormatter={(label: unknown) => String(label)}
               />
