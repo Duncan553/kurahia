@@ -88,9 +88,10 @@ def list_rules():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < STAFF_LEVEL:
         return jsonify({"error": "Login required."}), 403
+    include_disabled = request.args.get("include_disabled", "false").lower() == "true"
     active_only = request.args.get("active", "true").lower() != "false"
     q = db.session.query(ConductRule)
-    if active_only:
+    if not include_disabled and active_only:
         q = q.filter_by(is_active=True)
     return jsonify([_rule_dict(r) for r in q.order_by(
         ConductRule.rule_key, ConductRule.version.desc()

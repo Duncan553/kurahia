@@ -156,9 +156,11 @@ def budget_status():
     except ValueError:
         return jsonify({"error": "Invalid period. Use YYYY-MM."}), 400
 
-    budgets = db.session.query(Budget).filter_by(
-        period=period_str, is_active=True
-    ).all()
+    include_disabled = request.args.get("include_disabled", "false").lower() == "true"
+    query = db.session.query(Budget).filter_by(period=period_str)
+    if not include_disabled:
+        query = query.filter_by(is_active=True)
+    budgets = query.all()
 
     result = []
     for b in budgets:

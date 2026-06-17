@@ -66,8 +66,11 @@ def list_equipment():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < LOOKUP_LEVEL:
         return jsonify({"error": "Staff login required."}), 403
+    include_disabled = request.args.get("include_disabled", "false").lower() == "true"
     include_retired = request.args.get("include_retired", "false").lower() == "true"
-    q = db.session.query(Equipment).filter_by(is_active=True)
+    q = db.session.query(Equipment)
+    if not include_disabled:
+        q = q.filter_by(is_active=True)
     if not include_retired:
         q = q.filter(Equipment.status != EquipmentStatus.RETIRED.value)
     return jsonify([_eq_dict(e) for e in q.order_by(Equipment.name).all()]), 200
