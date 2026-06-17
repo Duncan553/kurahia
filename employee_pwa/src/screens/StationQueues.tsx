@@ -1,18 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useToastStore, SearchInput } from '@shared'
 import api from '../lib/axios'
 import { playOrderAlert, isMuted, setMuted as setAudioMuted } from '../lib/audio'
 import AudioEnableSplash from '../components/AudioEnableSplash'
 
-// Station dashboard for kitchen + bar tablets: live order queue + own-dept
-// stock levels. No clock/alerts chrome — this is a shared station screen.
-
 interface QueueItem {
   order_item_id: string; order_id: string; tab_reference: string | null
-  menu_item: string | null; quantity: string; status: string
-  age_seconds: number; ordered_by: string | null
+  menu_item_id: string; menu_item: string | null; quantity: string; status: string
+  age_seconds: number; ordered_by: string | null; notes: string | null
 }
 interface StockItem {
   id: string; name: string; unit: string
@@ -23,16 +20,27 @@ const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
 
 function ageCls(s: number) {
-  if (s < 480) return 'text-status-paid'     // < 8 min — green
-  if (s < 900) return 'text-status-pending'  // 8–15 min — amber
-  return 'text-status-failed'                // > 15 min — red
+  if (s < 480) return 'text-status-paid'
+  if (s < 900) return 'text-status-pending'
+  return 'text-status-failed'
+}
+function ageBg(s: number) {
+  if (s < 480) return 'bg-status-paid/10 border-status-paid/30'
+  if (s < 900) return 'bg-status-pending/10 border-status-pending/30'
+  return 'bg-status-failed/10 border-status-failed/30'
 }
 const ageLabel = (s: number) => s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`
-// Icon + text label so age urgency is never color-only (WCAG 1.4.1)
 function ageBadge(s: number): { icon: string; text: string } {
-  if (s < 480) return { icon: '○', text: '<8m' }
-  if (s < 900) return { icon: '◐', text: '8-15m' }
-  return { icon: '●', text: '>15m' }
+  if (s < 480) return { icon: '○', text: 'Fresh' }
+  if (s < 900) return { icon: '◐', text: 'Aging' }
+  return { icon: '●', text: 'Overdue' }
+}
+
+function currentTime() {
+  return new Date().toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })
+}
+function currentDate() {
+  return new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 // ── Stock view ────────────────────────────────────────────────────────────────
@@ -61,14 +69,13 @@ function StockBoard() {
       {low.length > 0 && (
         <div className="rounded-2xl border border-status-failed/40 bg-status-failed/10 p-3">
           <p className="text-status-failed text-sm font-bold">
-            ⚠ {low.length} item{low.length !== 1 ? 's' : ''} below reorder level
+            {low.length} item{low.length !== 1 ? 's' : ''} below reorder level
           </p>
         </div>
       )}
       {items.map(it => {
         const stock   = parseFloat(it.current_stock)
         const reorder = parseFloat(it.reorder_level)
-        // Bar fills relative to 2× reorder level ("healthy" ceiling)
         const pct = reorder > 0 ? Math.min((stock / (reorder * 2)) * 100, 100) : stock > 0 ? 100 : 0
         return (
           <div key={it.id}>
@@ -83,7 +90,6 @@ function StockBoard() {
                 className={`h-full rounded-full transition-all ${it.below_reorder ? 'bg-status-failed' : 'bg-status-paid'}`}
                 style={{ width: `${pct}%` }}
               />
-              {/* Reorder threshold tick at 50% — reorder = half of 2× ceiling */}
               {reorder > 0 && <div className="absolute inset-y-0 left-1/2 w-px bg-ink-tertiary/30" />}
             </div>
             <p className="text-[10px] text-ink-tertiary mt-0.5">reorder at {reorder} {it.unit}</p>
@@ -100,6 +106,7 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
   const [searchQ, setSearchQ] = useState('')
+  const [compact, setCompact] = useState(() => localStorage.getItem('kurahia-compact-queue') === '1')
   const endpoint = station === 'KITCHEN' ? '/kitchen/queue' : '/bar/queue'
   const prevIdsRef = useRef<Set<string>>(new Set())
 
@@ -111,6 +118,14 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
     select: (data) => { onCount(data.length); return data },
   })
 
+  // Stock data for low-stock warnings on queued items
+  const { data: stockItems = [] } = useQuery<StockItem[]>({
+    queryKey: ['station-stock'],
+    queryFn: () => api.get<StockItem[]>('/inventory/items').then(r => r.data),
+    refetchInterval: 60_000,
+  })
+  const lowStockNames = new Set(stockItems.filter(i => i.below_reorder).map(i => i.name.toLowerCase()))
+
   useEffect(() => {
     if (!items.length) return
     const currentIds = new Set(items.map(i => i.order_item_id))
@@ -120,6 +135,12 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
     }
     prevIdsRef.current = currentIds
   }, [items, station])
+
+  function toggleCompact() {
+    const next = !compact
+    setCompact(next)
+    localStorage.setItem('kurahia-compact-queue', next ? '1' : '0')
+  }
 
   const actMut = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'receive' | 'ready' }) =>
@@ -131,113 +152,183 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
 
-  // Client-side filter by menu_item name or tab_reference
   const filteredItems = searchQ
     ? items.filter(i => {
         const q = searchQ.toLowerCase()
         return (i.menu_item ?? '').toLowerCase().includes(q) ||
-               (i.tab_reference ?? '').toLowerCase().includes(q)
+               (i.tab_reference ?? '').toLowerCase().includes(q) ||
+               (i.ordered_by ?? '').toLowerCase().includes(q)
       })
     : items
 
   if (isLoading) return (
-    <div className="space-y-3">
-      {[1,2,3].map(i => <div key={i} className="h-24 rounded-2xl bg-cream-alt animate-pulse" />)}
+    <div className="space-y-4">
+      {[1,2,3,4].map(i => <div key={i} className={`rounded-2xl bg-cream-alt animate-pulse ${compact ? 'h-20' : 'h-32'}`} />)}
     </div>
   )
   if (isError) return (
     <p className="text-status-failed text-sm text-center py-8">Failed to load queue. Check your connection.</p>
   )
-  if (items.length === 0) return (
-    <div className="flex flex-col items-center justify-center py-24 gap-2">
-      <span className="text-4xl">✓</span>
-      <p className="text-ink-secondary text-lg font-medium">Queue clear · Kazi safi</p>
-    </div>
-  )
 
   return (
     <div className="space-y-3">
-      <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search orders..." label="Search orders" />
+      {/* Search + compact toggle */}
+      <div className="flex gap-2 items-start">
+        <div className="flex-1">
+          <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search orders..." label="Search orders" />
+        </div>
+        <button onClick={toggleCompact}
+          aria-label={compact ? 'Expand cards' : 'Compact cards'}
+          className="shrink-0 w-9 h-9 rounded-xl border border-cream-alt flex items-center justify-center
+            text-ink-secondary hover:bg-cream-alt/40 transition-colors mt-0.5">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            {compact ? (
+              <path d="M2 3h12M2 8h12M2 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            ) : (
+              <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            )}
+          </svg>
+        </button>
+      </div>
 
-      {searchQ && filteredItems.length === 0 && (
-        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+      {/* Empty states */}
+      {items.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <span className="text-5xl text-ink-tertiary/40">✓</span>
+          <p className="text-ink-secondary text-lg font-medium">Queue clear &middot; Pole pole</p>
+        </div>
       )}
 
-      {filteredItems.map(item => (
-        <motion.div
-          key={item.order_item_id}
-          layout
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`rounded-2xl border p-4 ${
-            item.status === 'RECEIVED'
-              ? 'border-status-pending/40 bg-status-pending/8'
-              : 'border-cream-alt bg-cream-card'
-          }`}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              {/* Item name + qty */}
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="font-bold text-lg text-ink-primary leading-snug">{item.menu_item}</span>
-                <span className="text-ink-tertiary text-sm font-medium">×{item.quantity}</span>
-                {item.status === 'RECEIVED' && (
-                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md
-                    bg-status-pending/20 text-status-pending tracking-wide">
-                    preparing
+      {searchQ && filteredItems.length === 0 && items.length > 0 && (
+        <p className="text-sm text-ink-tertiary text-center py-8">
+          No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu
+        </p>
+      )}
+
+      {/* Order cards */}
+      <AnimatePresence mode="popLayout">
+        {filteredItems.map(item => {
+          const badge = ageBadge(item.age_seconds)
+          return (
+            <motion.div
+              key={item.order_item_id}
+              layout
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: 'hidden' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              aria-label={`${item.menu_item} × ${item.quantity} for ${item.tab_reference ?? 'walk-in'}, ${badge.text}`}
+              className={`rounded-2xl border shadow-sm ${
+                item.status === 'RECEIVED'
+                  ? 'border-status-pending/40 bg-status-pending/5'
+                  : `border-cream-alt bg-cream-card`
+              } ${compact ? 'p-3' : 'p-5'}`}
+            >
+              {/* Top row: table + age */}
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-baseline gap-2">
+                  <span className={`font-bold tabular-nums text-ink-primary ${compact ? 'text-lg' : 'text-2xl'}`}>
+                    {item.tab_reference ?? 'Walk-in'}
                   </span>
-                )}
-              </div>
-              {/* Tab + waiter + age */}
-              <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-ink-secondary">
-                <span className="font-medium">{item.tab_reference ?? 'Walk-in'}</span>
-                {item.ordered_by && (
-                  <>
-                    <span className="text-ink-tertiary">·</span>
-                    <span>{item.ordered_by}</span>
-                  </>
-                )}
-                <span className="text-ink-tertiary">·</span>
-                <span className={`font-semibold tabular-nums ${ageCls(item.age_seconds)}`}
-                  aria-label={`Age: ${ageLabel(item.age_seconds)}, ${ageBadge(item.age_seconds).text}`}>
-                  <span aria-hidden="true">{ageBadge(item.age_seconds).icon} </span>
-                  {ageLabel(item.age_seconds)}
-                  <span className="ml-1 font-normal" aria-hidden="true">{ageBadge(item.age_seconds).text}</span>
+                  {item.status === 'RECEIVED' && (
+                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md
+                      bg-status-pending/20 text-status-pending tracking-wide">
+                      Preparing
+                    </span>
+                  )}
+                </div>
+                <span className={`text-xs font-semibold tabular-nums px-2 py-1 rounded-lg border ${ageBg(item.age_seconds)} ${ageCls(item.age_seconds)}`}
+                  aria-label={`Age: ${ageLabel(item.age_seconds)}`}>
+                  {badge.icon} {ageLabel(item.age_seconds)}
                 </span>
               </div>
-            </div>
 
-            {/* Action button */}
-            <div className="shrink-0">
-              {item.status === 'PENDING' && (
-                <motion.button whileTap={{ scale: 0.94 }}
-                  onClick={() => actMut.mutate({ id: item.order_item_id, action: 'receive' })}
-                  disabled={actMut.isPending}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold
-                    bg-status-pending/15 text-status-pending border border-status-pending/40
-                    hover:bg-status-pending/25 transition-colors disabled:opacity-50">
-                  Start Preparing
-                </motion.button>
+              {/* Waiter */}
+              {item.ordered_by && !compact && (
+                <p className="text-xs text-ink-tertiary mb-2">Waiter: {item.ordered_by}</p>
               )}
-              {item.status === 'RECEIVED' && (
-                <motion.button whileTap={{ scale: 0.94 }}
-                  onClick={() => actMut.mutate({ id: item.order_item_id, action: 'ready' })}
-                  disabled={actMut.isPending}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold
-                    bg-primary-dark text-cream-card
-                    hover:bg-primary-dark/90 transition-colors disabled:opacity-50">
-                  Ready ✓
-                </motion.button>
+
+              {/* Item */}
+              <div className={`flex items-center gap-3 ${compact ? '' : 'mb-3'}`}>
+                <span className={`font-bold text-ink-primary ${compact ? 'text-base' : 'text-lg'} leading-snug`}>
+                  {item.menu_item}
+                </span>
+                <span className="text-ink-tertiary font-medium shrink-0">×{item.quantity}</span>
+              </div>
+
+              {/* Notes */}
+              {item.notes && !compact && (
+                <p className="text-xs italic text-status-pending mb-3 pl-1 border-l-2 border-status-pending/30">
+                  {item.notes}
+                </p>
               )}
-            </div>
-          </div>
-        </motion.div>
-      ))}
+              {item.notes && compact && (
+                <p className="text-[10px] italic text-status-pending truncate mt-1">{item.notes}</p>
+              )}
+
+              {/* Stock warning */}
+              {lowStockNames.has((item.menu_item ?? '').toLowerCase()) && !compact && (
+                <p className="text-xs text-status-failed/80 mb-3">
+                  &#9888; {item.menu_item}: stock low &mdash; verify before prep
+                </p>
+              )}
+
+              {/* Actions */}
+              {!compact && (
+                <div className="flex gap-2 mt-1">
+                  {item.status === 'PENDING' && (
+                    <motion.button whileTap={{ scale: 0.94 }}
+                      onClick={() => actMut.mutate({ id: item.order_item_id, action: 'receive' })}
+                      disabled={actMut.isPending}
+                      className="flex-1 min-h-[56px] rounded-xl text-sm font-semibold
+                        bg-status-pending/15 text-status-pending border border-status-pending/40
+                        hover:bg-status-pending/25 transition-colors disabled:opacity-50">
+                      Start Preparing
+                    </motion.button>
+                  )}
+                  {item.status === 'RECEIVED' && (
+                    <motion.button whileTap={{ scale: 0.94 }}
+                      onClick={() => actMut.mutate({ id: item.order_item_id, action: 'ready' })}
+                      disabled={actMut.isPending}
+                      className="flex-1 min-h-[56px] rounded-xl text-sm font-semibold
+                        bg-primary-dark text-cream-card
+                        hover:bg-primary-dark/90 transition-colors disabled:opacity-50">
+                      Ready ✓
+                    </motion.button>
+                  )}
+                </div>
+              )}
+              {compact && (
+                <div className="flex gap-2 mt-2">
+                  {item.status === 'PENDING' && (
+                    <motion.button whileTap={{ scale: 0.94 }}
+                      onClick={() => actMut.mutate({ id: item.order_item_id, action: 'receive' })}
+                      disabled={actMut.isPending}
+                      className="px-4 py-2 rounded-lg text-xs font-semibold
+                        bg-status-pending/15 text-status-pending border border-status-pending/40 disabled:opacity-50">
+                      Receive
+                    </motion.button>
+                  )}
+                  {item.status === 'RECEIVED' && (
+                    <motion.button whileTap={{ scale: 0.94 }}
+                      onClick={() => actMut.mutate({ id: item.order_item_id, action: 'ready' })}
+                      disabled={actMut.isPending}
+                      className="px-4 py-2 rounded-lg text-xs font-semibold
+                        bg-primary-dark text-cream-card disabled:opacity-50">
+                      Ready ✓
+                    </motion.button>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )
+        })}
+      </AnimatePresence>
     </div>
   )
 }
 
-// ── Station shell ─────────────────────────────────────────────────────────────
+// ── Mute button ──────────────────────────────────────────────────────────────
 
 function MuteButton() {
   const [muted, setMutedState] = useState(isMuted)
@@ -271,35 +362,48 @@ function MuteButton() {
   )
 }
 
+// ── Station shell ─────────────────────────────────────────────────────────────
+
 function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
-  const [view, setView]   = useState<'queue' | 'stock'>('queue')
+  const [view, setView] = useState<'queue' | 'stock'>('queue')
   const [count, setCount] = useState(0)
+  const [time, setTime] = useState(currentTime)
+
+  useEffect(() => {
+    const id = setInterval(() => setTime(currentTime()), 30_000)
+    return () => clearInterval(id)
+  }, [])
 
   return (
     <div className="min-h-screen bg-cream-card text-ink-primary">
       <AudioEnableSplash station={station} />
 
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-cream-card border-b border-cream-alt px-4 py-3
-        flex items-center justify-between">
-        <h1 className="text-base font-bold tracking-widest uppercase text-ink-primary">
-          {station === 'KITCHEN' ? 'Kitchen' : 'Bar'}
-        </h1>
+      <div className="sticky top-0 z-10 bg-cream-card border-b border-cream-alt px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-base font-bold tracking-widest uppercase text-ink-primary">
+              {station === 'KITCHEN' ? 'Kitchen' : 'Bar'}
+            </h1>
+            <p className="text-xs text-ink-tertiary">
+              {currentDate()} &middot; <span className="font-serif">{time}</span>
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <MuteButton />
-          {/* Tab switcher */}
-          <div className="flex rounded-xl overflow-hidden border border-cream-alt">
-            {(['queue', 'stock'] as const).map(v => (
-              <button key={v} onClick={() => setView(v)}
-                className={`px-4 py-2 text-sm font-semibold capitalize transition-colors ${
-                  view === v
-                    ? 'bg-ink-primary text-cream-card'
-                    : 'text-ink-secondary hover:bg-cream-alt'
-                }`}>
-                {v === 'queue' ? `Orders${count ? ` (${count})` : ''}` : 'Stock'}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <MuteButton />
+            <div className="flex rounded-xl overflow-hidden border border-cream-alt">
+              {(['queue', 'stock'] as const).map(v => (
+                <button key={v} onClick={() => setView(v)}
+                  className={`px-4 py-2 text-sm font-semibold capitalize transition-colors ${
+                    view === v
+                      ? 'bg-ink-primary text-cream-card'
+                      : 'text-ink-secondary hover:bg-cream-alt'
+                  }`}>
+                  {v === 'queue' ? `Orders${count ? ` (${count})` : ''}` : 'Stock'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
