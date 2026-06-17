@@ -309,6 +309,7 @@ def list_bookings():
     if actor.role.level < FRONT_DESK_LEVEL:
         return jsonify({"error": "Staff or above required."}), 403
 
+    include_disabled = request.args.get("include_disabled", "false").lower() == "true"
     resource_id = request.args.get("resource_id")
     status      = (request.args.get("status") or "").upper() or None
     date_str    = request.args.get("date")
@@ -316,6 +317,8 @@ def list_bookings():
     q = (request.args.get("q") or "").strip()
 
     query = db.session.query(Booking)
+    if not include_disabled:
+        query = query.filter(Booking.status != BookingStatus.CANCELLED.value)
     if q:
         query = query.filter(Booking.guest_name.ilike(f"%{q}%"))
     if resource_id:
