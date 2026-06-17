@@ -43,11 +43,17 @@ def attendance_today():
     day_start, day_end = business_day_bounds_today()
     today = business_day_for(datetime.now(timezone.utc)).date()
 
-    shifts = db.session.query(Shift).filter(
+    dept_filter = request.args.get("department_id")
+
+    query = db.session.query(Shift).filter(
         Shift.status == ShiftStatus.SCHEDULED.value,
         Shift.scheduled_start_utc >= day_start,
         Shift.scheduled_start_utc < day_end,
-    ).all()
+    )
+    if dept_filter:
+        query = query.filter(Shift.department_id == dept_filter)
+
+    shifts = query.all()
 
     rows = []
     for s in shifts:

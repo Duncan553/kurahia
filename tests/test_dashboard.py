@@ -63,9 +63,9 @@ class TestOverview:
         assert "top_alerts" in data
         assert "week_calendar" in data
 
-    def test_owner_only(self, client, manager_token):
+    def test_manager_can_access(self, client, manager_token):
         rv = client.get("/dashboard/overview", headers=auth(manager_token))
-        assert rv.status_code == 403
+        assert rv.status_code == 200
 
     def test_week_period(self, client, owner_token):
         rv = client.get("/dashboard/overview?period=week", headers=auth(owner_token))
