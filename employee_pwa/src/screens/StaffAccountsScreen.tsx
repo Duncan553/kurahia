@@ -114,7 +114,7 @@ export default function StaffAccountsScreen() {
           <AnimatePresence>
             {showForm && (
               <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}}
-                className="rounded-2xl border border-cream-alt bg-cream-card p-4 space-y-3 overflow-hidden">
+                className="rounded-2xl glass-card glass-shine p-4 space-y-3 overflow-hidden">
 
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-ink-primary">
@@ -209,7 +209,7 @@ export default function StaffAccountsScreen() {
           <div className="space-y-2">
             {!searchQ && staff.length === 0 && <p className="text-sm text-ink-tertiary text-center py-8">No staff accounts yet.</p>}
             {staff.map(u => (
-              <div key={u.id} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border border-cream-alt bg-cream-card ${!u.is_active ? 'opacity-60' : ''}`}>
+              <div key={u.id} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl glass-card ${!u.is_active ? 'opacity-60' : ''}`}>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink-primary truncate">{u.username}</p>
                   <p className="text-xs text-ink-secondary">{u.role}{u.department ? ` · ${u.department}` : ''}</p>

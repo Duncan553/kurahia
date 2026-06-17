@@ -167,7 +167,7 @@ export default function FrontDeskScreen() {
                   const depStatus = depositStatus(a.deposit_paid, a.deposit_required)
                   return (
                     <div key={a.booking_id}
-                      className="rounded-2xl border border-cream-alt bg-cream-card px-4 py-3 space-y-1.5">
+                      className="rounded-2xl glass-card glass-shine px-4 py-3 space-y-1.5">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-semibold text-ink-primary">{a.guest_name}</p>
                         <StatusBadge status={depStatus} />
@@ -213,7 +213,7 @@ export default function FrontDeskScreen() {
                         'rounded-2xl border px-4 py-3 space-y-1.5',
                         hasBalance
                           ? 'border-status-pending/30 bg-status-pending/5'
-                          : 'border-cream-alt bg-cream-card',
+                          : 'glass-card glass-shine',
                       ].join(' ')}>
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-semibold text-ink-primary">{d.guest_name}</p>
@@ -266,7 +266,7 @@ export default function FrontDeskScreen() {
                       key={o.booking_id}
                       onClick={() => o.tab_id && navigate(`/pos/tabs/${o.tab_id}`)}
                       className={[
-                        'rounded-2xl border border-cream-alt bg-cream-card px-4 py-3 space-y-1.5',
+                        'rounded-2xl glass-card glass-shine px-4 py-3 space-y-1.5',
                         clickable ? 'cursor-pointer hover:bg-cream-alt/60 transition-colors' : '',
                       ].join(' ')}
                     >

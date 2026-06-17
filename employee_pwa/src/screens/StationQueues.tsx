@@ -221,7 +221,7 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
               className={`rounded-2xl border shadow-sm ${
                 item.status === 'RECEIVED'
                   ? 'border-status-pending/40 bg-status-pending/5'
-                  : `border-cream-alt bg-cream-card`
+                  : `glass-card glass-shine`
               } ${compact ? 'p-3' : 'p-5'}`}
             >
               {/* Top row: table + age */}

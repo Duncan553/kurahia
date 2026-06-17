@@ -188,8 +188,8 @@ export default function ManagerScreen() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate(path)}
-              className="flex flex-col items-start gap-3 p-4 rounded-2xl border border-cream-alt
-                bg-cream-card hover:bg-cream-alt/40 transition-colors text-left
+              className="flex flex-col items-start gap-3 p-4 rounded-2xl glass-card glass-shine
+                hover:bg-cream-alt/40 transition-colors text-left
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
             >
               <span className="text-primary-dark">
@@ -209,8 +209,8 @@ export default function ManagerScreen() {
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate('/inventory/count')}
-            className="relative flex flex-col items-start gap-3 p-4 rounded-2xl border border-cream-alt
-              bg-cream-card hover:bg-cream-alt/40 transition-colors text-left
+            className="relative flex flex-col items-start gap-3 p-4 rounded-2xl glass-card glass-shine
+              hover:bg-cream-alt/40 transition-colors text-left
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
             aria-label={`Stock Alerts — ${alertCount > 0 ? `${alertCount} items below reorder` : 'all levels OK'}`}
           >
@@ -242,8 +242,8 @@ export default function ManagerScreen() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate('/inventory/purchase-request')}
-              className="relative flex flex-col items-start gap-3 p-4 rounded-2xl border border-cream-alt
-                bg-cream-card hover:bg-cream-alt/40 transition-colors text-left
+              className="relative flex flex-col items-start gap-3 p-4 rounded-2xl glass-card glass-shine
+                hover:bg-cream-alt/40 transition-colors text-left
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
               aria-label={`Suggested Reorders — ${reorderCount} suggestion${reorderCount !== 1 ? 's' : ''}`}
             >
@@ -271,7 +271,7 @@ export default function ManagerScreen() {
             variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="col-span-2 flex items-center justify-between gap-4 p-4
-              rounded-2xl border border-cream-alt bg-cream-card"
+              rounded-2xl glass-card glass-shine"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary-dark flex items-center justify-center

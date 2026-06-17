@@ -161,7 +161,7 @@ export default function ReconciliationScreen() {
           <div className="grid sm:grid-cols-3 gap-4">
 
             {/* Corner 1: Receipts */}
-            <div className="rounded-2xl border border-cream-alt bg-cream-card p-4 space-y-1">
+            <div className="rounded-2xl glass-card glass-shine p-4 space-y-1">
               <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Receipts</p>
               <Row label="Cash"   value={kes(data.receipts.cash)} />
               <Row label="Card"   value={kes(data.receipts.card)} />
@@ -173,7 +173,7 @@ export default function ReconciliationScreen() {
             </div>
 
             {/* Corner 2: Cash Reconciliation */}
-            <div className="rounded-2xl border border-cream-alt bg-cream-card p-4 space-y-1">
+            <div className="rounded-2xl glass-card glass-shine p-4 space-y-1">
               <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Cash Reconciliation</p>
               <Row label="Collected" value={kes(data.cash_reconciliation.total_collected)} />
               <Row label="Expected"  value={kes(data.cash_reconciliation.total_expected)} />
@@ -204,7 +204,7 @@ export default function ReconciliationScreen() {
             </div>
 
             {/* Corner 3: Stock / Judge */}
-            <div className="rounded-2xl border border-cream-alt bg-cream-card p-4">
+            <div className="rounded-2xl glass-card glass-shine p-4">
               <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Stock Alerts</p>
               <p className="text-2xl font-bold text-ink-primary tabular-nums">
                 {data.stock.open_alerts_count}

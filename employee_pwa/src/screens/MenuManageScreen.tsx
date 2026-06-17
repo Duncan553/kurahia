@@ -273,7 +273,7 @@ export default function MenuManageScreen() {
       {adding && (
         <form
           onSubmit={e => { e.preventDefault(); createMut.mutate() }}
-          className="p-4 rounded-2xl border border-cream-alt bg-cream-card space-y-3"
+          className="p-4 rounded-2xl glass-card glass-shine space-y-3"
         >
           <label htmlFor="menu-item-name" className="sr-only">Item name</label>
           <input
@@ -337,7 +337,7 @@ export default function MenuManageScreen() {
             {deptItems.map(it => (
               <div
                 key={it.id}
-                className={`flex items-center gap-2 p-3 rounded-xl border border-cream-alt bg-cream-card
+                className={`flex items-center gap-2 p-3 rounded-xl glass-card
                   ${!it.is_active ? 'opacity-50' : ''}`}
               >
                 <div className="flex-1 min-w-0">

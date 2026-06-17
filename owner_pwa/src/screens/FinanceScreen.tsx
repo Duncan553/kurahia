@@ -51,7 +51,7 @@ function KpiCard({ label, value, sub, danger = false }: {
   label: string; value: string; sub?: string; danger?: boolean
 }) {
   return (
-    <div className="rounded-2xl bg-cream-card border border-cream-alt p-4 space-y-1">
+    <div className="rounded-2xl glass-card glass-shine p-4 space-y-1">
       <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">{label}</p>
       <p className={`text-2xl font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-ink-primary'}`}>
         {value}
@@ -88,7 +88,7 @@ function RevenueSection({ period }: { period: string }) {
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-3">
           {[0, 1, 2].map(i => (
-            <div key={i} className="rounded-2xl bg-cream-card border border-cream-alt p-4 space-y-2">
+            <div key={i} className="rounded-2xl glass-card p-4 space-y-2">
               <Skeleton variant="text" className="w-16 h-3" />
               <Skeleton variant="text" className="w-24 h-6" />
             </div>
@@ -108,7 +108,7 @@ function RevenueSection({ period }: { period: string }) {
       </div>
 
       {/* 30-day bar chart */}
-      <div className="rounded-2xl bg-cream-card border border-cream-alt p-4">
+      <div className="rounded-2xl glass-card glass-shine p-4">
         <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary mb-3">
           Daily Revenue — last {days} days
         </p>
@@ -170,7 +170,7 @@ function BudgetSection({ period }: { period: string }) {
   return (
     <div className="space-y-3">
       {active.length === 0 ? (
-        <div className="rounded-2xl bg-cream-card border border-cream-alt p-6 text-center">
+        <div className="rounded-2xl glass-card p-6 text-center">
           <p className="text-sm text-ink-tertiary">No budgets set for this period.</p>
           <p className="text-xs text-ink-tertiary mt-1">Add budgets via Finance → Budgets to track department spend.</p>
         </div>
@@ -178,7 +178,7 @@ function BudgetSection({ period }: { period: string }) {
         <>
           {/* Spend donut */}
           {donutData.length > 0 && (
-            <div className="rounded-2xl bg-cream-card border border-cream-alt p-4">
+            <div className="rounded-2xl glass-card glass-shine p-4">
               <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary mb-2">
                 Spend by Department
               </p>
@@ -206,7 +206,7 @@ function BudgetSection({ period }: { period: string }) {
           {/* Department bars */}
           <div className="space-y-2">
             {active.map(r => (
-              <div key={r.department} className="rounded-xl border border-cream-alt bg-cream-card px-4 py-3">
+              <div key={r.department} className="rounded-xl glass-card px-4 py-3">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <p className="text-sm font-medium text-ink-primary truncate">{r.department}</p>
                   <div className="shrink-0 text-right">
@@ -258,7 +258,7 @@ function ReconStrip({ period }: { period: string }) {
         <button
           key={i.label}
           onClick={() => navigate(i.path)}
-          className="rounded-2xl border border-cream-alt bg-cream-card px-4 py-3 text-left
+          className="rounded-2xl glass-card glass-shine px-4 py-3 text-left
             hover:shadow-sm hover:border-primary-light/40 transition-all
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
         >

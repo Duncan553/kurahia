@@ -56,8 +56,8 @@ export default function VillaScreen() {
           const bal = parseFloat(t.balance)
           return (
             <button key={t.id} onClick={() => navigate(`/pos/tabs/${t.id}`)}
-              className="w-full flex items-center justify-between p-4 rounded-2xl border border-cream-alt
-                bg-cream-card hover:bg-cream-alt transition-colors text-left">
+              className="w-full flex items-center justify-between p-4 rounded-2xl glass-card glass-shine
+                hover:bg-cream-alt transition-colors text-left">
               <div>
                 <p className="font-semibold text-ink-primary">{t.reference ?? 'Villa Guest'}</p>
                 <p className="text-xs text-ink-tertiary mt-0.5">
