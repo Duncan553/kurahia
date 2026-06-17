@@ -49,8 +49,10 @@ def _can_operate_station(actor: User, station: str) -> bool:
 @require_active_user
 def create_order():
     actor = db.session.get(User, get_jwt_identity())
-    # Kitchen / Bar staff may not create customer orders (they only work the queue)
-    if actor.department and actor.department.name in ("Kitchen", "Bar") and actor.role.level < MANAGER_LEVEL:
+    # Prep-station staff (departments matching a PrepStation value) cannot create orders
+    prep_stations = {ps.value for ps in PrepStation if ps != PrepStation.NONE}
+    if (actor.department and actor.department.name.upper() in prep_stations
+            and actor.role.level < MANAGER_LEVEL):
         return jsonify({"error": "Kitchen and bar staff cannot create customer orders. Ask a waiter."}), 403
 
     data    = request.get_json(silent=True) or {}

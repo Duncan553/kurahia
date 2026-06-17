@@ -156,13 +156,14 @@ def _notify_no_recipe(oi, actor):
     if not menu_item:
         return
 
-    # Head chef: level-5 (or above) user in Kitchen dept
+    # Head of the prep department for this item's station
+    station_dept = oi.prep_station_snapshot if oi.prep_station_snapshot else "Kitchen"
     recipient = (
         db.session.query(User)
         .join(User.role)
         .join(User.department)
         .filter(
-            Department.name == "Kitchen",
+            db.func.upper(Department.name) == station_dept.upper(),
             Role.level >= 5,
             User.is_active == True,
         )
