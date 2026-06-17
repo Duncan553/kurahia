@@ -211,14 +211,16 @@ def _compute_menu_item_cost_fields(item: MenuItem) -> dict:
 
     for line in lines:
         inv = line.inventory_item
+        recipe_qty = Decimal(str(line.quantity))
         if inv is None or inv.cost_per_unit is None:
             all_have_cost = False
         else:
-            food_cost += Decimal(str(line.quantity)) * Decimal(str(inv.cost_per_unit))
+            ruc = inv.recipe_unit_cost()
+            food_cost += recipe_qty * ruc
 
-        # Stock check: current_stock must cover this recipe's required quantity
         current = get_current_stock(inv.id if inv else line.inventory_item_id)
-        if current < Decimal(str(line.quantity)):
+        stock_needed = inv.recipe_to_stock(recipe_qty) if inv else recipe_qty
+        if current < stock_needed:
             in_stock = False
 
     if not all_have_cost:
@@ -234,6 +236,35 @@ def _compute_menu_item_cost_fields(item: MenuItem) -> dict:
         "food_cost_pct":  str(food_cost_pct.quantize(Decimal("0.01"))) if food_cost_pct is not None else None,
         "in_stock":       in_stock,
     }
+
+
+# ── Recipe templates ──────────────────────────────────────────────────────────
+
+RECIPE_TEMPLATES = {
+    "shot": [
+        {"role": "spirit", "quantity": 30, "unit": "ml"},
+    ],
+    "cocktail": [
+        {"role": "spirit", "quantity": 50, "unit": "ml"},
+        {"role": "mixer",  "quantity": 200, "unit": "ml"},
+        {"role": "garnish", "quantity": 1, "unit": "piece"},
+    ],
+    "mocktail": [
+        {"role": "mixer",  "quantity": 200, "unit": "ml"},
+        {"role": "mixer",  "quantity": 50, "unit": "ml"},
+        {"role": "garnish", "quantity": 1, "unit": "piece"},
+    ],
+}
+
+
+@menu_bp.get("/templates")
+@require_active_user
+def get_recipe_templates():
+    """Starter recipe structures. GET /menu/items/templates?type=cocktail"""
+    template_type = request.args.get("type", "").lower()
+    if template_type and template_type in RECIPE_TEMPLATES:
+        return jsonify({"type": template_type, "lines": RECIPE_TEMPLATES[template_type]}), 200
+    return jsonify({"types": list(RECIPE_TEMPLATES.keys()), "templates": RECIPE_TEMPLATES}), 200
 
 
 # ── Recipe management ─────────────────────────────────────────────────────────

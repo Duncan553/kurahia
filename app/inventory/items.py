@@ -18,6 +18,16 @@ from app.services.stock import get_current_stock
 
 items_bp = Blueprint("inv_items", __name__, url_prefix="/inventory/items")
 
+CATEGORY_PACK_DEFAULTS = {
+    "spirit":      {"pack_size": 750, "pack_unit": "ml"},
+    "wine":        {"pack_size": 750, "pack_unit": "ml"},
+    "beer":        {"pack_size": 1,   "pack_unit": None},
+    "soda":        {"pack_size": 300, "pack_unit": "ml"},
+    "mixer":       {"pack_size": 300, "pack_unit": "ml"},
+    "honey":       {"pack_size": 1000, "pack_unit": "g"},
+    "syrup":       {"pack_size": 1000, "pack_unit": "g"},
+}
+
 MANAGER_LEVEL = 5
 
 
@@ -47,6 +57,13 @@ def _notify_owner_catalog_change(actor_name: str, verb: str, item_name: str, dep
     db.session.add(notif)
 
 
+@items_bp.get("/category-defaults")
+@require_active_user
+def get_category_defaults():
+    """Known pack defaults per category — drives frontend auto-fill."""
+    return jsonify(CATEGORY_PACK_DEFAULTS), 200
+
+
 @items_bp.post("")
 @require_active_user
 def create_item():
@@ -62,11 +79,20 @@ def create_item():
     watch_list  = bool(data.get("is_watch_list", False))
     staff_food  = bool(data.get("is_staff_food", False))
     tolerance   = data.get("tolerance_percent")
+    category    = (data.get("category") or "").strip() or None
+    pack_size   = data.get("pack_size")
+    pack_unit   = (data.get("pack_unit") or "").strip() or None
 
     if not name or not unit or not dept_id:
         return jsonify({"error": "name, unit, and department_id are required"}), 400
 
-    # Uniqueness enforced by DB constraint; return 409 on collision
+    # Smart defaults: when category is set but pack_size isn't, apply known defaults
+    if category and pack_size is None:
+        defaults = CATEGORY_PACK_DEFAULTS.get(category.lower())
+        if defaults:
+            pack_size = pack_size or defaults["pack_size"]
+            pack_unit = pack_unit or defaults["pack_unit"]
+
     existing = db.session.query(InventoryItem).filter_by(name=name, department_id=dept_id).first()
     if existing:
         return jsonify({"error": "Item with this name already exists in this department."}), 409
@@ -78,6 +104,9 @@ def create_item():
             is_watch_list=watch_list,
             is_staff_food=staff_food,
             tolerance_percent=str(tolerance) if tolerance is not None else None,
+            category=category,
+            pack_size=str(pack_size) if pack_size is not None else None,
+            pack_unit=pack_unit,
         )
         db.session.add(item)
 
@@ -115,6 +144,12 @@ def edit_item(item_id):
             item.tolerance_percent = str(data["tolerance_percent"]) if data["tolerance_percent"] is not None else None
         if "is_active" in data:
             item.is_active = bool(data["is_active"])
+        if "category" in data:
+            item.category = data["category"].strip() if data["category"] else None
+        if "pack_size" in data:
+            item.pack_size = str(data["pack_size"]) if data["pack_size"] is not None else None
+        if "pack_unit" in data:
+            item.pack_unit = data["pack_unit"].strip() if data["pack_unit"] else None
 
     AuditLog.log(actor=actor.username, action="inventory.item.edit", target=item.name)
     db.session.commit()
@@ -157,6 +192,9 @@ def list_items():
             "is_watch_list":  it.is_watch_list,
             "is_staff_food":  it.is_staff_food,
             "cost_per_unit":  str(it.cost_per_unit) if it.cost_per_unit is not None else None,
+            "pack_size":      str(it.pack_size) if it.pack_size is not None else None,
+            "pack_unit":      it.pack_unit,
+            "category":       it.category,
         }
         if for_count:
             tier, reason = compute_trust_tier(it)

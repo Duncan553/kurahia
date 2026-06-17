@@ -44,7 +44,9 @@ def consume_order_item(oi, actor):
         if not inv_item:
             continue
 
-        deduct = -(Decimal(str(line.quantity)) * order_qty)  # negative = stock out
+        recipe_qty = Decimal(str(line.quantity))
+        stock_qty = inv_item.recipe_to_stock(recipe_qty)
+        deduct = -(stock_qty * order_qty)  # negative = stock out
         idem   = f"sale-{oi.id}-{inv_item.id}"
 
         # Idempotency: DB UNIQUE constraint is the hard guard; this is the soft check
@@ -78,7 +80,9 @@ def reverse_consumption(oi, actor):
         if not inv_item:
             continue
 
-        restore = Decimal(str(line.quantity)) * order_qty  # positive = stock back
+        recipe_qty = Decimal(str(line.quantity))
+        stock_qty = inv_item.recipe_to_stock(recipe_qty)
+        restore = stock_qty * order_qty  # positive = stock back
         idem    = f"sale-reverse-{oi.id}-{inv_item.id}"
 
         if db.session.query(StockMovement).filter_by(idempotency_key=idem).first():
