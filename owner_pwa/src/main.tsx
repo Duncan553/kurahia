@@ -1,4 +1,5 @@
 import { StrictMode, lazy } from 'react'
+import { ErrorBoundary } from '@shared'
 import { MotionConfig } from 'framer-motion'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
@@ -41,7 +42,7 @@ const router = createBrowserRouter([
   {
     element: <AuthGate />,
     children: [{
-      element: <AppLayout />,
+      element: <ErrorBoundary><AppLayout /></ErrorBoundary>,
       children: [
         { path: '/',          element: <DashboardScreen /> },
         { path: '/dashboard', element: <DashboardScreen /> },
