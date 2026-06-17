@@ -1,4 +1,5 @@
 import { StrictMode, lazy } from 'react'
+import { ErrorBoundary } from '@shared'
 import { MotionConfig } from 'framer-motion'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
@@ -103,7 +104,7 @@ const router = createBrowserRouter([
 
       // ── Staff routes — inside AppLayout ────────────────────────
       {
-      element: <AppLayout />,
+      element: <ErrorBoundary><AppLayout /></ErrorBoundary>,
       children: [
         { path: '/', element: <Navigate to="/clock" replace /> },
 

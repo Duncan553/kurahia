@@ -47,3 +47,5 @@ export type { InstallPromptProps } from './components/InstallPrompt'
 
 export { SearchInput } from './components/SearchInput'
 export type { SearchInputProps } from './components/SearchInput'
+
+export { ErrorBoundary } from './components/ErrorBoundary'

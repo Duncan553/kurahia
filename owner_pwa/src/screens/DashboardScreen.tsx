@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, ResponsiveContainer, Tooltip } from 'recharts'
-import { Skeleton, StatusBadge } from '@shared'
+import { Skeleton, StatusBadge, ErrorBoundary } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
 
@@ -290,16 +290,17 @@ function PendingApprovalsTile() {
 
 function BudgetBurnTile() {
   const period = new Date().toISOString().slice(0, 7)
-  const { data, isLoading, isError } = useQuery<BudgetRow[]>({
+  const { data, isLoading, isError } = useQuery<{ budgets: BudgetRow[]; period: string }>({
     queryKey: ['dash-budgets', period],
-    queryFn: () => api.get<BudgetRow[]>(`/finance/budgets/status?period=${period}`).then(r => r.data),
+    queryFn: () => api.get(`/finance/budgets/status?period=${period}`).then(r => r.data),
     staleTime: 5 * 60_000,
   })
 
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Budget Burn" />
 
-  const rows = (data ?? []).filter(r => parseFloat(r.budget) > 0)
+  const budgets = Array.isArray(data) ? data : (data?.budgets ?? [])
+  const rows = budgets.filter(r => parseFloat(r.budget) > 0)
 
   return (
     <TileCard title="Budget Burn" href="/finance">
@@ -661,18 +662,18 @@ export default function DashboardScreen() {
   }
 
   const tiles = [
-    <ActiveGuestsTile    key="guests"     />,
-    <OpenBookingsTile    key="bookings"   />,
-    <StaffOnDutyTile     key="staff"      />,
-    <AlertsTile          key="alerts"     />,
-    <LowStockTile        key="stock"      />,
-    <PendingApprovalsTile key="approvals" />,
-    <BudgetBurnTile      key="budget"     />,
-    <FinanceTile         key="finance"    />,
-    <FeedbackTile        key="feedback"   />,
-    <SuggestionsTile     key="suggestions"/>,
-    <EquipmentTile       key="equipment"  />,
-    <CalendarTile        key="calendar"   />,
+    <ErrorBoundary key="guests"      level="tile"><ActiveGuestsTile     /></ErrorBoundary>,
+    <ErrorBoundary key="bookings"    level="tile"><OpenBookingsTile     /></ErrorBoundary>,
+    <ErrorBoundary key="staff"       level="tile"><StaffOnDutyTile      /></ErrorBoundary>,
+    <ErrorBoundary key="alerts"      level="tile"><AlertsTile           /></ErrorBoundary>,
+    <ErrorBoundary key="stock"       level="tile"><LowStockTile         /></ErrorBoundary>,
+    <ErrorBoundary key="approvals"   level="tile"><PendingApprovalsTile /></ErrorBoundary>,
+    <ErrorBoundary key="budget"      level="tile"><BudgetBurnTile       /></ErrorBoundary>,
+    <ErrorBoundary key="finance"     level="tile"><FinanceTile          /></ErrorBoundary>,
+    <ErrorBoundary key="feedback"    level="tile"><FeedbackTile         /></ErrorBoundary>,
+    <ErrorBoundary key="suggestions" level="tile"><SuggestionsTile      /></ErrorBoundary>,
+    <ErrorBoundary key="equipment"   level="tile"><EquipmentTile        /></ErrorBoundary>,
+    <ErrorBoundary key="calendar"    level="tile"><CalendarTile         /></ErrorBoundary>,
   ]
 
   return (
