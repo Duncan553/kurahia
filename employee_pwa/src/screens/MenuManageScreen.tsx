@@ -16,6 +16,7 @@ interface MenuItem {
 }
 interface InvItem {
   id: string; name: string; unit: string; cost_per_unit: string | null
+  pack_size: string | null; pack_unit: string | null; category: string | null
 }
 interface RecipeLine {
   id: string; inventory_item_id: string; inventory_item_name: string | null
@@ -66,6 +67,7 @@ export default function MenuManageScreen() {
   const [newIngName, setNewIngName] = useState('')
   const [newQty,     setNewQty]     = useState('')
   const [copySource, setCopySource] = useState('')
+  const [templateType, setTemplateType] = useState('')
 
   // ── Data ──────────────────────────────────────────────────────────────────
 
@@ -134,8 +136,11 @@ export default function MenuManageScreen() {
     let total = 0
     for (const line of draftLines) {
       const inv = invItems.find(i => i.id === line.invItemId)
-      if (!inv?.cost_per_unit) return null  // missing cost data → can't compute
-      total += parseFloat(line.quantity || '0') * parseFloat(inv.cost_per_unit)
+      if (!inv?.cost_per_unit) return null
+      const cpu = parseFloat(inv.cost_per_unit)
+      const ps  = inv.pack_size ? parseFloat(inv.pack_size) : 0
+      const unitCost = ps > 0 ? cpu / ps : cpu
+      total += parseFloat(line.quantity || '0') * unitCost
     }
     const price = parseFloat(recipeFor.price)
     return {
@@ -196,6 +201,22 @@ export default function MenuManageScreen() {
     onError: fail,
   })
 
+  // Recipe template — loads starter lines from server
+  interface TemplateLine { role: string; quantity: number; unit: string }
+  const { data: templateData } = useQuery<{ type: string; lines: TemplateLine[] }>({
+    queryKey: ['recipe-template', templateType],
+    queryFn: () => api.get(`/menu/items/templates?type=${templateType}`).then(r => r.data),
+    enabled: !!templateType,
+  })
+  useEffect(() => {
+    if (templateType && templateData?.lines) {
+      setDraftLines(templateData.lines.map(l => ({
+        invItemId: '', invItemName: `[${l.role}]`, unit: l.unit, quantity: String(l.quantity),
+      })))
+      setTemplateType('')
+    }
+  }, [templateData, templateType])
+
   // ── Recipe drawer helpers ─────────────────────────────────────────────────
 
   function openRecipe(it: MenuItem) {
@@ -204,6 +225,7 @@ export default function MenuManageScreen() {
     setNewIngName('')
     setNewQty('')
     setCopySource('')
+    setTemplateType('')
   }
 
   function addIngredient() {
@@ -396,7 +418,12 @@ export default function MenuManageScreen() {
                     className="flex items-center gap-2 p-2 rounded-xl bg-cream-alt/50">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-ink-primary">{line.invItemName}</p>
-                      <p className="text-xs text-ink-tertiary">{line.unit}</p>
+                      <p className="text-xs text-ink-tertiary">
+                        {(() => {
+                          const inv = invItems.find(x => x.id === line.invItemId)
+                          return inv?.pack_unit ?? line.unit
+                        })()}
+                      </p>
                     </div>
                     <input
                       type="number" min="0.001" step="0.001" inputMode="decimal"
@@ -450,11 +477,11 @@ export default function MenuManageScreen() {
                       text-sm focus:outline-none focus:border-primary-dark"
                   />
                 </div>
-                {newIngName && (
-                  <span className="text-xs text-ink-tertiary pb-2.5 shrink-0">
-                    {invItems.find(i => i.name === newIngName)?.unit ?? ''}
-                  </span>
-                )}
+                {newIngName && (() => {
+                  const inv = invItems.find(i => i.name === newIngName)
+                  const displayUnit = inv?.pack_unit ?? inv?.unit ?? ''
+                  return <span className="text-xs text-ink-tertiary pb-2.5 shrink-0">{displayUnit}</span>
+                })()}
                 <Button variant="ghost" size="sm"
                   onClick={addIngredient}
                   disabled={!newIngName || !newQty || parseFloat(newQty) <= 0}>
@@ -481,6 +508,24 @@ export default function MenuManageScreen() {
                 ))}
               </select>
             </div>
+
+            {/* Recipe template starter */}
+            {draftLines.length === 0 && (
+              <div>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1.5">
+                  Start from a template
+                </p>
+                <div className="flex gap-2">
+                  {['shot', 'cocktail', 'mocktail'].map(t => (
+                    <button key={t} onClick={() => setTemplateType(t)}
+                      className="flex-1 px-3 py-2 rounded-xl border border-cream-alt bg-cream-card
+                        text-sm text-ink-secondary hover:bg-cream-alt/40 transition-colors capitalize">
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Live cost preview */}
             {draftLines.length > 0 && (
