@@ -2,30 +2,35 @@
 @source "../../shared_ui/src";
 
 @theme {
-  /* ── System palette ──────────────────────────────────────────── */
-  --color-primary-main: #B4533C;
-  --color-primary-light: #D88A6E;
-  --color-primary-dark: #8C3E2C;
-  --color-cream-card: #F4EDDF;
-  --color-cream-alt: #ECE3D0;
-  --color-cream-deep: #E5D9C0;
-  --color-ink-primary: #1F1B14;
-  --color-ink-secondary: #5C5147;
-  --color-ink-tertiary: #756859;  /* was #8C7E6F — 3.38:1, now 4.64:1 AA */
+  /* ── System palette (earthy: parchment/sage/forest/ink) ─────── */
+  --color-primary-main: #40534C;   /* forest — primary actions, hero */
+  --color-primary-light: #5E8A6E;  /* forest-light — hover tint */
+  --color-primary-dark: #2E3E38;   /* forest-deep — pressed, gradient bottom */
+  --color-cream-card: #E4D2B0;     /* parchment — base background (60%) */
+  --color-cream-alt: #A8B5A3;      /* sage — card surfaces, dividers (30%) */
+  --color-cream-deep: #96A699;     /* sage-deep — pressed sage state */
+  --color-ink-primary: #1A3636;    /* ink — body text, headlines */
+  --color-ink-secondary: #4D5E55;  /* slate-mid — secondary text, 4.64:1 on parchment */
+  --color-ink-tertiary: #5F5040;   /* captions — 5.22:1 on parchment */
+  --color-slate-mid: #4D5E55;      /* alias for ink-secondary */
 
-  /* ── Ticket palette ──────────────────────────────────────────── */
-  --color-ticket-paper: #EFE6D2;
-  --color-ticket-alt: #E5DAC1;
-  --color-ticket-ink: #1F1B14;
-  --color-stamp-red: #9A3E32;
-  --color-leaf-green: #708A4F;
+  /* ── Ticket palette (tuned for new base) ─────────────────────── */
+  --color-ticket-paper: #DCC99E;
+  --color-ticket-alt: #D4BF90;
+  --color-ticket-ink: #1A3636;
+  --color-stamp-red: #A04438;
+  --color-leaf-green: #3D8B5C;
   --color-tea-brown: #6B4A2E;
 
   /* ── Status palette ──────────────────────────────────────────── */
-  --color-status-paid: #3D6640;    /* was #4A7A4A — 4.32:1, now 5.68:1 AA */
-  --color-status-pending: #8A6320; /* was #B88838 — 2.72:1, now 4.64:1 AA */
-  --color-status-failed: #A04438;
+  --color-status-paid: #28633D;    /* 4.81:1 on parchment */
+  --color-status-pending: #6E4E18; /* 5.11:1 on parchment */
+  --color-status-failed: #8C3830;  /* 5.19:1 on parchment */
   --color-status-neutral: #4A7889;
+
+  /* ── Data-viz accent ─────────────────────────────────────────── */
+  --color-honey: #C68A28;          /* data viz accent ONLY */
+  --color-accent-cool: #C68A28;    /* alias → honey */
 
   /* ── Font families ───────────────────────────────────────────── */
   --font-sans: Inter, sans-serif;
@@ -88,6 +93,30 @@ html {
     12% 100%, 6% 93%,
     0% 100%
   );
+}
+
+/* Gradient hero: forest → forest-deep for primary buttons + hero tiles */
+.gradient-hero {
+  background: linear-gradient(135deg, var(--color-primary-main), var(--color-primary-dark));
+}
+
+/* Skeleton shimmer retuned for parchment/sage base */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-pulse {
+  background: linear-gradient(
+    90deg,
+    var(--color-cream-alt) 25%,
+    var(--color-cream-card) 50%,
+    var(--color-cream-alt) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse { animation: none; opacity: 0.6; }
 }
 
 /* Login torn-paper edge — only active at md+ (tablet/desktop) */
