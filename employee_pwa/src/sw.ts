@@ -7,7 +7,7 @@ declare const self: ServiceWorkerGlobalScope & {
 
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
-import { CacheFirst, NetworkFirst } from 'workbox-strategies'
+import { NetworkFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { routeFor } from './lib/notificationRoutes'
 
@@ -26,14 +26,7 @@ self.addEventListener('activate', () => self.clients.claim())
 //   /auth/*, /finance/*  — tokens and money are never stale
 //   /kitchen/queue, /bar/queue — a stale prep queue is worse than no queue
 
-// Google Fonts: CacheFirst, 1 year
-registerRoute(
-  ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
-  new CacheFirst({
-    cacheName: 'google-fonts',
-    plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 365 * 24 * 3600 })],
-  })
-)
+// Fonts are self-hosted + precached — no Google Fonts runtime caching needed
 
 // Menu: NetworkFirst, 1 hour fallback
 registerRoute(
