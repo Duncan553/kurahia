@@ -6,7 +6,7 @@ declare const self: ServiceWorkerGlobalScope & {
 
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
-import { CacheFirst, NetworkFirst } from 'workbox-strategies'
+import { NetworkFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 
 // ── App shell: precached, version-keyed by the build ────────────────────────
@@ -20,13 +20,7 @@ self.addEventListener('activate', () => self.clients.claim())
 // NEVER cached: /auth/*, /finance/*, /judge/*, /dashboard/* — owner numbers
 // must always be live. Only fonts and the inbox get offline fallbacks.
 
-registerRoute(
-  ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
-  new CacheFirst({
-    cacheName: 'google-fonts',
-    plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 365 * 24 * 3600 })],
-  })
-)
+// Fonts are self-hosted + precached — no Google Fonts runtime caching needed
 
 registerRoute(
   ({ url, request }) => request.method === 'GET' && url.pathname.startsWith('/notifications/inbox'),
