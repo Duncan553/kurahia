@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import { Skeleton, Button, useToastStore } from '@shared'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Skeleton, Button, useToastStore, SearchInput, Modal } from '@shared'
 import api from '../lib/axios'
 
 interface MenuItem {
@@ -17,21 +17,33 @@ interface TabDetail {
   orders: { id: string; status: string; items: OrderItem[] }[]
 }
 
-// Item lifecycle: PENDING/RECEIVED → kitchen/bar working; READY → waiter serves;
-// SERVED/CANCELLED → resolved. Tabs only close once every item is resolved.
-const ITEM_BADGE: Record<string, string> = {
-  PENDING:   'bg-cream-alt text-ink-tertiary',
-  RECEIVED:  'bg-status-pending/10 text-status-pending',
-  READY:     'bg-status-paid/10 text-status-paid',
-  SERVED:    'bg-cream-alt text-ink-tertiary',
-  CANCELLED: 'bg-status-failed/10 text-status-failed',
+const ITEM_BADGE: Record<string, { bg: string; icon: string }> = {
+  PENDING:   { bg: 'bg-cream-alt text-ink-tertiary',            icon: '◌' },
+  RECEIVED:  { bg: 'bg-status-pending/10 text-status-pending',  icon: '◐' },
+  READY:     { bg: 'bg-status-paid/10 text-status-paid',        icon: '✓' },
+  SERVED:    { bg: 'bg-cream-alt text-ink-tertiary',            icon: '✓' },
+  CANCELLED: { bg: 'bg-status-failed/10 text-status-failed',    icon: '×' },
 }
 
 const kes = (v: string | number) =>
   `KSh ${parseFloat(String(v)).toLocaleString('en-KE', { minimumFractionDigits: 0 })}`
 const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
-const METHODS = ['CASH', 'MPESA', 'CARD', 'BANK_TRANSFER']
+const METHODS = ['CASH', 'MPESA', 'CARD', 'BANK_TRANSFER'] as const
+
+function StationBadge({ station }: { station: string }) {
+  const label = station === 'KITCHEN' ? 'Kitchen' : station === 'BAR' ? 'Bar' : 'Self-serve'
+  const cls   = station === 'KITCHEN'
+    ? 'bg-status-pending/10 text-status-pending'
+    : station === 'BAR'
+      ? 'bg-primary-light/20 text-primary-dark'
+      : 'bg-cream-alt text-ink-tertiary'
+  return (
+    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${cls}`}>
+      {label}
+    </span>
+  )
+}
 
 export default function WaiterTabDetailScreen() {
   const { id: tabId } = useParams<{ id: string }>()
@@ -40,50 +52,60 @@ export default function WaiterTabDetailScreen() {
   const addToast = useToastStore(s => s.addToast)
 
   const [draft, setDraft] = useState<Record<string, number>>({})
-  const [view, setView] = useState<'menu' | 'bill'>('menu')
-  const [pay, setPay] = useState({ method: 'CASH', amount: '' })
+  const [mobilePane, setMobilePane] = useState<'menu' | 'order'>('menu')
+  const [searchQ, setSearchQ] = useState('')
+  const [activeCat, setActiveCat] = useState('All')
+  const [pay, setPay] = useState({ method: 'CASH' as string, amount: '' })
   const [idem, setIdem] = useState(() => crypto.randomUUID())
+  const [cancelId, setCancelId] = useState<string | null>(null)
+
+  // ── Data ────────────────────────────────────────────────────────────────
 
   const { data: tab, isLoading } = useQuery<TabDetail>({
     queryKey: ['tab', tabId],
     queryFn: () => api.get<TabDetail>(`/tabs/${tabId}`).then(r => r.data),
-    refetchInterval: 15_000, // READY badges appear without manual refresh
+    refetchInterval: 15_000,
   })
 
-  const { data: items = [] } = useQuery<MenuItem[]>({
+  const { data: items = [], isLoading: menuLoading } = useQuery<MenuItem[]>({
     queryKey: ['menu-items'],
     queryFn: () => api.get<MenuItem[]>('/menu/items').then(r => r.data),
-    // Poll every 30s so sold-out items grey immediately; pauses when tab is hidden
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
-    // Waiters sell food + drinks only — spa/gym/water services never appear here
     select: (all) => all.filter(i => i.prep_station === 'KITCHEN' || i.prep_station === 'BAR'),
   })
 
-  // Group items by category for the scrollable menu
-  const grouped = useMemo(() =>
-    items.reduce<Record<string, MenuItem[]>>((acc, item) => {
-      const cat = item.category ?? 'Other'
-      ;(acc[cat] ??= []).push(item)
-      return acc
-    }, {})
-  , [items])
+  // ── Derived ─────────────────────────────────────────────────────────────
 
-  const draftTotal = useMemo(() =>
-    Object.entries(draft).reduce((sum, [id, qty]) => {
+  const categories = useMemo(() => {
+    const cats = [...new Set(items.map(i => i.category ?? 'Other'))]
+    return ['All', ...cats.sort()]
+  }, [items])
+
+  const filteredItems = useMemo(() => {
+    let list = items
+    if (activeCat !== 'All') list = list.filter(i => (i.category ?? 'Other') === activeCat)
+    if (searchQ) list = list.filter(i => i.name.toLowerCase().includes(searchQ.toLowerCase()))
+    return list
+  }, [items, activeCat, searchQ])
+
+  const draftEntries = useMemo(() =>
+    Object.entries(draft).filter(([, q]) => q > 0).map(([id, qty]) => {
       const item = items.find(i => i.id === id)
-      return item ? sum + parseFloat(item.price) * qty : sum
-    }, 0)
+      return { id, qty, name: item?.name ?? '?', price: parseFloat(item?.price ?? '0'), station: item?.prep_station ?? '' }
+    })
   , [draft, items])
 
-  const draftCount = Object.values(draft).reduce((s, q) => s + q, 0)
+  const draftTotal = draftEntries.reduce((s, e) => s + e.price * e.qty, 0)
+  const draftCount = draftEntries.reduce((s, e) => s + e.qty, 0)
   const bal = parseFloat(tab?.balance ?? '0')
+  const allOrderItems = (tab?.orders ?? []).flatMap(o => o.items)
+
+  // ── Mutations ───────────────────────────────────────────────────────────
 
   const sendMut = useMutation({
     mutationFn: async () => {
-      const orderItems = Object.entries(draft)
-        .filter(([, q]) => q > 0)
-        .map(([menu_item_id, quantity]) => ({ menu_item_id, quantity }))
+      const orderItems = draftEntries.map(e => ({ menu_item_id: e.id, quantity: e.qty }))
       const { data: order } = await api.post('/orders', { tab_id: tabId, items: orderItems })
       await api.post(`/orders/${order.id}/send`)
     },
@@ -116,6 +138,7 @@ export default function WaiterTabDetailScreen() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tab', tabId] })
       qc.invalidateQueries({ queryKey: ['notifications', 'inbox'] })
+      setCancelId(null)
     },
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
@@ -130,228 +153,385 @@ export default function WaiterTabDetailScreen() {
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
 
+  // ── Helpers ─────────────────────────────────────────────────────────────
+
+  function addItem(id: string) {
+    setDraft(d => ({ ...d, [id]: (d[id] ?? 0) + 1 }))
+  }
+  function decItem(id: string) {
+    setDraft(d => {
+      const next = (d[id] ?? 0) - 1
+      if (next <= 0) { const { [id]: _, ...rest } = d; return rest }
+      return { ...d, [id]: next }
+    })
+  }
+
   if (isLoading) return (
     <div className="p-4 space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} variant="row" />)}</div>
   )
 
-  return (
+  // ── Menu pane ───────────────────────────────────────────────────────────
+
+  const menuPane = (
     <div className="flex flex-col h-full">
-
-      {/* Header */}
-      <div className="px-4 pt-4 pb-2 flex items-center gap-3 border-b border-cream-alt shrink-0">
-        <button onClick={() => navigate('/pos/tabs')}
-          className="text-ink-tertiary hover:text-ink-primary text-sm">← Back</button>
-        <p className="flex-1 font-bold text-ink-primary">{tab?.reference ?? 'Walk-in'}</p>
-        {/* Negative balance = unspent band credit (KSh 3,000 gate payment) */}
-        <span className={`text-sm font-bold tabular-nums ${bal > 0 ? 'text-status-failed' : 'text-status-paid'}`}>
-          {bal < 0 ? `Credit ${kes(-bal)}` : kes(tab?.balance ?? '0')}
-        </span>
-      </div>
-
-      {/* Menu / Bill tabs */}
-      <div className="flex border-b border-cream-alt shrink-0">
-        {(['menu', 'bill'] as const).map(v => (
-          <button key={v} onClick={() => setView(v)}
-            className={`flex-1 py-3 text-sm font-semibold capitalize transition-colors ${
-              view === v
-                ? 'text-primary-dark border-b-2 border-primary-dark'
-                : 'text-ink-tertiary hover:text-ink-secondary'
+      {/* Category tabs */}
+      <div className="shrink-0 px-3 pt-3 pb-2 overflow-x-auto flex gap-2 scrollbar-hide">
+        {categories.map(cat => (
+          <button key={cat} onClick={() => setActiveCat(cat)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
+              activeCat === cat
+                ? 'bg-ink-primary text-cream-card'
+                : 'bg-cream-alt text-ink-secondary hover:bg-cream-deep'
             }`}>
-            {v === 'menu' ? `Menu${draftCount > 0 ? ` (${draftCount})` : ''}` : 'Bill'}
+            {cat}
           </button>
         ))}
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Search */}
+      <div className="shrink-0 px-3 pb-2">
+        <SearchInput value={searchQ} onChange={v => { setSearchQ(v); if (v) setActiveCat('All') }}
+          placeholder="Search menu…" label="Search menu items" />
+      </div>
 
-        {/* ── Menu ──────────────────────────────────────────── */}
-        {view === 'menu' && (
-          <div className="p-4 space-y-6 pb-28">
-            {Object.entries(grouped).map(([cat, catItems]) => (
-              <div key={cat}>
-                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-3">{cat}</p>
-                <div className="space-y-2">
-                  {catItems.map(item => {
-                    const qty      = draft[item.id] ?? 0
-                    const soldOut  = item.in_stock === false
-                    return (
-                      <div key={item.id}
-                        className={`flex items-center gap-3 p-3 rounded-xl border border-cream-alt bg-cream-card
-                          ${soldOut ? 'opacity-50' : ''}`}>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-semibold text-ink-primary ${soldOut ? 'line-through' : ''}`}>
-                            {item.name}
-                          </p>
-                          <p className="text-xs text-ink-tertiary tabular-nums">
-                            {soldOut ? 'Sold out' : kes(item.price)}
-                          </p>
-                        </div>
-                        {!soldOut && (
-                          <div className="flex items-center gap-2 shrink-0">
-                            {qty > 0 && (
-                              <>
-                                <motion.button whileTap={{ scale: 0.85 }}
-                                  aria-label={`Remove one ${item.name}`}
-                                  onClick={() => setDraft(d => ({ ...d, [item.id]: Math.max(0, (d[item.id] ?? 0) - 1) }))}
-                                  className="w-8 h-8 rounded-full bg-cream-alt text-ink-primary font-bold
-                                    flex items-center justify-center">−</motion.button>
-                                <span className="w-5 text-center text-sm font-bold tabular-nums">{qty}</span>
-                              </>
-                            )}
-                            <motion.button whileTap={{ scale: 0.85 }}
-                              aria-label={`Add ${item.name}`}
-                              onClick={() => setDraft(d => ({ ...d, [item.id]: (d[item.id] ?? 0) + 1 }))}
-                              className="w-8 h-8 rounded-full bg-primary-dark text-cream-card font-bold
-                                flex items-center justify-center">+</motion.button>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+      {/* Item grid */}
+      <div className="flex-1 overflow-y-auto px-3 pb-4">
+        {menuLoading ? (
+          <div className="grid grid-cols-2 gap-2">
+            {[1,2,3,4,5,6].map(i => <div key={i} className="h-24 rounded-2xl bg-cream-alt animate-pulse" />)}
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-2">
+            {searchQ ? (
+              <p className="text-sm text-ink-tertiary text-center">
+                No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu
+              </p>
+            ) : items.length === 0 ? (
+              <p className="text-sm text-ink-tertiary text-center">
+                No menu items yet &middot; Ask manager to add items
+              </p>
+            ) : (
+              <p className="text-sm text-ink-tertiary text-center">
+                No items in this category
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {filteredItems.map(item => {
+              const qty = draft[item.id] ?? 0
+              const soldOut = item.in_stock === false
+              return (
+                <motion.button
+                  key={item.id}
+                  whileTap={soldOut ? undefined : { scale: 0.97 }}
+                  onClick={() => !soldOut && addItem(item.id)}
+                  disabled={soldOut}
+                  aria-label={soldOut ? `${item.name} — sold out` : `Add ${item.name} to order`}
+                  className={`relative text-left p-3 rounded-2xl border transition-colors
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark
+                    ${soldOut
+                      ? 'opacity-50 border-cream-alt bg-cream-card cursor-not-allowed'
+                      : 'border-cream-alt bg-cream-card hover:bg-cream-alt/40 active:bg-cream-alt'
+                    }`}
+                >
+                  <p className={`text-sm font-semibold text-ink-primary leading-snug mb-1 ${soldOut ? 'line-through' : ''}`}>
+                    {item.name}
+                  </p>
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-xs text-ink-tertiary tabular-nums">
+                      {soldOut ? 'Sold out' : kes(item.price)}
+                    </p>
+                    <StationBadge station={item.prep_station} />
+                  </div>
+                  {qty > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] rounded-full
+                      bg-primary-dark text-cream-card flex items-center justify-center
+                      text-[11px] font-bold tabular-nums px-1">
+                      {qty}
+                    </span>
+                  )}
+                </motion.button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  // ── Order pane ──────────────────────────────────────────────────────────
+
+  const orderPane = (
+    <div className="flex flex-col h-full">
+      {/* Tab header */}
+      <div className="shrink-0 px-4 pt-4 pb-3 border-b border-cream-alt">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-bold text-ink-primary text-lg">{tab?.reference ?? 'Walk-in'}</p>
+            <p className="text-xs text-ink-tertiary">Tab #{tabId?.slice(0, 8)}</p>
+          </div>
+          <span className={`text-sm font-bold tabular-nums px-2 py-1 rounded-lg ${
+            bal > 0 ? 'bg-status-failed/10 text-status-failed' : 'bg-status-paid/10 text-status-paid'
+          }`}>
+            {bal < 0 ? `Credit ${kes(-bal)}` : kes(tab?.balance ?? '0')}
+          </span>
+        </div>
+      </div>
+
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+
+        {/* Draft items */}
+        {draftEntries.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">New Order</p>
+            <AnimatePresence mode="popLayout">
+              {draftEntries.map(e => (
+                <motion.div key={e.id}
+                  layout
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-2 py-2 border-b border-cream-alt last:border-0"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-ink-primary truncate">{e.name}</p>
+                    <p className="text-xs text-ink-tertiary tabular-nums">{kes(e.price)} each</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <motion.button whileTap={{ scale: 0.85 }}
+                      aria-label={`Decrease ${e.name} quantity`}
+                      onClick={() => decItem(e.id)}
+                      className="w-7 h-7 rounded-full bg-cream-alt text-ink-primary font-bold text-sm
+                        flex items-center justify-center">−</motion.button>
+                    <span className="w-5 text-center text-sm font-bold tabular-nums">{e.qty}</span>
+                    <motion.button whileTap={{ scale: 0.85 }}
+                      aria-label={`Increase ${e.name} quantity`}
+                      onClick={() => addItem(e.id)}
+                      className="w-7 h-7 rounded-full bg-primary-dark text-cream-card font-bold text-sm
+                        flex items-center justify-center">+</motion.button>
+                  </div>
+                  <span className="text-sm font-bold tabular-nums text-ink-primary w-16 text-right shrink-0">
+                    {kes(e.price * e.qty)}
+                  </span>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            <div className="flex justify-between items-center pt-3">
+              <span className="text-sm text-ink-secondary">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
+              <span className="text-base font-bold tabular-nums text-ink-primary">{kes(draftTotal)}</span>
+            </div>
+          </div>
+        )}
+
+        {draftEntries.length === 0 && allOrderItems.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 gap-2">
+            <p className="text-sm text-ink-tertiary text-center">
+              Tap menu items to start the order &middot; Karibu
+            </p>
+          </div>
+        )}
+
+        {/* Existing order items */}
+        {allOrderItems.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Kitchen / Bar</p>
+            {allOrderItems.map(oi => {
+              const badge = ITEM_BADGE[oi.status] ?? ITEM_BADGE.PENDING
+              return (
+                <div key={oi.id} className="flex items-center gap-2 py-2 border-b border-cream-alt last:border-0">
+                  <span className="flex-1 text-sm text-ink-secondary truncate">
+                    {oi.quantity}× {oi.name}
+                  </span>
+                  <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${badge.bg}`}>
+                    {badge.icon} {oi.status}
+                  </span>
+                  {oi.status === 'READY' && (
+                    <motion.button whileTap={{ scale: 0.92 }}
+                      onClick={() => itemMut.mutate({ id: oi.id, action: 'serve' })}
+                      disabled={itemMut.isPending}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold
+                        bg-primary-dark text-cream-card disabled:opacity-50">
+                      Served ✓
+                    </motion.button>
+                  )}
+                  {(oi.status === 'PENDING' || oi.status === 'RECEIVED') && (
+                    <motion.button whileTap={{ scale: 0.92 }}
+                      onClick={() => setCancelId(oi.id)}
+                      disabled={itemMut.isPending}
+                      aria-label={`Cancel ${oi.name}`}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold
+                        border border-status-failed/40 text-status-failed disabled:opacity-50">
+                      Cancel
+                    </motion.button>
+                  )}
                 </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Charges */}
+        {(tab?.charges ?? []).length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Charges</p>
+            {tab!.charges.map(c => (
+              <div key={c.id} className="flex justify-between py-2 border-b border-cream-alt last:border-0">
+                <span className="text-sm text-ink-secondary">{c.description}</span>
+                <span className="text-sm tabular-nums font-semibold">{kes(c.amount)}</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* ── Bill ──────────────────────────────────────────── */}
-        {view === 'bill' && (
-          <div className="p-4 space-y-4">
-
-            {/* Order items — serve READY items, cancel mistakes. A tab can
-                only close once every item is SERVED or CANCELLED. */}
-            {(tab?.orders ?? []).some(o => o.items.length > 0) && (
-              <div>
-                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Kitchen / Bar</p>
-                {tab!.orders.flatMap(o => o.items).map(oi => (
-                  <div key={oi.id} className="flex items-center gap-2 py-2 border-b border-cream-alt last:border-0">
-                    <span className="flex-1 text-sm text-ink-secondary truncate">
-                      {oi.quantity}× {oi.name}
-                    </span>
-                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${ITEM_BADGE[oi.status] ?? ''}`}>
-                      {oi.status}
-                    </span>
-                    {oi.status === 'READY' && (
-                      <motion.button whileTap={{ scale: 0.92 }}
-                        onClick={() => itemMut.mutate({ id: oi.id, action: 'serve' })}
-                        disabled={itemMut.isPending}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold
-                          bg-primary-dark text-cream-card disabled:opacity-50">
-                        Served ✓
-                      </motion.button>
-                    )}
-                    {(oi.status === 'PENDING' || oi.status === 'RECEIVED') && (
-                      <motion.button whileTap={{ scale: 0.92 }}
-                        onClick={() => itemMut.mutate({ id: oi.id, action: 'cancel' })}
-                        disabled={itemMut.isPending}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold
-                          border border-status-failed/40 text-status-failed disabled:opacity-50">
-                        Cancel
-                      </motion.button>
-                    )}
-                  </div>
-                ))}
+        {/* Payments */}
+        {(tab?.payments ?? []).length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Payments</p>
+            {tab!.payments.map(p => (
+              <div key={p.id} className="flex justify-between py-2 border-b border-cream-alt last:border-0">
+                <span className="text-sm text-ink-secondary">{p.method}</span>
+                <span className="text-sm tabular-nums font-semibold text-status-paid">−{kes(p.amount)}</span>
               </div>
-            )}
-
-            {/* Charges */}
-            {(tab?.charges ?? []).length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Charges</p>
-                <div>
-                  {tab!.charges.map(c => (
-                    <div key={c.id} className="flex justify-between py-2 border-b border-cream-alt last:border-0">
-                      <span className="text-sm text-ink-secondary">{c.description}</span>
-                      <span className="text-sm tabular-nums font-semibold">{kes(c.amount)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Payments */}
-            {(tab?.payments ?? []).length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Payments</p>
-                <div>
-                  {tab!.payments.map(p => (
-                    <div key={p.id} className="flex justify-between py-2 border-b border-cream-alt last:border-0">
-                      <span className="text-sm text-ink-secondary">{p.method}</span>
-                      <span className="text-sm tabular-nums font-semibold text-status-paid">−{kes(p.amount)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Balance total — negative means the guest still has band credit */}
-            <div className="flex justify-between items-center p-3 rounded-xl bg-ink-primary text-cream-card">
-              <span className="font-semibold text-sm">{bal < 0 ? 'Band credit left' : 'Balance due'}</span>
-              <span className="text-lg font-bold tabular-nums">{bal < 0 ? kes(-bal) : kes(tab?.balance ?? '0')}</span>
-            </div>
-
-            {/* Payment form */}
-            {bal > 0 && tab?.status !== 'CLOSED' && (
-              <div className="space-y-3">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Record Payment</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {METHODS.map(m => (
-                    <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
-                      className={`py-2 rounded-xl text-sm font-semibold border transition-colors ${
-                        pay.method === m
-                          ? 'bg-primary-dark text-cream-card border-primary-dark'
-                          : 'bg-cream-card text-ink-secondary border-cream-alt hover:border-primary-dark/50'
-                      }`}>
-                      {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="number" min="0" step="0.01" inputMode="decimal"
-                  placeholder={`Amount (KSh) — due ${kes(bal)}`}
-                  value={pay.amount}
-                  onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
-                  className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-                    text-base text-ink-primary focus:outline-none focus:border-primary-dark"
-                />
-                <Button variant="primary" size="lg" className="w-full" loading={payMut.isPending}
-                  onClick={() => payMut.mutate()}>
-                  Record Payment
-                </Button>
-              </div>
-            )}
-
-            {/* Close tab */}
-            {bal <= 0 && tab?.status !== 'CLOSED' && (
-              <Button variant="primary" size="lg" className="w-full" loading={closeMut.isPending}
-                onClick={() => closeMut.mutate()}>
-                Close Table ✓
-              </Button>
-            )}
-
-            {tab?.status === 'CLOSED' && (
-              <p className="text-center text-sm text-status-paid font-semibold py-2">✓ Table closed</p>
-            )}
+            ))}
           </div>
+        )}
+
+        {/* Balance */}
+        <div className="flex justify-between items-center p-3 rounded-xl bg-ink-primary text-cream-card">
+          <span className="font-semibold text-sm">{bal < 0 ? 'Band credit left' : 'Balance due'}</span>
+          <span className="text-lg font-bold tabular-nums">{bal < 0 ? kes(-bal) : kes(tab?.balance ?? '0')}</span>
+        </div>
+
+        {/* Payment form */}
+        {bal > 0 && tab?.status !== 'CLOSED' && (
+          <div className="space-y-3">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Record Payment</p>
+            <div className="grid grid-cols-2 gap-2">
+              {METHODS.map(m => (
+                <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
+                  className={`py-2 rounded-xl text-sm font-semibold border transition-colors ${
+                    pay.method === m
+                      ? 'bg-primary-dark text-cream-card border-primary-dark'
+                      : 'bg-cream-card text-ink-secondary border-cream-alt hover:border-primary-dark/50'
+                  }`}>
+                  {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
+            <input
+              type="number" min="0" step="0.01" inputMode="decimal"
+              placeholder={`Amount (KSh) — due ${kes(bal)}`}
+              value={pay.amount}
+              onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
+              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
+                text-base text-ink-primary focus:outline-none focus:border-primary-dark"
+            />
+            <Button variant="primary" size="lg" className="w-full" loading={payMut.isPending}
+              onClick={() => payMut.mutate()}>
+              Record Payment
+            </Button>
+          </div>
+        )}
+
+        {/* Close tab */}
+        {bal <= 0 && tab?.status !== 'CLOSED' && (
+          <Button variant="primary" size="lg" className="w-full" loading={closeMut.isPending}
+            onClick={() => closeMut.mutate()}>
+            Close Table ✓
+          </Button>
+        )}
+
+        {tab?.status === 'CLOSED' && (
+          <p className="text-center text-sm text-status-paid font-semibold py-2">✓ Table closed</p>
         )}
       </div>
 
-      {/* Sticky send-order bar when draft has items */}
-      {view === 'menu' && draftCount > 0 && (
+      {/* Sticky send bar */}
+      {draftCount > 0 && (
         <div className="shrink-0 p-4 border-t border-cream-alt bg-cream-card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-ink-secondary">
-              {draftCount} item{draftCount !== 1 ? 's' : ''}
-            </span>
-            <span className="text-sm font-bold tabular-nums">{kes(draftTotal)}</span>
-          </div>
-          <Button variant="primary" size="lg" className="w-full" loading={sendMut.isPending}
-            onClick={() => sendMut.mutate()}>
-            Send Order →
+          <Button variant="primary" size="lg" className="w-full"
+            loading={sendMut.isPending} onClick={() => sendMut.mutate()}>
+            Send Order &middot; {kes(draftTotal)}
           </Button>
         </div>
       )}
+    </div>
+  )
+
+  // ── Cancel confirmation modal ──────────────────────────────────────────
+
+  const cancelItem = cancelId ? allOrderItems.find(oi => oi.id === cancelId) : null
+  const cancelModal = (
+    <Modal open={!!cancelId} onClose={() => setCancelId(null)} title="Cancel Item">
+      {cancelItem && (
+        <div className="space-y-4">
+          <p className="text-sm text-ink-secondary">
+            Cancel <strong>{cancelItem.quantity}× {cancelItem.name}</strong>?
+            {cancelItem.status === 'RECEIVED' && ' The kitchen has already started preparing this.'}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="md" className="flex-1" onClick={() => setCancelId(null)}>
+              Keep
+            </Button>
+            <Button variant="primary" size="md" className="flex-1 !bg-status-failed"
+              loading={itemMut.isPending}
+              onClick={() => itemMut.mutate({ id: cancelId!, action: 'cancel' })}>
+              Cancel Item
+            </Button>
+          </div>
+        </div>
+      )}
+    </Modal>
+  )
+
+  // ── Layout ─────────────────────────────────────────────────────────────
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Back + header (always visible) */}
+      <div className="shrink-0 px-4 py-3 flex items-center gap-3 border-b border-cream-alt bg-cream-card">
+        <button onClick={() => navigate('/pos/tabs')}
+          aria-label="Back to tables"
+          className="text-ink-tertiary hover:text-ink-primary text-sm transition-colors">
+          ← Back
+        </button>
+        <p className="flex-1 font-bold text-ink-primary truncate">{tab?.reference ?? 'Walk-in'}</p>
+        {draftCount > 0 && (
+          <span className="text-xs font-bold text-primary-dark tabular-nums">
+            {draftCount} item{draftCount !== 1 ? 's' : ''} · {kes(draftTotal)}
+          </span>
+        )}
+      </div>
+
+      {/* Mobile pane switcher (below md) */}
+      <div className="md:hidden flex border-b border-cream-alt shrink-0">
+        {(['menu', 'order'] as const).map(v => (
+          <button key={v} onClick={() => setMobilePane(v)}
+            className={`flex-1 py-3 text-sm font-semibold capitalize transition-colors ${
+              mobilePane === v
+                ? 'text-primary-dark border-b-2 border-primary-dark'
+                : 'text-ink-tertiary hover:text-ink-secondary'
+            }`}>
+            {v === 'menu' ? `Menu${draftCount > 0 ? ` (${draftCount})` : ''}` : 'Order'}
+          </button>
+        ))}
+      </div>
+
+      {/* Desktop: two-pane grid. Mobile: single pane. */}
+      <div className="flex-1 min-h-0 hidden md:grid md:grid-cols-[3fr_2fr] divide-x divide-cream-alt">
+        <div className="overflow-hidden">{menuPane}</div>
+        <div className="overflow-hidden bg-cream-card">{orderPane}</div>
+      </div>
+
+      {/* Mobile: single pane */}
+      <div className="flex-1 min-h-0 md:hidden">
+        {mobilePane === 'menu' ? menuPane : orderPane}
+      </div>
+
+      {cancelModal}
     </div>
   )
 }
