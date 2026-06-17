@@ -17,6 +17,7 @@ interface MenuItem {
   prep_station: 'KITCHEN' | 'BAR' | 'NONE'
   department_id: string
   is_active: boolean
+  in_stock: boolean | null  // null = no recipe configured; false = stock depleted
 }
 
 interface PinLoginResponse {
@@ -88,20 +89,31 @@ function CategorySection({ name, items }: { name: string; items: MenuItem[] }) {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden px-6"
           >
-            {items.map((item, i) => (
-              <div
-                key={item.id}
-                className={[
-                  'flex items-center justify-between py-3',
-                  i < items.length - 1 ? 'border-b border-dashed border-tea-brown/25' : '',
-                ].join(' ')}
-              >
-                <span className="text-lg text-ticket-ink">{item.name}</span>
-                <span className="text-lg font-bold text-ticket-ink tabular-nums ml-6 shrink-0">
-                  {formatKsh(item.price)}
-                </span>
-              </div>
-            ))}
+            {items.map((item, i) => {
+              const soldOut = item.in_stock === false
+              return (
+                <div
+                  key={item.id}
+                  className={[
+                    'flex items-center justify-between py-3',
+                    i < items.length - 1 ? 'border-b border-dashed border-tea-brown/25' : '',
+                    soldOut ? 'opacity-40' : '',
+                  ].join(' ')}
+                >
+                  <span className={`text-lg text-ticket-ink ${soldOut ? 'line-through' : ''}`}>
+                    {item.name}
+                    {soldOut && (
+                      <span className="text-sm font-normal not-italic ml-2 no-underline">
+                        — Sold out
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-lg font-bold text-ticket-ink tabular-nums ml-6 shrink-0">
+                    {soldOut ? '—' : formatKsh(item.price)}
+                  </span>
+                </div>
+              )
+            })}
           </motion.div>
         )}
       </AnimatePresence>
@@ -270,7 +282,9 @@ export default function KioskMenuScreen() {
   const { data: items = [], isLoading, isError } = useQuery<MenuItem[]>({
     queryKey: ['kiosk-menu-items'],
     queryFn: () => api.get<MenuItem[]>('/menu/items').then((r) => r.data),
-    staleTime: 5 * 60_000,
+    // Refresh every 30s so sold-out items disappear promptly; pauses when tab is hidden
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     retry: 2,
   })
 

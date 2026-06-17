@@ -9,6 +9,7 @@ GET    /menu/items/:id/recipe
 POST   /menu/items/:id/recipe  (set/replace)
 """
 import uuid
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -19,12 +20,32 @@ from app.models.recipe_line import RecipeLine
 from app.models.inventory_item import InventoryItem
 from app.models.department import Department
 from app.models.user import User
+from app.models.role import Role
 from app.models.audit_log import AuditLog
+from app.models.notification import Notification, NotificationStatus, NotificationReferenceType
 from app.services.stock import get_current_stock
 
 menu_bp = Blueprint("menu", __name__, url_prefix="/menu/items")
 
 MANAGER_LEVEL = 5
+
+
+def _notify_owner_menu_change(actor_name: str, verb: str, item_name: str):
+    """Queue an informational notification to the owner about a menu catalog change."""
+    owner = db.session.query(User).join(User.role).filter(
+        Role.level >= 10, User.is_active == True
+    ).first()
+    if not owner:
+        return
+    db.session.add(Notification(
+        recipient_user_id=owner.id,
+        reference_type=NotificationReferenceType.GENERAL.value,
+        subject=f"Menu catalog change: {item_name}",
+        body=f"{actor_name} {verb} '{item_name}' from the menu.",
+        status=NotificationStatus.QUEUED.value,
+        scheduled_for_utc=datetime.now(timezone.utc),
+        idempotency_key=str(uuid.uuid4()),
+    ))
 
 
 def _require_manager(actor):
@@ -72,6 +93,7 @@ def create_menu_item():
         db.session.add(item)
 
     AuditLog.log(actor=actor.username, action="menu.item.create", target=name)
+    _notify_owner_menu_change(actor.username, "added", name)
     db.session.commit()
     return jsonify({"id": item.id, "name": item.name, "price": str(item.price)}), 201
 
@@ -116,6 +138,7 @@ def disable_menu_item(item_id):
     with db.session.begin_nested():
         item.is_active = False
     AuditLog.log(actor=actor.username, action="menu.item.disable", target=item.name)
+    _notify_owner_menu_change(actor.username, "deactivated", item.name)
     db.session.commit()
     return jsonify({"id": item.id, "is_active": False}), 200
 
@@ -132,6 +155,7 @@ def enable_menu_item(item_id):
     with db.session.begin_nested():
         item.is_active = True
     AuditLog.log(actor=actor.username, action="menu.item.enable", target=item.name)
+    _notify_owner_menu_change(actor.username, "re-enabled", item.name)
     db.session.commit()
     return jsonify({"id": item.id, "is_active": True}), 200
 

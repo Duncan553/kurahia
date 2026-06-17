@@ -5,7 +5,10 @@ import { motion } from 'framer-motion'
 import { Skeleton, Button, useToastStore } from '@shared'
 import api from '../lib/axios'
 
-interface MenuItem { id: string; name: string; price: string; category: string | null; prep_station: string }
+interface MenuItem {
+  id: string; name: string; price: string; category: string | null
+  prep_station: string; in_stock: boolean | null
+}
 interface OrderItem { id: string; name: string | null; quantity: string; status: string }
 interface TabDetail {
   id: string; reference: string | null; status: string; balance: string
@@ -50,7 +53,9 @@ export default function WaiterTabDetailScreen() {
   const { data: items = [] } = useQuery<MenuItem[]>({
     queryKey: ['menu-items'],
     queryFn: () => api.get<MenuItem[]>('/menu/items').then(r => r.data),
-    staleTime: 5 * 60_000,
+    // Poll every 30s so sold-out items grey immediately; pauses when tab is hidden
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     // Waiters sell food + drinks only — spa/gym/water services never appear here
     select: (all) => all.filter(i => i.prep_station === 'KITCHEN' || i.prep_station === 'BAR'),
   })
@@ -168,29 +173,39 @@ export default function WaiterTabDetailScreen() {
                 <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-3">{cat}</p>
                 <div className="space-y-2">
                   {catItems.map(item => {
-                    const qty = draft[item.id] ?? 0
+                    const qty      = draft[item.id] ?? 0
+                    const soldOut  = item.in_stock === false
                     return (
                       <div key={item.id}
-                        className="flex items-center gap-3 p-3 rounded-xl border border-cream-alt bg-cream-card">
+                        className={`flex items-center gap-3 p-3 rounded-xl border border-cream-alt bg-cream-card
+                          ${soldOut ? 'opacity-50' : ''}`}>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-ink-primary">{item.name}</p>
-                          <p className="text-xs text-ink-tertiary tabular-nums">{kes(item.price)}</p>
+                          <p className={`text-sm font-semibold text-ink-primary ${soldOut ? 'line-through' : ''}`}>
+                            {item.name}
+                          </p>
+                          <p className="text-xs text-ink-tertiary tabular-nums">
+                            {soldOut ? 'Sold out' : kes(item.price)}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {qty > 0 && (
-                            <>
-                              <motion.button whileTap={{ scale: 0.85 }}
-                                onClick={() => setDraft(d => ({ ...d, [item.id]: Math.max(0, (d[item.id] ?? 0) - 1) }))}
-                                className="w-8 h-8 rounded-full bg-cream-alt text-ink-primary font-bold
-                                  flex items-center justify-center">−</motion.button>
-                              <span className="w-5 text-center text-sm font-bold tabular-nums">{qty}</span>
-                            </>
-                          )}
-                          <motion.button whileTap={{ scale: 0.85 }}
-                            onClick={() => setDraft(d => ({ ...d, [item.id]: (d[item.id] ?? 0) + 1 }))}
-                            className="w-8 h-8 rounded-full bg-primary-dark text-cream-card font-bold
-                              flex items-center justify-center">+</motion.button>
-                        </div>
+                        {!soldOut && (
+                          <div className="flex items-center gap-2 shrink-0">
+                            {qty > 0 && (
+                              <>
+                                <motion.button whileTap={{ scale: 0.85 }}
+                                  aria-label={`Remove one ${item.name}`}
+                                  onClick={() => setDraft(d => ({ ...d, [item.id]: Math.max(0, (d[item.id] ?? 0) - 1) }))}
+                                  className="w-8 h-8 rounded-full bg-cream-alt text-ink-primary font-bold
+                                    flex items-center justify-center">−</motion.button>
+                                <span className="w-5 text-center text-sm font-bold tabular-nums">{qty}</span>
+                              </>
+                            )}
+                            <motion.button whileTap={{ scale: 0.85 }}
+                              aria-label={`Add ${item.name}`}
+                              onClick={() => setDraft(d => ({ ...d, [item.id]: (d[item.id] ?? 0) + 1 }))}
+                              className="w-8 h-8 rounded-full bg-primary-dark text-cream-card font-bold
+                                flex items-center justify-center">+</motion.button>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
