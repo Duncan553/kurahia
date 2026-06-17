@@ -11,7 +11,7 @@
   --color-cream-deep: #E5D9C0;
   --color-ink-primary: #1F1B14;
   --color-ink-secondary: #5C5147;
-  --color-ink-tertiary: #8C7E6F;
+  --color-ink-tertiary: #756859;  /* was #8C7E6F — 3.38:1, now 4.64:1 AA */
 
   /* ── Ticket palette ──────────────────────────────────────────── */
   --color-ticket-paper: #EFE6D2;
