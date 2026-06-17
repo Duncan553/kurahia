@@ -197,3 +197,21 @@ def run_daily():
     from app.judge.engine import run_daily
     alerts = run_daily(datetime.now(timezone.utc))
     click.echo(f"Daily judge: {alerts} alert(s) fired.")
+
+
+@system_cli_bp.cli.command("auto-close")
+def auto_close_cmd():
+    """Auto-close the previous business day if all green, alert owner if not."""
+    from app.services.business_day import business_day_for, business_day_bounds
+    from app.services.auto_close import auto_close_day
+    from datetime import timedelta
+    now = datetime.now(timezone.utc)
+    prev = business_day_for(now - timedelta(hours=1))
+    start, end = business_day_bounds(prev.strftime("%Y-%m-%d"))
+    closed, problems = auto_close_day(start, end)
+    if closed:
+        click.echo(f"Auto-close: {prev.date()} closed (all green).")
+    else:
+        click.echo(f"Auto-close: {prev.date()} HELD — {len(problems)} problem(s):")
+        for p in problems:
+            click.echo(f"  • {p}")
