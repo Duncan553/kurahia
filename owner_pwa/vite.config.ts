@@ -16,8 +16,8 @@ export default defineConfig({
       manifest: {
         name: 'Kurahia Owner',
         short_name: 'Kurahia O',
-        theme_color: '#B4533C',
-        background_color: '#F4EDDF',
+        theme_color: '#40534C',
+        background_color: '#E4D2B0',
         display: 'standalone',
         start_url: '/',
         orientation: 'portrait',
