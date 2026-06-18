@@ -136,12 +136,13 @@ function TileCard({
       onClick={href ? () => navigate(href) : undefined}
       onKeyDown={href ? (e) => { if (e.key === 'Enter') navigate(href) } : undefined}
       className={[
-        'rounded-2xl glass-card glass-shine p-4 space-y-2',
-        href ? 'cursor-pointer hover:shadow-sm hover:border-primary-light/40 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main' : '',
+        'rounded-2xl p-4 space-y-2 border border-white/10 shadow-lg',
+        href ? 'cursor-pointer hover:shadow-xl hover:border-white/20 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400' : '',
         className,
       ].join(' ')}
+      style={{ background: 'rgba(30, 41, 59, 0.8)', backdropFilter: 'blur(16px)' }}
     >
-      <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">{title}</p>
+      <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-400">{title}</p>
       {children}
     </div>
   )
@@ -149,7 +150,8 @@ function TileCard({
 
 function TileSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`rounded-2xl glass-card p-4 space-y-3 ${className}`}>
+    <div className={`rounded-2xl p-4 space-y-3 border border-white/10 ${className}`}
+      style={{ background: 'rgba(30, 41, 59, 0.6)' }}>
       <Skeleton variant="text" className="w-24 h-3" />
       <Skeleton variant="text" className="w-32 h-8" />
       <Skeleton variant="text" className="w-40 h-3" />
@@ -160,7 +162,7 @@ function TileSkeleton({ className = '' }: { className?: string }) {
 function TileError({ label, className = '' }: { label: string; className?: string }) {
   return (
     <TileCard title={label} className={className}>
-      <p className="text-2xl font-bold tabular-nums text-ink-tertiary">—</p>
+      <p className="text-2xl font-bold tabular-nums text-slate-500">—</p>
       <p className="text-xs text-status-failed">Couldn't load</p>
     </TileCard>
   )
@@ -325,21 +327,21 @@ function PendingApprovalsTile() {
 
   return (
     <TileCard title="Purchase Approvals" href="/purchase-approvals">
-      <p className={`text-3xl font-bold tabular-nums ${pending.length === 0 ? 'text-ink-tertiary' : 'text-status-pending'}`}>
+      <p className={`text-3xl font-bold tabular-nums ${pending.length === 0 ? 'text-slate-500' : 'text-status-pending'}`}>
         {pending.length}
       </p>
       {pending.length === 0 ? (
-        <p className="text-xs text-ink-secondary">No approvals waiting</p>
+        <p className="text-xs text-slate-400">No approvals waiting</p>
       ) : (
         <div className="space-y-1">
           {pending.slice(0, 2).map(r => (
-            <p key={r.id} className="text-xs text-ink-secondary truncate">
-              <span className="font-medium text-ink-primary">{r.item_name}</span>
+            <p key={r.id} className="text-xs text-slate-400 truncate">
+              <span className="font-medium text-white">{r.item_name}</span>
               {r.estimated_cost && <span className="text-status-pending"> · {formatKsh(r.estimated_cost)}</span>}
             </p>
           ))}
           {pending.length > 2 && (
-            <p className="text-xs text-ink-tertiary">+{pending.length - 2} more</p>
+            <p className="text-xs text-slate-500">+{pending.length - 2} more</p>
           )}
         </div>
       )}
@@ -366,14 +368,14 @@ function BudgetBurnTile() {
   return (
     <TileCard title="Budget Burn" href="/finance">
       {rows.length === 0 ? (
-        <p className="text-xs text-ink-tertiary">No budgets set — go to Finance to configure.</p>
+        <p className="text-xs text-slate-500">No budgets set — go to Finance to configure.</p>
       ) : (
         <div className="space-y-2">
           {rows.slice(0, 3).map(r => (
             <div key={r.department}>
               <div className="flex justify-between text-xs mb-0.5">
-                <span className="text-ink-secondary truncate">{r.department}</span>
-                <span className={`font-semibold tabular-nums ${r.over_budget ? 'text-status-failed' : 'text-ink-primary'}`}>
+                <span className="text-slate-400 truncate">{r.department}</span>
+                <span className={`font-semibold tabular-nums ${r.over_budget ? 'text-status-failed' : 'text-white'}`}>
                   {Math.round(r.pct_used)}%
                 </span>
               </div>
@@ -386,7 +388,7 @@ function BudgetBurnTile() {
             </div>
           ))}
           {rows.length > 3 && (
-            <p className="text-xs text-ink-tertiary">+{rows.length - 3} more depts</p>
+            <p className="text-xs text-slate-500">+{rows.length - 3} more depts</p>
           )}
         </div>
       )}
@@ -415,15 +417,15 @@ function CalendarTile() {
   return (
     <TileCard title="Upcoming">
       {entries.length === 0 && events.length === 0 ? (
-        <p className="text-xs text-ink-tertiary">No upcoming events</p>
+        <p className="text-xs text-slate-500">No upcoming events</p>
       ) : (
         <div className="space-y-1.5">
           {entries.map(e => (
             <div key={e.id} className="flex items-start gap-2">
               <span className={`shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full ${e.is_peak ? 'bg-status-failed' : 'bg-status-neutral'}`} />
               <div className="min-w-0">
-                <p className="text-xs font-medium text-ink-primary truncate">{e.title}</p>
-                <p className="text-[10px] text-ink-tertiary">{e.date}</p>
+                <p className="text-xs font-medium text-white truncate">{e.title}</p>
+                <p className="text-[10px] text-slate-500">{e.date}</p>
               </div>
             </div>
           ))}
@@ -431,8 +433,8 @@ function CalendarTile() {
             <div key={e.id} className="flex items-start gap-2">
               <span className="shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full bg-primary-main" />
               <div className="min-w-0">
-                <p className="text-xs font-medium text-ink-primary truncate">{e.name}</p>
-                <p className="text-[10px] text-ink-tertiary">{e.date}</p>
+                <p className="text-xs font-medium text-white truncate">{e.name}</p>
+                <p className="text-[10px] text-slate-500">{e.date}</p>
               </div>
             </div>
           ))}
@@ -455,10 +457,10 @@ function ActiveGuestsTile() {
   const active = data!.bookings.active
   return (
     <TileCard title="Active Guests" href="/bookings">
-      <p className={`text-3xl font-bold tabular-nums ${active === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
+      <p className={`text-3xl font-bold tabular-nums ${active === 0 ? 'text-slate-500' : 'text-white'}`}>
         {active}
       </p>
-      <p className="text-xs text-ink-secondary">
+      <p className="text-xs text-slate-400">
         {data!.bookings.arrivals_today} arriving · {data!.bookings.departures_today} departing
       </p>
     </TileCard>
@@ -476,10 +478,10 @@ function OpenBookingsTile() {
   const total = Object.values(data!.occupancy_by_type).reduce((a, b) => a + b, 0)
   return (
     <TileCard title="Open Bookings" href="/bookings">
-      <p className={`text-3xl font-bold tabular-nums ${total === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
+      <p className={`text-3xl font-bold tabular-nums ${total === 0 ? 'text-slate-500' : 'text-white'}`}>
         {total}
       </p>
-      <p className="text-xs text-ink-secondary">
+      <p className="text-xs text-slate-400">
         {data!.arrivals_today.length} arrivals · {data!.departures_today.length} departures today
       </p>
       {data!.pending_deposits.length > 0 && (
@@ -502,8 +504,8 @@ function StaffOnDutyTile() {
   const { on_duty, active_employees, absent_today } = data!
   return (
     <TileCard title="Staff On Duty" href="/staff">
-      <p className="text-3xl font-bold tabular-nums text-ink-primary">{on_duty}</p>
-      <p className="text-xs text-ink-secondary">
+      <p className="text-3xl font-bold tabular-nums text-white">{on_duty}</p>
+      <p className="text-xs text-slate-400">
         of {active_employees} active · {absent_today} absent today
       </p>
     </TileCard>
@@ -523,11 +525,11 @@ function AlertsTile() {
     <TileCard title="Judge Alerts" href="/alerts">
       <p className={`text-3xl font-bold tabular-nums ${alertCountColor(count)}`}>{count}</p>
       {count === 0 ? (
-        <p className="text-xs text-ink-secondary">No open alerts</p>
+        <p className="text-xs text-slate-400">No open alerts</p>
       ) : (
         <div className="space-y-1 mt-1">
           {data!.slice(0, 3).map(a => (
-            <p key={a.id} className="text-xs text-ink-secondary truncate">
+            <p key={a.id} className="text-xs text-slate-400 truncate">
               <span className={`font-semibold ${a.severity === 'HIGH' ? 'text-status-failed' : 'text-status-pending'}`}>
                 {a.severity}
               </span>{' · '}{a.description.slice(0, 52)}{a.description.length > 52 ? '…' : ''}
@@ -553,9 +555,9 @@ function LowStockTile() {
     <TileCard title="Low Stock">
       <p className={`text-3xl font-bold tabular-nums ${low === 0 ? 'text-status-paid' : 'text-status-failed'}`}>{low}</p>
       {low === 0 ? (
-        <p className="text-xs text-ink-secondary">All {data!.total_skus} SKUs stocked</p>
+        <p className="text-xs text-slate-400">All {data!.total_skus} SKUs stocked</p>
       ) : (
-        <p className="text-xs text-ink-secondary truncate">{lowItems.join(', ')}{low > 3 ? ` +${low - 3} more` : ''}</p>
+        <p className="text-xs text-slate-400 truncate">{lowItems.join(', ')}{low > 3 ? ` +${low - 3} more` : ''}</p>
       )}
     </TileCard>
   )
@@ -573,7 +575,7 @@ function FinanceTile() {
   return (
     <TileCard title="Financial Health" href="/finance">
       <StatusBadge status={reconBadge(reconciliation_status)} />
-      <div className="text-xs text-ink-secondary space-y-0.5 mt-1">
+      <div className="text-xs text-slate-400 space-y-0.5 mt-1">
         <p>Shortfalls: <span className={open_shortfalls > 0 ? 'text-status-failed font-semibold' : ''}>{open_shortfalls}</span></p>
         <p>Unmatched M-Pesa: <span className={unmatched_mpesa > 0 ? 'text-status-pending font-semibold' : ''}>{unmatched_mpesa}</span></p>
       </div>
@@ -593,10 +595,10 @@ function FeedbackTile() {
   const commentCount = data!.recent_comments.length
   return (
     <TileCard title="Feedback Score">
-      <p className={`text-3xl font-bold tabular-nums ${avg ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
+      <p className={`text-3xl font-bold tabular-nums ${avg ? 'text-white' : 'text-slate-500'}`}>
         {formatAvg(avg)}
       </p>
-      <p className="text-xs text-ink-secondary">
+      <p className="text-xs text-slate-400">
         {commentCount > 0 ? `${commentCount} recent comment${commentCount !== 1 ? 's' : ''}` : 'No feedback this period'}
       </p>
     </TileCard>
@@ -616,10 +618,10 @@ function SuggestionsTile() {
   const total      = newMgmt + newPrivate
   return (
     <TileCard title="Suggestions">
-      <p className={`text-3xl font-bold tabular-nums ${total === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
+      <p className={`text-3xl font-bold tabular-nums ${total === 0 ? 'text-slate-500' : 'text-white'}`}>
         {total}
       </p>
-      <p className="text-xs text-ink-secondary">Owner-private: {newPrivate} · Management: {newMgmt}</p>
+      <p className="text-xs text-slate-400">Owner-private: {newPrivate} · Management: {newMgmt}</p>
     </TileCard>
   )
 }
@@ -639,13 +641,13 @@ function EquipmentTile() {
       <p className={`text-3xl font-bold tabular-nums ${due.length > 0 ? 'text-status-pending' : 'text-status-paid'}`}>
         {due.length}
       </p>
-      <p className="text-xs text-ink-secondary">
+      <p className="text-xs text-slate-400">
         {due.length === 0
           ? `All ${data!.total} items serviced`
           : `due service · ${inMx} in maintenance`}
       </p>
       {due.length > 0 && (
-        <p className="text-xs text-ink-secondary truncate">
+        <p className="text-xs text-slate-400 truncate">
           {due.slice(0, 2).map(e => e.name).join(', ')}{due.length > 2 ? ` +${due.length - 2} more` : ''}
         </p>
       )}
@@ -668,25 +670,26 @@ function TopBar({ onRefresh }: { onRefresh: () => void }) {
   })
 
   return (
-    <div className="flex items-center gap-4 glass-card glass-shine rounded-2xl p-3 mb-4">
+    <div className="flex items-center gap-4 rounded-2xl p-3 mb-4 border border-white/10"
+      style={{ background: 'rgba(30, 41, 59, 0.6)', backdropFilter: 'blur(12px)' }}>
       <div className="flex-1 flex items-center gap-6 overflow-x-auto scrollbar-none min-w-0">
         <div className="shrink-0">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Revenue Today</p>
-          <p className="text-base font-bold tabular-nums text-ink-primary leading-tight">
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-400">Revenue Today</p>
+          <p className="text-base font-bold tabular-nums text-white leading-tight">
             {overview.data ? formatKsh(overview.data.revenue.total) : '—'}
           </p>
         </div>
         <div className="w-px h-8 bg-cream-alt shrink-0" />
         <div className="shrink-0">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Alerts Open</p>
-          <p className={`text-base font-bold tabular-nums leading-tight ${alerts.data !== undefined ? alertCountColor(alerts.data.length) : 'text-ink-tertiary'}`}>
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-400">Alerts Open</p>
+          <p className={`text-base font-bold tabular-nums leading-tight ${alerts.data !== undefined ? alertCountColor(alerts.data.length) : 'text-slate-500'}`}>
             {alerts.data !== undefined ? alerts.data.length : '—'}
           </p>
         </div>
         <div className="w-px h-8 bg-cream-alt shrink-0" />
         <div className="shrink-0">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">Staff on Duty</p>
-          <p className="text-base font-bold tabular-nums text-ink-primary leading-tight">
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-400">Staff on Duty</p>
+          <p className="text-base font-bold tabular-nums text-white leading-tight">
             {overview.data?.staff.on_duty ?? '—'}
           </p>
         </div>
@@ -741,14 +744,16 @@ export default function DashboardScreen() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto">
+    <div className="min-h-screen p-4 md:p-6"
+      style={{ background: 'linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' }}>
+      <div className="max-w-6xl mx-auto">
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <p className="text-sm text-ink-secondary">{greeting},</p>
-          <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
+          <p className="text-sm text-slate-400">{greeting},</p>
+          <h1 className="font-serif text-3xl md:text-4xl font-bold text-white tracking-tight">
             Wachira
           </h1>
-          <p className="text-xs text-ink-tertiary mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Waterfront Country Club &middot; {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
@@ -773,6 +778,7 @@ export default function DashboardScreen() {
           </motion.div>
         ))}
       </motion.div>
+      </div>
     </div>
   )
 }
