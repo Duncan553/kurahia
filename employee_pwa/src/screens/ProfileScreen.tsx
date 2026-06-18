@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/authStore'
-import ScreenHero from '../components/ScreenHero'
 import { useFontSizePref, type FontSizeKey } from '../lib/fontSizePref'
 
 function roleName(level: number): string {
@@ -63,14 +62,17 @@ export default function ProfileScreen() {
 
   return (
     <motion.div
-      className="max-w-md mx-auto"
+      className="max-w-3xl mx-auto"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
 
-      {/* ── Photo hero ────────────────────────────────────────────── */}
-      <ScreenHero title="PROFILE." subtitle="KURAHIA STAFF" />
+      {/* ── Header ─────────────────────────────────────────────────── */}
+      <div className="mb-6 p-4">
+        <h1 className="font-serif text-2xl font-bold text-white">PROFILE.</h1>
+        <p className="text-xs text-white/30 mt-1">KURAHIA STAFF</p>
+      </div>
 
       <div className="p-4 space-y-6">
 
