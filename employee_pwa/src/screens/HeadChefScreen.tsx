@@ -47,11 +47,15 @@ export default function HeadChefScreen() {
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
-  const TILES = [
-    { label: 'Recipes', desc: 'Enter & edit recipes per dish', icon: '📝', path: '/manager/menu' },
-    { label: 'Menu Items', desc: 'Add new dishes to the menu', icon: '🍽', path: '/manager/menu' },
-    { label: 'Variance', desc: 'Expected vs actual ingredient use', icon: '📊', path: '/inventory/count' },
-    { label: 'Kitchen Queue', desc: 'See live orders', icon: '🔥', path: '/pos/kitchen' },
+  const TILES: { label: string; desc: string; svg: React.ReactNode; path: string }[] = [
+    { label: 'Recipes', desc: 'Enter & edit recipes per dish', path: '/manager/menu',
+      svg: <svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M3 17V3h10l4 4v10a1 1 0 01-1 1H4a1 1 0 01-1-1z" stroke="currentColor" strokeWidth="1.4"/><path d="M7 10h6M7 13h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg> },
+    { label: 'Menu', desc: 'Add new dishes', path: '/manager/menu',
+      svg: <svg width="22" height="22" viewBox="0 0 20 20" fill="none"><rect x="3" y="1" width="14" height="18" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M7 6h6M7 10h6M7 14h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg> },
+    { label: 'Variance', desc: 'Expected vs actual', path: '/inventory/count',
+      svg: <svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M3 17V7l4-4 3 5 4-6 3 3v12H3z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg> },
+    { label: 'Kitchen', desc: 'Live orders', path: '/pos/kitchen',
+      svg: <svg width="22" height="22" viewBox="0 0 20 20" fill="none"><rect x="2" y="8" width="16" height="9" rx="1" stroke="currentColor" strokeWidth="1.4"/><path d="M5 8V5a5 5 0 0110 0v3" stroke="currentColor" strokeWidth="1.4"/><circle cx="10" cy="12" r="1.5" fill="currentColor"/></svg> },
   ]
 
   return (
@@ -123,7 +127,7 @@ export default function HeadChefScreen() {
                 variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}>
                 <Glass onClick={() => navigate(t.path)}>
                   <div className="p-5">
-                    <span className="text-2xl mb-2 block">{t.icon}</span>
+                    <span className="text-white/50 mb-2 block">{t.svg}</span>
                     <p className="text-sm font-semibold text-white">{t.label}</p>
                     <p className="text-xs text-amber-200/50 mt-0.5">{t.desc}</p>
                   </div>
