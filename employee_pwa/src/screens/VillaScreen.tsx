@@ -38,8 +38,7 @@ export default function VillaScreen() {
   ]
 
   return (
-    <div className="min-h-screen p-4 md:p-6"
-      style={{ background: 'linear-gradient(145deg, #1a0f0a 0%, #2d1f15 50%, #1a0f0a 100%)' }}>
+    <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold font-serif text-white">Villas</h1>

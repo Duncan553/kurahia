@@ -78,14 +78,9 @@ export default function ServicePayScreen() {
 
   const lowStock = stockItems.filter(i => i.below_reorder)
   const deptName = dept ?? 'Services'
-  const isSpa = deptName.toLowerCase().includes('spa') || deptName.toLowerCase().includes('gym')
 
   return (
-    <div className="min-h-screen p-4 md:p-6"
-      style={{ background: isSpa
-        ? 'linear-gradient(145deg, #1a0f1f 0%, #2d1a30 50%, #1a0f1f 100%)'
-        : 'linear-gradient(145deg, #0a1628 0%, #0f2845 50%, #0a1628 100%)'
-      }}>
+    <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-lg mx-auto">
 
         {/* Header */}
