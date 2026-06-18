@@ -9,6 +9,7 @@ import api from '../lib/axios'
 import { kvGet, kvSet } from '../lib/idb'
 import { loadFontSizePref } from '../lib/fontSizePref'
 import PushPrompt from '../components/PushPrompt'
+import IdleBrand from '../components/IdleBrand'
 import type { Notification } from '../screens/NotificationsScreen'
 
 // ── Icons (inline SVG — no library dependency) ─────────────────────────────
@@ -444,7 +445,7 @@ export default function AppLayout() {
 
   return (
     <div className="h-screen flex flex-col bg-cream-card">
-
+      <IdleBrand />
       <OfflineBanner />
 
       {/* ── Top bar ─────────────────────────────────────────────── */}
