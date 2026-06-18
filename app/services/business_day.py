@@ -16,6 +16,18 @@ EAT = ZoneInfo("Africa/Nairobi")
 DEFAULT_START_HOUR = 6
 
 
+def _get_tz() -> tzinfo:
+    try:
+        from app.extensions import db
+        from app.models.system_setting import SystemSetting
+        row = db.session.get(SystemSetting, "business_day_timezone")
+        if row and row.value.upper() == "UTC":
+            return timezone.utc
+    except Exception:
+        pass
+    return EAT
+
+
 def _get_start_hour() -> int:
     try:
         from app.extensions import db
@@ -29,14 +41,15 @@ def _get_start_hour() -> int:
 
 
 def business_day_for(ts: datetime) -> datetime:
-    """Return the business-day date that `ts` belongs to (as a date in EAT)."""
+    """Return the business-day date that `ts` belongs to (in configured tz)."""
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=timezone.utc)
-    eat_time = ts.astimezone(EAT)
+    tz = _get_tz()
+    local_time = ts.astimezone(tz)
     start_hour = _get_start_hour()
-    if eat_time.hour < start_hour:
-        eat_time -= timedelta(days=1)
-    return eat_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    if local_time.hour < start_hour:
+        local_time -= timedelta(days=1)
+    return local_time.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 def business_day_bounds(date_str: str) -> tuple[datetime, datetime]:
@@ -47,9 +60,10 @@ def business_day_bounds(date_str: str) -> tuple[datetime, datetime]:
     """
     from datetime import datetime as dt
     d = dt.strptime(date_str, "%Y-%m-%d")
+    tz = _get_tz()
     start_hour = _get_start_hour()
-    start_eat = d.replace(hour=start_hour, minute=0, second=0, microsecond=0, tzinfo=EAT)
-    start_utc = start_eat.astimezone(timezone.utc)
+    start_local = d.replace(hour=start_hour, minute=0, second=0, microsecond=0, tzinfo=tz)
+    start_utc = start_local.astimezone(timezone.utc)
     return start_utc, start_utc + timedelta(hours=24)
 
 
