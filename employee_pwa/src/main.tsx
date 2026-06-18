@@ -66,6 +66,7 @@ const ShiftScreen = lazy(() => import('./screens/ShiftScreen'))
 const AttendanceScreen = lazy(() => import('./screens/AttendanceScreen'))
 const PurchaseReqScreen = lazy(() => import('./screens/PurchaseReqScreen'))
 const FrontDeskScreen = lazy(() => import('./screens/FrontDeskScreen'))
+const HeadChefScreen = lazy(() => import('./screens/HeadChefScreen'))
 const WaiterTabsScreen = lazy(() => import('./screens/WaiterTabsScreen'))
 const WaiterTabDetailScreen = lazy(() => import('./screens/WaiterTabDetailScreen'))
 const ServicePayScreen = lazy(() => import('./screens/ServicePayScreen'))
@@ -161,6 +162,7 @@ const router = createBrowserRouter([
           element: <RoleGate minLevel={5} />,
           children: [
             { path: '/manager',                    element: <ManagerScreen />         },
+            { path: '/chef',                       element: <HeadChefScreen />        },
             { path: '/inventory/count',            element: <InventoryCountScreen />  },
             { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
             { path: '/equipment/maintenance',      element: <MaintenanceLogScreen />  },
