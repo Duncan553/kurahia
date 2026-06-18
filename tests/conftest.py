@@ -19,6 +19,10 @@ def app():
     with _app.app_context():
         _db.create_all()
         _seed_test_db(_app)
+        from app.models.system_setting import SystemSetting
+        _db.session.add(SystemSetting(key="business_day_start_hour", value="0"))
+        _db.session.add(SystemSetting(key="business_day_timezone", value="UTC"))
+        _db.session.commit()
         yield _app
         _db.session.remove()
         _db.drop_all()
