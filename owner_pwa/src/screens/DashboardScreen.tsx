@@ -744,8 +744,7 @@ export default function DashboardScreen() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
   return (
-    <div className="min-h-screen p-4 md:p-6"
-      style={{ background: 'linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' }}>
+    <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
       <div className="mb-6 flex items-end justify-between">
         <div>
