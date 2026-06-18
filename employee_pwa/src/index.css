@@ -25,30 +25,30 @@
 }
 
 @theme {
-  /* ── System palette (earthy: parchment/sage/forest/ink) ─────── */
-  --color-primary-main: #40534C;   /* forest — primary actions, hero */
-  --color-primary-light: #5E8A6E;  /* forest-light — hover tint */
-  --color-primary-dark: #2E3E38;   /* forest-deep — pressed, gradient bottom */
-  --color-cream-card: #E4D2B0;     /* parchment — base background (60%) */
-  --color-cream-alt: #A8B5A3;      /* sage — card surfaces, dividers (30%) */
-  --color-cream-deep: #96A699;     /* sage-deep — pressed sage state */
-  --color-ink-primary: #1A3636;    /* ink — body text, headlines */
-  --color-ink-secondary: #4D5E55;  /* slate-mid — secondary text, 4.64:1 on parchment */
-  --color-ink-tertiary: #5F5040;   /* captions — 5.22:1 on parchment */
-  --color-slate-mid: #4D5E55;      /* alias for ink-secondary */
+  /* ── System palette (dark glass — VisionOS spatial) ──────────── */
+  --color-primary-main: #10b981;   /* emerald — primary actions */
+  --color-primary-light: #34d399;  /* emerald-light — hover */
+  --color-primary-dark: #059669;   /* emerald-dark — pressed */
+  --color-cream-card: #0f172a;     /* deep navy — page background */
+  --color-cream-alt: rgba(30, 41, 59, 0.6);  /* glass card surface */
+  --color-cream-deep: rgba(30, 41, 59, 0.8); /* pressed glass */
+  --color-ink-primary: #f1f5f9;    /* slate-100 — headlines, body */
+  --color-ink-secondary: rgba(148, 163, 184, 0.7); /* slate-400/70 — secondary */
+  --color-ink-tertiary: rgba(100, 116, 139, 0.5);  /* slate-500/50 — captions */
+  --color-slate-mid: rgba(148, 163, 184, 0.7);
 
-  /* ── Ticket palette (tuned for new base) ─────────────────────── */
-  --color-ticket-paper: #DCC99E;
-  --color-ticket-alt: #D4BF90;
-  --color-ticket-ink: #1A3636;
-  --color-stamp-red: #A04438;
-  --color-leaf-green: #3D8B5C;
-  --color-tea-brown: #6B4A2E;
+  /* ── Ticket palette (dark-adapted) ───────────────────────────── */
+  --color-ticket-paper: rgba(30, 41, 59, 0.8);
+  --color-ticket-alt: rgba(30, 41, 59, 0.6);
+  --color-ticket-ink: #f1f5f9;
+  --color-stamp-red: #ef4444;
+  --color-leaf-green: #10b981;
+  --color-tea-brown: #d97706;
 
-  /* ── Status palette ──────────────────────────────────────────── */
-  --color-status-paid: #28633D;    /* 4.81:1 on parchment */
-  --color-status-pending: #6E4E18; /* 5.11:1 on parchment */
-  --color-status-failed: #8C3830;  /* 5.19:1 on parchment */
+  /* ── Status palette (bright on dark — easy AA pass) ──────────── */
+  --color-status-paid: #10b981;    /* emerald-500 */
+  --color-status-pending: #f59e0b; /* amber-500 */
+  --color-status-failed: #ef4444;  /* red-500 */
   --color-status-neutral: #4A7889;
 
   /* ── Data-viz accent ─────────────────────────────────────────── */
@@ -94,6 +94,9 @@ html {
     margin: 0;
     font-family: 'Hanken Grotesk', sans-serif;
     font-size: var(--font-size-base);
+    background: linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    background-attachment: fixed;
+    color: #f1f5f9;
   }
 }
 
@@ -120,26 +123,26 @@ html {
   );
 }
 
-/* ── Glass design system ─────────────────────────────────────────── */
+/* ── Glass design system (dark VisionOS) ─────────────────────────── */
 .glass-card {
-  background: rgba(228, 210, 176, 0.75);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 .glass-card-sage {
-  background: rgba(168, 181, 163, 0.65);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 .glass-surface {
-  background: rgba(228, 210, 176, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 .glass-shine {
   position: relative;
@@ -159,9 +162,9 @@ html {
   .glass-surface { background: var(--color-cream-card); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
-/* Gradient hero: forest → forest-deep for primary buttons + hero tiles */
+/* Gradient hero: emerald → emerald-dark for primary buttons + hero tiles */
 .gradient-hero {
-  background: linear-gradient(135deg, var(--color-primary-main), var(--color-primary-dark));
+  background: linear-gradient(135deg, #10b981, #059669);
 }
 
 /* Skeleton shimmer retuned for parchment/sage base */
@@ -172,9 +175,9 @@ html {
 .animate-pulse {
   background: linear-gradient(
     90deg,
-    var(--color-cream-alt) 25%,
-    var(--color-cream-card) 50%,
-    var(--color-cream-alt) 75%
+    rgba(30, 41, 59, 0.5) 25%,
+    rgba(51, 65, 85, 0.3) 50%,
+    rgba(30, 41, 59, 0.5) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
