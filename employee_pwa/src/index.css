@@ -94,12 +94,7 @@ html {
     margin: 0;
     font-family: 'Hanken Grotesk', sans-serif;
     font-size: var(--font-size-base);
-    background:
-      radial-gradient(ellipse at 20% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(56, 189, 248, 0.06) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
-      #0b1120;
-    background-attachment: fixed;
+    background: #0a0f1a;
     color: #f1f5f9;
   }
 }
@@ -125,6 +120,17 @@ html {
     12% 100%, 6% 93%,
     0% 100%
   );
+}
+
+/* ── Blurred resort photo background (VisionOS style) ────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url('/images/resort-bg.jpg') center/cover no-repeat;
+  filter: blur(30px) brightness(0.3) saturate(1.3);
+  transform: scale(1.1);
 }
 
 /* ── Glass design system (dark glassmorphism 2025) ───────────────── */
