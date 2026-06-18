@@ -7,7 +7,7 @@ import api from '../lib/axios'
 
 interface MenuItem {
   id: string; name: string; price: string; category: string | null
-  prep_station: string; in_stock: boolean | null
+  prep_station: string; in_stock: boolean | null; image_path: string | null
 }
 interface OrderItem { id: string; name: string | null; quantity: string; status: string; notes: string | null }
 interface TabDetail {
@@ -223,37 +223,53 @@ export default function WaiterTabDetailScreen() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {filteredItems.map(item => {
               const qty = draft[item.id] ?? 0
               const soldOut = item.in_stock === false
               return (
                 <motion.button
                   key={item.id}
-                  whileTap={soldOut ? undefined : { scale: 0.97 }}
+                  whileTap={soldOut ? undefined : { scale: 0.96 }}
+                  whileHover={soldOut ? undefined : { y: -3 }}
                   onClick={() => !soldOut && addItem(item.id)}
                   disabled={soldOut}
                   aria-label={soldOut ? `${item.name} — sold out` : `Add ${item.name} to order`}
-                  className={`relative text-left p-3 rounded-2xl border transition-colors
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark
-                    ${soldOut
-                      ? 'opacity-50 border-white/10 bg-transparent cursor-not-allowed'
-                      : 'border-white/10 bg-transparent hover:bg-white/5/40 active:bg-white/5'
-                    }`}
+                  className={`relative text-left rounded-2xl overflow-hidden
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400
+                    transition-all glass-card
+                    ${soldOut ? 'opacity-40 cursor-not-allowed' : 'hover:shadow-xl hover:border-white/15'}`}
                 >
-                  <p className={`text-sm font-semibold text-white leading-snug mb-1 ${soldOut ? 'line-through' : ''}`}>
-                    {item.name}
-                  </p>
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs text-blue-200/40 tabular-nums">
-                      {soldOut ? 'Sold out' : kes(item.price)}
+                  {/* Photo area */}
+                  <div className="h-24 bg-gradient-to-br from-white/5 to-transparent flex items-center justify-center overflow-hidden">
+                    {item.image_path ? (
+                      <img src={item.image_path} alt={item.name}
+                        className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl opacity-30">🍽</span>
+                    )}
+                    {soldOut && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <span className="text-xs font-bold text-white/80 uppercase tracking-wider">Sold Out</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Info */}
+                  <div className="p-3">
+                    <p className={`text-sm font-semibold text-white leading-snug ${soldOut ? 'line-through' : ''}`}>
+                      {item.name}
                     </p>
-                    <StationBadge station={item.prep_station} />
+                    <div className="flex items-center justify-between gap-1 mt-1">
+                      <p className="text-xs tabular-nums font-bold text-emerald-300">
+                        {soldOut ? '—' : kes(item.price)}
+                      </p>
+                      <StationBadge station={item.prep_station} />
+                    </div>
                   </div>
                   {qty > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] rounded-full
-                      bg-primary-dark text-cream-card flex items-center justify-center
-                      text-[11px] font-bold tabular-nums px-1">
+                    <span className="absolute top-2 right-2 min-w-[24px] h-[24px] rounded-full
+                      bg-emerald-500 text-white flex items-center justify-center
+                      text-[11px] font-bold tabular-nums px-1 shadow-lg">
                       {qty}
                     </span>
                   )}
