@@ -57,7 +57,7 @@ export default function SuggestionsScreen() {
   }
 
   return (
-    <div className="p-4 max-w-md mx-auto">
+    <div className="p-4 max-w-3xl mx-auto">
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
 
         {/* Category toggle */}

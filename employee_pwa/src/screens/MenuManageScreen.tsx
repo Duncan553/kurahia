@@ -259,9 +259,12 @@ export default function MenuManageScreen() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 max-w-lg mx-auto space-y-4">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold font-serif text-white">Menu &amp; Services</h1>
+        <div>
+          <h1 className="text-2xl font-bold font-serif text-white">Menu &amp; Services</h1>
+          <p className="text-xs text-white/30 mt-0.5">Add, price, disable items &amp; manage recipes</p>
+        </div>
         <Button variant="primary" size="sm" onClick={() => setAdding(a => !a)}>
           {adding ? 'Close' : '+ Add Item'}
         </Button>
