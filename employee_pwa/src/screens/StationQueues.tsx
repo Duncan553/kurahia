@@ -378,7 +378,7 @@ function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
   const [time, setTime] = useState(currentTime)
 
   useEffect(() => {
-    const id = setInterval(() => setTime(currentTime()), 30_000)
+    const id = setInterval(() => setTime(currentTime()), 1_000)
     return () => clearInterval(id)
   }, [])
 
@@ -386,16 +386,19 @@ function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
     <div className="min-h-screen bg-cream-card text-ink-primary">
       <AudioEnableSplash station={station} />
 
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-cream-card border-b border-cream-alt px-4 py-3">
+      {/* Header with glassy always-visible clock */}
+      <div className="sticky top-0 z-10 glass-card border-b border-white/10 px-4 py-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-bold tracking-widest uppercase text-ink-primary">
-              {station === 'KITCHEN' ? 'Kitchen' : 'Bar'}
-            </h1>
-            <p className="text-xs text-ink-tertiary">
-              {currentDate()} &middot; <span className="font-serif">{time}</span>
-            </p>
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-base font-bold tracking-widest uppercase text-ink-primary">
+                {station === 'KITCHEN' ? 'Kitchen' : 'Bar'}
+              </h1>
+              <p className="text-[10px] text-ink-tertiary">{currentDate()}</p>
+            </div>
+            <div className="glass-surface rounded-xl px-3 py-1.5">
+              <span className="font-serif text-2xl font-bold tabular-nums text-ink-primary">{time}</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
