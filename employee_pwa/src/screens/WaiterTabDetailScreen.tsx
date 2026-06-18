@@ -54,6 +54,7 @@ export default function WaiterTabDetailScreen() {
   const [draft, setDraft] = useState<Record<string, number>>({})
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({})
   const [mobilePane, setMobilePane] = useState<'menu' | 'order'>('menu')
+  const [entryChoice, setEntryChoice] = useState<'pending' | 'menu' | 'order'>('pending')
   const [searchQ, setSearchQ] = useState('')
   const [activeCat, setActiveCat] = useState('All')
   const [pay, setPay] = useState({ method: 'CASH' as string, amount: '' })
@@ -511,6 +512,11 @@ export default function WaiterTabDetailScreen() {
     </Modal>
   )
 
+  // ── Entry choice (new tables only) ─────────────────────────────────────
+
+  const isNewTab = allOrderItems.length === 0 && draftEntries.length === 0
+  const showEntryPrompt = isNewTab && entryChoice === 'pending'
+
   // ── Layout ─────────────────────────────────────────────────────────────
 
   return (
@@ -530,8 +536,38 @@ export default function WaiterTabDetailScreen() {
         )}
       </div>
 
-      {/* Mobile pane switcher (below md) */}
-      <div className="md:hidden flex border-b border-cream-alt shrink-0">
+      {/* Entry choice prompt for new tables */}
+      {showEntryPrompt && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-6 flex flex-col items-center justify-center flex-1 gap-4"
+        >
+          <p className="font-serif text-2xl font-bold text-ink-primary text-center">
+            {tab?.reference ?? 'New Table'}
+          </p>
+          <p className="text-sm text-ink-secondary text-center">How would you like to start?</p>
+          <div className="flex gap-3 w-full max-w-xs">
+            <motion.button whileTap={{ scale: 0.97 }}
+              onClick={() => setEntryChoice('menu')}
+              className="flex-1 py-4 rounded-2xl glass-card glass-shine text-center">
+              <span className="text-2xl mb-1 block">📖</span>
+              <span className="text-sm font-semibold text-ink-primary">Show Menu</span>
+              <span className="text-[10px] text-ink-tertiary block mt-0.5">Guest wants to browse</span>
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.97 }}
+              onClick={() => setEntryChoice('order')}
+              className="flex-1 py-4 rounded-2xl gradient-hero text-center text-white">
+              <span className="text-2xl mb-1 block">⚡</span>
+              <span className="text-sm font-semibold">Straight to Order</span>
+              <span className="text-[10px] text-white/70 block mt-0.5">Guest knows what they want</span>
+            </motion.button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Mobile pane switcher (below md) — hidden during entry prompt */}
+      <div className={`md:hidden flex border-b border-cream-alt shrink-0 ${showEntryPrompt ? 'hidden' : ''}`}>
         {(['menu', 'order'] as const).map(v => (
           <button key={v} onClick={() => setMobilePane(v)}
             className={`flex-1 py-3 text-sm font-semibold capitalize transition-colors ${
@@ -544,14 +580,14 @@ export default function WaiterTabDetailScreen() {
         ))}
       </div>
 
-      {/* Desktop: two-pane grid. Mobile: single pane. */}
-      <div className="flex-1 min-h-0 hidden md:grid md:grid-cols-[3fr_2fr] divide-x divide-cream-alt">
+      {/* Desktop: two-pane grid. Mobile: single pane. Hidden during entry prompt. */}
+      <div className={`flex-1 min-h-0 md:grid md:grid-cols-[3fr_2fr] divide-x divide-cream-alt ${showEntryPrompt ? 'hidden' : 'hidden md:grid'}`}>
         <div className="overflow-hidden">{menuPane}</div>
         <div className="overflow-hidden bg-cream-card">{orderPane}</div>
       </div>
 
-      {/* Mobile: single pane */}
-      <div className="flex-1 min-h-0 md:hidden">
+      {/* Mobile: single pane — hidden during entry prompt */}
+      <div className={`flex-1 min-h-0 md:hidden ${showEntryPrompt ? 'hidden' : ''}`}>
         {mobilePane === 'menu' ? menuPane : orderPane}
       </div>
 
