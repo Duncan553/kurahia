@@ -196,30 +196,6 @@ function isStation(dept: string | null): boolean {
 // Personal chrome: managers always; staff only when NOT on a station tablet
 const personal = (level: number, dept: string | null) => level >= 5 || !isStation(dept)
 
-// ── Role-aware top bar stats ────────────────────────────────────────────────
-
-function TopBarStats({ roleLevel }: { roleLevel: number }) {
-  if (roleLevel >= 5) return (
-    <div className="hidden sm:flex items-center gap-4 text-xs text-ink-secondary">
-      <span><span className="font-semibold text-ink-primary">—</span> approvals</span>
-      <span><span className="font-semibold text-ink-primary">—</span> alerts</span>
-      <span><span className="font-semibold text-ink-primary">—</span> on duty</span>
-    </div>
-  )
-  if (roleLevel >= 3) return (
-    <div className="hidden sm:flex items-center gap-4 text-xs text-ink-secondary">
-      <span><span className="font-semibold text-ink-primary">—</span> wristbands</span>
-      <span><span className="font-semibold text-ink-primary">—</span> headcount</span>
-    </div>
-  )
-  return (
-    <div className="hidden sm:flex items-center gap-4 text-xs text-ink-secondary">
-      <span><span className="font-semibold text-ink-primary">—</span> open tabs</span>
-      <span><span className="font-semibold text-ink-primary">—</span> tables</span>
-    </div>
-  )
-}
-
 // ── Nav item definition ─────────────────────────────────────────────────────
 
 interface NavItem {
@@ -444,86 +420,136 @@ export default function AppLayout() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-cream-card">
+    <div className="h-screen flex">
       <IdleBrand />
       <OfflineBanner />
 
-      {/* ── Top bar ─────────────────────────────────────────────── */}
-      <header className="h-14 shrink-0 flex items-center justify-between px-4
-        bg-cream-card border-b border-cream-alt">
-        <span className="text-lg font-bold font-serif text-ink-primary">Kurahia</span>
-        <TopBarStats roleLevel={roleLevel} />
-        <button
-          onClick={signOut}
-          className="w-8 h-8 rounded-full bg-primary-dark flex items-center justify-center
-            text-white text-sm font-bold focus-visible:ring-2 focus-visible:ring-primary-dark"
-          aria-label="Sign out"
-        >
-          {user?.username?.[0]?.toUpperCase() ?? '?'}
-        </button>
-      </header>
+      {/* ── Left Nav Rail (sm+) ─────────────────────────────────── */}
+      <aside className="hidden sm:flex flex-col w-16 lg:w-52 shrink-0 border-r border-white/5"
+        style={{ background: 'rgba(11, 17, 32, 0.95)', backdropFilter: 'blur(20px)' }}>
 
-      {/* ── Page content ────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto">
-        {/* Install + push cards on the home screen only — polite, never an ambush */}
-        {location.pathname === '/clock' && (
-          <>
-            <InstallPrompt kvGet={kvGet} kvSet={kvSet} />
-            <PushPrompt />
-          </>
-        )}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="min-h-full"
-          >
-            {/* Lazy screen chunks load behind this — nav stays put */}
-            <Suspense fallback={
-              <div className="flex items-center justify-center py-24">
-                <div className="w-7 h-7 rounded-full border-2 border-primary-dark border-t-transparent animate-spin" />
-              </div>
-            }>
-              <Outlet />
-            </Suspense>
-          </motion.div>
-        </AnimatePresence>
-      </main>
+        {/* Logo */}
+        <div className="h-14 flex items-center justify-center lg:justify-start lg:px-4 border-b border-white/5">
+          <span className="text-white font-bold font-serif text-lg">
+            <span className="hidden lg:block">Kurahia</span>
+            <span className="lg:hidden">K</span>
+          </span>
+        </div>
 
-      {/* ── Bottom nav ──────────────────────────────────────────── */}
-      <nav className="shrink-0 flex border-t border-cream-alt bg-cream-card"
-        aria-label="Main navigation">
-        {visibleItems.map(({ id, path, label, Icon, badge }) => (
-          <NavLink
-            key={id}
-            to={path}
-            end={path === '/clock'}
-            className={({ isActive }) => [
-              'flex-1 flex flex-col items-center justify-center gap-0.5 py-2',
-              'min-h-[56px] relative transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-inset',
-              isActive ? 'text-primary-dark' : 'text-ink-secondary hover:text-ink-primary',
-            ].join(' ')}
-          >
-            <span className="relative">
-              <Icon />
-              {badge && badgeCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full
-                  bg-status-failed text-white text-[10px] font-bold
-                  flex items-center justify-center px-1">
-                  {badgeCount > 9 ? '9+' : badgeCount}
-                </span>
-              )}
-            </span>
-            <span className="text-[10px] font-medium leading-none">{label}</span>
-          </NavLink>
-        ))}
-      </nav>
+        {/* Nav items */}
+        <nav className="flex-1 py-2 space-y-0.5 overflow-y-auto" aria-label="Main navigation">
+          {visibleItems.map(({ id, path, label, Icon, badge }) => (
+            <NavLink key={id} to={path} end={path === '/clock'}
+              className={({ isActive }) => [
+                'flex items-center gap-3 px-3 lg:px-4 py-2.5 mx-1 rounded-lg transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400',
+                isActive
+                  ? 'bg-white/8 text-white border-l-2 border-emerald-400'
+                  : 'text-white/40 hover:text-white/70 hover:bg-white/3 border-l-2 border-transparent',
+              ].join(' ')}
+            >
+              <span className="relative shrink-0">
+                <Icon />
+                {badge && badgeCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 rounded-full
+                    bg-status-failed text-white text-[8px] font-bold flex items-center justify-center px-0.5">
+                    {badgeCount > 9 ? '9+' : badgeCount}
+                  </span>
+                )}
+              </span>
+              <span className="hidden lg:block text-sm font-medium truncate">{label}</span>
+            </NavLink>
+          ))}
+        </nav>
 
+        {/* User */}
+        <div className="p-2 border-t border-white/5">
+          <div className="flex items-center gap-2 px-2">
+            <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/20
+              flex items-center justify-center text-emerald-400 text-xs font-bold shrink-0">
+              {user?.username?.[0]?.toUpperCase() ?? '?'}
+            </div>
+            <div className="hidden lg:block flex-1 min-w-0">
+              <p className="text-xs font-medium text-white truncate">{user?.username}</p>
+              <button onClick={signOut} className="text-[10px] text-red-400/50 hover:text-red-400">
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main content area ──────────────────────────────────── */}
+      <div className="flex flex-col flex-1 min-w-0">
+
+        {/* Mobile top bar (sm: hidden since sidebar has logo) */}
+        <header className="sm:hidden h-14 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
+          style={{ background: 'rgba(11, 17, 32, 0.9)' }}>
+          <span className="text-lg font-bold font-serif text-white">Kurahia</span>
+          <button onClick={signOut}
+            className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center
+              text-emerald-400 text-sm font-bold" aria-label="Sign out">
+            {user?.username?.[0]?.toUpperCase() ?? '?'}
+          </button>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto">
+          {location.pathname === '/clock' && (
+            <>
+              <InstallPrompt kvGet={kvGet} kvSet={kvSet} />
+              <PushPrompt />
+            </>
+          )}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="min-h-full"
+            >
+              <Suspense fallback={
+                <div className="flex items-center justify-center py-24">
+                  <div className="w-7 h-7 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+                </div>
+              }>
+                <Outlet />
+              </Suspense>
+            </motion.div>
+          </AnimatePresence>
+        </main>
+
+        {/* Mobile bottom nav (sm: hidden since sidebar replaces it) */}
+        <nav className="sm:hidden shrink-0 flex border-t border-white/5"
+          style={{ background: 'rgba(11, 17, 32, 0.95)' }}
+          aria-label="Main navigation">
+          {visibleItems.slice(0, 5).map(({ id, path, label, Icon, badge }) => (
+            <NavLink key={id} to={path} end={path === '/clock'}
+              className={({ isActive }) => [
+                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2',
+                'min-h-[56px] relative transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-inset',
+                isActive ? 'text-emerald-400' : 'text-white/30 hover:text-white/60',
+              ].join(' ')}
+            >
+              <span className="relative">
+                <Icon />
+                {badge && badgeCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full
+                    bg-status-failed text-white text-[10px] font-bold flex items-center justify-center px-1">
+                    {badgeCount > 9 ? '9+' : badgeCount}
+                  </span>
+                )}
+              </span>
+              <span className="text-[10px] font-medium leading-none">{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+      </div>
     </div>
   )
 }
