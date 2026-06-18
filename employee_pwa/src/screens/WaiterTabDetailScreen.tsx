@@ -536,8 +536,7 @@ export default function WaiterTabDetailScreen() {
   // ── Layout ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full flex flex-col"
-      style={{ background: 'linear-gradient(145deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%)' }}>
+    <div className="h-full flex flex-col">
       {/* Back + header (always visible) */}
       <div className="shrink-0 px-4 py-3 flex items-center gap-3 border-b border-white/10"
         style={{ background: 'rgba(22, 33, 62, 0.8)', backdropFilter: 'blur(12px)' }}>

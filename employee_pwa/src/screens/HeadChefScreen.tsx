@@ -57,8 +57,7 @@ export default function HeadChefScreen() {
 
   return (
     <RequireRole minLevel={5}>
-      <div className="min-h-screen p-4 md:p-6"
-        style={{ background: 'linear-gradient(145deg, #1a150a 0%, #2d2410 50%, #1a150a 100%)' }}>
+      <div className="min-h-screen p-4 md:p-6">
         <div className="max-w-3xl mx-auto">
 
           <div className="mb-6">
