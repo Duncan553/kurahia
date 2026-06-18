@@ -7,7 +7,6 @@ import api from '../lib/axios'
 import { formatTime, dutyTime } from '../lib/format'
 import { enqueueClockEvent, drainClockQueue } from '../lib/clockQueue'
 import type { ClockEventType } from '../lib/clockQueue'
-import ScreenHero from '../components/ScreenHero'
 import { useAuthStore } from '../stores/authStore'
 
 interface LastEvent {
@@ -195,7 +194,10 @@ export default function ClockScreen() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
-    <ScreenHero title="CLOCK." subtitle="KURAHIA STAFF" />
+    <div className="mb-6 p-4">
+      <h1 className="font-serif text-2xl font-bold text-white">CLOCK.</h1>
+      <p className="text-xs text-white/30 mt-1">KURAHIA STAFF</p>
+    </div>
     <motion.div
       className="flex-1 flex flex-col items-center justify-center p-6 gap-6"
       initial="hidden"

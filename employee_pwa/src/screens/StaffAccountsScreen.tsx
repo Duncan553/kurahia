@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RequireRole } from '../components/AuthGate'
-import ScreenHero from '../components/ScreenHero'
 import { Button, SearchInput } from '@shared'
 import api from '../lib/axios'
 
@@ -89,10 +88,11 @@ export default function StaffAccountsScreen() {
 
   return (
     <RequireRole minLevel={5}>
-      <div className="max-w-lg mx-auto pb-8">
-        <ScreenHero title="STAFF." subtitle="ACCOUNTS" />
-
-        <div className="px-4 space-y-4">
+      <div className="max-w-3xl mx-auto p-4 md:p-6 pb-8 space-y-4">
+        <div className="mb-6">
+          <h1 className="font-serif text-2xl font-bold text-white">Staff Accounts</h1>
+          <p className="text-xs text-white/30 mt-1">Create accounts, manage access</p>
+        </div>
 
           {/* Credentials handover card */}
           <AnimatePresence>
@@ -232,7 +232,6 @@ export default function StaffAccountsScreen() {
             ))}
           </div>
 
-        </div>
       </div>
     </RequireRole>
   )
