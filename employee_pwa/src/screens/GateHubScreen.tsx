@@ -55,7 +55,7 @@ function StatsBar({ stats }: { stats: Stats | undefined }) {
   return (
     <div className="grid grid-cols-3 gap-2 mb-5">
       {items.map(({ label, value }) => (
-        <div key={label} className="rounded-2xl border border-cream-alt bg-cream-card p-3 text-center">
+        <div key={label} className="rounded-2xl glass-card p-3 text-center">
           <p className="text-lg font-bold tabular-nums text-ink-primary">{value}</p>
           <p className="text-[10px] text-ink-secondary uppercase tracking-wide mt-0.5">{label}</p>
         </div>
@@ -92,7 +92,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
   })
 
   return (
-    <section className="rounded-2xl border border-cream-alt bg-cream-card p-4 space-y-3 mb-4">
+    <section className="rounded-2xl glass-card glass-shine p-4 space-y-3 mb-4">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-ink-primary">Issue Band</p>
         <p className="text-sm font-bold tabular-nums text-ink-primary">{kes(ENTRY_FEE)}</p>
@@ -176,7 +176,7 @@ function LookupSection() {
     s === 'ACTIVE' ? 'text-status-paid' : 'text-ink-tertiary'
 
   return (
-    <section className="rounded-2xl border border-cream-alt bg-cream-card p-4 space-y-3 mb-4">
+    <section className="rounded-2xl glass-card glass-shine p-4 space-y-3 mb-4">
       <p className="text-sm font-semibold text-ink-primary">Look Up Band</p>
       <div className="flex gap-2">
         <label htmlFor="gate-band-number" className="sr-only">Band number</label>
@@ -258,6 +258,59 @@ function WaiverAlert() {
   )
 }
 
+// ── Booking check-in (website-booked guest) ──────────────────────────────────
+
+interface Arrival { id: string; guest_name: string; resource_name: string; status: string; number_of_guests: number }
+
+function BookingCheckIn() {
+  const addToast = useToastStore(s => s.addToast)
+  const qc = useQueryClient()
+
+  const { data: arrivals = [] } = useQuery<Arrival[]>({
+    queryKey: ['gate-arrivals'],
+    queryFn: () => api.get('/bookings/today').then(r => {
+      const d = r.data as { arrivals?: Arrival[] }
+      return (d.arrivals ?? []).filter((a: Arrival) => a.status === 'CONFIRMED')
+    }),
+    staleTime: 60_000,
+    refetchInterval: 2 * 60_000,
+  })
+
+  const checkInMut = useMutation({
+    mutationFn: (id: string) => api.post(`/bookings/${id}/check-in`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['gate-arrivals'] })
+      addToast({ type: 'success', message: 'Guest checked in.' })
+    },
+    onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
+  })
+
+  if (arrivals.length === 0) return null
+
+  return (
+    <section className="rounded-2xl glass-card glass-shine p-4 space-y-3 mb-4">
+      <p className="text-sm font-semibold text-ink-primary">
+        Expected Arrivals ({arrivals.length})
+      </p>
+      {arrivals.map(a => (
+        <div key={a.id} className="flex items-center justify-between gap-3 py-2 border-b border-cream-alt last:border-0">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-ink-primary truncate">{a.guest_name}</p>
+            <p className="text-xs text-ink-tertiary">{a.resource_name} · {a.number_of_guests} guest{a.number_of_guests !== 1 ? 's' : ''}</p>
+          </div>
+          <motion.button whileTap={{ scale: 0.95 }}
+            onClick={() => checkInMut.mutate(a.id)}
+            disabled={checkInMut.isPending}
+            className="px-4 py-2 rounded-xl gradient-hero text-white text-xs font-semibold
+              disabled:opacity-50 shrink-0">
+            Check In
+          </motion.button>
+        </div>
+      ))}
+    </section>
+  )
+}
+
 // ── Gate hub ──────────────────────────────────────────────────────────────────
 
 export default function GateHubScreen() {
@@ -300,7 +353,8 @@ export default function GateHubScreen() {
 
       <WaiverAlert />
 
-      <div className="mt-4">
+      <div className="mt-4 space-y-4">
+        <BookingCheckIn />
         <IssueSection onIssued={refresh} />
         <LookupSection />
       </div>
