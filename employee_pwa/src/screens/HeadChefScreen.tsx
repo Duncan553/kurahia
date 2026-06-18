@@ -19,8 +19,7 @@ function Glass({ children, className = '', onClick }: {
       whileHover={onClick ? { y: -2 } : undefined}
       whileTap={onClick ? { scale: 0.98 } : undefined}
       onClick={onClick}
-      className={`rounded-2xl border border-white/8 overflow-hidden ${onClick ? 'cursor-pointer' : ''} ${className}`}
-      style={{ background: 'rgba(40, 30, 20, 0.6)', backdropFilter: 'blur(16px)' }}
+      className={`glass-card overflow-hidden ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       <div className="relative">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />

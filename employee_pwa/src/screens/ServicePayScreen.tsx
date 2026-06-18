@@ -121,8 +121,7 @@ export default function ServicePayScreen() {
                     const qty = draft[item.id] ?? 0
                     return (
                       <motion.div key={item.id} whileTap={{ scale: 0.98 }}
-                        className="flex items-center gap-3 p-4 rounded-2xl border border-white/8"
-                        style={{ background: 'rgba(30, 41, 59, 0.5)', backdropFilter: 'blur(12px)' }}>
+                        className="flex items-center gap-3 p-4 glass-card">
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-white">{item.name}</p>
                           <p className="text-sm text-white/40 tabular-nums">{kes(item.price)}</p>
@@ -157,8 +156,7 @@ export default function ServicePayScreen() {
             )}
             {stage === 'pay' && (
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl border border-white/8 text-center"
-                  style={{ background: 'rgba(30, 41, 59, 0.5)' }}>
+                <div className="glass-card p-4 text-center">
                   <p className="text-xs text-white/40 mb-1">Collect</p>
                   <p className="text-3xl font-bold tabular-nums text-white">{kes(total)}</p>
                 </div>
@@ -209,8 +207,7 @@ export default function ServicePayScreen() {
                   const reorder = parseFloat(it.reorder_level)
                   const pct = reorder > 0 ? Math.min((stock / (reorder * 2)) * 100, 100) : 100
                   return (
-                    <div key={it.id} className="rounded-xl border border-white/8 p-3"
-                      style={{ background: 'rgba(30, 41, 59, 0.4)' }}>
+                    <div key={it.id} className="glass-card p-3">
                       <div className="flex justify-between text-sm mb-1">
                         <span className="text-white">{it.name}</span>
                         <span className={`tabular-nums font-bold ${it.below_reorder ? 'text-status-failed' : 'text-emerald-400'}`}>
@@ -232,8 +229,7 @@ export default function ServicePayScreen() {
         {/* Request Tab */}
         {tab === 'request' && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-white/8 p-4"
-              style={{ background: 'rgba(30, 41, 59, 0.4)' }}>
+            <div className="glass-card p-4">
               <p className="text-sm text-white mb-2">Request restock or supplies from the manager:</p>
               <textarea
                 rows={4} value={requestText} onChange={e => setRequestText(e.target.value)}
