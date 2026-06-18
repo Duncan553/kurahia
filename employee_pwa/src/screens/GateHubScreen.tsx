@@ -55,9 +55,9 @@ function StatsBar({ stats }: { stats: Stats | undefined }) {
   return (
     <div className="grid grid-cols-3 gap-2 mb-5">
       {items.map(({ label, value }) => (
-        <div key={label} className="rounded-2xl glass-card p-3 text-center">
-          <p className="text-lg font-bold tabular-nums text-ink-primary">{value}</p>
-          <p className="text-[10px] text-ink-secondary uppercase tracking-wide mt-0.5">{label}</p>
+        <div key={label} className="rounded-2xl p-3 text-center border border-amber-200/10">
+          <p className="text-lg font-bold tabular-nums text-white">{value}</p>
+          <p className="text-[10px] text-amber-200/60 uppercase tracking-wide mt-0.5">{label}</p>
         </div>
       ))}
     </div>
@@ -92,10 +92,10 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
   })
 
   return (
-    <section className="rounded-2xl glass-card glass-shine p-4 space-y-3 mb-4">
+    <section className="rounded-2xl border border-amber-200/10 p-4 space-y-3 mb-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-ink-primary">Issue Band</p>
-        <p className="text-sm font-bold tabular-nums text-ink-primary">{kes(ENTRY_FEE)}</p>
+        <p className="text-sm font-semibold text-white">Issue Band</p>
+        <p className="text-sm font-bold tabular-nums text-white">{kes(ENTRY_FEE)}</p>
       </div>
 
       {/* Payment method toggle */}
@@ -105,7 +105,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
             className={`min-h-[44px] rounded-xl text-xs font-semibold border transition-colors ${
               method === value
                 ? 'bg-ink-primary text-cream-card border-ink-primary'
-                : 'border-cream-alt text-ink-secondary hover:bg-cream-alt'
+                : 'border-cream-alt text-amber-200/60 hover:bg-cream-alt'
             }`}>
             {label}
           </button>
@@ -123,21 +123,21 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
       </motion.button>
 
       {lastBand !== null && (
-        <p className="text-center text-sm text-ink-tertiary">
-          Last issued: <span className="font-bold text-ink-primary">#{lastBand}</span>
+        <p className="text-center text-sm text-amber-200/40">
+          Last issued: <span className="font-bold text-white">#{lastBand}</span>
         </p>
       )}
 
       <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Issue wristband?">
-        <p className="text-base text-ink-secondary mb-1">
+        <p className="text-base text-amber-200/60 mb-1">
           Opens a new tab and records{' '}
-          <strong className="text-ink-primary">{kes(ENTRY_FEE)}</strong>{' '}
+          <strong className="text-white">{kes(ENTRY_FEE)}</strong>{' '}
           via {METHODS.find(m => m.value === method)?.label}.
         </p>
-        <p className="text-sm text-ink-tertiary mb-6">Payment cannot be reversed.</p>
+        <p className="text-sm text-amber-200/40 mb-6">Payment cannot be reversed.</p>
         <div className="flex gap-3">
           <button onClick={() => setConfirmOpen(false)}
-            className="flex-1 py-3 rounded-xl border border-cream-alt text-ink-secondary
+            className="flex-1 py-3 rounded-xl border border-cream-alt text-amber-200/60
               font-medium hover:bg-cream-alt/50 transition-colors">
             Cancel
           </button>
@@ -173,11 +173,11 @@ function LookupSection() {
   }
 
   const statusColor = (s: string) =>
-    s === 'ACTIVE' ? 'text-status-paid' : 'text-ink-tertiary'
+    s === 'ACTIVE' ? 'text-status-paid' : 'text-amber-200/40'
 
   return (
-    <section className="rounded-2xl glass-card glass-shine p-4 space-y-3 mb-4">
-      <p className="text-sm font-semibold text-ink-primary">Look Up Band</p>
+    <section className="rounded-2xl border border-amber-200/10 p-4 space-y-3 mb-4">
+      <p className="text-sm font-semibold text-white">Look Up Band</p>
       <div className="flex gap-2">
         <label htmlFor="gate-band-number" className="sr-only">Band number</label>
         <input
@@ -188,7 +188,7 @@ function LookupSection() {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && lookup()}
           className="flex-1 rounded-xl border border-cream-alt bg-cream-card px-4 py-2.5
-            text-base text-ink-primary focus:outline-none focus:border-primary-dark"
+            text-base text-white focus:outline-none focus:border-primary-dark"
         />
         <button onClick={lookup} disabled={isFetching}
           className="px-5 py-2.5 rounded-xl bg-ink-primary text-cream-card text-sm font-semibold
@@ -200,17 +200,17 @@ function LookupSection() {
       {data && (
         <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-cream-alt/50">
           <div>
-            <span className="font-bold text-ink-primary">#{data.band_number}</span>
+            <span className="font-bold text-white">#{data.band_number}</span>
             <span className={`ml-2 text-sm font-semibold ${statusColor(data.status)}`}>
               {data.status}
             </span>
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold tabular-nums text-ink-primary">
+            <p className="text-sm font-bold tabular-nums text-white">
               {kes(data.tab_balance)} credit
             </p>
             {data.issued_by && (
-              <p className="text-[10px] text-ink-secondary">by {data.issued_by}</p>
+              <p className="text-[10px] text-amber-200/60">by {data.issued_by}</p>
             )}
           </div>
         </div>
@@ -249,11 +249,11 @@ function WaiverAlert() {
         <p className="text-sm font-semibold text-status-pending">
           ⚠ {count} water booking{count !== 1 ? 's' : ''} missing waiver today
         </p>
-        <p className="text-xs text-ink-secondary mt-0.5">
+        <p className="text-xs text-amber-200/60 mt-0.5">
           Guests cannot participate until signed.
         </p>
       </div>
-      <span className="text-ink-tertiary text-sm shrink-0">Sign →</span>
+      <span className="text-amber-200/40 text-sm shrink-0">Sign →</span>
     </button>
   )
 }
@@ -288,15 +288,15 @@ function BookingCheckIn() {
   if (arrivals.length === 0) return null
 
   return (
-    <section className="rounded-2xl glass-card glass-shine p-4 space-y-3 mb-4">
-      <p className="text-sm font-semibold text-ink-primary">
+    <section className="rounded-2xl border border-amber-200/10 p-4 space-y-3 mb-4">
+      <p className="text-sm font-semibold text-white">
         Expected Arrivals ({arrivals.length})
       </p>
       {arrivals.map(a => (
         <div key={a.id} className="flex items-center justify-between gap-3 py-2 border-b border-cream-alt last:border-0">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-ink-primary truncate">{a.guest_name}</p>
-            <p className="text-xs text-ink-tertiary">{a.resource_name} · {a.number_of_guests} guest{a.number_of_guests !== 1 ? 's' : ''}</p>
+            <p className="text-sm font-semibold text-white truncate">{a.guest_name}</p>
+            <p className="text-xs text-amber-200/40">{a.resource_name} · {a.number_of_guests} guest{a.number_of_guests !== 1 ? 's' : ''}</p>
           </div>
           <motion.button whileTap={{ scale: 0.95 }}
             onClick={() => checkInMut.mutate(a.id)}
@@ -329,19 +329,21 @@ export default function GateHubScreen() {
   }
 
   return (
-    <div className="p-4 max-w-lg mx-auto">
+    <div className="min-h-screen p-4 md:p-6"
+      style={{ background: 'linear-gradient(145deg, #1a1a0e 0%, #2d2a1a 50%, #1a1a0e 100%)' }}>
+      <div className="max-w-lg mx-auto">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-base font-bold tracking-widest uppercase text-ink-primary">Gate</h1>
-          <p className="text-xs text-ink-secondary">
+          <h1 className="text-base font-bold tracking-widest uppercase text-amber-200">Gate</h1>
+          <p className="text-xs text-amber-300/40">
             {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <button onClick={refresh} aria-label="Refresh gate stats"
           className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-cream-alt
-            hover:bg-cream-alt transition-colors text-ink-tertiary">
+            hover:bg-cream-alt transition-colors text-amber-200/40">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M13.5 8A5.5 5.5 0 112.5 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             <path d="M13.5 5v3h-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -357,6 +359,7 @@ export default function GateHubScreen() {
         <BookingCheckIn />
         <IssueSection onIssued={refresh} />
         <LookupSection />
+      </div>
       </div>
     </div>
   )
