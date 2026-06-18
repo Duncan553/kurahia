@@ -88,48 +88,48 @@ export default function WristbandScreen() {
         {/* ── Header + headcount ────────────────────────────────────── */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-ink-primary">Wristband Issuance</h1>
-            <p className="text-sm text-ink-tertiary">Issue entry band + open tab</p>
+            <h1 className="text-xl font-bold text-white">Wristband Issuance</h1>
+            <p className="text-sm text-slate-400/50">Issue entry band + open tab</p>
           </div>
           <div className="text-right">
             {isLoading ? (
               <Skeleton variant="text" className="w-12" />
             ) : (
-              <span className="text-3xl font-bold tabular-nums text-ink-primary">
+              <span className="text-3xl font-bold tabular-nums text-white">
                 {canLoad ? headcount : '—'}
               </span>
             )}
-            <p className="text-[10px] text-ink-tertiary uppercase tracking-wide">inside today</p>
+            <p className="text-[10px] text-slate-400/50 uppercase tracking-wide">inside today</p>
           </div>
         </div>
 
         {/* ── Last issued band (success card) ───────────────────────── */}
         {lastBand && (
           <div className="bg-primary-light/30 border border-primary-main/30 rounded-2xl p-4 text-center">
-            <p className="text-xs text-ink-tertiary uppercase tracking-widest mb-1">Last issued</p>
+            <p className="text-xs text-slate-400/50 uppercase tracking-widest mb-1">Last issued</p>
             <p className="text-5xl font-bold tabular-nums text-primary-dark">#{lastBand.band_number}</p>
-            <p className="text-sm text-ink-secondary mt-1">Tab opened · KSh {ENTRY_FEE.toLocaleString()} paid</p>
+            <p className="text-sm text-slate-300/70 mt-1">Tab opened · KSh {ENTRY_FEE.toLocaleString()} paid</p>
           </div>
         )}
 
         {/* ── Active bands list — partial state ──────────────────────── */}
         {isError && (
-          <div className="rounded-xl bg-cream-alt/60 p-3 text-sm text-ink-tertiary text-center">
+          <div className="rounded-xl bg-white/5/60 p-3 text-sm text-slate-400/50 text-center">
             Couldn't load headcount — issuance still available below.
           </div>
         )}
         {!isLoading && !isError && bands && bands.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-ink-tertiary uppercase tracking-widest">Active bands</p>
+            <p className="text-xs font-medium text-slate-400/50 uppercase tracking-widest">Active bands</p>
             {bands.slice(0, 5).map((b) => (
               <div key={b.id} className="flex items-center justify-between
-                bg-cream-alt/40 rounded-xl px-4 py-2.5">
-                <span className="font-semibold text-ink-primary">#{b.band_number}</span>
-                <span className="text-xs text-ink-tertiary">KSh {parseFloat(b.tab_balance).toLocaleString()} on tab</span>
+                bg-white/5/40 rounded-xl px-4 py-2.5">
+                <span className="font-semibold text-white">#{b.band_number}</span>
+                <span className="text-xs text-slate-400/50">KSh {parseFloat(b.tab_balance).toLocaleString()} on tab</span>
               </div>
             ))}
             {bands.length > 5 && (
-              <p className="text-xs text-ink-tertiary text-center">
+              <p className="text-xs text-slate-400/50 text-center">
                 +{bands.length - 5} more inside
               </p>
             )}
@@ -137,12 +137,12 @@ export default function WristbandScreen() {
         )}
 
         {/* ── Issue form ─────────────────────────────────────────────── */}
-        <div className="rounded-2xl bg-cream-alt/30 border border-cream-alt p-4 space-y-4">
-          <p className="text-sm font-semibold text-ink-primary">New wristband</p>
+        <div className="rounded-2xl bg-white/5/30 border border-white/10 p-4 space-y-4">
+          <p className="text-sm font-semibold text-white">New wristband</p>
 
-          <div className="flex items-center justify-between py-2 border-b border-cream-alt">
-            <span className="text-sm text-ink-secondary">Entry fee</span>
-            <span className="text-base font-bold tabular-nums text-ink-primary">
+          <div className="flex items-center justify-between py-2 border-b border-white/10">
+            <span className="text-sm text-slate-300/70">Entry fee</span>
+            <span className="text-base font-bold tabular-nums text-white">
               KSh {ENTRY_FEE.toLocaleString()}
             </span>
           </div>
@@ -180,17 +180,17 @@ export default function WristbandScreen() {
 
       {/* ── Confirmation modal (Pattern 2 — payment is irreversible) ── */}
       <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Issue wristband?">
-        <p className="text-base text-ink-secondary mb-1">
+        <p className="text-base text-slate-300/70 mb-1">
           This will open a new tab and record a payment of{' '}
-          <strong className="text-ink-primary tabular-nums">KSh {ENTRY_FEE.toLocaleString()}</strong>{' '}
+          <strong className="text-white tabular-nums">KSh {ENTRY_FEE.toLocaleString()}</strong>{' '}
           via {METHOD_OPTS.find((o) => o.value === method)?.label}.
         </p>
-        <p className="text-sm text-ink-tertiary mb-6">Payment records cannot be reversed.</p>
+        <p className="text-sm text-slate-400/50 mb-6">Payment records cannot be reversed.</p>
         <div className="flex gap-3">
           <button
             onClick={() => setConfirmOpen(false)}
-            className="flex-1 py-3 rounded-xl border border-cream-alt text-ink-secondary
-              font-medium hover:bg-cream-alt/50 transition-colors"
+            className="flex-1 py-3 rounded-xl border border-white/10 text-slate-300/70
+              font-medium hover:bg-white/5/50 transition-colors"
           >
             Cancel
           </button>
@@ -207,12 +207,12 @@ export default function WristbandScreen() {
 
       {/* ── Error modal ─────────────────────────────────────────────── */}
       <Modal open={errorOpen} onClose={() => setErrorOpen(false)} title="Issue failed">
-        <p className="text-base text-ink-secondary mb-6">{errorMsg}</p>
+        <p className="text-base text-slate-300/70 mb-6">{errorMsg}</p>
         <div className="flex gap-3">
           <button
             onClick={() => setErrorOpen(false)}
-            className="flex-1 py-3 rounded-xl border border-cream-alt text-ink-secondary
-              font-medium hover:bg-cream-alt/50 transition-colors"
+            className="flex-1 py-3 rounded-xl border border-white/10 text-slate-300/70
+              font-medium hover:bg-white/5/50 transition-colors"
           >
             Close
           </button>

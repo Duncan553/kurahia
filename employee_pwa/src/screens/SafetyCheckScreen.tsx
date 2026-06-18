@@ -69,7 +69,7 @@ function ChecklistItem({
         ? 'border-status-failed bg-status-failed/5'
         : state.checked
           ? 'border-primary-main/40 bg-primary-light/10'
-          : 'border-cream-alt bg-cream-card',
+          : 'border-white/10 bg-transparent',
     ].join(' ')}>
 
       {/* Checkbox row — full-width tap target */}
@@ -96,7 +96,7 @@ function ChecklistItem({
           )}
         </span>
 
-        <span className={`flex-1 text-sm font-medium ${hasError ? 'text-status-failed' : 'text-ink-primary'}`}>
+        <span className={`flex-1 text-sm font-medium ${hasError ? 'text-status-failed' : 'text-white'}`}>
           {formatKey(itemKey)}
         </span>
 
@@ -116,8 +116,8 @@ function ChecklistItem({
             value={state.note}
             onChange={(e) => onNote(e.target.value)}
             placeholder="Optional note…"
-            className="w-full rounded-lg border border-cream-alt bg-cream-card px-3 py-2
-              text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+            className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2
+              text-sm text-white focus:outline-none focus:border-primary-dark
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />
         </div>
@@ -247,20 +247,20 @@ export default function SafetyCheckScreen() {
     return (
       <div className="p-4 max-w-md mx-auto space-y-5">
         <div>
-          <h1 className="text-xl font-bold text-ink-primary">Safety Check</h1>
-          <p className="text-sm text-ink-tertiary">Pre-use checklist — select equipment to begin</p>
+          <h1 className="text-xl font-bold text-white">Safety Check</h1>
+          <p className="text-sm text-slate-400/50">Pre-use checklist — select equipment to begin</p>
         </div>
 
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 rounded-xl bg-cream-alt/40 animate-pulse" />
+              <div key={i} className="h-16 rounded-xl bg-white/5/40 animate-pulse" />
             ))}
           </div>
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-cream-alt/40 text-sm text-ink-tertiary text-center">
+          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
             Couldn't load equipment. Check connection.
           </div>
         )}
@@ -284,21 +284,21 @@ export default function SafetyCheckScreen() {
           <button
             key={eq.id}
             onClick={() => selectEquipment(eq)}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-cream-alt
-              bg-cream-card hover:bg-cream-alt/40 active:bg-cream-alt/60 transition-colors text-left
+            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-white/10
+              bg-transparent hover:bg-white/5/40 active:bg-white/5/60 transition-colors text-left
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-ink-primary">{eq.name}</span>
+                <span className="font-semibold text-white">{eq.name}</span>
                 {eq.is_due_service && <ServiceDueBadge />}
               </div>
-              <p className="text-xs text-ink-tertiary capitalize mt-0.5">
+              <p className="text-xs text-slate-400/50 capitalize mt-0.5">
                 {eq.equipment_type.replace(/_/g, ' ')}
               </p>
             </div>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-              className="text-ink-tertiary shrink-0" aria-hidden="true">
+              className="text-slate-400/50 shrink-0" aria-hidden="true">
               <path d="M6 4l4 4-4 4" stroke="currentColor"
                 strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -317,7 +317,7 @@ export default function SafetyCheckScreen() {
         <button
           onClick={clearSelection}
           className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg
-            hover:bg-cream-alt transition-colors shrink-0
+            hover:bg-white/5 transition-colors shrink-0
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           aria-label="Back to equipment list"
         >
@@ -327,9 +327,9 @@ export default function SafetyCheckScreen() {
           </svg>
         </button>
         <div>
-          <h1 className="text-xl font-bold text-ink-primary">{selectedEq.name}</h1>
+          <h1 className="text-xl font-bold text-white">{selectedEq.name}</h1>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-sm text-ink-tertiary capitalize">
+            <span className="text-sm text-slate-400/50 capitalize">
               {selectedEq.equipment_type.replace(/_/g, ' ')}
             </span>
             {selectedEq.is_due_service && <ServiceDueBadge />}
@@ -341,14 +341,14 @@ export default function SafetyCheckScreen() {
       {templateLoading && (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-14 rounded-xl bg-cream-alt/40 animate-pulse" />
+            <div key={i} className="h-14 rounded-xl bg-white/5/40 animate-pulse" />
           ))}
         </div>
       )}
 
       {/* No template for this equipment type */}
       {!templateLoading && !template && (
-        <div className="p-4 rounded-xl bg-cream-alt/40 text-sm text-ink-tertiary text-center">
+        <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
           No checklist template configured for this equipment type.
         </div>
       )}
@@ -356,7 +356,7 @@ export default function SafetyCheckScreen() {
       {/* Checklist */}
       {!templateLoading && template && (
         <>
-          <p className="text-xs text-ink-tertiary">
+          <p className="text-xs text-slate-400/50">
             All {template.count} items must be confirmed before equipment can be used.
           </p>
 
@@ -375,14 +375,14 @@ export default function SafetyCheckScreen() {
 
           {/* Progress bar */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-1.5 rounded-full bg-cream-alt overflow-hidden">
+            <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
               <div
                 className="h-full bg-primary-dark rounded-full transition-all duration-300"
                 style={{ width: `${(checkedCount / template.items.length) * 100}%` }}
                 aria-hidden="true"
               />
             </div>
-            <span className="text-xs tabular-nums text-ink-tertiary shrink-0">
+            <span className="text-xs tabular-nums text-slate-400/50 shrink-0">
               {checkedCount}/{template.items.length}
             </span>
           </div>

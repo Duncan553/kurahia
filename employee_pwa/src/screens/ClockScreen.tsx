@@ -205,7 +205,7 @@ export default function ClockScreen() {
       {/* Status label */}
       <motion.p
         variants={{ hidden: { opacity: 0, y: -8 }, visible: { opacity: 1, y: 0 } }}
-        className="text-sm font-medium text-ink-tertiary uppercase tracking-widest"
+        className="text-sm font-medium text-slate-400/50 uppercase tracking-widest"
       >
         {isClockedIn ? 'On Duty' : 'Off Duty'}
       </motion.p>
@@ -221,10 +221,10 @@ export default function ClockScreen() {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="text-center"
           >
-            <p className="text-4xl font-bold font-mono text-ink-primary tabular-nums">
+            <p className="text-4xl font-bold font-mono text-white tabular-nums">
               {dutyTime(dutyMinutes)}
             </p>
-            <p className="text-xs text-ink-secondary mt-1">
+            <p className="text-xs text-slate-300/70 mt-1">
               since {formatTime(lastEvent.occurred_at)}
             </p>
           </motion.div>
@@ -245,7 +245,7 @@ export default function ClockScreen() {
           'disabled:opacity-50 disabled:cursor-not-allowed',
           isClockingIn
             ? 'bg-primary-dark text-cream-card hover:bg-primary-dark/90 focus-visible:ring-primary-dark'
-            : 'bg-cream-card text-primary-dark border-2 border-primary-dark hover:bg-primary-dark/5 focus-visible:ring-primary-dark',
+            : 'bg-transparent text-primary-dark border-2 border-primary-dark hover:bg-primary-dark/5 focus-visible:ring-primary-dark',
         ].join(' ')}
       >
         {mutation.isPending ? (
@@ -282,7 +282,7 @@ export default function ClockScreen() {
     {/* Shift-end logout prompt — tablet handover */}
     <Modal open={showLogout} onClose={() => setShowLogout(false)} title="Shift ended" size="sm">
       <div className="space-y-4">
-        <p className="text-sm text-ink-secondary">
+        <p className="text-sm text-slate-300/70">
           Hand the tablet to your manager or the next person. Log out now to protect this account.
         </p>
         <div className="flex gap-2">

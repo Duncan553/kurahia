@@ -70,14 +70,14 @@ function BookingCard({ booking, onSelect }: { booking: Booking; onSelect: () => 
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left rounded-xl glass-card glass-shine p-4
+      className="w-full text-left rounded-xl border border-white/10 p-4
         hover:border-primary-light/50 hover:shadow-sm transition-all
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-ink-primary text-sm truncate">{booking.guest_name}</p>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p className="font-semibold text-white text-sm truncate">{booking.guest_name}</p>
+          <p className="text-xs text-slate-300/70 mt-0.5">
             {booking.resource_name ?? 'Unknown resource'}
             {booking.number_of_guests > 1 && ` · ${booking.number_of_guests} guests`}
           </p>
@@ -85,9 +85,9 @@ function BookingCard({ booking, onSelect }: { booking: Booking; onSelect: () => 
         <StatusBadge status={bookingStatus(booking.status)} />
       </div>
 
-      <div className="mt-2 text-xs text-ink-secondary space-y-0.5">
+      <div className="mt-2 text-xs text-slate-300/70 space-y-0.5">
         <p>
-          Check-in: <span className="font-medium text-ink-primary">
+          Check-in: <span className="font-medium text-white">
             {fmtDate(booking.check_in_planned)} {fmtTime(booking.check_in_planned)}
           </span>
         </p>
@@ -129,11 +129,11 @@ function BookingDrawer({
   return (
     <div className="space-y-5">
       {/* Guest info */}
-      <div className="rounded-xl bg-cream-alt p-4 space-y-2">
+      <div className="rounded-xl bg-white/5 p-4 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="font-semibold text-ink-primary text-base">{booking.guest_name}</p>
-            <p className="text-xs text-ink-secondary">{booking.guest_phone}</p>
+            <p className="font-semibold text-white text-base">{booking.guest_name}</p>
+            <p className="text-xs text-slate-300/70">{booking.guest_phone}</p>
           </div>
           <StatusBadge status={bookingStatus(booking.status)} />
         </div>
@@ -141,7 +141,7 @@ function BookingDrawer({
 
       {/* Details */}
       <div className="space-y-3 text-sm">
-        <div className="rounded-xl border border-cream-alt bg-cream-card px-4 py-3 space-y-2">
+        <div className="rounded-xl border border-white/10 bg-transparent px-4 py-3 space-y-2">
           {[
             ['Resource', booking.resource_name ?? '—'],
             ['Guests', String(booking.number_of_guests)],
@@ -152,20 +152,20 @@ function BookingDrawer({
             ['Deposit paid', formatKsh(booking.deposit_paid)],
           ].map(([label, value]) => (
             <div key={label} className="flex justify-between gap-2">
-              <span className="text-ink-secondary text-xs">{label}</span>
-              <span className="font-medium text-ink-primary text-xs tabular-nums text-right">{value}</span>
+              <span className="text-slate-300/70 text-xs">{label}</span>
+              <span className="font-medium text-white text-xs tabular-nums text-right">{value}</span>
             </div>
           ))}
           {booking.check_in_actual && (
             <div className="flex justify-between gap-2">
-              <span className="text-ink-secondary text-xs">Actual check-in</span>
+              <span className="text-slate-300/70 text-xs">Actual check-in</span>
               <span className="font-medium text-status-paid text-xs">{fmtDate(booking.check_in_actual)} {fmtTime(booking.check_in_actual)}</span>
             </div>
           )}
           {booking.notes && (
             <div>
-              <p className="text-xs text-ink-secondary">Notes</p>
-              <p className="text-xs text-ink-primary mt-0.5 italic">"{booking.notes}"</p>
+              <p className="text-xs text-slate-300/70">Notes</p>
+              <p className="text-xs text-white mt-0.5 italic">"{booking.notes}"</p>
             </div>
           )}
         </div>
@@ -207,7 +207,7 @@ function BookingDrawer({
       )}
 
       {!canCancel && (
-        <p className="text-xs text-ink-tertiary text-center">
+        <p className="text-xs text-slate-400/50 text-center">
           This booking is {booking.status.toLowerCase()} — cannot be cancelled.
         </p>
       )}
@@ -247,9 +247,9 @@ export default function BookingsScreen() {
   return (
     <div className="p-4 max-w-2xl mx-auto">
       <div className="mb-5">
-        <h1 className="font-serif text-2xl text-ink-primary">Bookings</h1>
+        <h1 className="font-serif text-2xl text-white">Bookings</h1>
         {!isLoading && (
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p className="text-xs text-slate-300/70 mt-0.5">
             {confirmed} confirmed · {inHouse} in house
           </p>
         )}
@@ -258,7 +258,7 @@ export default function BookingsScreen() {
       {/* Filters */}
       <div className="space-y-3 mb-4">
         {/* Status tabs */}
-        <div className="flex gap-1 bg-cream-alt rounded-xl p-1 overflow-x-auto scrollbar-none" role="tablist">
+        <div className="flex gap-1 bg-white/5 rounded-xl p-1 overflow-x-auto scrollbar-none" role="tablist">
           {STATUS_TABS.map(t => (
             <button
               key={t.key}
@@ -267,7 +267,7 @@ export default function BookingsScreen() {
               onClick={() => setStatusFilter(t.key)}
               className={[
                 'shrink-0 flex-1 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap px-2',
-                statusFilter === t.key ? 'bg-cream-card text-ink-primary shadow-sm' : 'text-ink-secondary hover:text-ink-primary',
+                statusFilter === t.key ? 'bg-transparent text-white shadow-sm' : 'text-slate-300/70 hover:text-white',
               ].join(' ')}
             >
               {t.label}
@@ -277,18 +277,18 @@ export default function BookingsScreen() {
 
         {/* Date filter */}
         <div className="flex items-center gap-2">
-          <label htmlFor="booking-date" className="text-xs text-ink-secondary shrink-0">Check-in date:</label>
+          <label htmlFor="booking-date" className="text-xs text-slate-300/70 shrink-0">Check-in date:</label>
           <input
             id="booking-date"
             type="date"
             value={dateFilter}
             onChange={e => setDateFilter(e.target.value)}
-            className="flex-1 text-xs border border-cream-alt bg-cream-card rounded-lg px-2 py-1.5
-              text-ink-primary focus:outline-none focus:ring-2 focus:ring-primary-main"
+            className="flex-1 text-xs border border-white/10 bg-transparent rounded-lg px-2 py-1.5
+              text-white focus:outline-none focus:ring-2 focus:ring-primary-main"
           />
           {dateFilter && (
             <button onClick={() => setDateFilter('')}
-              className="text-xs text-ink-tertiary hover:text-ink-primary">
+              className="text-xs text-slate-400/50 hover:text-white">
               Clear
             </button>
           )}
@@ -298,14 +298,14 @@ export default function BookingsScreen() {
       <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search bookings..." label="Search bookings" />
 
       {searchQ && (data ?? []).length === 0 && !isLoading && (
-        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+        <p className="text-sm text-slate-400/50 text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
       )}
 
       {/* List */}
       {isLoading && (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-cream-alt bg-cream-card p-4 space-y-2">
+            <div key={i} className="rounded-xl border border-white/10 bg-transparent p-4 space-y-2">
               <div className="flex justify-between">
                 <Skeleton variant="text" className="w-36 h-4" />
                 <Skeleton variant="text" className="w-20 h-5 rounded-full" />
@@ -325,7 +325,7 @@ export default function BookingsScreen() {
 
       {!isLoading && !isError && (data ?? []).length === 0 && (
         <div className="py-12 text-center">
-          <p className="text-ink-secondary text-sm">
+          <p className="text-slate-300/70 text-sm">
             {dateFilter ? `No ${statusFilter || 'bookings'} on ${dateFilter}` : `No ${statusFilter.toLowerCase() || 'bookings'}`}
           </p>
         </div>

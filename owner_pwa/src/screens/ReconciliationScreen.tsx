@@ -105,8 +105,8 @@ export default function ReconciliationScreen() {
   }
 
   const Row = ({ label, value, valueClass = '' }: { label: string; value: string; valueClass?: string }) => (
-    <div className="flex items-center justify-between py-1.5 border-b border-cream-alt last:border-0">
-      <span className="text-xs text-ink-secondary">{label}</span>
+    <div className="flex items-center justify-between py-1.5 border-b border-white/10 last:border-0">
+      <span className="text-xs text-slate-300/70">{label}</span>
       <span className={`text-sm font-semibold tabular-nums ${valueClass}`}>{value}</span>
     </div>
   )
@@ -117,8 +117,8 @@ export default function ReconciliationScreen() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-ink-primary font-serif">Three-Way Reconciliation</h1>
-          <p className="text-xs text-ink-secondary mt-0.5">Receipts · Cash · Stock</p>
+          <h1 className="text-xl font-bold text-white font-serif">Three-Way Reconciliation</h1>
+          <p className="text-xs text-slate-300/70 mt-0.5">Receipts · Cash · Stock</p>
         </div>
         {/* Date picker */}
         <label className="sr-only" htmlFor="recon-date">Reconciliation date</label>
@@ -128,8 +128,8 @@ export default function ReconciliationScreen() {
           value={view.date}
           max={todayNairobi()}
           onChange={e => setView(v => ({ ...v, date: e.target.value }))}
-          className="rounded-xl border border-cream-alt bg-cream-card px-3 py-2
-            text-sm text-ink-primary focus:outline-none focus:border-primary-dark"
+          className="rounded-xl border border-white/10 bg-transparent px-3 py-2
+            text-sm text-white focus:outline-none focus:border-primary-dark"
         />
       </div>
 
@@ -161,20 +161,20 @@ export default function ReconciliationScreen() {
           <div className="grid sm:grid-cols-3 gap-4">
 
             {/* Corner 1: Receipts */}
-            <div className="rounded-2xl glass-card glass-shine p-4 space-y-1">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Receipts</p>
+            <div className="rounded-2xl border border-white/10 p-4 space-y-1">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-300/70 mb-3">Receipts</p>
               <Row label="Cash"   value={kes(data.receipts.cash)} />
               <Row label="Card"   value={kes(data.receipts.card)} />
               <Row label="M-Pesa" value={kes(data.receipts.mpesa)} />
-              <div className="mt-2 pt-2 border-t border-cream-alt flex justify-between">
-                <span className="text-xs font-semibold text-ink-primary">Total</span>
-                <span className="text-sm font-bold tabular-nums text-ink-primary">{kes(data.receipts.total)}</span>
+              <div className="mt-2 pt-2 border-t border-white/10 flex justify-between">
+                <span className="text-xs font-semibold text-white">Total</span>
+                <span className="text-sm font-bold tabular-nums text-white">{kes(data.receipts.total)}</span>
               </div>
             </div>
 
             {/* Corner 2: Cash Reconciliation */}
-            <div className="rounded-2xl glass-card glass-shine p-4 space-y-1">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Cash Reconciliation</p>
+            <div className="rounded-2xl border border-white/10 p-4 space-y-1">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-300/70 mb-3">Cash Reconciliation</p>
               <Row label="Collected" value={kes(data.cash_reconciliation.total_collected)} />
               <Row label="Expected"  value={kes(data.cash_reconciliation.total_expected)} />
               <Row label="Handed in" value={kes(data.cash_reconciliation.total_handed_in)} />
@@ -187,7 +187,7 @@ export default function ReconciliationScreen() {
                 <div className="pt-2 space-y-1">
                   <p className="text-[10px] text-status-failed font-semibold">Shortfalls</p>
                   {data.cash_reconciliation.shortfalls.map((s, i) => (
-                    <p key={i} className="text-[11px] text-ink-secondary">
+                    <p key={i} className="text-[11px] text-slate-300/70">
                       {s.staff}: {kes(s.difference)}
                     </p>
                   ))}
@@ -196,7 +196,7 @@ export default function ReconciliationScreen() {
               {data.cash_reconciliation.pending_staff.length > 0 && (
                 <div className="pt-1">
                   <p className="text-[10px] text-status-pending font-semibold">Unreconciled</p>
-                  <p className="text-[11px] text-ink-secondary">
+                  <p className="text-[11px] text-slate-300/70">
                     {data.cash_reconciliation.pending_staff.join(', ')}
                   </p>
                 </div>
@@ -204,21 +204,21 @@ export default function ReconciliationScreen() {
             </div>
 
             {/* Corner 3: Stock / Judge */}
-            <div className="rounded-2xl glass-card glass-shine p-4">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Stock Alerts</p>
-              <p className="text-2xl font-bold text-ink-primary tabular-nums">
+            <div className="rounded-2xl border border-white/10 p-4">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-300/70 mb-3">Stock Alerts</p>
+              <p className="text-2xl font-bold text-white tabular-nums">
                 {data.stock.open_alerts_count}
               </p>
-              <p className="text-xs text-ink-secondary mb-3">open alert{data.stock.open_alerts_count !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-slate-300/70 mb-3">open alert{data.stock.open_alerts_count !== 1 ? 's' : ''}</p>
               {data.stock.alerts.map((a, i) => (
-                <div key={i} className="py-1.5 border-b border-cream-alt last:border-0">
+                <div key={i} className="py-1.5 border-b border-white/10 last:border-0">
                   <div className="flex items-center gap-1.5">
                     <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
                       a.severity === 'HIGH' ? 'bg-status-failed/10 text-status-failed' : 'bg-status-pending/10 text-status-pending'
                     }`}>{a.severity}</span>
-                    <span className="text-[10px] text-ink-secondary">{a.type.replace(/_/g,' ')}</span>
+                    <span className="text-[10px] text-slate-300/70">{a.type.replace(/_/g,' ')}</span>
                   </div>
-                  <p className="text-[11px] text-ink-secondary mt-0.5 line-clamp-2">{a.description}</p>
+                  <p className="text-[11px] text-slate-300/70 mt-0.5 line-clamp-2">{a.description}</p>
                 </div>
               ))}
             </div>
@@ -232,7 +232,7 @@ export default function ReconciliationScreen() {
                 ⚠ Gaps detected
               </p>
               {data.gaps.map((g, i) => (
-                <p key={i} className="text-sm text-ink-primary leading-snug">• {g}</p>
+                <p key={i} className="text-sm text-white leading-snug">• {g}</p>
               ))}
             </div>
           )}
@@ -240,7 +240,7 @@ export default function ReconciliationScreen() {
           {/* Close Period */}
           {!data.period_closed && (
             <div className="pt-2">
-              <p className="text-xs text-ink-secondary mb-2">
+              <p className="text-xs text-slate-300/70 mb-2">
                 Hold the button for 2 seconds to close this period.
               </p>
               <div className="relative overflow-hidden rounded-2xl">
@@ -287,11 +287,11 @@ export default function ReconciliationScreen() {
         preventClose={closeMut.isPending}
       >
         <div className="space-y-4">
-          <p className="text-sm text-ink-secondary">
+          <p className="text-sm text-slate-300/70">
             Count the physical cash in the safe for <strong>{view.date}</strong> and enter the total.
           </p>
           <div>
-            <label htmlFor="safe-count" className="block text-[10px] tracking-widest uppercase text-ink-secondary mb-1">
+            <label htmlFor="safe-count" className="block text-[10px] tracking-widest uppercase text-slate-300/70 mb-1">
               Safe count (KSh)
             </label>
             <input
@@ -303,8 +303,8 @@ export default function ReconciliationScreen() {
               placeholder="0.00"
               value={view.safeCount}
               onChange={e => setView(v => ({ ...v, safeCount: e.target.value }))}
-              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-                text-base text-ink-primary focus:outline-none focus:border-primary-dark"
+              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+                text-base text-white focus:outline-none focus:border-primary-dark"
             />
           </div>
           <div className="flex gap-2 justify-end">

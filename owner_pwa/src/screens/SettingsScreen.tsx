@@ -63,8 +63,8 @@ function DepartmentsTab() {
           value={newName}
           onChange={e => setNewName(e.target.value)}
           placeholder="New department name…"
-          className="flex-1 rounded-lg border border-cream-alt bg-cream-card px-3 py-2 text-sm
-            text-ink-primary placeholder:text-ink-tertiary
+          className="flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
+            text-white placeholder:text-slate-400/50
             focus:outline-none focus:ring-2 focus:ring-primary-main"
           onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) createMut.mutate(newName.trim()) }}
         />
@@ -83,17 +83,17 @@ function DepartmentsTab() {
         ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-12 rounded-xl" />)
         : (data ?? []).map(d => (
           <div key={d.id}
-            className="flex items-center justify-between gap-3 rounded-xl glass-card px-4 py-3">
+            className="flex items-center justify-between gap-3 rounded-xl border border-white/10 px-4 py-3">
             <div className="flex items-center gap-2 min-w-0">
               <span className={`w-2 h-2 rounded-full shrink-0 ${d.is_active ? 'bg-status-paid' : 'bg-ink-tertiary'}`} />
-              <span className={`text-sm font-medium truncate ${d.is_active ? 'text-ink-primary' : 'text-ink-tertiary line-through'}`}>
+              <span className={`text-sm font-medium truncate ${d.is_active ? 'text-white' : 'text-slate-400/50 line-through'}`}>
                 {d.name}
               </span>
             </div>
             <div className="flex gap-1 shrink-0">
               <button
                 onClick={() => { setEditTarget(d); setEditName(d.name) }}
-                className="px-2 py-1 text-xs text-ink-secondary hover:text-ink-primary rounded"
+                className="px-2 py-1 text-xs text-slate-300/70 hover:text-white rounded"
                 aria-label={`Edit ${d.name}`}
               >Edit</button>
               <button
@@ -114,7 +114,7 @@ function DepartmentsTab() {
           <input
             value={editName}
             onChange={e => setEditName(e.target.value)}
-            className="w-full rounded-lg border border-cream-alt bg-cream-card px-3 py-2 text-sm
+            className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
               focus:outline-none focus:ring-2 focus:ring-primary-main"
             onKeyDown={e => {
               if (e.key === 'Enter' && editName.trim() && editTarget)
@@ -152,22 +152,22 @@ function RolesTab() {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-ink-tertiary">Roles are read-only in this version.</p>
+      <p className="text-xs text-slate-400/50">Roles are read-only in this version.</p>
       {isLoading
         ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} variant="text" className="h-12 rounded-xl" />)
         : (data ?? [])
           .sort((a, b) => b.level - a.level)
           .map(r => (
             <div key={r.id}
-              className="flex items-center justify-between gap-3 rounded-xl glass-card px-4 py-3">
+              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className={`w-2 h-2 rounded-full shrink-0 ${r.is_active ? 'bg-status-paid' : 'bg-ink-tertiary'}`} />
                 <div>
-                  <p className={`text-sm font-medium ${r.is_active ? 'text-ink-primary' : 'text-ink-tertiary'}`}>{r.name}</p>
-                  <p className="text-xs text-ink-secondary">Level {r.level} · {levelLabel(r.level)}</p>
+                  <p className={`text-sm font-medium ${r.is_active ? 'text-white' : 'text-slate-400/50'}`}>{r.name}</p>
+                  <p className="text-xs text-slate-300/70">Level {r.level} · {levelLabel(r.level)}</p>
                 </div>
               </div>
-              {!r.is_active && <span className="text-xs text-ink-secondary">Disabled</span>}
+              {!r.is_active && <span className="text-xs text-slate-300/70">Disabled</span>}
             </div>
           ))
       }
@@ -210,32 +210,32 @@ function BaselinesTab() {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-ink-tertiary">
+      <p className="text-xs text-slate-400/50">
         Each baseline tells the Judge what ratio of consumption vs revenue is expected. Deviations beyond the tolerance trigger an alert.
       </p>
 
       {isLoading
         ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} variant="text" className="h-16 rounded-xl" />)
         : (data ?? []).length === 0
-          ? <p className="text-sm text-ink-tertiary py-4 text-center">No baselines configured.</p>
+          ? <p className="text-sm text-slate-400/50 py-4 text-center">No baselines configured.</p>
           : (data ?? []).map(b => (
-            <div key={b.id} className="rounded-xl glass-card px-4 py-3 space-y-2">
+            <div key={b.id} className="rounded-xl border border-white/10 px-4 py-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className={`text-sm font-medium truncate ${b.is_active ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
+                  <p className={`text-sm font-medium truncate ${b.is_active ? 'text-white' : 'text-slate-400/50'}`}>
                     {b.item_name ?? b.item_id}
                   </p>
-                  <p className="text-xs text-ink-secondary">{b.business_driver}</p>
+                  <p className="text-xs text-slate-300/70">{b.business_driver}</p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-xs font-semibold tabular-nums text-ink-primary">{b.expected_ratio}</p>
-                  <p className="text-xs text-ink-secondary">±{b.tolerance_percent}%</p>
+                  <p className="text-xs font-semibold tabular-nums text-white">{b.expected_ratio}</p>
+                  <p className="text-xs text-slate-300/70">±{b.tolerance_percent}%</p>
                 </div>
               </div>
               <div className="flex gap-1">
                 <button
                   onClick={() => { setEditTarget(b); setEditRatio(b.expected_ratio); setEditTolerance(b.tolerance_percent) }}
-                  className="px-2 py-1 text-xs text-ink-secondary hover:text-ink-primary rounded"
+                  className="px-2 py-1 text-xs text-slate-300/70 hover:text-white rounded"
                 >Edit</button>
                 <button
                   onClick={() => toggleMut.mutate({ id: b.id, active: !b.is_active })}
@@ -250,28 +250,28 @@ function BaselinesTab() {
 
       <Modal open={editTarget !== null} onClose={() => setEditTarget(null)} title="Edit Baseline">
         <div className="space-y-4">
-          <p className="text-sm text-ink-secondary">
-            Item: <span className="font-medium text-ink-primary">{editTarget?.item_name}</span>
-            <br />Driver: <span className="font-medium text-ink-primary">{editTarget?.business_driver}</span>
+          <p className="text-sm text-slate-300/70">
+            Item: <span className="font-medium text-white">{editTarget?.item_name}</span>
+            <br />Driver: <span className="font-medium text-white">{editTarget?.business_driver}</span>
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-ink-secondary mb-1">Expected ratio</label>
+              <label className="block text-xs font-semibold text-slate-300/70 mb-1">Expected ratio</label>
               <input
                 type="number" step="0.001" min="0"
                 value={editRatio}
                 onChange={e => setEditRatio(e.target.value)}
-                className="w-full rounded-lg border border-cream-alt bg-cream-card px-3 py-2 text-sm
+                className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
                   focus:outline-none focus:ring-2 focus:ring-primary-main"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-ink-secondary mb-1">Tolerance %</label>
+              <label className="block text-xs font-semibold text-slate-300/70 mb-1">Tolerance %</label>
               <input
                 type="number" step="1" min="0" max="100"
                 value={editTolerance}
                 onChange={e => setEditTolerance(e.target.value)}
-                className="w-full rounded-lg border border-cream-alt bg-cream-card px-3 py-2 text-sm
+                className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
                   focus:outline-none focus:ring-2 focus:ring-primary-main"
               />
             </div>
@@ -300,21 +300,21 @@ function SocketRow({ label, endpoint }: { label: string; endpoint: string }) {
   })
 
   return (
-    <div className="flex items-start gap-3 rounded-xl glass-card px-4 py-3">
+    <div className="flex items-start gap-3 rounded-xl border border-white/10 px-4 py-3">
       <span className={`w-2 h-2 rounded-full shrink-0 mt-1 ${
-        isLoading ? 'bg-cream-alt' : data?.configured ? 'bg-status-paid' : 'bg-ink-tertiary'
+        isLoading ? 'bg-white/5' : data?.configured ? 'bg-status-paid' : 'bg-ink-tertiary'
       }`} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-ink-primary">{label}</p>
+        <p className="text-sm font-medium text-white">{label}</p>
         {!isLoading && (
-          <p className={`text-xs mt-0.5 ${data?.configured ? 'text-ink-tertiary' : 'text-status-pending'}`}>
+          <p className={`text-xs mt-0.5 ${data?.configured ? 'text-slate-400/50' : 'text-status-pending'}`}>
             {data?.message ?? '—'}
           </p>
         )}
       </div>
       {!isLoading && (
         <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full
-          ${data?.configured ? 'bg-status-paid/25 text-status-paid' : 'bg-ink-tertiary/20 text-ink-secondary'}`}>
+          ${data?.configured ? 'bg-status-paid/25 text-status-paid' : 'bg-ink-tertiary/20 text-slate-300/70'}`}>
           {data?.configured ? 'LIVE' : 'OFF'}
         </span>
       )}
@@ -325,7 +325,7 @@ function SocketRow({ label, endpoint }: { label: string; endpoint: string }) {
 function SocketStatusTab() {
   return (
     <div className="space-y-3">
-      <p className="text-xs text-ink-tertiary">
+      <p className="text-xs text-slate-400/50">
         Payment and notification sockets. Activate by setting env vars (see docs/ runbooks).
       </p>
       <SocketRow label="M-Pesa Daraja (STK Push)"  endpoint="/finance/mpesa/status" />
@@ -348,7 +348,7 @@ function PersonalTab() {
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-xs font-semibold text-ink-secondary mb-3">Font size</p>
+        <p className="text-xs font-semibold text-slate-300/70 mb-3">Font size</p>
         <div className="flex gap-2" role="group" aria-label="Text size">
           {sizes.map(s => (
             <button
@@ -360,14 +360,14 @@ function PersonalTab() {
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                 size === s.key
                   ? 'bg-primary-dark border-primary-dark text-cream-card'
-                  : 'border-cream-alt text-ink-secondary hover:bg-cream-alt',
+                  : 'border-white/10 text-slate-300/70 hover:bg-white/5',
               ].join(' ')}
             >
               {s.label}
             </button>
           ))}
         </div>
-        <p className="text-xs text-ink-tertiary mt-2">Applies to all text in the app.</p>
+        <p className="text-xs text-slate-400/50 mt-2">Applies to all text in the app.</p>
       </div>
     </div>
   )
@@ -391,8 +391,8 @@ export default function SettingsScreen() {
   return (
     <div className="p-4 max-w-2xl mx-auto">
       <div className="mb-5">
-        <h1 className="font-serif text-2xl text-ink-primary">Settings</h1>
-        <p className="text-xs text-ink-secondary mt-0.5">Admin controls and personal preferences</p>
+        <h1 className="font-serif text-2xl text-white">Settings</h1>
+        <p className="text-xs text-slate-300/70 mt-0.5">Admin controls and personal preferences</p>
       </div>
 
       {/* Tab strip */}
@@ -407,7 +407,7 @@ export default function SettingsScreen() {
               'shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap',
               tab === t.key
                 ? 'bg-primary-dark text-cream-card'
-                : 'bg-cream-alt text-ink-secondary hover:text-ink-primary',
+                : 'bg-white/5 text-slate-300/70 hover:text-white',
             ].join(' ')}
           >
             {t.label}

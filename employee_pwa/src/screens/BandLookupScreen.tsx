@@ -80,8 +80,8 @@ export default function BandLookupScreen() {
     <div className="p-4 max-w-md mx-auto space-y-5">
 
       <div>
-        <h1 className="text-xl font-bold text-ink-primary">Band Lookup</h1>
-        <p className="text-sm text-ink-tertiary">Search any wristband by number — see tab balance</p>
+        <h1 className="text-xl font-bold text-white">Band Lookup</h1>
+        <p className="text-sm text-slate-400/50">Search any wristband by number — see tab balance</p>
       </div>
 
       {/* ── Search ───────────────────────────────────────────────── */}
@@ -94,8 +94,8 @@ export default function BandLookupScreen() {
           value={input}
           onChange={(e) => { setInput(e.target.value); setResult(null); setNotFound(false) }}
           onKeyDown={handleKey}
-          className="flex-1 rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-            text-lg font-semibold tabular-nums text-ink-primary
+          className="flex-1 rounded-xl border border-white/10 bg-transparent px-4 py-3
+            text-lg font-semibold tabular-nums text-white
             focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
         />
         <button
@@ -123,7 +123,7 @@ export default function BandLookupScreen() {
           <p className="text-sm font-medium text-status-failed">
             Band #{input} not found for today.
           </p>
-          <p className="text-xs text-ink-tertiary mt-1">
+          <p className="text-xs text-slate-400/50 mt-1">
             Check the number is correct or try a different date.
           </p>
         </div>
@@ -131,15 +131,15 @@ export default function BandLookupScreen() {
 
       {/* ── Result ───────────────────────────────────────────────── */}
       {result && (
-        <div className="rounded-2xl border border-cream-alt bg-cream-card shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-white/10 bg-transparent shadow-sm overflow-hidden">
 
           {/* Header */}
           <div className="bg-primary-dark/10 px-5 py-4 flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold tabular-nums text-ink-primary">
+              <p className="text-2xl font-bold tabular-nums text-white">
                 Band #{result.band_number}
               </p>
-              <p className="text-xs text-ink-tertiary mt-0.5 flex items-center">
+              <p className="text-xs text-slate-400/50 mt-0.5 flex items-center">
                 <StatusDot status={result.status} />
                 {result.status.charAt(0) + result.status.slice(1).toLowerCase()}
                 {' · '}
@@ -147,7 +147,7 @@ export default function BandLookupScreen() {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-ink-tertiary mb-0.5">Tab balance</p>
+              <p className="text-xs text-slate-400/50 mb-0.5">Tab balance</p>
               <p className={[
                 'text-2xl font-bold tabular-nums',
                 balance > 0 ? 'text-status-failed' : 'text-status-paid',
@@ -166,14 +166,14 @@ export default function BandLookupScreen() {
               ...(result.notes ? [{ label: 'Notes', value: result.notes }] : []),
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between text-sm">
-                <span className="text-ink-tertiary">{label}</span>
-                <span className="text-ink-primary font-medium truncate max-w-[55%] text-right">{value}</span>
+                <span className="text-slate-400/50">{label}</span>
+                <span className="text-white font-medium truncate max-w-[55%] text-right">{value}</span>
               </div>
             ))}
           </div>
 
           {balance > 0 && (
-            <div className="px-5 py-3 border-t border-cream-alt bg-status-failed/5">
+            <div className="px-5 py-3 border-t border-white/10 bg-status-failed/5">
               <p className="text-xs text-status-failed font-medium">
                 Outstanding balance — guest must settle before leaving.
               </p>
@@ -182,7 +182,7 @@ export default function BandLookupScreen() {
 
           {/* Guest leaving — close the band. Backend refuses if balance > 0. */}
           {result.status.toUpperCase() === 'ACTIVE' && (
-            <div className="px-5 py-3 border-t border-cream-alt">
+            <div className="px-5 py-3 border-t border-white/10">
               <button
                 onClick={deactivate}
                 disabled={loading}

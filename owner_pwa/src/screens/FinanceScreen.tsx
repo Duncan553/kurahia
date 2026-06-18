@@ -51,12 +51,12 @@ function KpiCard({ label, value, sub, danger = false }: {
   label: string; value: string; sub?: string; danger?: boolean
 }) {
   return (
-    <div className="rounded-2xl glass-card glass-shine p-4 space-y-1">
-      <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">{label}</p>
-      <p className={`text-2xl font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-ink-primary'}`}>
+    <div className="rounded-2xl border border-white/10 p-4 space-y-1">
+      <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70">{label}</p>
+      <p className={`text-2xl font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-white'}`}>
         {value}
       </p>
-      {sub && <p className="text-xs text-ink-tertiary">{sub}</p>}
+      {sub && <p className="text-xs text-slate-400/50">{sub}</p>}
     </div>
   )
 }
@@ -88,7 +88,7 @@ function RevenueSection({ period }: { period: string }) {
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-3">
           {[0, 1, 2].map(i => (
-            <div key={i} className="rounded-2xl glass-card p-4 space-y-2">
+            <div key={i} className="rounded-2xl border border-white/10 p-4 space-y-2">
               <Skeleton variant="text" className="w-16 h-3" />
               <Skeleton variant="text" className="w-24 h-6" />
             </div>
@@ -108,8 +108,8 @@ function RevenueSection({ period }: { period: string }) {
       </div>
 
       {/* 30-day bar chart */}
-      <div className="rounded-2xl glass-card glass-shine p-4">
-        <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary mb-3">
+      <div className="rounded-2xl border border-white/10 p-4">
+        <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70 mb-3">
           Daily Revenue — last {days} days
         </p>
         {chartData.length > 0 ? (
@@ -131,7 +131,7 @@ function RevenueSection({ period }: { period: string }) {
           </div>
         ) : (
           <div className="h-32 flex items-center justify-center">
-            <p className="text-xs text-ink-secondary">No revenue data yet</p>
+            <p className="text-xs text-slate-300/70">No revenue data yet</p>
           </div>
         )}
       </div>
@@ -170,16 +170,16 @@ function BudgetSection({ period }: { period: string }) {
   return (
     <div className="space-y-3">
       {active.length === 0 ? (
-        <div className="rounded-2xl glass-card p-6 text-center">
-          <p className="text-sm text-ink-tertiary">No budgets set for this period.</p>
-          <p className="text-xs text-ink-tertiary mt-1">Add budgets via Finance → Budgets to track department spend.</p>
+        <div className="rounded-2xl border border-white/10 p-6 text-center">
+          <p className="text-sm text-slate-400/50">No budgets set for this period.</p>
+          <p className="text-xs text-slate-400/50 mt-1">Add budgets via Finance → Budgets to track department spend.</p>
         </div>
       ) : (
         <>
           {/* Spend donut */}
           {donutData.length > 0 && (
-            <div className="rounded-2xl glass-card glass-shine p-4">
-              <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary mb-2">
+            <div className="rounded-2xl border border-white/10 p-4">
+              <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70 mb-2">
                 Spend by Department
               </p>
               <div className="h-44">
@@ -206,23 +206,23 @@ function BudgetSection({ period }: { period: string }) {
           {/* Department bars */}
           <div className="space-y-2">
             {active.map(r => (
-              <div key={r.department} className="rounded-xl glass-card px-4 py-3">
+              <div key={r.department} className="rounded-xl border border-white/10 px-4 py-3">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <p className="text-sm font-medium text-ink-primary truncate">{r.department}</p>
+                  <p className="text-sm font-medium text-white truncate">{r.department}</p>
                   <div className="shrink-0 text-right">
-                    <span className={`text-xs font-bold tabular-nums ${r.over_budget ? 'text-status-failed' : 'text-ink-primary'}`}>
+                    <span className={`text-xs font-bold tabular-nums ${r.over_budget ? 'text-status-failed' : 'text-white'}`}>
                       {Math.round(r.pct_used)}%
                     </span>
                     {r.over_budget && <span className="ml-1 text-[10px] text-status-failed">OVER</span>}
                   </div>
                 </div>
-                <div className="h-2 rounded-full bg-cream-alt overflow-hidden">
+                <div className="h-2 rounded-full bg-white/5 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${r.over_budget ? 'bg-status-failed' : 'bg-accent-cool'}`}
                     style={{ width: `${Math.min(r.pct_used, 100)}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-[10px] text-ink-tertiary mt-1 tabular-nums">
+                <div className="flex justify-between text-[10px] text-slate-400/50 mt-1 tabular-nums">
                   <span>Spent: {formatKsh(r.spent, true)}</span>
                   <span>Budget: {formatKsh(r.budget, true)}</span>
                 </div>
@@ -258,11 +258,11 @@ function ReconStrip({ period }: { period: string }) {
         <button
           key={i.label}
           onClick={() => navigate(i.path)}
-          className="rounded-2xl glass-card glass-shine px-4 py-3 text-left
+          className="rounded-2xl border border-white/10 px-4 py-3 text-left
             hover:shadow-sm hover:border-primary-light/40 transition-all
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
         >
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">{i.label}</p>
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70">{i.label}</p>
           <p className={`text-2xl font-bold tabular-nums mt-1 ${i.danger ? 'text-status-failed' : 'text-status-paid'}`}>
             {i.value}
           </p>
@@ -284,8 +284,8 @@ export default function FinanceScreen() {
     <div className="p-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="font-serif text-2xl text-ink-primary">Finance</h1>
-          <p className="text-xs text-ink-secondary mt-0.5">Revenue and department spending</p>
+          <h1 className="font-serif text-2xl text-white">Finance</h1>
+          <p className="text-xs text-slate-300/70 mt-0.5">Revenue and department spending</p>
         </div>
         {/* Period picker */}
         <label className="sr-only" htmlFor="finance-period">Period</label>
@@ -294,15 +294,15 @@ export default function FinanceScreen() {
           value={period}
           onChange={e => setPeriod(e.target.value)}
           aria-label="Select period"
-          className="text-xs border border-cream-alt bg-cream-card rounded-lg px-2 py-1.5
-            text-ink-secondary focus:outline-none focus:ring-2 focus:ring-primary-main"
+          className="text-xs border border-white/10 bg-transparent rounded-lg px-2 py-1.5
+            text-slate-300/70 focus:outline-none focus:ring-2 focus:ring-primary-main"
         >
           {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 
       {/* Section tabs */}
-      <div className="flex gap-1 bg-cream-alt rounded-xl p-1 mb-4" role="tablist">
+      <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-4" role="tablist">
         {([['revenue', 'Revenue'], ['budget', 'Budget Burn']] as [Section, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -311,7 +311,7 @@ export default function FinanceScreen() {
             onClick={() => setSection(key)}
             className={[
               'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
-              section === key ? 'bg-cream-card text-ink-primary shadow-sm' : 'text-ink-secondary hover:text-ink-primary',
+              section === key ? 'bg-transparent text-white shadow-sm' : 'text-slate-300/70 hover:text-white',
             ].join(' ')}
           >
             {label}

@@ -51,23 +51,23 @@ function StaffCard({
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left flex items-center gap-3 rounded-xl glass-card glass-shine
+      className="w-full text-left flex items-center gap-3 rounded-xl border border-white/10
         px-4 py-3 hover:border-primary-light/50 hover:shadow-sm transition-all
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
     >
       {/* Avatar */}
       <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center
         text-sm font-bold leading-none
-        ${user.is_active ? 'bg-primary-dark text-cream-card' : 'bg-ink-tertiary/20 text-ink-tertiary'}`}>
+        ${user.is_active ? 'bg-primary-dark text-cream-card' : 'bg-ink-tertiary/20 text-slate-400/50'}`}>
         {initials}
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold truncate ${user.is_active ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
+        <p className={`text-sm font-semibold truncate ${user.is_active ? 'text-white' : 'text-slate-400/50'}`}>
           {profile?.full_name ?? user.username}
         </p>
-        <p className="text-xs text-ink-secondary truncate">
+        <p className="text-xs text-slate-300/70 truncate">
           @{user.username}
           {user.role && <span className="ml-1">· {user.role}</span>}
           {user.department && <span className="ml-1">· {user.department}</span>}
@@ -82,7 +82,7 @@ function StaffCard({
       {/* Status badges */}
       <div className="shrink-0 flex flex-col items-end gap-1">
         {!user.is_active && (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-ink-tertiary/20 text-ink-secondary font-semibold">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-ink-tertiary/20 text-slate-300/70 font-semibold">
             Inactive
           </span>
         )}
@@ -128,24 +128,24 @@ function UserDrawer({
   return (
     <div className="space-y-5">
       {/* Profile card */}
-      <div className="rounded-xl bg-cream-alt p-4 space-y-2">
+      <div className="rounded-xl bg-white/5 p-4 space-y-2">
         <div className="flex items-center gap-3">
           <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-base
-            ${user.is_active ? 'bg-primary-dark text-cream-card' : 'bg-ink-tertiary/20 text-ink-tertiary'}`}>
+            ${user.is_active ? 'bg-primary-dark text-cream-card' : 'bg-ink-tertiary/20 text-slate-400/50'}`}>
             {(profile?.full_name ?? user.username).slice(0, 2).toUpperCase()}
           </div>
           <div>
-            <p className="font-semibold text-ink-primary">{profile?.full_name ?? user.username}</p>
-            <p className="text-xs text-ink-secondary">@{user.username}</p>
+            <p className="font-semibold text-white">{profile?.full_name ?? user.username}</p>
+            <p className="text-xs text-slate-300/70">@{user.username}</p>
           </div>
         </div>
-        <div className="text-xs text-ink-secondary space-y-1 pt-2 border-t border-cream-deep">
-          <p>Role: <span className="font-medium text-ink-primary">{user.role}</span></p>
-          {user.department && <p>Dept: <span className="font-medium text-ink-primary">{user.department}</span></p>}
-          {profile?.phone && <p>Phone: <span className="font-medium text-ink-primary">{profile.phone}</span></p>}
-          {profile?.hire_date && <p>Hired: <span className="font-medium text-ink-primary">{profile.hire_date}</span></p>}
+        <div className="text-xs text-slate-300/70 space-y-1 pt-2 border-t border-cream-deep">
+          <p>Role: <span className="font-medium text-white">{user.role}</span></p>
+          {user.department && <p>Dept: <span className="font-medium text-white">{user.department}</span></p>}
+          {profile?.phone && <p>Phone: <span className="font-medium text-white">{profile.phone}</span></p>}
+          {profile?.hire_date && <p>Hired: <span className="font-medium text-white">{profile.hire_date}</span></p>}
           {profile?.wage_rate && (
-            <p>Wage: <span className="font-medium text-ink-primary">
+            <p>Wage: <span className="font-medium text-white">
               KSh {parseFloat(profile.wage_rate).toLocaleString('en-KE')} / {profile.wage_period?.toLowerCase()}
             </span></p>
           )}
@@ -245,38 +245,38 @@ function CreateUserFlow({
     profileMut.mutate(body)
   }
 
-  const inp = `w-full rounded-lg border border-cream-alt bg-cream-card px-3 py-2 text-sm
-    text-ink-primary placeholder:text-ink-tertiary
+  const inp = `w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
+    text-white placeholder:text-slate-400/50
     focus:outline-none focus:ring-2 focus:ring-primary-main`
 
   return (
     <div className="space-y-4">
       {/* Step indicator */}
-      <div className="flex items-center gap-2 text-xs text-ink-tertiary mb-2">
-        <span className={`font-semibold ${step === 1 ? 'text-primary-dark' : 'text-ink-tertiary'}`}>1 Account</span>
+      <div className="flex items-center gap-2 text-xs text-slate-400/50 mb-2">
+        <span className={`font-semibold ${step === 1 ? 'text-primary-dark' : 'text-slate-400/50'}`}>1 Account</span>
         <span>→</span>
-        <span className={`font-semibold ${step === 2 ? 'text-primary-dark' : 'text-ink-tertiary'}`}>2 Profile</span>
+        <span className={`font-semibold ${step === 2 ? 'text-primary-dark' : 'text-slate-400/50'}`}>2 Profile</span>
       </div>
 
       {step === 1 && (
         <form onSubmit={handleStep1} className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-ink-secondary mb-1">Username</label>
+            <label className="block text-xs font-semibold text-slate-300/70 mb-1">Username</label>
             <input className={inp} placeholder="e.g. amina.waweru" value={f.username} onChange={set('username')} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-ink-secondary mb-1">Temp password (8+ chars)</label>
+            <label className="block text-xs font-semibold text-slate-300/70 mb-1">Temp password (8+ chars)</label>
             <input className={inp} type="password" placeholder="Temporary password" value={f.password} onChange={set('password')} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-ink-secondary mb-1">Role</label>
+            <label className="block text-xs font-semibold text-slate-300/70 mb-1">Role</label>
             <select className={inp} value={f.roleId} onChange={set('roleId')}>
               <option value="">Select role…</option>
               {meta.roles.map(r => <option key={r.id} value={r.id}>{r.name} (level {r.level})</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-ink-secondary mb-1">Department</label>
+            <label className="block text-xs font-semibold text-slate-300/70 mb-1">Department</label>
             <select className={inp} value={f.deptId} onChange={set('deptId')}>
               <option value="">Select department…</option>
               {meta.departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -291,26 +291,26 @@ function CreateUserFlow({
 
       {step === 2 && (
         <form onSubmit={handleStep2} className="space-y-3">
-          <p className="text-xs text-ink-secondary">Account created. Now add the employee profile.</p>
+          <p className="text-xs text-slate-300/70">Account created. Now add the employee profile.</p>
           <div>
-            <label className="block text-xs font-semibold text-ink-secondary mb-1">Full name</label>
+            <label className="block text-xs font-semibold text-slate-300/70 mb-1">Full name</label>
             <input className={inp} placeholder="Full legal name" value={f.fullName} onChange={set('fullName')} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-ink-secondary mb-1">Phone number</label>
+            <label className="block text-xs font-semibold text-slate-300/70 mb-1">Phone number</label>
             <input className={inp} placeholder="07xx xxx xxx" value={f.phone} onChange={set('phone')} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-ink-secondary mb-1">Hire date (optional)</label>
+            <label className="block text-xs font-semibold text-slate-300/70 mb-1">Hire date (optional)</label>
             <input className={inp} type="date" value={f.hireDate} onChange={set('hireDate')} />
           </div>
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="block text-xs font-semibold text-ink-secondary mb-1">Wage rate (optional)</label>
+              <label className="block text-xs font-semibold text-slate-300/70 mb-1">Wage rate (optional)</label>
               <input className={inp} type="number" placeholder="e.g. 35000" value={f.wageRate} onChange={set('wageRate')} />
             </div>
             <div className="w-32">
-              <label className="block text-xs font-semibold text-ink-secondary mb-1">Period</label>
+              <label className="block text-xs font-semibold text-slate-300/70 mb-1">Period</label>
               <select className={inp} value={f.wagePeriod} onChange={set('wagePeriod')}>
                 <option value="MONTHLY">Monthly</option>
                 <option value="DAILY">Daily</option>
@@ -364,8 +364,8 @@ export default function StaffScreen() {
     <div className="p-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-5 gap-3">
         <div>
-          <h1 className="font-serif text-2xl text-ink-primary">Staff</h1>
-          <p className="text-xs text-ink-secondary mt-0.5">{users.length} total · {users.filter(u => u.is_active).length} active</p>
+          <h1 className="font-serif text-2xl text-white">Staff</h1>
+          <p className="text-xs text-slate-300/70 mt-0.5">{users.length} total · {users.filter(u => u.is_active).length} active</p>
         </div>
         <Button
           variant="primary"
@@ -377,7 +377,7 @@ export default function StaffScreen() {
       </div>
 
       {/* Filter toggle */}
-      <div className="flex gap-1 bg-cream-alt rounded-xl p-1 mb-4" role="tablist">
+      <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-4" role="tablist">
         {(['active', 'all'] as const).map(f => (
           <button
             key={f}
@@ -386,7 +386,7 @@ export default function StaffScreen() {
             onClick={() => setFilter(f)}
             className={[
               'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
-              filter === f ? 'bg-cream-card text-ink-primary shadow-sm' : 'text-ink-secondary hover:text-ink-primary',
+              filter === f ? 'bg-transparent text-white shadow-sm' : 'text-slate-300/70 hover:text-white',
             ].join(' ')}
           >
             {f === 'active' ? 'Active' : 'All'}
@@ -398,7 +398,7 @@ export default function StaffScreen() {
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex gap-3 rounded-xl border border-cream-alt bg-cream-card p-3">
+            <div key={i} className="flex gap-3 rounded-xl border border-white/10 bg-transparent p-3">
               <Skeleton variant="avatar" className="w-10 h-10 rounded-full" />
               <div className="flex-1 space-y-2">
                 <Skeleton variant="text" className="w-32 h-4" />
@@ -409,7 +409,7 @@ export default function StaffScreen() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="text-ink-secondary text-sm">No {filter === 'active' ? 'active' : ''} staff accounts.</p>
+          <p className="text-slate-300/70 text-sm">No {filter === 'active' ? 'active' : ''} staff accounts.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -440,7 +440,7 @@ export default function StaffScreen() {
         {meta && (
           <CreateUserFlow meta={meta} onClose={() => setShowCreate(false)} />
         )}
-        {!meta && <p className="text-xs text-ink-tertiary">Loading role options…</p>}
+        {!meta && <p className="text-xs text-slate-400/50">Loading role options…</p>}
       </Drawer>
     </div>
   )

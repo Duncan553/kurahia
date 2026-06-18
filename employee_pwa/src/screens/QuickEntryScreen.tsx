@@ -65,7 +65,7 @@ function ItemQtyForm({
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {itemsLoading ? (
-        <div className="h-12 rounded-xl bg-cream-alt/60 animate-pulse" />
+        <div className="h-12 rounded-xl bg-white/5/60 animate-pulse" />
       ) : (
         <Select
           label={`${label} *`}
@@ -79,7 +79,7 @@ function ItemQtyForm({
       {itemErr && <p className="text-sm text-status-failed -mt-2">{itemErr}</p>}
 
       <div>
-        <label className="block text-sm font-medium text-ink-secondary mb-1.5">Quantity *</label>
+        <label className="block text-sm font-medium text-slate-300/70 mb-1.5">Quantity *</label>
         <input
           type="number"
           min="0.001"
@@ -90,8 +90,8 @@ function ItemQtyForm({
           onChange={(e) => setQty(e.target.value)}
           onBlur={() => touch('qty')}
           disabled={isPending}
-          className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-            text-base text-ink-primary focus:outline-none focus:border-primary-dark
+          className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+            text-base text-white focus:outline-none focus:border-primary-dark
             focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
         />
       </div>
@@ -99,8 +99,8 @@ function ItemQtyForm({
 
       {requireReason && (
         <div>
-          <label className="block text-sm font-medium text-ink-secondary mb-1.5">
-            Reason * <span className="font-normal text-ink-tertiary">(min 5 chars)</span>
+          <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+            Reason * <span className="font-normal text-slate-400/50">(min 5 chars)</span>
           </label>
           <textarea
             rows={3}
@@ -109,8 +109,8 @@ function ItemQtyForm({
             onBlur={() => touch('reason')}
             disabled={isPending}
             placeholder="e.g. Fridge failure overnight, chicken spoiled"
-            className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-              text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+            className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+              text-sm text-white focus:outline-none focus:border-primary-dark
               focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50 resize-none"
           />
           {reasonErr && <p className="text-sm text-status-failed mt-1">{reasonErr}</p>}
@@ -180,12 +180,12 @@ export default function QuickEntryScreen() {
     <div className="p-4 max-w-md mx-auto space-y-5">
 
       <div>
-        <h1 className="text-xl font-bold text-ink-primary">Quick Entry</h1>
-        <p className="text-sm text-ink-tertiary">Log spoilage or staff meals</p>
+        <h1 className="text-xl font-bold text-white">Quick Entry</h1>
+        <p className="text-sm text-slate-400/50">Log spoilage or staff meals</p>
       </div>
 
       {/* ── Tab bar — both tabs visible to managers ──────────────── */}
-      <div className="flex gap-1 bg-cream-alt/50 rounded-xl p-1">
+      <div className="flex gap-1 bg-white/5/50 rounded-xl p-1">
         {(['spoilage', 'staff-meal'] as Tab[]).map((t) => (
           <button
             key={t}
@@ -193,8 +193,8 @@ export default function QuickEntryScreen() {
             className={[
               'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
               tab === t
-                ? 'bg-cream-card shadow-sm text-ink-primary'
-                : 'text-ink-tertiary hover:text-ink-secondary',
+                ? 'bg-transparent shadow-sm text-white'
+                : 'text-slate-400/50 hover:text-slate-300/70',
             ].join(' ')}
           >
             {t === 'spoilage' ? 'Spoilage' : 'Staff Meal'}
@@ -219,7 +219,7 @@ export default function QuickEntryScreen() {
       {/* ── STAFF MEAL TAB (level 1+) ────────────────────────────── */}
       {tab === 'staff-meal' && (
         staffFoodItems.length === 0 && !itemsLoading ? (
-          <p className="text-center text-sm text-ink-tertiary py-6">
+          <p className="text-center text-sm text-slate-400/50 py-6">
             No staff-food items configured yet. Ask your manager.
           </p>
         ) : (

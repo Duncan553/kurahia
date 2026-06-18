@@ -58,7 +58,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 function StatusChip({ status }: { status: string }) {
-  const { label, color } = STATUS_LABELS[status] ?? { label: status, color: 'text-ink-tertiary' }
+  const { label, color } = STATUS_LABELS[status] ?? { label: status, color: 'text-slate-400/50' }
   return <span className={`text-xs font-semibold ${color}`}>{label}</span>
 }
 
@@ -113,8 +113,8 @@ export default function AttendanceScreen() {
       <div className="p-4 max-w-lg mx-auto space-y-4">
 
         <div>
-          <h1 className="text-xl font-bold text-ink-primary">Attendance</h1>
-          <p className="text-sm text-ink-tertiary">Today's roster and monthly summary</p>
+          <h1 className="text-xl font-bold text-white">Attendance</h1>
+          <p className="text-sm text-slate-400/50">Today's roster and monthly summary</p>
         </div>
 
         {/* Absence notices banner */}
@@ -125,7 +125,7 @@ export default function AttendanceScreen() {
             </p>
             <div className="mt-1 space-y-0.5">
               {absences!.map((a) => (
-                <p key={a.id} className="text-xs text-ink-secondary">
+                <p key={a.id} className="text-xs text-slate-300/70">
                   {a.employee_name} — {a.reason ?? 'No reason given'} · {formatDateTime(a.sent_at)}
                 </p>
               ))}
@@ -134,14 +134,14 @@ export default function AttendanceScreen() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-cream-alt/50 rounded-xl p-1">
+        <div className="flex gap-1 bg-white/5/50 rounded-xl p-1">
           {(['today', 'week'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={[
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
-                tab === t ? 'bg-cream-card shadow-sm text-ink-primary' : 'text-ink-tertiary hover:text-ink-secondary',
+                tab === t ? 'bg-transparent shadow-sm text-white' : 'text-slate-400/50 hover:text-slate-300/70',
               ].join(' ')}
             >
               {t === 'today' ? 'Today' : 'Month summary'}
@@ -158,7 +158,7 @@ export default function AttendanceScreen() {
               </div>
             )}
             {todayError && (
-              <div className="p-4 rounded-xl bg-cream-alt/40 text-sm text-ink-tertiary text-center">
+              <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
                 Couldn't load attendance. Check connection.
               </div>
             )}
@@ -181,7 +181,7 @@ export default function AttendanceScreen() {
               const { label } = STATUS_LABELS[status] ?? { label: status }
               return (
                 <div key={status}>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400/50 mb-2">
                     {label} ({rows.length})
                   </p>
                   <div className="space-y-2">
@@ -189,13 +189,13 @@ export default function AttendanceScreen() {
                       <button
                         key={row.shift_id}
                         onClick={() => setSelectedEmp(row)}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-cream-alt
-                          bg-cream-card hover:bg-cream-alt/40 transition-colors text-left
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10
+                          bg-transparent hover:bg-white/5/40 transition-colors text-left
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-ink-primary">
+                            <span className="text-sm font-semibold text-white">
                               {row.employee_name ?? 'Unknown'}
                             </span>
                             {row.late && (
@@ -205,7 +205,7 @@ export default function AttendanceScreen() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-ink-tertiary mt-0.5">
+                          <p className="text-xs text-slate-400/50 mt-0.5">
                             {formatTime(row.shift_start)} – {formatTime(row.shift_end)}
                           </p>
                         </div>
@@ -240,8 +240,8 @@ export default function AttendanceScreen() {
             )}
             {!summaryLoading && (summary ?? []).map((row) => (
               <div key={row.employee_id}
-                className="rounded-xl border border-cream-alt bg-cream-card px-4 py-3">
-                <p className="text-sm font-semibold text-ink-primary">{row.employee_name}</p>
+                className="rounded-xl border border-white/10 bg-transparent px-4 py-3">
+                <p className="text-sm font-semibold text-white">{row.employee_name}</p>
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   {[
                     { label: 'Hours', value: parseFloat(row.hours_worked).toFixed(1) },
@@ -249,10 +249,10 @@ export default function AttendanceScreen() {
                     { label: 'Absences', value: row.absent_no_notice, danger: row.absent_no_notice > 0 },
                   ].map(({ label, value, danger }) => (
                     <div key={label} className="text-center">
-                      <p className={`text-lg font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-ink-primary'}`}>
+                      <p className={`text-lg font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-white'}`}>
                         {value}
                       </p>
-                      <p className="text-[10px] text-ink-tertiary">{label}</p>
+                      <p className="text-[10px] text-slate-400/50">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -270,18 +270,18 @@ export default function AttendanceScreen() {
       >
         {selectedEmp && (
           <div className="space-y-4">
-            <div className="rounded-xl bg-cream-alt/40 px-4 py-3 text-sm space-y-0.5">
-              <p className="text-ink-tertiary">
-                Shift: <span className="text-ink-primary font-medium">
+            <div className="rounded-xl bg-white/5/40 px-4 py-3 text-sm space-y-0.5">
+              <p className="text-slate-400/50">
+                Shift: <span className="text-white font-medium">
                   {formatTime(selectedEmp.shift_start)} – {formatTime(selectedEmp.shift_end)}
                 </span>
               </p>
-              <p className="text-ink-tertiary">
+              <p className="text-slate-400/50">
                 Status: <StatusChip status={selectedEmp.status} />
               </p>
               {empDetail && (
-                <p className="text-ink-tertiary">
-                  Hours worked: <span className="text-ink-primary font-medium">
+                <p className="text-slate-400/50">
+                  Hours worked: <span className="text-white font-medium">
                     {parseFloat(empDetail.hours_worked).toFixed(1)}h
                   </span>
                 </p>
@@ -290,28 +290,28 @@ export default function AttendanceScreen() {
 
             {empDetail && empDetail.events.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400/50">
                   Clock events today
                 </p>
                 {empDetail.events.map((ev) => (
                   <div key={ev.id}
-                    className="flex items-center justify-between rounded-xl border border-cream-alt px-4 py-2.5">
+                    className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-2.5">
                     <div>
-                      <p className="text-sm font-medium text-ink-primary capitalize">
+                      <p className="text-sm font-medium text-white capitalize">
                         {ev.event_type.replace('_', ' ').toLowerCase()}
                       </p>
                       {ev.is_manual_override && (
                         <p className="text-[10px] text-status-pending">Manual override</p>
                       )}
                     </div>
-                    <span className="text-sm tabular-nums text-ink-tertiary">
+                    <span className="text-sm tabular-nums text-slate-400/50">
                       {formatTime(ev.occurred_at)}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-ink-tertiary text-center py-4">
+              <p className="text-sm text-slate-400/50 text-center py-4">
                 No clock events recorded today.
               </p>
             )}
