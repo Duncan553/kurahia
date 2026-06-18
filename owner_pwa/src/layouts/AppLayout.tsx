@@ -120,8 +120,8 @@ function SideLink({ path, label, Icon }: NavItem) {
         'flex items-center gap-3 px-4 py-3 rounded-lg mx-2 transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
         isActive
-          ? 'bg-primary-dark/20 text-white'
-          : 'text-white/60 hover:bg-cream-card/10 hover:text-white',
+          ? 'bg-emerald-500/15 text-emerald-300 border-l-2 border-emerald-400'
+          : 'text-white/50 hover:bg-white/5 hover:text-white',
       ].join(' ')}
     >
       <span className="shrink-0"><Icon /></span>
@@ -168,10 +168,11 @@ export default function AppLayout() {
     <div className="h-screen flex bg-cream-card">
 
       {/* ── Sidebar — hidden on mobile, icons-only on tablet, full on desktop ── */}
-      <aside className="hidden sm:flex flex-col w-14 lg:w-60 bg-ink-primary shrink-0">
+      <aside className="hidden sm:flex flex-col w-14 lg:w-60 shrink-0 border-r border-white/5"
+        style={{ background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(20px)' }}>
 
         {/* Logo */}
-        <div className="h-14 flex items-center px-4 border-b border-cream-card/10">
+        <div className="h-14 flex items-center px-4 border-b border-white/5">
           <span className="text-white font-bold font-serif text-lg leading-none">
             <span className="hidden lg:block">Kurahia</span>
             <span className="lg:hidden">K</span>
@@ -204,8 +205,8 @@ export default function AppLayout() {
       <div className="flex flex-col flex-1 min-w-0">
 
         {/* Top bar */}
-        <header className="h-14 shrink-0 flex items-center justify-between px-4
-          bg-cream-card border-b border-cream-alt">
+        <header className="h-14 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
+          style={{ background: 'rgba(11, 17, 32, 0.9)', backdropFilter: 'blur(16px)' }}>
           <span className="sm:hidden text-lg font-bold font-serif text-ink-primary">Kurahia</span>
           <div className="hidden sm:flex items-center gap-5 text-xs text-ink-secondary">
             <span>
@@ -261,7 +262,8 @@ export default function AppLayout() {
         </main>
 
         {/* Mobile bottom nav — hidden on sm+ */}
-        <nav className="sm:hidden shrink-0 flex border-t border-cream-alt bg-cream-card"
+        <nav className="sm:hidden shrink-0 flex border-t border-white/5"
+          style={{ background: 'rgba(11, 17, 32, 0.95)' }}
           aria-label="Owner navigation">
           {SIDEBAR_ITEMS.map(({ path, label, Icon }) => (
             <NavLink
