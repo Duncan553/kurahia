@@ -72,7 +72,7 @@ export default function WaiverScreen() {
   }
 
   return (
-    <div className="p-4 max-w-md mx-auto space-y-5">
+    <div className="p-4 max-w-3xl mx-auto space-y-5">
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div>

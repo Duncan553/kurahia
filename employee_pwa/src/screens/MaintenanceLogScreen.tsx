@@ -106,7 +106,7 @@ export default function MaintenanceLogScreen() {
 
   return (
     <RequireRole minLevel={5}>
-      <div className="p-4 max-w-lg mx-auto space-y-4">
+      <div className="p-4 max-w-3xl mx-auto space-y-4">
 
         <div>
           <h1 className="text-xl font-bold text-white">Equipment Service</h1>

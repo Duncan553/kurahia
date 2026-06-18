@@ -77,7 +77,7 @@ export default function BandLookupScreen() {
   const balance = result ? parseFloat(result.tab_balance) : 0
 
   return (
-    <div className="p-4 max-w-md mx-auto space-y-5">
+    <div className="p-4 max-w-3xl mx-auto space-y-5">
 
       <div>
         <h1 className="text-xl font-bold text-white">Band Lookup</h1>

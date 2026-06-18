@@ -71,7 +71,7 @@ export default function WaiterTabsScreen() {
   })
 
   return (
-    <div className="p-4 max-w-lg mx-auto space-y-4">
+    <div className="p-4 max-w-3xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold font-serif text-white">My Tables</h1>
         <Button variant="primary" size="sm" onClick={() => setOpen(true)}>+ New Table</Button>
