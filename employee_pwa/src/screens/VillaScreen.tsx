@@ -28,14 +28,47 @@ export default function VillaScreen() {
     ? tabs.filter(t => (t.reference ?? 'Villa Guest').toLowerCase().includes(searchQ.toLowerCase()))
     : tabs
 
+  const VILLAS = [
+    { name: 'Villa 1', price: 100000, sqft: '8,000 ft²', img: '/images/villas/villa-1.jpg' },
+    { name: 'Villa 2', price: 100000, sqft: '120 ft²', img: '/images/villas/villa-2.jpg' },
+    { name: 'Villa 4', price: 120000, sqft: '120 ft²', img: '/images/villas/villa-4.jpg' },
+    { name: 'Villa 6', price: 140000, sqft: '8,000 ft²', img: '/images/villas/villa-6.jpg' },
+    { name: 'Villa 14', price: 65000, sqft: '1,200 ft²', img: '/images/villas/villa-14.jpg' },
+    { name: 'Villa 15', price: 65000, sqft: '1,200 ft²', img: '/images/villas/villa-15.jpg' },
+  ]
+
   return (
-    <div className="p-4 max-w-lg mx-auto space-y-4">
-      <h1 className="text-xl font-bold font-serif text-ink-primary">Villa Guests</h1>
+    <div className="min-h-screen p-4 md:p-6"
+      style={{ background: 'linear-gradient(145deg, #1a0f0a 0%, #2d1f15 50%, #1a0f0a 100%)' }}>
+      <div className="max-w-3xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold font-serif text-white">Villas</h1>
+        <p className="text-xs text-amber-200/40 mt-0.5">Waterfront Country Club · 8 adults/night</p>
+      </div>
+
+      {/* Real villa cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {VILLAS.map(v => (
+          <div key={v.name} className="rounded-2xl overflow-hidden border border-amber-200/10"
+            style={{ background: 'rgba(45, 31, 21, 0.7)', backdropFilter: 'blur(12px)' }}>
+            <div className="h-24 bg-amber-900/30 flex items-center justify-center text-amber-200/30 text-xs">
+              📷 {v.name}
+            </div>
+            <div className="p-3">
+              <p className="font-semibold text-white text-sm">{v.name}</p>
+              <p className="text-xs text-amber-200/60 tabular-nums">KSh {v.price.toLocaleString()}/night</p>
+              <p className="text-[10px] text-amber-200/40">{v.sqft} · 8 adults</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="text-lg font-bold font-serif text-white">Current Guests</h2>
 
       <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search guests..." label="Search guests" />
 
       {searchQ && filteredTabs.length === 0 && !isLoading && (
-        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+        <p className="text-sm text-amber-200/40 text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
       )}
 
       {isLoading && <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} variant="row" />)}</div>}
@@ -56,11 +89,11 @@ export default function VillaScreen() {
           const bal = parseFloat(t.balance)
           return (
             <button key={t.id} onClick={() => navigate(`/pos/tabs/${t.id}`)}
-              className="w-full flex items-center justify-between p-4 rounded-2xl glass-card glass-shine
+              className="w-full flex items-center justify-between p-4 rounded-2xl border border-amber-200/10
                 hover:bg-cream-alt transition-colors text-left">
               <div>
-                <p className="font-semibold text-ink-primary">{t.reference ?? 'Villa Guest'}</p>
-                <p className="text-xs text-ink-tertiary mt-0.5">
+                <p className="font-semibold text-white">{t.reference ?? 'Villa Guest'}</p>
+                <p className="text-xs text-amber-200/40 mt-0.5">
                   Checked in {new Date(t.opened_at).toLocaleDateString('en-KE')}
                   {t.opened_by ? ` · by ${t.opened_by}` : ''}
                 </p>
@@ -69,11 +102,12 @@ export default function VillaScreen() {
                 <p className={`text-sm font-bold tabular-nums ${bal > 0 ? 'text-status-failed' : 'text-status-paid'}`}>
                   {kes(t.balance)}
                 </p>
-                <p className="text-[10px] text-ink-tertiary">{bal > 0 ? 'outstanding' : 'settled'}</p>
+                <p className="text-[10px] text-amber-200/40">{bal > 0 ? 'outstanding' : 'settled'}</p>
               </div>
             </button>
           )
         })}
+      </div>
       </div>
     </div>
   )
