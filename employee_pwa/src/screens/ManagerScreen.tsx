@@ -28,9 +28,8 @@ function G({ children, className = '', onClick }: {
       whileHover={onClick ? { y: -3, boxShadow: '0 16px 48px rgba(0,0,0,0.4)' } : undefined}
       whileTap={onClick ? { scale: 0.98 } : undefined}
       onClick={onClick}
-      className={`rounded-2xl overflow-hidden ${onClick ? 'cursor-pointer' : ''} ${className}`}
-      style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.36)' }}>
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" style={{ position: 'relative' }} />
+      className={`glass-card ${onClick ? 'cursor-pointer' : ''} ${className}`}>
+      <div className="relative h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
       {children}
     </motion.div>
   )
@@ -240,8 +239,8 @@ export default function ManagerScreen() {
                   whileHover={{ y: -3 }} whileTap={{ scale: 0.94 }}
                   onClick={() => navigate(a.path)}
                   className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl transition-all
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400
+                    glass-card-sage">
                   <span className="text-lg">{a.icon}</span>
                   <span className="text-[9px] text-white/60 font-medium">{a.label}</span>
                 </motion.button>
