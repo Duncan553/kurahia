@@ -71,6 +71,7 @@ const WaiterTabsScreen = lazy(() => import('./screens/WaiterTabsScreen'))
 const WaiterTabDetailScreen = lazy(() => import('./screens/WaiterTabDetailScreen'))
 const ServicePayScreen = lazy(() => import('./screens/ServicePayScreen'))
 const VillaScreen = lazy(() => import('./screens/VillaScreen'))
+const CustomerMenuScreen = lazy(() => import('./screens/CustomerMenuScreen'))
 const KioskLaunchScreen = lazy(() => import('./screens/kiosk/KioskLaunchScreen'))
 const KioskMenuScreen = lazy(() => import('./screens/kiosk/KioskMenuScreen'))
 const KioskWelcomeScreen = lazy(() => import('./screens/kiosk/KioskWelcomeScreen'))
@@ -130,6 +131,7 @@ const router = createBrowserRouter([
         // ── POS: waiter tables + tab detail (level 1+, dept-filtered in nav)
         { path: '/pos/tabs',     element: <WaiterTabsScreen />      },
         { path: '/pos/tabs/:id', element: <WaiterTabDetailScreen /> },
+        { path: '/pos/menu/:tabId?', element: <CustomerMenuScreen /> },
 
         // ── POS: kitchen + bar queues (dept-filtered in nav)
         { path: '/pos/kitchen', element: <KitchenQueueScreen /> },

@@ -566,8 +566,8 @@ export default function WaiterTabDetailScreen() {
           <p className="text-sm text-blue-200/60 text-center">How would you like to start?</p>
           <div className="flex gap-3 w-full max-w-xs">
             <motion.button whileTap={{ scale: 0.97 }}
-              onClick={() => setEntryChoice('menu')}
-              className="flex-1 py-4 rounded-2xl glass-card glass-shine text-center">
+              onClick={() => { setEntryChoice('menu'); navigate(`/pos/menu/${tabId ?? ''}`) }}
+              className="flex-1 py-4 rounded-2xl glass-card text-center">
               <span className="text-2xl mb-1 block">📖</span>
               <span className="text-sm font-semibold text-white">Show Menu</span>
               <span className="text-[10px] text-blue-200/40 block mt-0.5">Guest wants to browse</span>
