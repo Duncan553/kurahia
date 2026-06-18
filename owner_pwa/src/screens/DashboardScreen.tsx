@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { BarChart, Bar, ResponsiveContainer, Tooltip } from 'recharts'
+import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { Skeleton, StatusBadge, ErrorBoundary } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
@@ -199,65 +199,112 @@ function HeroTile() {
   }))
   const today = parseFloat(overview?.revenue.total ?? '0')
   const byMethod = overview?.revenue.by_method ?? {}
-  const parts = Object.entries(byMethod).map(([k, v]) => `${k} ${formatKsh(v)}`).join(' · ')
   const yesterday = chartData.length >= 2 ? chartData[chartData.length - 2]?.rev ?? 0 : 0
   const delta = yesterday > 0 ? ((today - yesterday) / yesterday * 100) : 0
   const updatedAgo = dataUpdatedAt ? Math.floor((Date.now() - dataUpdatedAt) / 1000) : null
 
-  return (
-    <div className="rounded-2xl p-5 col-span-full gradient-hero">
-      <p className="text-[10px] font-semibold tracking-widest uppercase text-white/70 mb-1">Revenue Today</p>
-      {ovErr ? (
-        <p className="text-3xl font-bold tabular-nums text-white/50">KSh —</p>
-      ) : (
-        <>
-          <p className="text-4xl font-bold tabular-nums text-white leading-tight">
-            {formatKsh(today)}
-          </p>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            {delta !== 0 && (
-              <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
-                delta > 0 ? 'bg-white/15 text-white' : 'bg-status-failed/30 text-white'
-              }`}>
-                {delta > 0 ? '↗' : '↘'} {Math.abs(delta).toFixed(0)}% vs yesterday
-              </span>
-            )}
-            {updatedAgo !== null && updatedAgo < 120 && (
-              <span className="text-[10px] text-white/40">
-                updated {updatedAgo < 5 ? 'just now' : `${updatedAgo}s ago`}
-              </span>
-            )}
-          </div>
-          {parts && (
-            <p className="text-xs text-white/50 mt-1 truncate">{parts}</p>
-          )}
-        </>
-      )}
+  const methodColors: Record<string, string> = {
+    CASH: '#E4D2B0', MPESA: '#28633D', CARD: '#C68A28', BANK_TRANSFER: '#4A7889',
+  }
+  const pieData = Object.entries(byMethod)
+    .filter(([, v]) => parseFloat(v) > 0)
+    .map(([k, v]) => ({ name: k, value: parseFloat(v) }))
 
-      {/* 7-day bar chart */}
-      <div className="mt-4 h-16" aria-label="7-day revenue trend">
-        {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-              <Bar dataKey="rev" fill="rgba(255,255,255,0.35)" radius={[3, 3, 0, 0]}
-                activeBar={{ fill: 'rgba(255,255,255,0.6)' }} />
-              <Tooltip
-                contentStyle={{ background: '#1A3636', border: 'none', borderRadius: 8, fontSize: 11 }}
-                labelStyle={{ color: '#E4D2B0' }}
-                formatter={(v: unknown) => [formatKsh(v as number), 'Revenue']}
-                labelFormatter={(label: unknown) => String(label)}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="h-full flex items-end gap-1">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <div key={i} className="flex-1 bg-white/15 rounded-sm" style={{ height: '40%' }} />
-            ))}
+  return (
+    <div className="rounded-2xl col-span-full gradient-hero overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-0">
+        {/* Left — Revenue + bar chart */}
+        <div className="p-5 md:p-6">
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-white/70 mb-1">Revenue Today</p>
+          {ovErr ? (
+            <p className="text-3xl font-bold tabular-nums text-white/50">KSh —</p>
+          ) : (
+            <>
+              <p className="text-4xl md:text-5xl font-bold tabular-nums text-white leading-tight">
+                {formatKsh(today)}
+              </p>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                {delta !== 0 && (
+                  <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                    delta > 0 ? 'bg-status-paid/30 text-white' : 'bg-status-failed/30 text-white'
+                  }`}>
+                    {delta > 0 ? '↗' : '↘'} {Math.abs(delta).toFixed(0)}%
+                  </span>
+                )}
+                {updatedAgo !== null && updatedAgo < 120 && (
+                  <span className="text-[10px] text-white/40">
+                    {updatedAgo < 5 ? 'just now' : `${updatedAgo}s ago`}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+          <div className="mt-4 h-20" aria-label="7-day revenue trend">
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
+                      <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                    </linearGradient>
+                  </defs>
+                  <Area type="monotone" dataKey="rev" stroke="rgba(255,255,255,0.6)" strokeWidth={2}
+                    fill="url(#revGrad)" />
+                  <Tooltip
+                    contentStyle={{ background: '#1A3636', border: 'none', borderRadius: 8, fontSize: 11 }}
+                    labelStyle={{ color: '#E4D2B0' }}
+                    formatter={(v: unknown) => [formatKsh(v as number), 'Revenue']}
+                    labelFormatter={(label: unknown) => String(label)}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-end gap-1">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div key={i} className="flex-1 bg-white/15 rounded-sm" style={{ height: '40%' }} />
+                ))}
+              </div>
+            )}
           </div>
-        )}
+          <p className="text-[10px] text-white/40 mt-1">Last 7 days</p>
+        </div>
+
+        {/* Right — Payment method donut */}
+        <div className="p-5 md:p-6 md:border-l border-white/10 flex flex-col items-center justify-center">
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-white/60 mb-3">By Method</p>
+          {pieData.length > 0 ? (
+            <>
+              <div className="w-32 h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} dataKey="value" cx="50%" cy="50%"
+                      innerRadius={35} outerRadius={55} paddingAngle={3} strokeWidth={0}>
+                      {pieData.map((entry, i) => (
+                        <Cell key={i} fill={methodColors[entry.name] ?? '#756859'} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-3 space-y-1.5 w-full">
+                {pieData.map(d => (
+                  <div key={d.name} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full shrink-0"
+                        style={{ background: methodColors[d.name] ?? '#756859' }} />
+                      <span className="text-white/70">{d.name === 'BANK_TRANSFER' ? 'Bank' : d.name}</span>
+                    </div>
+                    <span className="tabular-nums font-semibold text-white">{formatKsh(d.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-white/40">No payments today</p>
+          )}
+        </div>
       </div>
-      <p className="text-[10px] text-white/50 mt-1">Last 7 days</p>
     </div>
   )
 }
@@ -690,14 +737,23 @@ export default function DashboardScreen() {
     <ErrorBoundary key="calendar"    level="tile"><CalendarTile         /></ErrorBoundary>,
   ]
 
-  return (
-    <div className="p-4 max-w-5xl mx-auto">
-      <div className="mb-4">
-        <h1 className="font-serif text-2xl text-ink-primary">Dashboard</h1>
-        <p className="text-xs text-ink-tertiary mt-0.5">Waterfront Kurahia · Owner view</p>
-      </div>
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
-      <TopBar onRefresh={refreshAll} />
+  return (
+    <div className="p-4 md:p-6 max-w-6xl mx-auto">
+      <div className="mb-6 flex items-end justify-between">
+        <div>
+          <p className="text-sm text-ink-secondary">{greeting},</p>
+          <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
+            Wachira
+          </h1>
+          <p className="text-xs text-ink-tertiary mt-1">
+            Waterfront Country Club &middot; {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <TopBar onRefresh={refreshAll} />
+      </div>
 
       <motion.div
         variants={gridVariants}
