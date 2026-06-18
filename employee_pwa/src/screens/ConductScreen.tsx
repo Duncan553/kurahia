@@ -184,7 +184,7 @@ export default function ConductScreen() {
                       'px-5 py-2.5 rounded-xl text-sm font-semibold transition-all',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                       scrollReady
-                        ? 'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.98]'
+                        ? 'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.98]'
                         : 'bg-white/5 text-slate-300/70 cursor-not-allowed',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                     ].join(' ')}

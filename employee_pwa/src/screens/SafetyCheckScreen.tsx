@@ -392,7 +392,7 @@ export default function SafetyCheckScreen() {
             disabled={!allChecked || submitting}
             className={[
               'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-              'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
+              'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             ].join(' ')}

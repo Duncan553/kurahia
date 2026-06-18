@@ -77,7 +77,7 @@ export function SearchInput({
         <button onClick={clear} aria-label="Clear search"
           className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full
             bg-cream-alt flex items-center justify-center text-ink-tertiary
-            hover:bg-ink-tertiary hover:text-cream-card transition-colors">
+            hover:bg-ink-tertiary hover:text-white transition-colors">
           <span aria-hidden="true" className="text-xs leading-none font-bold">×</span>
         </button>
       )}

@@ -159,7 +159,7 @@ export default function WristbandScreen() {
             disabled={mutation.isPending}
             className={[
               'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-              'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
+              'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             ].join(' ')}
@@ -197,7 +197,7 @@ export default function WristbandScreen() {
           <button
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending}
-            className="flex-1 py-3 rounded-xl bg-primary-dark text-cream-card font-semibold
+            className="flex-1 py-3 rounded-xl bg-primary-dark text-white font-semibold
               hover:bg-primary-dark/90 transition-colors disabled:opacity-50"
           >
             {mutation.isPending ? 'Issuing…' : 'Confirm Issue'}
@@ -218,7 +218,7 @@ export default function WristbandScreen() {
           </button>
           <button
             onClick={() => { setErrorOpen(false); setConfirmOpen(true) }}
-            className="flex-1 py-3 rounded-xl bg-primary-dark text-cream-card font-semibold
+            className="flex-1 py-3 rounded-xl bg-primary-dark text-white font-semibold
               hover:bg-primary-dark/90 transition-colors"
           >
             Retry

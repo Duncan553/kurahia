@@ -19,7 +19,7 @@ export interface ButtonProps extends Omit<ComponentPropsWithoutRef<'button'>, HT
 }
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary:   'bg-primary-dark text-cream-card hover:bg-primary-main',
+  primary:   'bg-primary-dark text-white hover:bg-primary-main',
   secondary: 'bg-cream-card text-ink-primary border border-primary-dark hover:bg-cream-alt',
   ghost:     'bg-transparent text-ink-secondary hover:bg-cream-alt',
   danger:    'bg-status-failed text-white hover:opacity-90',

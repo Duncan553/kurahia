@@ -127,7 +127,7 @@ export function Combobox({
               className={[
                 'px-3 py-2.5 text-sm cursor-pointer transition-colors',
                 i === activeIdx
-                  ? 'bg-primary-dark text-cream-card'
+                  ? 'bg-primary-dark text-white'
                   : 'text-ink-primary hover:bg-cream-alt',
               ].join(' ')}
             >

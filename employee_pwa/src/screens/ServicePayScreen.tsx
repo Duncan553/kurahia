@@ -108,7 +108,7 @@ export default function ServicePayScreen() {
                     )}
                     <button
                       onClick={() => setDraft(d => ({ ...d, [item.id]: (d[item.id] ?? 0) + 1 }))}
-                      className="w-9 h-9 rounded-full bg-primary-dark text-cream-card font-bold
+                      className="w-9 h-9 rounded-full bg-primary-dark text-white font-bold
                         flex items-center justify-center">+</button>
                   </div>
                 </div>
@@ -145,7 +145,7 @@ export default function ServicePayScreen() {
               <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
                 className={`py-3 rounded-xl text-sm font-semibold border transition-colors ${
                   pay.method === m
-                    ? 'bg-primary-dark text-cream-card border-primary-dark'
+                    ? 'bg-primary-dark text-white border-primary-dark'
                     : 'bg-transparent text-slate-300/70 border-white/10 hover:border-primary-dark/50'
                 }`}>
                 {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}

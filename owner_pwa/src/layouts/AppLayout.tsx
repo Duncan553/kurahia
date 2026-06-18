@@ -120,8 +120,8 @@ function SideLink({ path, label, Icon }: NavItem) {
         'flex items-center gap-3 px-4 py-3 rounded-lg mx-2 transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
         isActive
-          ? 'bg-primary-dark/20 text-cream-card'
-          : 'text-cream-card/60 hover:bg-cream-card/10 hover:text-cream-card',
+          ? 'bg-primary-dark/20 text-white'
+          : 'text-white/60 hover:bg-cream-card/10 hover:text-white',
       ].join(' ')}
     >
       <span className="shrink-0"><Icon /></span>
@@ -172,7 +172,7 @@ export default function AppLayout() {
 
         {/* Logo */}
         <div className="h-14 flex items-center px-4 border-b border-cream-card/10">
-          <span className="text-cream-card font-bold font-serif text-lg leading-none">
+          <span className="text-white font-bold font-serif text-lg leading-none">
             <span className="hidden lg:block">Kurahia</span>
             <span className="lg:hidden">K</span>
           </span>
@@ -186,15 +186,15 @@ export default function AppLayout() {
         {/* User + sign out */}
         <div className="border-t border-cream-card/10 p-3 flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-primary-dark flex items-center justify-center
-            text-cream-card text-sm font-bold shrink-0">
+            text-white text-sm font-bold shrink-0">
             {user?.username?.[0]?.toUpperCase() ?? '?'}
           </div>
           <div className="hidden lg:block flex-1 min-w-0">
-            <p className="text-xs font-medium text-cream-card truncate">{user?.username}</p>
-            <p className="text-[10px] text-cream-card/50">Owner</p>
+            <p className="text-xs font-medium text-white truncate">{user?.username}</p>
+            <p className="text-[10px] text-white/50">Owner</p>
           </div>
           <button onClick={signOut} aria-label="Sign out"
-            className="text-cream-card/50 hover:text-cream-card transition-colors shrink-0">
+            className="text-white/50 hover:text-white transition-colors shrink-0">
             <SignOutIcon />
           </button>
         </div>
@@ -227,7 +227,7 @@ export default function AppLayout() {
           {/* Mobile sign-out */}
           <button onClick={signOut}
             className="sm:hidden w-8 h-8 rounded-full bg-primary-dark flex items-center justify-center
-              text-cream-card text-sm font-bold"
+              text-white text-sm font-bold"
             aria-label="Sign out">
             {user?.username?.[0]?.toUpperCase() ?? '?'}
           </button>

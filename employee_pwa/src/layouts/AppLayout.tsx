@@ -456,7 +456,7 @@ export default function AppLayout() {
         <button
           onClick={signOut}
           className="w-8 h-8 rounded-full bg-primary-dark flex items-center justify-center
-            text-cream-card text-sm font-bold focus-visible:ring-2 focus-visible:ring-primary-dark"
+            text-white text-sm font-bold focus-visible:ring-2 focus-visible:ring-primary-dark"
           aria-label="Sign out"
         >
           {user?.username?.[0]?.toUpperCase() ?? '?'}
@@ -513,7 +513,7 @@ export default function AppLayout() {
               <Icon />
               {badge && badgeCount > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full
-                  bg-status-failed text-cream-card text-[10px] font-bold
+                  bg-status-failed text-white text-[10px] font-bold
                   flex items-center justify-center px-1">
                   {badgeCount > 9 ? '9+' : badgeCount}
                 </span>

@@ -170,7 +170,7 @@ export default function ShiftScreen() {
           </div>
           <button
             onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-dark text-cream-card
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-dark text-white
               text-sm font-semibold hover:bg-primary-dark/90 transition-colors
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           >
@@ -330,7 +330,7 @@ export default function ShiftScreen() {
             disabled={!createValid || createMutation.isPending}
             className={[
               'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-              'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
+              'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             ].join(' ')}
@@ -362,7 +362,7 @@ export default function ShiftScreen() {
             <button
               onClick={() => cancelId && cancelMutation.mutate(cancelId)}
               disabled={cancelMutation.isPending}
-              className="flex-1 py-3 rounded-xl bg-status-failed text-cream-card text-sm font-semibold
+              className="flex-1 py-3 rounded-xl bg-status-failed text-white text-sm font-semibold
                 hover:bg-status-failed/90 disabled:opacity-50 transition-colors"
             >
               {cancelMutation.isPending ? 'Cancelling…' : 'Cancel shift'}

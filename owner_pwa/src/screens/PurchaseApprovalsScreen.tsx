@@ -288,7 +288,7 @@ export default function PurchaseApprovalsScreen() {
             {label}
             {key === 'pending' && pendingCount > 0 && (
               <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full
-                bg-status-pending text-xs font-bold text-cream-card">
+                bg-status-pending text-xs font-bold text-white">
                 {pendingCount}
               </span>
             )}

@@ -102,7 +102,7 @@ export default function BandLookupScreen() {
           onClick={lookup}
           disabled={loading || !input.trim()}
           className={[
-            'px-5 py-3 rounded-xl bg-primary-dark text-cream-card font-semibold text-sm',
+            'px-5 py-3 rounded-xl bg-primary-dark text-white font-semibold text-sm',
             'hover:bg-primary-dark/90 transition-all shrink-0',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',

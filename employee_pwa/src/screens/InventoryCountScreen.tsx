@@ -237,7 +237,7 @@ export default function InventoryCountScreen() {
           <button
             onClick={openAddDrawer}
             className="shrink-0 min-h-[44px] flex items-center gap-1.5 px-3 rounded-xl
-              bg-primary-dark text-cream-card text-xs font-semibold
+              bg-primary-dark text-white text-xs font-semibold
               hover:bg-primary-dark/90 transition-colors
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           >
@@ -260,7 +260,7 @@ export default function InventoryCountScreen() {
                   className={[
                     'px-3 py-1.5 min-h-[44px] rounded-lg text-xs font-semibold transition-all',
                     selectedDeptId === d.id
-                      ? 'bg-primary-dark text-cream-card'
+                      ? 'bg-primary-dark text-white'
                       : 'bg-white/5 text-slate-300/70 hover:bg-cream-deep',
                   ].join(' ')}
                 >
@@ -409,7 +409,7 @@ export default function InventoryCountScreen() {
                         'disabled:opacity-40 disabled:cursor-not-allowed',
                         submitted
                           ? 'bg-primary-main/20 text-primary-dark hover:bg-primary-main/30'
-                          : 'bg-primary-dark text-cream-card hover:bg-primary-dark/90',
+                          : 'bg-primary-dark text-white hover:bg-primary-dark/90',
                       ].join(' ')}
                     >
                       {pending.has(item.id) ? (
@@ -455,7 +455,7 @@ export default function InventoryCountScreen() {
               <button
                 onClick={() => { setVarTriggered(true); refetchVariance() }}
                 disabled={varFetching}
-                className="px-4 py-2.5 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+                className="px-4 py-2.5 rounded-xl bg-primary-dark text-white text-sm font-semibold
                   hover:bg-primary-dark/90 disabled:opacity-50 transition-all shrink-0"
               >
                 {varFetching ? '…' : 'Run'}
@@ -621,7 +621,7 @@ export default function InventoryCountScreen() {
             type="submit"
             disabled={!addFormValid || addItemMutation.isPending}
             className="w-full py-4 rounded-2xl text-base font-semibold transition-all
-              bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]
+              bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2
               disabled:opacity-50 disabled:cursor-not-allowed"
           >

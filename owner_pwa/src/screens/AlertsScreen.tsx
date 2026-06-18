@@ -151,7 +151,7 @@ export default function AlertsScreen() {
             className={[
               'px-3 py-1.5 min-h-[44px] rounded-full text-xs font-semibold transition-colors',
               view.filter === key
-                ? 'bg-ink-primary text-cream-card'
+                ? 'bg-ink-primary text-white'
                 : 'bg-white/5 text-slate-300/70 hover:bg-cream-deep',
             ].join(' ')}
           >

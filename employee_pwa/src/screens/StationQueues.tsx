@@ -299,7 +299,7 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
                       onClick={() => actMut.mutate({ id: item.order_item_id, action: 'ready' })}
                       disabled={actMut.isPending}
                       className="flex-1 min-h-[56px] rounded-xl text-sm font-semibold
-                        bg-primary-dark text-cream-card
+                        bg-primary-dark text-white
                         hover:bg-primary-dark/90 transition-colors disabled:opacity-50">
                       Ready ✓
                     </motion.button>
@@ -322,7 +322,7 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
                       onClick={() => actMut.mutate({ id: item.order_item_id, action: 'ready' })}
                       disabled={actMut.isPending}
                       className="px-4 py-2 rounded-lg text-xs font-semibold
-                        bg-primary-dark text-cream-card disabled:opacity-50">
+                        bg-primary-dark text-white disabled:opacity-50">
                       Ready ✓
                     </motion.button>
                   )}
@@ -408,7 +408,7 @@ function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
                 <button key={v} onClick={() => setView(v)}
                   className={`px-4 py-2 text-sm font-semibold capitalize transition-colors ${
                     view === v
-                      ? 'bg-ink-primary text-cream-card'
+                      ? 'bg-ink-primary text-white'
                       : 'text-ink-secondary hover:bg-cream-alt'
                   }`}>
                   {v === 'queue' ? `Orders${count ? ` (${count})` : ''}` : 'Stock'}

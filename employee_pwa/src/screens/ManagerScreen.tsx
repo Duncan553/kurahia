@@ -309,7 +309,7 @@ export default function ManagerScreen() {
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary-dark flex items-center justify-center
-                text-cream-card text-base font-bold shrink-0">
+                text-white text-base font-bold shrink-0">
                 {user?.username?.[0]?.toUpperCase() ?? '?'}
               </div>
               <div>

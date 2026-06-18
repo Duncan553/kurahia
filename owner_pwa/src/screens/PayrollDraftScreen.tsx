@@ -166,7 +166,7 @@ export default function PayrollDraftScreen() {
 
           {/* Summary footer */}
           <div className="flex items-center justify-between px-4 py-3 rounded-2xl
-            bg-ink-primary text-cream-card">
+            bg-ink-primary text-white">
             <p className="text-sm font-semibold">Total gross payroll</p>
             <p className="text-base font-bold tabular-nums">{kes(totalGross)}</p>
           </div>

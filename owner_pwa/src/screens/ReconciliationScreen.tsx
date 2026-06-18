@@ -258,7 +258,7 @@ export default function ReconciliationScreen() {
                   onKeyDown={(e) => { if (e.key === ' ' && !e.repeat) { e.preventDefault(); startHold() } }}
                   onKeyUp={(e) => { if (e.key === ' ') { e.preventDefault(); cancelHold() } }}
                   aria-label="Close Period. Hold Space for 2 seconds to confirm."
-                  className="relative w-full py-4 bg-primary-dark text-cream-card rounded-2xl
+                  className="relative w-full py-4 bg-primary-dark text-white rounded-2xl
                     text-base font-semibold select-none cursor-grab active:cursor-grabbing
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                 >

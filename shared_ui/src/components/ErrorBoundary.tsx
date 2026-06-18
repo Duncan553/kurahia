@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
               ← Back
             </button>
             <button onClick={() => this.setState({ hasError: false, error: null })}
-              className="px-4 py-2.5 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+              className="px-4 py-2.5 rounded-xl bg-primary-dark text-white text-sm font-semibold
                 hover:bg-primary-dark/90 transition-colors">
               Reload
             </button>
