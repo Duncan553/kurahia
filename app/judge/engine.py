@@ -147,6 +147,47 @@ def _run_cost_variance(period_start: datetime, period_end: datetime) -> int:
     return alerts_fired
 
 
+def _run_budget_exceeded() -> int:
+    """Fire BUDGET_EXCEEDED alert for any department over 100% of its monthly budget."""
+    from app.models.budget import Budget
+    from app.models.department import Department
+
+    now = datetime.now(timezone.utc)
+    period = f"{now.year}-{now.month:02d}"
+
+    budgets = db.session.query(Budget).filter_by(is_active=True).all()
+    alerts_fired = 0
+
+    for b in budgets:
+        if not b.amount or Decimal(str(b.amount)) <= 0:
+            continue
+        if b.period != period:
+            continue
+
+        budget_amt = Decimal(str(b.amount))
+        spent = Decimal(str(b.spent)) if hasattr(b, 'spent') and b.spent else Decimal("0")
+
+        if spent <= budget_amt:
+            continue
+
+        dept = db.session.get(Department, b.department_id)
+        dept_name = dept.name if dept else "Unknown"
+        pct = (spent / budget_amt * 100).quantize(Decimal("1"))
+
+        _fire_alert(
+            item_id=None,
+            alert_type="BUDGET_EXCEEDED",
+            severity=AlertSeverity.HIGH if spent > budget_amt * Decimal("1.2") else AlertSeverity.MEDIUM,
+            description=f"{dept_name} department has spent {pct}% of its monthly budget "
+                        f"(KSh {spent:,.0f} of KSh {budget_amt:,.0f}).",
+            period_start=now.replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+            period_end=now,
+        )
+        alerts_fired += 1
+
+    return alerts_fired
+
+
 def run_weekly(period_start: datetime, period_end: datetime) -> int:
     """
     Weekly judge analysis:
@@ -189,6 +230,9 @@ def run_weekly(period_start: datetime, period_end: datetime) -> int:
 
     # Cost variance analysis: expected vs actual ingredient spend
     alerts_fired += _run_cost_variance(period_start, period_end)
+
+    # Budget exceeded: any department over 100% budget for current month
+    alerts_fired += _run_budget_exceeded()
 
     if alerts_fired:
         db.session.flush()

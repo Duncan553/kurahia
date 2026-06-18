@@ -192,6 +192,7 @@ def list_menu_items():
             "prep_station":  i.prep_station,
             "department_id": i.department_id,
             "is_active":     i.is_active,
+            "image_path":    i.image_path,
             **_compute_menu_item_cost_fields(i),
         })
     return jsonify(result), 200
