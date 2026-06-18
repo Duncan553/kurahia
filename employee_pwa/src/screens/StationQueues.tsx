@@ -218,42 +218,50 @@ function QueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: 
               exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: 'hidden' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               aria-label={`${item.menu_item} × ${item.quantity} for ${item.tab_reference ?? 'walk-in'}, ${badge.text}`}
-              className={`rounded-2xl border shadow-sm ${
+              className={`rounded-xl shadow-md overflow-hidden ${
                 item.status === 'RECEIVED'
-                  ? 'border-status-pending/40 bg-status-pending/5'
-                  : `glass-card glass-shine`
+                  ? 'bg-status-pending/5 border-l-4 border-l-status-pending'
+                  : 'bg-ticket-paper border-l-4 border-l-primary-main'
               } ${compact ? 'p-3' : 'p-5'}`}
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
             >
-              {/* Top row: table + age */}
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-baseline gap-2">
-                  <span className={`font-bold tabular-nums text-ink-primary ${compact ? 'text-lg' : 'text-2xl'}`}>
-                    {item.tab_reference ?? 'Walk-in'}
+              {/* Receipt header */}
+              <div className="flex items-start justify-between gap-3 mb-1">
+                <div>
+                  <span className={`font-bold tabular-nums text-ticket-ink ${compact ? 'text-lg' : 'text-3xl'} tracking-tight`}>
+                    {item.tab_reference ?? 'WALK-IN'}
                   </span>
                   {item.status === 'RECEIVED' && (
-                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md
-                      bg-status-pending/20 text-status-pending tracking-wide">
-                      Preparing
+                    <span className="ml-2 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded
+                      bg-status-pending/20 text-status-pending tracking-wide align-middle">
+                      PREP
                     </span>
                   )}
                 </div>
-                <span className={`text-xs font-semibold tabular-nums px-2 py-1 rounded-lg border ${ageBg(item.age_seconds)} ${ageCls(item.age_seconds)}`}
-                  aria-label={`Age: ${ageLabel(item.age_seconds)}`}>
+                <span className={`text-xs font-bold tabular-nums px-2 py-1 rounded border ${ageBg(item.age_seconds)} ${ageCls(item.age_seconds)}`}>
                   {badge.icon} {ageLabel(item.age_seconds)}
                 </span>
               </div>
 
+              {/* Dotted divider */}
+              {!compact && <div className="border-b border-dashed border-ticket-ink/20 my-2" />}
+
               {/* Waiter */}
               {item.ordered_by && !compact && (
-                <p className="text-xs text-ink-tertiary mb-2">Waiter: {item.ordered_by}</p>
+                <p className="text-[10px] text-ticket-ink/50 uppercase tracking-wider mb-2">
+                  WAITER: {item.ordered_by}
+                </p>
               )}
 
-              {/* Item */}
-              <div className={`flex items-center gap-3 ${compact ? '' : 'mb-3'}`}>
-                <span className={`font-bold text-ink-primary ${compact ? 'text-base' : 'text-lg'} leading-snug`}>
+              {/* Item — receipt style */}
+              <div className={`flex items-baseline justify-between gap-3 ${compact ? '' : 'mb-2'}`}>
+                <span className={`font-bold text-ticket-ink ${compact ? 'text-sm' : 'text-xl'} leading-snug`}
+                  style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>
                   {item.menu_item}
                 </span>
-                <span className="text-ink-tertiary font-medium shrink-0">×{item.quantity}</span>
+                <span className={`tabular-nums font-bold text-ticket-ink/70 shrink-0 ${compact ? 'text-sm' : 'text-xl'}`}>
+                  ×{item.quantity}
+                </span>
               </div>
 
               {/* Notes */}
