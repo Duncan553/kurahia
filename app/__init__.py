@@ -160,7 +160,23 @@ def create_app(config_name: str = None) -> Flask:
     def health():
         try:
             db.session.execute(db.text("SELECT 1"))
-            return jsonify({"status": "ok", "db": "connected"}), 200
+            from app.models.audit_log import AuditLog
+            cron_jobs = {
+                "judge_daily": "judge.daily_run",
+                "judge_weekly": "judge.weekly_run",
+                "auto_draft": "purchase_request.auto_draft",
+                "auto_close": "autoclose.success",
+            }
+            last_runs = {}
+            for name, action in cron_jobs.items():
+                row = db.session.query(AuditLog).filter(
+                    AuditLog.action == action
+                ).order_by(AuditLog.timestamp.desc()).first()
+                last_runs[name] = row.timestamp.isoformat() if row else None
+            return jsonify({
+                "status": "ok", "db": "connected",
+                "cron_last_run": last_runs,
+            }), 200
         except Exception as e:
             return jsonify({"status": "degraded", "db": "error", "detail": str(e)}), 503
 
