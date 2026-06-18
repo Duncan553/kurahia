@@ -9,8 +9,9 @@ import api from '../lib/axios'
 
 interface InvItem {
   id: string; name: string; unit: string; current_stock: string
-  reorder_level: string; below_reorder: boolean
+  reorder_level: string; below_reorder: boolean; department_id: string
 }
+interface DeptInfo { id: string; name: string }
 interface BudgetRow {
   department: string; budget: string; spent: string; remaining: string
   pct_used: number; over_budget: boolean
@@ -46,7 +47,20 @@ function OverviewContent() {
     queryFn: () => api.get<InvItem[]>('/inventory/items').then(r => Array.isArray(r.data) ? r.data : []),
     staleTime: 30_000, refetchInterval: 60_000,
   })
+  const { data: meta } = useQuery<{ departments: DeptInfo[] }>({
+    queryKey: ['users-meta'],
+    queryFn: () => api.get('/auth/users/meta').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
+  const deptName = (id: string) => meta?.departments.find(d => d.id === id)?.name ?? 'Other'
   const low = items.filter(i => i.below_reorder)
+  const byDept = items.reduce<Record<string, { total: number; low: number }>>((acc, i) => {
+    const d = deptName(i.department_id)
+    if (!acc[d]) acc[d] = { total: 0, low: 0 }
+    acc[d].total++
+    if (i.below_reorder) acc[d].low++
+    return acc
+  }, {})
   const chartData = items.slice(0, 14).map(i => ({
     name: i.name.length > 6 ? i.name.slice(0, 6) + '…' : i.name,
     stock: parseFloat(i.current_stock),
@@ -105,6 +119,25 @@ function OverviewContent() {
                     <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, fontSize: 11, color: '#fff' }} />
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            )}
+            {/* Department breakdown */}
+            {Object.keys(byDept).length > 0 && (
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">By Department</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {Object.entries(byDept).map(([dept, { total, low: dLow }]) => (
+                    <div key={dept} className="flex items-center justify-between p-2 rounded-lg bg-white/3">
+                      <span className="text-xs text-white/70 truncate">{dept}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs tabular-nums text-white/50">{total}</span>
+                        {dLow > 0 && (
+                          <span className="text-[10px] tabular-nums text-red-400 font-bold">⚠ {dLow}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -177,6 +210,37 @@ function OverviewContent() {
             )}
           </div>
         </Glass>
+      </div>
+
+      {/* ── Action tiles — ALL features accessible ──────────────── */}
+      <div>
+        <SectionLabel>Manage</SectionLabel>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: 'Staff',       desc: 'Create accounts, manage access', path: '/manager/staff',      icon: '👥' },
+            { label: 'Menu',        desc: 'Add, price, recipes',            path: '/manager/menu',       icon: '🍽' },
+            { label: 'Shifts',      desc: 'Schedule everyone',              path: '/manager/shifts',     icon: '📅' },
+            { label: 'Attendance',  desc: "Today's roster",                 path: '/manager/attendance', icon: '✓' },
+            { label: 'Front Desk',  desc: 'Arrivals, departures',           path: '/manager/front-desk', icon: '🏨' },
+            { label: 'Cash',        desc: 'Reconcile handovers',            path: '/manager/cash',       icon: '💰' },
+            { label: 'Leave',       desc: 'Approve requests',               path: '/manager/leave',      icon: '📋' },
+            { label: 'Purchases',   desc: 'Review & propose',               path: '/manager/purchases',  icon: '🛒' },
+          ].map(t => (
+            <motion.button key={t.path}
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => navigate(t.path)}
+              className="text-left p-4 rounded-2xl border border-white/6
+                hover:border-white/15 transition-all
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+              style={{ background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(16px)' }}
+            >
+              <span className="text-xl block mb-2">{t.icon}</span>
+              <p className="text-sm font-semibold text-white">{t.label}</p>
+              <p className="text-[10px] text-white/40 mt-0.5">{t.desc}</p>
+            </motion.button>
+          ))}
+        </div>
       </div>
     </motion.div>
   )
