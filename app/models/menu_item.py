@@ -28,6 +28,7 @@ class MenuItem(db.Model):
     prep_station  = db.Column(db.String(10), nullable=False, default=PrepStation.NONE.value)
     department_id = db.Column(db.String(36), db.ForeignKey("departments.id"), nullable=False)
     description   = db.Column(db.Text, nullable=True)
+    image_path    = db.Column(db.String(500), nullable=True)
     is_active     = db.Column(db.Boolean, nullable=False, default=True)
 
     department = db.relationship("Department", lazy="select")

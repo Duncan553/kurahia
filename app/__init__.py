@@ -158,7 +158,11 @@ def create_app(config_name: str = None) -> Flask:
     # Health check — useful for load balancers and deploy scripts
     @app.get("/health")
     def health():
-        return jsonify({"status": "ok"}), 200
+        try:
+            db.session.execute(db.text("SELECT 1"))
+            return jsonify({"status": "ok", "db": "connected"}), 200
+        except Exception as e:
+            return jsonify({"status": "degraded", "db": "error", "detail": str(e)}), 503
 
     # Rate limit exceeded — log to audit trail and return 429 JSON
     from flask_limiter.errors import RateLimitExceeded

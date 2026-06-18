@@ -28,6 +28,7 @@ from app.models.order_item import OrderItem, OrderItemStatus, VALID_TRANSITIONS
 from app.models.charge import Charge
 from app.models.user import User
 from app.models.audit_log import AuditLog
+from app.models.inventory_item import InventoryItem
 from app.services.consumption import consume_order_item, reverse_consumption
 
 orders_bp = Blueprint("orders", __name__)
@@ -94,6 +95,21 @@ def create_order():
             mi    = db.session.get(MenuItem, mi_id)
             if not mi or not mi.is_active:
                 return jsonify({"error": f"Menu item '{mi_id}' is disabled or does not exist. Re-enable it or choose another."}), 400
+
+            # Stock pre-check: warn if recipe ingredients are depleted
+            from app.models.recipe_line import RecipeLine
+            from app.services.stock import get_current_stock
+            recipe_lines = db.session.query(RecipeLine).filter_by(
+                menu_item_id=mi.id, is_active=True).all()
+            for rl in recipe_lines:
+                inv = db.session.get(InventoryItem, rl.inventory_item_id)
+                if inv:
+                    needed = inv.recipe_to_stock(Decimal(str(rl.quantity))) * qty
+                    if get_current_stock(inv.id) < needed:
+                        return jsonify({
+                            "error": f"{mi.name} is sold out — {inv.name} stock is too low. "
+                                     f"Check with the kitchen before ordering."
+                        }), 409
 
             order_item = OrderItem(
                 order_id=order.id,
