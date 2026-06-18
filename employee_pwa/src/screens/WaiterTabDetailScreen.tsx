@@ -18,10 +18,10 @@ interface TabDetail {
 }
 
 const ITEM_BADGE: Record<string, { bg: string; icon: string }> = {
-  PENDING:   { bg: 'bg-cream-alt text-ink-tertiary',            icon: '◌' },
+  PENDING:   { bg: 'bg-white/5 text-blue-200/40',            icon: '◌' },
   RECEIVED:  { bg: 'bg-status-pending/10 text-status-pending',  icon: '◐' },
   READY:     { bg: 'bg-status-paid/10 text-status-paid',        icon: '✓' },
-  SERVED:    { bg: 'bg-cream-alt text-ink-tertiary',            icon: '✓' },
+  SERVED:    { bg: 'bg-white/5 text-blue-200/40',            icon: '✓' },
   CANCELLED: { bg: 'bg-status-failed/10 text-status-failed',    icon: '×' },
 }
 
@@ -37,7 +37,7 @@ function StationBadge({ station }: { station: string }) {
     ? 'bg-status-pending/10 text-status-pending'
     : station === 'BAR'
       ? 'bg-primary-light/20 text-primary-dark'
-      : 'bg-cream-alt text-ink-tertiary'
+      : 'bg-white/5 text-blue-200/40'
   return (
     <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${cls}`}>
       {label}
@@ -187,7 +187,7 @@ export default function WaiterTabDetailScreen() {
             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
               activeCat === cat
                 ? 'bg-ink-primary text-cream-card'
-                : 'bg-cream-alt text-ink-secondary hover:bg-cream-deep'
+                : 'bg-white/5 text-blue-200/60 hover:bg-cream-deep'
             }`}>
             {cat}
           </button>
@@ -204,20 +204,20 @@ export default function WaiterTabDetailScreen() {
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         {menuLoading ? (
           <div className="grid grid-cols-2 gap-2">
-            {[1,2,3,4,5,6].map(i => <div key={i} className="h-24 rounded-2xl bg-cream-alt animate-pulse" />)}
+            {[1,2,3,4,5,6].map(i => <div key={i} className="h-24 rounded-2xl bg-white/5 animate-pulse" />)}
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-2">
             {searchQ ? (
-              <p className="text-sm text-ink-tertiary text-center">
+              <p className="text-sm text-blue-200/40 text-center">
                 No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu
               </p>
             ) : items.length === 0 ? (
-              <p className="text-sm text-ink-tertiary text-center">
+              <p className="text-sm text-blue-200/40 text-center">
                 No menu items yet &middot; Ask manager to add items
               </p>
             ) : (
-              <p className="text-sm text-ink-tertiary text-center">
+              <p className="text-sm text-blue-200/40 text-center">
                 No items in this category
               </p>
             )}
@@ -237,15 +237,15 @@ export default function WaiterTabDetailScreen() {
                   className={`relative text-left p-3 rounded-2xl border transition-colors
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark
                     ${soldOut
-                      ? 'opacity-50 border-cream-alt bg-cream-card cursor-not-allowed'
-                      : 'border-cream-alt bg-cream-card hover:bg-cream-alt/40 active:bg-cream-alt'
+                      ? 'opacity-50 border-white/10 bg-transparent cursor-not-allowed'
+                      : 'border-white/10 bg-transparent hover:bg-white/5/40 active:bg-white/5'
                     }`}
                 >
-                  <p className={`text-sm font-semibold text-ink-primary leading-snug mb-1 ${soldOut ? 'line-through' : ''}`}>
+                  <p className={`text-sm font-semibold text-white leading-snug mb-1 ${soldOut ? 'line-through' : ''}`}>
                     {item.name}
                   </p>
                   <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs text-ink-tertiary tabular-nums">
+                    <p className="text-xs text-blue-200/40 tabular-nums">
                       {soldOut ? 'Sold out' : kes(item.price)}
                     </p>
                     <StationBadge station={item.prep_station} />
@@ -271,11 +271,11 @@ export default function WaiterTabDetailScreen() {
   const orderPane = (
     <div className="flex flex-col h-full">
       {/* Tab header */}
-      <div className="shrink-0 px-4 pt-4 pb-3 border-b border-cream-alt">
+      <div className="shrink-0 px-4 pt-4 pb-3 border-b border-white/10">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-bold text-ink-primary text-lg">{tab?.reference ?? 'Walk-in'}</p>
-            <p className="text-xs text-ink-tertiary">Tab #{tabId?.slice(0, 8)}</p>
+            <p className="font-bold text-white text-lg">{tab?.reference ?? 'Walk-in'}</p>
+            <p className="text-xs text-blue-200/40">Tab #{tabId?.slice(0, 8)}</p>
           </div>
           <span className={`text-sm font-bold tabular-nums px-2 py-1 rounded-lg ${
             bal > 0 ? 'bg-status-failed/10 text-status-failed' : 'bg-status-paid/10 text-status-paid'
@@ -291,7 +291,7 @@ export default function WaiterTabDetailScreen() {
         {/* Draft items */}
         {draftEntries.length > 0 && (
           <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">New Order</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-200/40 mb-2">New Order</p>
             <AnimatePresence mode="popLayout">
               {draftEntries.map(e => (
                 <motion.div key={e.id}
@@ -300,17 +300,17 @@ export default function WaiterTabDetailScreen() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="flex items-center gap-2 py-2 border-b border-cream-alt last:border-0"
+                  className="flex items-center gap-2 py-2 border-b border-white/10 last:border-0"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-ink-primary truncate">{e.name}</p>
-                    <p className="text-xs text-ink-tertiary tabular-nums">{kes(e.price)} each</p>
+                    <p className="text-sm font-semibold text-white truncate">{e.name}</p>
+                    <p className="text-xs text-blue-200/40 tabular-nums">{kes(e.price)} each</p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <motion.button whileTap={{ scale: 0.85 }}
                       aria-label={`Decrease ${e.name} quantity`}
                       onClick={() => decItem(e.id)}
-                      className="w-7 h-7 rounded-full bg-cream-alt text-ink-primary font-bold text-sm
+                      className="w-7 h-7 rounded-full bg-white/5 text-white font-bold text-sm
                         flex items-center justify-center">−</motion.button>
                     <span className="w-5 text-center text-sm font-bold tabular-nums">{e.qty}</span>
                     <motion.button whileTap={{ scale: 0.85 }}
@@ -319,7 +319,7 @@ export default function WaiterTabDetailScreen() {
                       className="w-7 h-7 rounded-full bg-primary-dark text-cream-card font-bold text-sm
                         flex items-center justify-center">+</motion.button>
                   </div>
-                  <span className="text-sm font-bold tabular-nums text-ink-primary w-16 text-right shrink-0">
+                  <span className="text-sm font-bold tabular-nums text-white w-16 text-right shrink-0">
                     {kes(e.price * e.qty)}
                   </span>
                   <div className="w-full mt-1">
@@ -329,8 +329,8 @@ export default function WaiterTabDetailScreen() {
                       aria-label={`Note for ${e.name}`}
                       value={draftNotes[e.id] ?? ''}
                       onChange={ev => setDraftNotes(n => ({ ...n, [e.id]: ev.target.value }))}
-                      className="w-full text-xs rounded-lg border border-cream-alt bg-cream-card/50 px-2 py-1.5
-                        text-ink-secondary placeholder:text-ink-tertiary/50
+                      className="w-full text-xs rounded-lg border border-white/10 bg-transparent/50 px-2 py-1.5
+                        text-blue-200/60 placeholder:text-blue-200/40/50
                         focus:outline-none focus:border-primary-dark"
                     />
                   </div>
@@ -338,15 +338,15 @@ export default function WaiterTabDetailScreen() {
               ))}
             </AnimatePresence>
             <div className="flex justify-between items-center pt-3">
-              <span className="text-sm text-ink-secondary">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
-              <span className="text-base font-bold tabular-nums text-ink-primary">{kes(draftTotal)}</span>
+              <span className="text-sm text-blue-200/60">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
+              <span className="text-base font-bold tabular-nums text-white">{kes(draftTotal)}</span>
             </div>
           </div>
         )}
 
         {draftEntries.length === 0 && allOrderItems.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 gap-2">
-            <p className="text-sm text-ink-tertiary text-center">
+            <p className="text-sm text-blue-200/40 text-center">
               Tap menu items to start the order &middot; Karibu
             </p>
           </div>
@@ -355,17 +355,17 @@ export default function WaiterTabDetailScreen() {
         {/* Existing order items */}
         {allOrderItems.length > 0 && (
           <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Kitchen / Bar</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-200/40 mb-2">Kitchen / Bar</p>
             {allOrderItems.map(oi => {
               const badge = ITEM_BADGE[oi.status] ?? ITEM_BADGE.PENDING
               return (
-                <div key={oi.id} className="flex items-center gap-2 py-2 border-b border-cream-alt last:border-0">
+                <div key={oi.id} className="flex items-center gap-2 py-2 border-b border-white/10 last:border-0">
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm text-ink-secondary truncate block">
+                    <span className="text-sm text-blue-200/60 truncate block">
                       {oi.quantity}× {oi.name}
                     </span>
                     {oi.notes && (
-                      <span className="text-xs italic text-ink-tertiary block truncate">
+                      <span className="text-xs italic text-blue-200/40 block truncate">
                         {oi.notes}
                       </span>
                     )}
@@ -401,10 +401,10 @@ export default function WaiterTabDetailScreen() {
         {/* Charges */}
         {(tab?.charges ?? []).length > 0 && (
           <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Charges</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-200/40 mb-2">Charges</p>
             {tab!.charges.map(c => (
-              <div key={c.id} className="flex justify-between py-2 border-b border-cream-alt last:border-0">
-                <span className="text-sm text-ink-secondary">{c.description}</span>
+              <div key={c.id} className="flex justify-between py-2 border-b border-white/10 last:border-0">
+                <span className="text-sm text-blue-200/60">{c.description}</span>
                 <span className="text-sm tabular-nums font-semibold">{kes(c.amount)}</span>
               </div>
             ))}
@@ -414,10 +414,10 @@ export default function WaiterTabDetailScreen() {
         {/* Payments */}
         {(tab?.payments ?? []).length > 0 && (
           <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Payments</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-200/40 mb-2">Payments</p>
             {tab!.payments.map(p => (
-              <div key={p.id} className="flex justify-between py-2 border-b border-cream-alt last:border-0">
-                <span className="text-sm text-ink-secondary">{p.method}</span>
+              <div key={p.id} className="flex justify-between py-2 border-b border-white/10 last:border-0">
+                <span className="text-sm text-blue-200/60">{p.method}</span>
                 <span className="text-sm tabular-nums font-semibold text-status-paid">−{kes(p.amount)}</span>
               </div>
             ))}
@@ -433,14 +433,14 @@ export default function WaiterTabDetailScreen() {
         {/* Payment form */}
         {bal > 0 && tab?.status !== 'CLOSED' && (
           <div className="space-y-3">
-            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Record Payment</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-200/40">Record Payment</p>
             <div className="grid grid-cols-2 gap-2">
               {METHODS.map(m => (
                 <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
                   className={`py-2 rounded-xl text-sm font-semibold border transition-colors ${
                     pay.method === m
                       ? 'bg-primary-dark text-cream-card border-primary-dark'
-                      : 'bg-cream-card text-ink-secondary border-cream-alt hover:border-primary-dark/50'
+                      : 'bg-transparent text-blue-200/60 border-white/10 hover:border-primary-dark/50'
                   }`}>
                   {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}
                 </button>
@@ -451,8 +451,8 @@ export default function WaiterTabDetailScreen() {
               placeholder={`Amount (KSh) — due ${kes(bal)}`}
               value={pay.amount}
               onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
-              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-                text-base text-ink-primary focus:outline-none focus:border-primary-dark"
+              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+                text-base text-white focus:outline-none focus:border-primary-dark"
             />
             <Button variant="primary" size="lg" className="w-full" loading={payMut.isPending}
               onClick={() => payMut.mutate()}>
@@ -476,7 +476,7 @@ export default function WaiterTabDetailScreen() {
 
       {/* Sticky send bar */}
       {draftCount > 0 && (
-        <div className="shrink-0 p-4 border-t border-cream-alt bg-cream-card">
+        <div className="shrink-0 p-4 border-t border-white/10 bg-transparent">
           <Button variant="primary" size="lg" className="w-full"
             loading={sendMut.isPending} onClick={() => sendMut.mutate()}>
             Send Order &middot; {kes(draftTotal)}
@@ -493,7 +493,7 @@ export default function WaiterTabDetailScreen() {
     <Modal open={!!cancelId} onClose={() => setCancelId(null)} title="Cancel Item">
       {cancelItem && (
         <div className="space-y-4">
-          <p className="text-sm text-ink-secondary">
+          <p className="text-sm text-blue-200/60">
             Cancel <strong>{cancelItem.quantity}× {cancelItem.name}</strong>?
             {cancelItem.status === 'RECEIVED' && ' The kitchen has already started preparing this.'}
           </p>
@@ -520,15 +520,17 @@ export default function WaiterTabDetailScreen() {
   // ── Layout ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col"
+      style={{ background: 'linear-gradient(145deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%)' }}>
       {/* Back + header (always visible) */}
-      <div className="shrink-0 px-4 py-3 flex items-center gap-3 border-b border-cream-alt bg-cream-card">
+      <div className="shrink-0 px-4 py-3 flex items-center gap-3 border-b border-white/10"
+        style={{ background: 'rgba(22, 33, 62, 0.8)', backdropFilter: 'blur(12px)' }}>
         <button onClick={() => navigate('/pos/tabs')}
           aria-label="Back to tables"
-          className="text-ink-tertiary hover:text-ink-primary text-sm transition-colors">
+          className="text-blue-200/40 hover:text-white text-sm transition-colors">
           ← Back
         </button>
-        <p className="flex-1 font-bold text-ink-primary truncate">{tab?.reference ?? 'Walk-in'}</p>
+        <p className="flex-1 font-bold text-white truncate">{tab?.reference ?? 'Walk-in'}</p>
         {draftCount > 0 && (
           <span className="text-xs font-bold text-primary-dark tabular-nums">
             {draftCount} item{draftCount !== 1 ? 's' : ''} · {kes(draftTotal)}
@@ -543,17 +545,17 @@ export default function WaiterTabDetailScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="p-6 flex flex-col items-center justify-center flex-1 gap-4"
         >
-          <p className="font-serif text-2xl font-bold text-ink-primary text-center">
+          <p className="font-serif text-2xl font-bold text-white text-center">
             {tab?.reference ?? 'New Table'}
           </p>
-          <p className="text-sm text-ink-secondary text-center">How would you like to start?</p>
+          <p className="text-sm text-blue-200/60 text-center">How would you like to start?</p>
           <div className="flex gap-3 w-full max-w-xs">
             <motion.button whileTap={{ scale: 0.97 }}
               onClick={() => setEntryChoice('menu')}
               className="flex-1 py-4 rounded-2xl glass-card glass-shine text-center">
               <span className="text-2xl mb-1 block">📖</span>
-              <span className="text-sm font-semibold text-ink-primary">Show Menu</span>
-              <span className="text-[10px] text-ink-tertiary block mt-0.5">Guest wants to browse</span>
+              <span className="text-sm font-semibold text-white">Show Menu</span>
+              <span className="text-[10px] text-blue-200/40 block mt-0.5">Guest wants to browse</span>
             </motion.button>
             <motion.button whileTap={{ scale: 0.97 }}
               onClick={() => setEntryChoice('order')}
@@ -567,13 +569,13 @@ export default function WaiterTabDetailScreen() {
       )}
 
       {/* Mobile pane switcher (below md) — hidden during entry prompt */}
-      <div className={`md:hidden flex border-b border-cream-alt shrink-0 ${showEntryPrompt ? 'hidden' : ''}`}>
+      <div className={`md:hidden flex border-b border-white/10 shrink-0 ${showEntryPrompt ? 'hidden' : ''}`}>
         {(['menu', 'order'] as const).map(v => (
           <button key={v} onClick={() => setMobilePane(v)}
             className={`flex-1 py-3 text-sm font-semibold capitalize transition-colors ${
               mobilePane === v
                 ? 'text-primary-dark border-b-2 border-primary-dark'
-                : 'text-ink-tertiary hover:text-ink-secondary'
+                : 'text-blue-200/40 hover:text-blue-200/60'
             }`}>
             {v === 'menu' ? `Menu${draftCount > 0 ? ` (${draftCount})` : ''}` : 'Order'}
           </button>
@@ -583,7 +585,7 @@ export default function WaiterTabDetailScreen() {
       {/* Desktop: two-pane grid. Mobile: single pane. Hidden during entry prompt. */}
       <div className={`flex-1 min-h-0 md:grid md:grid-cols-[3fr_2fr] divide-x divide-cream-alt ${showEntryPrompt ? 'hidden' : 'hidden md:grid'}`}>
         <div className="overflow-hidden">{menuPane}</div>
-        <div className="overflow-hidden bg-cream-card">{orderPane}</div>
+        <div className="overflow-hidden bg-transparent">{orderPane}</div>
       </div>
 
       {/* Mobile: single pane — hidden during entry prompt */}
