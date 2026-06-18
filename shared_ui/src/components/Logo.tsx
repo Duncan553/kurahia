@@ -14,8 +14,8 @@ const sizes = {
 // Placeholder wordmark — swap Logo.tsx contents when real brand assets arrive.
 export function Logo({ size = 'md', variant = 'dark', className = '', ...props }: LogoProps) {
   const s = sizes[size]
-  const textColor   = variant === 'light' ? 'text-cream-card' : 'text-ink-primary'
-  const subColor    = variant === 'light' ? 'text-cream-card/60' : 'text-ink-tertiary'
+  const textColor   = variant === 'light' ? 'text-white' : 'text-ink-primary'
+  const subColor    = variant === 'light' ? 'text-white/60' : 'text-ink-tertiary'
   const strokeColor = variant === 'light' ? 'currentColor' : 'currentColor'
 
   return (
@@ -24,7 +24,7 @@ export function Logo({ size = 'md', variant = 'dark', className = '', ...props }
       <svg
         width={s.mark} height={s.mark}
         viewBox="0 0 40 40" fill="none" aria-hidden="true"
-        className={variant === 'light' ? 'text-cream-card/50' : 'text-primary-dark/60'}
+        className={variant === 'light' ? 'text-white/50' : 'text-primary-dark/60'}
       >
         <path
           d="M20 36C20 36 8 28 8 18a12 12 0 0124 0c0 10-12 18-12 18z"

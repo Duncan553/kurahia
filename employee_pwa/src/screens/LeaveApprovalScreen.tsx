@@ -114,7 +114,7 @@ export default function LeaveApprovalScreen() {
               {f.charAt(0) + f.slice(1).toLowerCase()}
               {f === 'PENDING' && (requests ?? []).filter(r => r.status === 'PENDING').length > 0 && (
                 <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4
-                  rounded-full bg-status-failed text-cream-card text-[10px] font-bold">
+                  rounded-full bg-status-failed text-white text-[10px] font-bold">
                   {(requests ?? []).filter(r => r.status === 'PENDING').length}
                 </span>
               )}
@@ -192,7 +192,7 @@ export default function LeaveApprovalScreen() {
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => setApproveId(lr.id)}
-                    className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+                    className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-primary-dark text-white text-sm font-semibold
                       hover:bg-primary-dark/90 transition-colors
                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                   >
@@ -200,7 +200,7 @@ export default function LeaveApprovalScreen() {
                   </button>
                   <button
                     onClick={() => { setRejectId(lr.id); setRejectNotes('') }}
-                    className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-status-failed text-cream-card
+                    className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-status-failed text-white
                       text-sm font-semibold hover:bg-status-failed/90 transition-colors
                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed"
                   >
@@ -240,7 +240,7 @@ export default function LeaveApprovalScreen() {
                 <button
                   onClick={() => approveMutation.mutate(approveId)}
                   disabled={approveMutation.isPending}
-                  className="flex-1 py-3 rounded-xl bg-primary-dark text-cream-card text-sm font-semibold
+                  className="flex-1 py-3 rounded-xl bg-primary-dark text-white text-sm font-semibold
                     hover:bg-primary-dark/90 disabled:opacity-50 transition-colors"
                 >
                   {approveMutation.isPending ? 'Approving…' : 'Approve'}
@@ -297,7 +297,7 @@ export default function LeaveApprovalScreen() {
                 <button
                   onClick={() => rejectMutation.mutate({ id: rejectId, notes: rejectNotes.trim() })}
                   disabled={!rejectNotesValid || rejectMutation.isPending}
-                  className="flex-1 py-3 rounded-xl bg-status-failed text-cream-card text-sm font-semibold
+                  className="flex-1 py-3 rounded-xl bg-status-failed text-white text-sm font-semibold
                     hover:bg-status-failed/90 disabled:opacity-50 transition-colors"
                 >
                   {rejectMutation.isPending ? 'Rejecting…' : 'Reject'}

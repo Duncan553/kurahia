@@ -50,7 +50,7 @@ export default function AudioEnableSplash({ station }: Props) {
             </p>
             <button
               onClick={handleEnable}
-              className="w-full py-3.5 rounded-2xl bg-primary-dark text-cream-card font-semibold
+              className="w-full py-3.5 rounded-2xl bg-primary-dark text-white font-semibold
                 text-sm transition-transform active:scale-[0.97]
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2"
             >

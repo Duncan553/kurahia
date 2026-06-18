@@ -95,7 +95,7 @@ function HoldToConfirm({
       aria-label={`${label}. Hold Space for 2 seconds to confirm.`}
       className={[
         'relative w-full py-4 rounded-2xl overflow-hidden',
-        'bg-status-failed text-cream-card font-semibold text-base select-none',
+        'bg-status-failed text-white font-semibold text-base select-none',
         'disabled:opacity-50 disabled:cursor-not-allowed transition-all',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed',
       ].join(' ')}
@@ -185,7 +185,7 @@ function ReconForm({
         </p>
         <button
           onClick={onClose}
-          className="w-full py-3 rounded-xl bg-primary-dark text-cream-card font-semibold
+          className="w-full py-3 rounded-xl bg-primary-dark text-white font-semibold
             hover:bg-primary-dark/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
         >
           Done
@@ -305,7 +305,7 @@ function ReconForm({
           disabled={!actualRaw || mutation.isPending}
           className={[
             'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-            'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
+            'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
             'disabled:opacity-50 disabled:cursor-not-allowed',
           ].join(' ')}

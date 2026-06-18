@@ -224,7 +224,7 @@ export default function CheckInScreen() {
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                           waiverBlocked
                             ? 'bg-white/5 text-slate-400/50 cursor-not-allowed'
-                            : 'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.98]',
+                            : 'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.98]',
                           'disabled:opacity-60',
                         ].join(' ')}
                       >

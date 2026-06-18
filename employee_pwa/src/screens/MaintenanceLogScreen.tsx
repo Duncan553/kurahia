@@ -122,7 +122,7 @@ export default function MaintenanceLogScreen() {
               className={[
                 'px-3 py-1.5 min-h-[44px] rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0',
                 filter === f.key
-                  ? 'bg-primary-dark text-cream-card'
+                  ? 'bg-primary-dark text-white'
                   : 'bg-white/5 text-slate-300/70 hover:bg-white/5/60',
               ].join(' ')}
             >
@@ -301,7 +301,7 @@ export default function MaintenanceLogScreen() {
                 disabled={submitting}
                 className={[
                   'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-                  'bg-primary-dark text-cream-card hover:bg-primary-dark/90 active:scale-[0.99]',
+                  'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                 ].join(' ')}

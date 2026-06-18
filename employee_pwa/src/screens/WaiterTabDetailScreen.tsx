@@ -186,7 +186,7 @@ export default function WaiterTabDetailScreen() {
           <button key={cat} onClick={() => setActiveCat(cat)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
               activeCat === cat
-                ? 'bg-ink-primary text-cream-card'
+                ? 'bg-ink-primary text-white'
                 : 'bg-white/5 text-blue-200/60 hover:bg-cream-deep'
             }`}>
             {cat}
@@ -332,7 +332,7 @@ export default function WaiterTabDetailScreen() {
                     <motion.button whileTap={{ scale: 0.85 }}
                       aria-label={`Increase ${e.name} quantity`}
                       onClick={() => addItem(e.id)}
-                      className="w-7 h-7 rounded-full bg-primary-dark text-cream-card font-bold text-sm
+                      className="w-7 h-7 rounded-full bg-primary-dark text-white font-bold text-sm
                         flex items-center justify-center">+</motion.button>
                   </div>
                   <span className="text-sm font-bold tabular-nums text-white w-16 text-right shrink-0">
@@ -394,7 +394,7 @@ export default function WaiterTabDetailScreen() {
                       onClick={() => itemMut.mutate({ id: oi.id, action: 'serve' })}
                       disabled={itemMut.isPending}
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold
-                        bg-primary-dark text-cream-card disabled:opacity-50">
+                        bg-primary-dark text-white disabled:opacity-50">
                       Served ✓
                     </motion.button>
                   )}
@@ -441,7 +441,7 @@ export default function WaiterTabDetailScreen() {
         )}
 
         {/* Balance */}
-        <div className="flex justify-between items-center p-3 rounded-xl bg-ink-primary text-cream-card">
+        <div className="flex justify-between items-center p-3 rounded-xl bg-ink-primary text-white">
           <span className="font-semibold text-sm">{bal < 0 ? 'Band credit left' : 'Balance due'}</span>
           <span className="text-lg font-bold tabular-nums">{bal < 0 ? kes(-bal) : kes(tab?.balance ?? '0')}</span>
         </div>
@@ -455,7 +455,7 @@ export default function WaiterTabDetailScreen() {
                 <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
                   className={`py-2 rounded-xl text-sm font-semibold border transition-colors ${
                     pay.method === m
-                      ? 'bg-primary-dark text-cream-card border-primary-dark'
+                      ? 'bg-primary-dark text-white border-primary-dark'
                       : 'bg-transparent text-blue-200/60 border-white/10 hover:border-primary-dark/50'
                   }`}>
                   {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}

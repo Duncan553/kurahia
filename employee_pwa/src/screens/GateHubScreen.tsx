@@ -104,7 +104,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
           <button key={value} onClick={() => setMethod(value)}
             className={`min-h-[44px] rounded-xl text-xs font-semibold border transition-colors ${
               method === value
-                ? 'bg-ink-primary text-cream-card border-ink-primary'
+                ? 'bg-ink-primary text-white border-ink-primary'
                 : 'border-cream-alt text-amber-200/60 hover:bg-cream-alt'
             }`}>
             {label}
@@ -116,7 +116,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
         whileTap={{ scale: 0.98 }}
         onClick={() => setConfirmOpen(true)}
         disabled={mut.isPending}
-        className="w-full py-4 rounded-2xl bg-primary-dark text-cream-card text-base font-semibold
+        className="w-full py-4 rounded-2xl bg-primary-dark text-white text-base font-semibold
           hover:bg-primary-dark/90 transition-colors disabled:opacity-50"
       >
         {mut.isPending ? 'Issuing…' : 'Issue Band →'}
@@ -142,7 +142,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
             Cancel
           </button>
           <button onClick={() => mut.mutate()} disabled={mut.isPending}
-            className="flex-1 py-3 rounded-xl bg-primary-dark text-cream-card font-semibold
+            className="flex-1 py-3 rounded-xl bg-primary-dark text-white font-semibold
               hover:bg-primary-dark/90 transition-colors disabled:opacity-50">
             {mut.isPending ? 'Issuing…' : 'Confirm'}
           </button>
@@ -191,7 +191,7 @@ function LookupSection() {
             text-base text-white focus:outline-none focus:border-primary-dark"
         />
         <button onClick={lookup} disabled={isFetching}
-          className="px-5 py-2.5 rounded-xl bg-ink-primary text-cream-card text-sm font-semibold
+          className="px-5 py-2.5 rounded-xl bg-ink-primary text-white text-sm font-semibold
             hover:bg-ink-primary/90 transition-colors disabled:opacity-50">
           {isFetching ? '…' : 'Look up'}
         </button>

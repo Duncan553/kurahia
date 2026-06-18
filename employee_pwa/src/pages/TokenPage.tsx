@@ -446,8 +446,8 @@ export default function TokenPage() {
           Responsive Breakpoints
         </h2>
         <div className="rounded-lg overflow-hidden border border-cream-alt text-sm font-mono">
-          <div className="bg-ink-primary text-cream-card p-3 block sm:hidden">&lt; 640px — base</div>
-          <div className="hidden sm:block md:hidden bg-primary-dark text-cream-card p-3">640px–767px — sm:</div>
+          <div className="bg-ink-primary text-white p-3 block sm:hidden">&lt; 640px — base</div>
+          <div className="hidden sm:block md:hidden bg-primary-dark text-white p-3">640px–767px — sm:</div>
           <div className="hidden md:block lg:hidden bg-primary-main text-ink-primary p-3">768px–1023px — md:</div>
           <div className="hidden lg:block xl:hidden bg-primary-light text-ink-primary p-3">1024px–1279px — lg:</div>
           <div className="hidden xl:block bg-cream-card text-ink-primary p-3">≥ 1280px — xl:</div>

@@ -244,7 +244,7 @@ export default function ClockScreen() {
           'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           isClockingIn
-            ? 'bg-primary-dark text-cream-card hover:bg-primary-dark/90 focus-visible:ring-primary-dark'
+            ? 'bg-primary-dark text-white hover:bg-primary-dark/90 focus-visible:ring-primary-dark'
             : 'bg-transparent text-primary-dark border-2 border-primary-dark hover:bg-primary-dark/5 focus-visible:ring-primary-dark',
         ].join(' ')}
       >

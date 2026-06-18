@@ -58,7 +58,7 @@ function StaffCard({
       {/* Avatar */}
       <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center
         text-sm font-bold leading-none
-        ${user.is_active ? 'bg-primary-dark text-cream-card' : 'bg-ink-tertiary/20 text-slate-400/50'}`}>
+        ${user.is_active ? 'bg-primary-dark text-white' : 'bg-ink-tertiary/20 text-slate-400/50'}`}>
         {initials}
       </div>
 
@@ -73,7 +73,7 @@ function StaffCard({
           {user.department && <span className="ml-1">· {user.department}</span>}
         </p>
         {!profile && (
-          <span className="inline-block mt-0.5 text-xs px-1.5 py-0.5 rounded bg-status-pending text-cream-card font-bold">
+          <span className="inline-block mt-0.5 text-xs px-1.5 py-0.5 rounded bg-status-pending text-white font-bold">
             No profile
           </span>
         )}
@@ -87,7 +87,7 @@ function StaffCard({
           </span>
         )}
         {!user.pin_set && user.is_active && (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-status-pending text-cream-card font-bold">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-status-pending text-white font-bold">
             No PIN
           </span>
         )}
@@ -131,7 +131,7 @@ function UserDrawer({
       <div className="rounded-xl bg-white/5 p-4 space-y-2">
         <div className="flex items-center gap-3">
           <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-base
-            ${user.is_active ? 'bg-primary-dark text-cream-card' : 'bg-ink-tertiary/20 text-slate-400/50'}`}>
+            ${user.is_active ? 'bg-primary-dark text-white' : 'bg-ink-tertiary/20 text-slate-400/50'}`}>
             {(profile?.full_name ?? user.username).slice(0, 2).toUpperCase()}
           </div>
           <div>

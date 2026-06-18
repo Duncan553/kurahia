@@ -26,7 +26,7 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      className={`shrink-0 text-center text-xs font-semibold py-1.5 text-cream-card ${
+      className={`shrink-0 text-center text-xs font-semibold py-1.5 text-white ${
         state === 'offline' ? 'bg-status-pending' : 'bg-status-paid'
       }`}
     >
