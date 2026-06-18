@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import { RequireRole } from '../components/AuthGate'
-import ScreenHero from '../components/ScreenHero'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 
@@ -168,14 +167,47 @@ export default function ManagerScreen() {
 
   function signOut() { clearAuth(); navigate('/pin') }
 
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+
   return (
     <RequireRole minLevel={5}>
-      <div className="max-w-lg mx-auto">
+      <div className="min-h-screen p-4 md:p-6"
+        style={{ background: 'linear-gradient(145deg, #0c1f1f 0%, #1a3636 50%, #0f2626 100%)' }}>
+        <div className="max-w-2xl mx-auto">
 
-        <ScreenHero title="MANAGER." subtitle="DAILY OPS" />
+        {/* Greeting header */}
+        <div className="mb-6">
+          <p className="text-sm text-emerald-300/60">{greeting},</p>
+          <h1 className="font-serif text-3xl font-bold text-white tracking-tight">
+            {user?.username ?? 'Manager'}
+          </h1>
+          <p className="text-xs text-emerald-200/40 mt-1">
+            Operations Hub &middot; {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+
+        {/* Quick stats bar */}
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          <div className="rounded-xl p-3 text-center border border-white/10"
+            style={{ background: 'rgba(20, 50, 50, 0.7)', backdropFilter: 'blur(12px)' }}>
+            <p className="text-lg font-bold tabular-nums text-white">{alertCount || '0'}</p>
+            <p className="text-[10px] text-emerald-300/50 uppercase tracking-wide">Stock Alerts</p>
+          </div>
+          <div className="rounded-xl p-3 text-center border border-white/10"
+            style={{ background: 'rgba(20, 50, 50, 0.7)', backdropFilter: 'blur(12px)' }}>
+            <p className="text-lg font-bold tabular-nums text-white">{reorderCount || '0'}</p>
+            <p className="text-[10px] text-emerald-300/50 uppercase tracking-wide">Reorders</p>
+          </div>
+          <div className="rounded-xl p-3 text-center border border-white/10"
+            style={{ background: 'rgba(20, 50, 50, 0.7)', backdropFilter: 'blur(12px)' }}>
+            <p className="text-lg font-bold tabular-nums text-white">—</p>
+            <p className="text-[10px] text-emerald-300/50 uppercase tracking-wide">On Duty</p>
+          </div>
+        </div>
 
         <motion.div
-          className="p-4 grid grid-cols-2 gap-3"
+          className="grid grid-cols-2 gap-3"
           initial="hidden"
           animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
@@ -188,16 +220,18 @@ export default function ManagerScreen() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate(path)}
-              className="flex flex-col items-start gap-3 p-4 rounded-2xl glass-card glass-shine
-                hover:bg-cream-alt/40 transition-colors text-left
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
+              className="flex flex-col items-start gap-3 p-4 rounded-2xl
+                border border-white/10 hover:border-emerald-400/30
+                transition-all text-left
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+              style={{ background: 'rgba(20, 50, 50, 0.6)', backdropFilter: 'blur(14px)' }}
             >
-              <span className="text-primary-dark">
+              <span className="text-emerald-300">
                 <Icon />
               </span>
               <div>
-                <p className="text-sm font-semibold text-ink-primary">{label}</p>
-                <p className="text-xs text-ink-secondary mt-0.5 leading-snug">{description}</p>
+                <p className="text-sm font-semibold text-white">{label}</p>
+                <p className="text-xs text-emerald-200/60 mt-0.5 leading-snug">{description}</p>
               </div>
             </motion.button>
           ))}
@@ -209,17 +243,17 @@ export default function ManagerScreen() {
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate('/inventory/count')}
-            className="relative flex flex-col items-start gap-3 p-4 rounded-2xl glass-card glass-shine
+            className="relative flex flex-col items-start gap-3 p-4 rounded-2xl border border-white/10
               hover:bg-cream-alt/40 transition-colors text-left
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
             aria-label={`Stock Alerts — ${alertCount > 0 ? `${alertCount} items below reorder` : 'all levels OK'}`}
           >
-            <span className={alertCount > 0 ? 'text-status-failed' : 'text-primary-dark'}>
+            <span className={alertCount > 0 ? 'text-status-failed' : 'text-emerald-300'}>
               <StockAlertIcon />
             </span>
             <div>
-              <p className="text-sm font-semibold text-ink-primary">Stock Alerts</p>
-              <p className="text-xs text-ink-secondary mt-0.5 leading-snug">
+              <p className="text-sm font-semibold text-white">Stock Alerts</p>
+              <p className="text-xs text-emerald-200/60 mt-0.5 leading-snug">
                 {alertCount > 0 ? `${alertCount} item${alertCount !== 1 ? 's' : ''} below reorder` : 'All levels OK'}
               </p>
             </div>
@@ -242,17 +276,17 @@ export default function ManagerScreen() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate('/inventory/purchase-request')}
-              className="relative flex flex-col items-start gap-3 p-4 rounded-2xl glass-card glass-shine
+              className="relative flex flex-col items-start gap-3 p-4 rounded-2xl border border-white/10
                 hover:bg-cream-alt/40 transition-colors text-left
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
               aria-label={`Suggested Reorders — ${reorderCount} suggestion${reorderCount !== 1 ? 's' : ''}`}
             >
-              <span className="text-primary-dark">
+              <span className="text-emerald-300">
                 <ReorderIcon />
               </span>
               <div>
-                <p className="text-sm font-semibold text-ink-primary">Suggested Reorders</p>
-                <p className="text-xs text-ink-secondary mt-0.5 leading-snug">
+                <p className="text-sm font-semibold text-white">Suggested Reorders</p>
+                <p className="text-xs text-emerald-200/60 mt-0.5 leading-snug">
                   {reorderCount} suggestion{reorderCount !== 1 ? 's' : ''} from nightly scan
                 </p>
               </div>
@@ -271,7 +305,7 @@ export default function ManagerScreen() {
             variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="col-span-2 flex items-center justify-between gap-4 p-4
-              rounded-2xl glass-card glass-shine"
+              rounded-2xl border border-white/10"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary-dark flex items-center justify-center
@@ -279,8 +313,8 @@ export default function ManagerScreen() {
                 {user?.username?.[0]?.toUpperCase() ?? '?'}
               </div>
               <div>
-                <p className="text-sm font-semibold text-ink-primary">{user?.username}</p>
-                <p className="text-xs text-ink-secondary">
+                <p className="text-sm font-semibold text-white">{user?.username}</p>
+                <p className="text-xs text-emerald-200/60">
                   {roleName(user?.role_level ?? 0)}
                   {user?.department ? ` · ${user.department}` : ''}
                 </p>
@@ -297,6 +331,7 @@ export default function ManagerScreen() {
             </button>
           </motion.div>
         </motion.div>
+      </div>
       </div>
     </RequireRole>
   )
