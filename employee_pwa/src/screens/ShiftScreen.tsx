@@ -133,13 +133,13 @@ export default function ShiftScreen() {
     return (
       <div className={[
         'rounded-xl border px-4 py-3 flex items-center gap-3',
-        cancelled ? 'border-cream-alt bg-cream-alt/20 opacity-70' : 'border-cream-alt bg-cream-card',
+        cancelled ? 'border-white/10 bg-white/5/20 opacity-70' : 'border-white/10 bg-transparent',
       ].join(' ')}>
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold text-ink-primary ${cancelled ? 'line-through' : ''}`}>
+          <p className={`text-sm font-semibold text-white ${cancelled ? 'line-through' : ''}`}>
             {shift.employee_name ?? 'Unknown'}
           </p>
-          <p className="text-xs text-ink-tertiary mt-0.5 flex items-center">
+          <p className="text-xs text-slate-400/50 mt-0.5 flex items-center">
             <StatusDot status={shift.status} />
             {formatTime(shift.start)} – {formatTime(shift.end)}
             {shift.role ? ` · ${shift.role}` : ''}
@@ -165,8 +165,8 @@ export default function ShiftScreen() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-ink-primary">Shifts</h1>
-            <p className="text-sm text-ink-tertiary">Schedule and manage the roster</p>
+            <h1 className="text-xl font-bold text-white">Shifts</h1>
+            <p className="text-sm text-slate-400/50">Schedule and manage the roster</p>
           </div>
           <button
             onClick={() => setDrawerOpen(true)}
@@ -182,14 +182,14 @@ export default function ShiftScreen() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-cream-alt/50 rounded-xl p-1">
+        <div className="flex gap-1 bg-white/5/50 rounded-xl p-1">
           {(['today', 'upcoming'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={[
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
-                tab === t ? 'bg-cream-card shadow-sm text-ink-primary' : 'text-ink-tertiary hover:text-ink-secondary',
+                tab === t ? 'bg-transparent shadow-sm text-white' : 'text-slate-400/50 hover:text-slate-300/70',
               ].join(' ')}
             >
               {t === 'today' ? `Today (${todayShifts.length})` : `Upcoming (${upcomingShifts.length})`}
@@ -204,7 +204,7 @@ export default function ShiftScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-cream-alt/40 text-sm text-ink-tertiary text-center">
+          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
             Couldn't load shifts. Check connection.
           </div>
         )}
@@ -251,7 +251,7 @@ export default function ShiftScreen() {
               <div className="space-y-4">
                 {Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)).map(([dateKey, dayShifts]) => (
                   <div key={dateKey}>
-                    <p className="text-xs font-semibold text-ink-tertiary uppercase tracking-wider mb-2">
+                    <p className="text-xs font-semibold text-slate-400/50 uppercase tracking-wider mb-2">
                       {formatDayLabel(dayShifts[0].start)}
                     </p>
                     <div className="space-y-2">
@@ -272,14 +272,14 @@ export default function ShiftScreen() {
           className="space-y-4"
         >
           <div>
-            <label className="block text-sm font-medium text-ink-secondary mb-1.5">
+            <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
               Employee *
             </label>
             <select
               value={empId}
               onChange={(e) => setEmpId(e.target.value)}
-              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-sm
-                text-ink-primary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
+              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+                text-white focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
             >
               <option value="">Choose employee…</option>
               {(profiles ?? []).map((p) => (
@@ -290,29 +290,29 @@ export default function ShiftScreen() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-ink-secondary mb-1.5">Start *</label>
+              <label className="block text-sm font-medium text-slate-300/70 mb-1.5">Start *</label>
               <input
                 type="datetime-local"
                 value={startDT}
                 onChange={(e) => setStartDT(e.target.value)}
-                className="w-full rounded-xl border border-cream-alt bg-cream-card px-3 py-2.5 text-sm
-                  text-ink-primary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
+                className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5 text-sm
+                  text-white focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink-secondary mb-1.5">End *</label>
+              <label className="block text-sm font-medium text-slate-300/70 mb-1.5">End *</label>
               <input
                 type="datetime-local"
                 value={endDT}
                 onChange={(e) => setEndDT(e.target.value)}
-                className="w-full rounded-xl border border-cream-alt bg-cream-card px-3 py-2.5 text-sm
-                  text-ink-primary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
+                className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5 text-sm
+                  text-white focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-ink-secondary mb-1.5">
+            <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
               Role / position (optional)
             </label>
             <input
@@ -320,8 +320,8 @@ export default function ShiftScreen() {
               value={role}
               onChange={(e) => setRole(e.target.value)}
               placeholder="e.g. Front gate, Kitchen…"
-              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-sm
-                text-ink-primary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
+              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+                text-white focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
 
@@ -348,14 +348,14 @@ export default function ShiftScreen() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-ink-secondary">
+          <p className="text-sm text-slate-300/70">
             This will cancel the shift permanently. The employee will not receive an automatic notification — notify them manually.
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => setCancelId(null)}
-              className="flex-1 py-3 rounded-xl border border-cream-alt text-sm font-medium
-                text-ink-secondary hover:bg-cream-alt/40 transition-colors"
+              className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
+                text-slate-300/70 hover:bg-white/5/40 transition-colors"
             >
               Keep shift
             </button>

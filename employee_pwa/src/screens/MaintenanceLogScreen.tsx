@@ -109,8 +109,8 @@ export default function MaintenanceLogScreen() {
       <div className="p-4 max-w-lg mx-auto space-y-4">
 
         <div>
-          <h1 className="text-xl font-bold text-ink-primary">Equipment Service</h1>
-          <p className="text-sm text-ink-tertiary">Log maintenance — tap any row to record a service</p>
+          <h1 className="text-xl font-bold text-white">Equipment Service</h1>
+          <p className="text-sm text-slate-400/50">Log maintenance — tap any row to record a service</p>
         </div>
 
         {/* Filter chips */}
@@ -123,7 +123,7 @@ export default function MaintenanceLogScreen() {
                 'px-3 py-1.5 min-h-[44px] rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0',
                 filter === f.key
                   ? 'bg-primary-dark text-cream-card'
-                  : 'bg-cream-alt text-ink-secondary hover:bg-cream-alt/60',
+                  : 'bg-white/5 text-slate-300/70 hover:bg-white/5/60',
               ].join(' ')}
             >
               {f.label}
@@ -135,13 +135,13 @@ export default function MaintenanceLogScreen() {
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-16 rounded-xl bg-cream-alt/40 animate-pulse" />
+              <div key={i} className="h-16 rounded-xl bg-white/5/40 animate-pulse" />
             ))}
           </div>
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-cream-alt/40 text-sm text-ink-tertiary text-center">
+          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
             Couldn't load equipment. Check connection.
           </div>
         )}
@@ -173,12 +173,12 @@ export default function MaintenanceLogScreen() {
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
               eq.is_due_service
                 ? 'border-status-failed/30 bg-status-failed/5 hover:bg-status-failed/10'
-                : 'border-cream-alt bg-cream-card hover:bg-cream-alt/40',
+                : 'border-white/10 bg-transparent hover:bg-white/5/40',
             ].join(' ')}
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-ink-primary">{eq.name}</span>
+                <span className="font-semibold text-white">{eq.name}</span>
                 {eq.is_due_service && (
                   <span className="text-[10px] font-semibold uppercase tracking-wide
                     bg-status-failed/10 text-status-failed rounded-full px-2 py-0.5">
@@ -187,17 +187,17 @@ export default function MaintenanceLogScreen() {
                 )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-ink-tertiary capitalize">
+                <span className="text-xs text-slate-400/50 capitalize">
                   {eq.equipment_type.replace(/_/g, ' ')}
                 </span>
-                <span className="text-xs text-ink-tertiary" aria-hidden="true">·</span>
-                <span className="text-xs text-ink-tertiary">
+                <span className="text-xs text-slate-400/50" aria-hidden="true">·</span>
+                <span className="text-xs text-slate-400/50">
                   Last: {formatDateNairobi(eq.last_service_utc)}
                 </span>
               </div>
             </div>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-              className="text-ink-tertiary shrink-0" aria-hidden="true">
+              className="text-slate-400/50 shrink-0" aria-hidden="true">
               <path d="M6 4l4 4-4 4" stroke="currentColor"
                 strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -215,17 +215,17 @@ export default function MaintenanceLogScreen() {
           <div className="space-y-4">
 
             {/* Equipment summary */}
-            <div className="rounded-xl bg-cream-alt/40 px-4 py-3 space-y-0.5 text-sm">
-              <p className="text-ink-tertiary">
+            <div className="rounded-xl bg-white/5/40 px-4 py-3 space-y-0.5 text-sm">
+              <p className="text-slate-400/50">
                 Last service:{' '}
-                <span className="text-ink-primary font-medium">
+                <span className="text-white font-medium">
                   {formatDateNairobi(selectedEq.last_service_utc)}
                 </span>
               </p>
               {selectedEq.service_interval_days && (
-                <p className="text-ink-tertiary">
+                <p className="text-slate-400/50">
                   Interval:{' '}
-                  <span className="text-ink-primary font-medium">
+                  <span className="text-white font-medium">
                     every {selectedEq.service_interval_days} days
                   </span>
                 </p>
@@ -233,8 +233,8 @@ export default function MaintenanceLogScreen() {
             </div>
 
             {/* History placeholder — endpoint not yet implemented */}
-            <div className="rounded-xl bg-cream-alt/20 border border-cream-alt px-4 py-3">
-              <p className="text-xs text-ink-tertiary italic">
+            <div className="rounded-xl bg-white/5/20 border border-white/10 px-4 py-3">
+              <p className="text-xs text-slate-400/50 italic">
                 History will load when the history endpoint ships.
               </p>
             </div>
@@ -243,21 +243,21 @@ export default function MaintenanceLogScreen() {
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
               <div>
-                <label className="block text-sm font-medium text-ink-secondary mb-1.5">
+                <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
                   Performed at
                 </label>
                 <input
                   type="datetime-local"
                   value={performedAt}
                   onChange={(e) => setPerformedAt(e.target.value)}
-                  className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-                    text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+                  className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+                    text-sm text-white focus:outline-none focus:border-primary-dark
                     focus:ring-2 focus:ring-primary-dark/20"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink-secondary mb-1.5">
+                <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
                   Notes *
                 </label>
                 <textarea
@@ -266,11 +266,11 @@ export default function MaintenanceLogScreen() {
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Describe the work performed…"
                   className={[
-                    'w-full rounded-xl border bg-cream-card px-4 py-3',
-                    'text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-primary-dark/20 resize-none',
+                    'w-full rounded-xl border bg-transparent px-4 py-3',
+                    'text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary-dark/20 resize-none',
                     notesErr
                       ? 'border-status-failed focus:border-status-failed'
-                      : 'border-cream-alt focus:border-primary-dark',
+                      : 'border-white/10 focus:border-primary-dark',
                   ].join(' ')}
                 />
                 {notesErr && (
@@ -279,7 +279,7 @@ export default function MaintenanceLogScreen() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink-secondary mb-1.5">
+                <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
                   Cost (KES, optional)
                 </label>
                 <input
@@ -290,8 +290,8 @@ export default function MaintenanceLogScreen() {
                   value={cost}
                   onChange={(e) => setCost(e.target.value)}
                   placeholder="0.00"
-                  className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-                    text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+                  className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+                    text-sm text-white focus:outline-none focus:border-primary-dark
                     focus:ring-2 focus:ring-primary-dark/20"
                 />
               </div>

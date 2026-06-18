@@ -134,9 +134,9 @@ export default function AlertsScreen() {
     <div className="p-4 max-w-2xl mx-auto space-y-4">
 
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-ink-primary font-serif">Judge Alerts</h1>
+        <h1 className="text-xl font-bold text-white font-serif">Judge Alerts</h1>
         {!isLoading && (
-          <span className="text-xs text-ink-secondary">
+          <span className="text-xs text-slate-300/70">
             {alerts.length} {view.filter === 'all' ? 'total' : view.filter}
           </span>
         )}
@@ -152,7 +152,7 @@ export default function AlertsScreen() {
               'px-3 py-1.5 min-h-[44px] rounded-full text-xs font-semibold transition-colors',
               view.filter === key
                 ? 'bg-ink-primary text-cream-card'
-                : 'bg-cream-alt text-ink-secondary hover:bg-cream-deep',
+                : 'bg-white/5 text-slate-300/70 hover:bg-cream-deep',
             ].join(' ')}
           >
             {label}
@@ -163,7 +163,7 @@ export default function AlertsScreen() {
       <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search alerts..." label="Search alerts" />
 
       {searchQ && filteredAlerts.length === 0 && !isLoading && (
-        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+        <p className="text-sm text-slate-400/50 text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
       )}
 
       {/* States */}
@@ -192,14 +192,14 @@ export default function AlertsScreen() {
       {/* Grouped alerts */}
       {groups.map(({ severity, items }) => (
         <div key={severity} className="space-y-2">
-          <p className={`text-[10px] font-semibold tracking-widest uppercase ${SEV_TEXT[severity] ?? 'text-ink-secondary'}`}>
+          <p className={`text-[10px] font-semibold tracking-widest uppercase ${SEV_TEXT[severity] ?? 'text-slate-300/70'}`}>
             {severity}
           </p>
           {items.map(alert => (
             <div
               key={alert.id}
               className={[
-                'border-l-4 rounded-r-2xl rounded-l-sm glass-card glass-shine p-4',
+                'border-l-4 rounded-r-2xl rounded-l-sm border border-white/10 p-4',
                 SEV_BORDER[alert.severity] ?? 'border-l-ink-tertiary',
                 alert.status === 'ACKNOWLEDGED' ? 'opacity-50' : '',
               ].join(' ')}
@@ -208,18 +208,18 @@ export default function AlertsScreen() {
                 <div className="flex-1 min-w-0">
                   {/* Type + item */}
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`shrink-0 ${SEV_TEXT[alert.severity] ?? 'text-ink-tertiary'}`}>
+                    <span className={`shrink-0 ${SEV_TEXT[alert.severity] ?? 'text-slate-400/50'}`}>
                       <AlertTypeIcon type={alert.alert_type} />
                     </span>
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary font-serif">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-slate-300/70 font-serif">
                       {alert.alert_type.replace(/_/g, ' ')}
                     </span>
                     {alert.item_name && (
-                      <span className="text-[10px] text-ink-secondary truncate">· {alert.item_name}</span>
+                      <span className="text-[10px] text-slate-300/70 truncate">· {alert.item_name}</span>
                     )}
                   </div>
-                  <p className="text-sm text-ink-primary leading-snug">{alert.description}</p>
-                  <p className="text-[10px] text-ink-secondary mt-1.5">{timeAgo(alert.created_at)}</p>
+                  <p className="text-sm text-white leading-snug">{alert.description}</p>
+                  <p className="text-[10px] text-slate-300/70 mt-1.5">{timeAgo(alert.created_at)}</p>
                 </div>
                 {/* Acknowledge / done */}
                 {alert.status === 'ACKNOWLEDGED' ? (
@@ -250,8 +250,8 @@ export default function AlertsScreen() {
       >
         {ackingAlert && (
           <div className="space-y-4">
-            <p className="text-sm text-ink-secondary">{ackingAlert.description}</p>
-            <p className="text-xs text-ink-secondary">This cannot be undone.</p>
+            <p className="text-sm text-slate-300/70">{ackingAlert.description}</p>
+            <p className="text-xs text-slate-300/70">This cannot be undone.</p>
             <div className="flex gap-2 justify-end">
               <Button variant="ghost" size="sm" onClick={() => setView(v => ({ ...v, ackingId: null }))}>
                 Cancel

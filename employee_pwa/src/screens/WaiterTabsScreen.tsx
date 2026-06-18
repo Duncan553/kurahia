@@ -73,7 +73,7 @@ export default function WaiterTabsScreen() {
   return (
     <div className="p-4 max-w-lg mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold font-serif text-ink-primary">My Tables</h1>
+        <h1 className="text-xl font-bold font-serif text-white">My Tables</h1>
         <Button variant="primary" size="sm" onClick={() => setOpen(true)}>+ New Table</Button>
       </div>
 
@@ -85,8 +85,8 @@ export default function WaiterTabsScreen() {
           value={band}
           onChange={e => setBand(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && band && bandMut.mutate(band)}
-          className="flex-1 rounded-xl border border-cream-alt bg-cream-card px-4 py-2.5
-            text-sm text-ink-primary focus:outline-none focus:border-primary-dark"
+          className="flex-1 rounded-xl border border-white/10 bg-transparent px-4 py-2.5
+            text-sm text-white focus:outline-none focus:border-primary-dark"
         />
         <Button variant="ghost" size="sm" loading={bandMut.isPending}
           onClick={() => band && bandMut.mutate(band)}>
@@ -101,7 +101,7 @@ export default function WaiterTabsScreen() {
           className="w-full text-left p-3 rounded-2xl border border-status-paid/40 bg-status-paid/10
             flex items-center gap-3 animate-pulse">
           <span className="text-lg" aria-hidden="true">🔔</span>
-          <span className="flex-1 text-sm font-semibold text-ink-primary">{n.body}</span>
+          <span className="flex-1 text-sm font-semibold text-white">{n.body}</span>
           <span className="text-[10px] uppercase tracking-widest text-status-paid font-bold">tap when picked up</span>
         </button>
       ))}
@@ -124,11 +124,11 @@ export default function WaiterTabsScreen() {
           const bal = parseFloat(t.balance)
           return (
             <button key={t.id} onClick={() => navigate(`/pos/tabs/${t.id}`)}
-              className="w-full flex items-center justify-between p-4 rounded-2xl border border-cream-alt
-                bg-cream-card hover:bg-cream-alt transition-colors text-left">
+              className="w-full flex items-center justify-between p-4 rounded-2xl border border-white/10
+                bg-transparent hover:bg-white/5 transition-colors text-left">
               <div>
-                <p className="font-semibold text-ink-primary">{t.reference ?? 'Walk-in'}</p>
-                <p className="text-xs text-ink-secondary mt-0.5">
+                <p className="font-semibold text-white">{t.reference ?? 'Walk-in'}</p>
+                <p className="text-xs text-slate-300/70 mt-0.5">
                   {new Date(t.opened_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -136,7 +136,7 @@ export default function WaiterTabsScreen() {
                 <p className={`text-sm font-bold tabular-nums ${bal > 0 ? 'text-status-failed' : 'text-status-paid'}`}>
                   {kes(t.balance)}
                 </p>
-                <p className="text-[10px] text-ink-secondary">{bal > 0 ? 'outstanding' : 'settled'}</p>
+                <p className="text-[10px] text-slate-300/70">{bal > 0 ? 'outstanding' : 'settled'}</p>
               </div>
             </button>
           )
@@ -146,7 +146,7 @@ export default function WaiterTabsScreen() {
       <Modal open={open} onClose={() => setOpen(false)} title="New Table" size="sm">
         <div className="space-y-4">
           <div>
-            <label className="block text-[10px] tracking-widest uppercase text-ink-secondary mb-1">
+            <label className="block text-[10px] tracking-widest uppercase text-slate-300/70 mb-1">
               Table / Reference
             </label>
             <input
@@ -155,8 +155,8 @@ export default function WaiterTabsScreen() {
               onChange={e => setRef(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && openMut.mutate(ref)}
               placeholder="e.g. Table 7, Beach Bar 3"
-              className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-                text-base text-ink-primary focus:outline-none focus:border-primary-dark"
+              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+                text-base text-white focus:outline-none focus:border-primary-dark"
             />
           </div>
           <div className="flex gap-2 justify-end">

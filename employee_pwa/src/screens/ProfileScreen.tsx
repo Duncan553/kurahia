@@ -24,20 +24,20 @@ function NavCard({ label, description, path, icon, danger }: {
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
         danger
           ? 'border-status-failed/20 bg-status-failed/5 hover:bg-status-failed/10'
-          : 'border-cream-alt bg-cream-card hover:bg-cream-alt/40 active:bg-cream-alt/60',
+          : 'border-white/10 bg-transparent hover:bg-white/5/40 active:bg-white/5/60',
       ].join(' ')}
     >
-      <span className={danger ? 'text-status-failed shrink-0' : 'text-ink-secondary shrink-0'}>
+      <span className={danger ? 'text-status-failed shrink-0' : 'text-slate-300/70 shrink-0'}>
         {icon}
       </span>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold ${danger ? 'text-status-failed' : 'text-ink-primary'}`}>
+        <p className={`text-sm font-semibold ${danger ? 'text-status-failed' : 'text-white'}`}>
           {label}
         </p>
-        <p className="text-xs text-ink-tertiary mt-0.5">{description}</p>
+        <p className="text-xs text-slate-400/50 mt-0.5">{description}</p>
       </div>
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"
-        className="text-ink-tertiary shrink-0">
+        className="text-slate-400/50 shrink-0">
         <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
@@ -81,8 +81,8 @@ export default function ProfileScreen() {
           {user?.username?.[0]?.toUpperCase() ?? '?'}
         </div>
         <div>
-          <p className="text-base font-bold text-ink-primary">{user?.username}</p>
-          <p className="text-sm text-ink-tertiary">
+          <p className="text-base font-bold text-white">{user?.username}</p>
+          <p className="text-sm text-slate-400/50">
             {roleName(user?.role_level ?? 0)}
             {user?.department ? ` · ${user.department}` : ''}
           </p>
@@ -91,7 +91,7 @@ export default function ProfileScreen() {
 
       {/* ── HR actions ────────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary px-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400/50 px-1">
           Leave & Attendance
         </p>
         <NavCard
@@ -122,7 +122,7 @@ export default function ProfileScreen() {
 
       {/* ── Company actions ───────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary px-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400/50 px-1">
           Company
         </p>
         <NavCard
@@ -154,7 +154,7 @@ export default function ProfileScreen() {
 
       {/* ── Accessibility: font size ──────────────────────────────── */}
       <motion.div variants={itemVariants} className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-ink-secondary px-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-300/70 px-1">
           Text Size
         </p>
         <div className="flex gap-2" role="group" aria-label="Text size">
@@ -168,7 +168,7 @@ export default function ProfileScreen() {
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                 fontSize === key
                   ? 'bg-ink-primary text-cream-card border-ink-primary'
-                  : 'border-cream-alt text-ink-secondary hover:bg-cream-alt',
+                  : 'border-white/10 text-slate-300/70 hover:bg-white/5',
               ].join(' ')}
             >
               {key}
@@ -178,7 +178,7 @@ export default function ProfileScreen() {
       </motion.div>
 
       {/* ── Sign out ──────────────────────────────────────────────── */}
-      <motion.div variants={itemVariants} className="pt-2 border-t border-cream-alt">
+      <motion.div variants={itemVariants} className="pt-2 border-t border-white/10">
         <button
           onClick={signOut}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl

@@ -94,12 +94,12 @@ export default function LeaveApprovalScreen() {
       <div className="p-4 max-w-lg mx-auto space-y-4">
 
         <div>
-          <h1 className="text-xl font-bold text-ink-primary">Leave Requests</h1>
-          <p className="text-sm text-ink-tertiary">Review and action leave requests</p>
+          <h1 className="text-xl font-bold text-white">Leave Requests</h1>
+          <p className="text-sm text-slate-400/50">Review and action leave requests</p>
         </div>
 
         {/* Status filter tabs */}
-        <div className="flex gap-1 bg-cream-alt/50 rounded-xl p-1 overflow-x-auto">
+        <div className="flex gap-1 bg-white/5/50 rounded-xl p-1 overflow-x-auto">
           {FILTERS.map((f) => (
             <button
               key={f}
@@ -107,8 +107,8 @@ export default function LeaveApprovalScreen() {
               className={[
                 'flex-1 py-2 min-h-[44px] px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
                 filter === f
-                  ? 'bg-cream-card shadow-sm text-ink-primary'
-                  : 'text-ink-tertiary hover:text-ink-secondary',
+                  ? 'bg-transparent shadow-sm text-white'
+                  : 'text-slate-400/50 hover:text-slate-300/70',
               ].join(' ')}
             >
               {f.charAt(0) + f.slice(1).toLowerCase()}
@@ -130,7 +130,7 @@ export default function LeaveApprovalScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-cream-alt/40 text-sm text-ink-tertiary text-center">
+          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
             Couldn't load leave requests. Check connection.
           </div>
         )}
@@ -158,16 +158,16 @@ export default function LeaveApprovalScreen() {
               key={lr.id}
               className={[
                 'rounded-2xl border p-4 space-y-3',
-                isCancelled ? 'border-cream-alt bg-cream-alt/20 opacity-80' : 'border-cream-alt bg-cream-card',
+                isCancelled ? 'border-white/10 bg-white/5/20 opacity-80' : 'border-white/10 bg-transparent',
               ].join(' ')}
             >
               {/* Header row */}
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className={`font-semibold text-sm text-ink-primary ${isCancelled ? 'line-through opacity-60' : ''}`}>
+                  <p className={`font-semibold text-sm text-white ${isCancelled ? 'line-through opacity-60' : ''}`}>
                     {lr.employee ?? 'Unknown'}
                   </p>
-                  <p className="text-xs text-ink-tertiary mt-0.5">
+                  <p className="text-xs text-slate-400/50 mt-0.5">
                     {TYPE_LABELS[lr.leave_type] ?? lr.leave_type}
                     {' · '}{days} day{days !== 1 ? 's' : ''}
                   </p>
@@ -176,7 +176,7 @@ export default function LeaveApprovalScreen() {
               </div>
 
               {/* Date range */}
-              <div className="flex gap-2 text-xs text-ink-tertiary">
+              <div className="flex gap-2 text-xs text-slate-400/50">
                 <span>{lr.start_date}</span>
                 <span aria-hidden="true">→</span>
                 <span>{lr.end_date}</span>
@@ -184,7 +184,7 @@ export default function LeaveApprovalScreen() {
 
               {/* Reason */}
               {lr.reason && (
-                <p className="text-xs text-ink-secondary italic">"{lr.reason}"</p>
+                <p className="text-xs text-slate-300/70 italic">"{lr.reason}"</p>
               )}
 
               {/* Actions — only for PENDING */}
@@ -224,7 +224,7 @@ export default function LeaveApprovalScreen() {
           const lr = requests?.find((r) => r.id === approveId)
           return (
             <div className="space-y-4">
-              <p className="text-sm text-ink-secondary">
+              <p className="text-sm text-slate-300/70">
                 Approve <strong>{TYPE_LABELS[lr?.leave_type ?? ''] ?? lr?.leave_type}</strong> for{' '}
                 <strong>{lr?.employee}</strong>?
                 The employee will be notified.
@@ -232,8 +232,8 @@ export default function LeaveApprovalScreen() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setApproveId(null)}
-                  className="flex-1 py-3 rounded-xl border border-cream-alt text-sm font-medium
-                    text-ink-secondary hover:bg-cream-alt/40 transition-colors"
+                  className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
+                    text-slate-300/70 hover:bg-white/5/40 transition-colors"
                 >
                   Cancel
                 </button>
@@ -262,12 +262,12 @@ export default function LeaveApprovalScreen() {
           const lr = requests?.find((r) => r.id === rejectId)
           return (
             <div className="space-y-4">
-              <p className="text-sm text-ink-secondary">
+              <p className="text-sm text-slate-300/70">
                 Reject <strong>{TYPE_LABELS[lr?.leave_type ?? ''] ?? lr?.leave_type}</strong> for{' '}
                 <strong>{lr?.employee}</strong>? A reason is required — the employee will be notified.
               </p>
               <div>
-                <label className="block text-sm font-medium text-ink-secondary mb-1.5">
+                <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
                   Reason for rejection *
                 </label>
                 <textarea
@@ -276,8 +276,8 @@ export default function LeaveApprovalScreen() {
                   onChange={(e) => setRejectNotes(e.target.value)}
                   placeholder="Explain why this leave cannot be approved… (min 10 chars)"
                   autoFocus
-                  className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3 text-sm
-                    text-ink-primary focus:outline-none focus:border-primary-dark
+                  className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+                    text-white focus:outline-none focus:border-primary-dark
                     focus:ring-2 focus:ring-primary-dark/20 resize-none"
                 />
                 {rejectNotes.length > 0 && !rejectNotesValid && (
@@ -289,8 +289,8 @@ export default function LeaveApprovalScreen() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setRejectId(null)}
-                  className="flex-1 py-3 rounded-xl border border-cream-alt text-sm font-medium
-                    text-ink-secondary hover:bg-cream-alt/40 transition-colors"
+                  className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
+                    text-slate-300/70 hover:bg-white/5/40 transition-colors"
                 >
                   Cancel
                 </button>

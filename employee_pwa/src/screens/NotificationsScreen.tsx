@@ -122,7 +122,7 @@ export default function NotificationsScreen() {
   // ── SUCCESS ──────────────────────────────────────────────────────────────────
   return (
     <motion.div
-      className="divide-y divide-cream-alt"
+      className="divide-y divide-white/10"
       initial="hidden"
       animate="visible"
       variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
@@ -139,7 +139,7 @@ export default function NotificationsScreen() {
             disabled={isGrayed}
             className={[
               'w-full text-left px-4 py-4 flex gap-3 items-start transition-colors',
-              'hover:bg-cream-alt/40 active:bg-cream-alt/60',
+              'hover:bg-white/5/40 active:bg-white/5/60',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark',
               'disabled:opacity-50 disabled:cursor-wait',
             ].join(' ')}
@@ -150,12 +150,12 @@ export default function NotificationsScreen() {
               aria-hidden="true"
             />
             <div className="flex-1 min-w-0">
-              <p className={['text-sm truncate', isUnread ? 'font-semibold text-ink-primary' : 'text-ink-secondary'].join(' ')}>
+              <p className={['text-sm truncate', isUnread ? 'font-semibold text-white' : 'text-slate-300/70'].join(' ')}>
                 {notif.subject}
               </p>
-              <p className="text-xs text-ink-tertiary mt-0.5 line-clamp-2">{notif.body}</p>
+              <p className="text-xs text-slate-400/50 mt-0.5 line-clamp-2">{notif.body}</p>
               {notif.sent_at && (
-                <p className="text-[10px] text-ink-tertiary/60 mt-1">{timeAgo(notif.sent_at)}</p>
+                <p className="text-[10px] text-slate-400/50/60 mt-1">{timeAgo(notif.sent_at)}</p>
               )}
             </div>
           </motion.button>

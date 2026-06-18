@@ -75,19 +75,19 @@ function ApprovalDrawer({
   return (
     <div className="space-y-5">
       {/* Summary */}
-      <div className="rounded-xl bg-cream-alt p-4 space-y-2">
+      <div className="rounded-xl bg-white/5 p-4 space-y-2">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="font-semibold text-ink-primary text-base">{request.item_name}</p>
-            <p className="text-xs text-ink-secondary mt-0.5">
+            <p className="font-semibold text-white text-base">{request.item_name}</p>
+            <p className="text-xs text-slate-300/70 mt-0.5">
               Qty: <span className="font-medium">{request.quantity}</span>
             </p>
           </div>
           <StatusBadge status={statusBadge(request.status)} />
         </div>
-        <div className="text-xs text-ink-secondary space-y-1 pt-1 border-t border-cream-deep">
-          <p>By: <span className="font-medium text-ink-primary">{request.requested_by}</span></p>
-          <p>Dept: <span className="font-medium text-ink-primary">{request.department}</span></p>
+        <div className="text-xs text-slate-300/70 space-y-1 pt-1 border-t border-cream-deep">
+          <p>By: <span className="font-medium text-white">{request.requested_by}</span></p>
+          <p>Dept: <span className="font-medium text-white">{request.department}</span></p>
           <p>Submitted: {timeAgo(request.created_at)}</p>
           {request.notes && <p className="italic">"{request.notes}"</p>}
         </div>
@@ -95,18 +95,18 @@ function ApprovalDrawer({
 
       {/* Estimated cost */}
       {request.estimated_cost ? (
-        <div className="rounded-xl border border-cream-alt p-4">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary mb-1">
+        <div className="rounded-xl border border-white/10 p-4">
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70 mb-1">
             Manager's Estimate
           </p>
-          <p className="text-2xl font-bold tabular-nums text-ink-primary">
+          <p className="text-2xl font-bold tabular-nums text-white">
             {formatKsh(request.estimated_cost) ?? request.estimated_cost}
           </p>
-          <p className="text-xs text-ink-tertiary mt-0.5">Proposed by manager</p>
+          <p className="text-xs text-slate-400/50 mt-0.5">Proposed by manager</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-cream-alt p-3">
-          <p className="text-xs text-ink-tertiary">
+        <div className="rounded-xl border border-white/10 p-3">
+          <p className="text-xs text-slate-400/50">
             No cost estimate yet — manager hasn't proposed a cost for this request.
           </p>
         </div>
@@ -115,7 +115,7 @@ function ApprovalDrawer({
       {/* Notes field (only if pending) */}
       {isPending && (
         <div>
-          <label className="block text-xs font-semibold text-ink-secondary mb-1.5">
+          <label className="block text-xs font-semibold text-slate-300/70 mb-1.5">
             Notes (optional)
           </label>
           <textarea
@@ -123,8 +123,8 @@ function ApprovalDrawer({
             value={notes}
             onChange={e => setNotes(e.target.value)}
             placeholder="Add a note for your records…"
-            className="w-full rounded-lg border border-cream-alt bg-cream-card px-3 py-2 text-sm
-              text-ink-primary placeholder:text-ink-tertiary resize-none
+            className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
+              text-white placeholder:text-slate-400/50 resize-none
               focus:outline-none focus:ring-2 focus:ring-primary-main"
           />
         </div>
@@ -179,7 +179,7 @@ function ApprovalDrawer({
       )}
 
       {!isPending && (
-        <p className="text-xs text-ink-tertiary text-center">
+        <p className="text-xs text-slate-400/50 text-center">
           This request is {request.status.toLowerCase()} — no further action available.
         </p>
       )}
@@ -202,14 +202,14 @@ function RequestCard({
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left rounded-xl glass-card glass-shine p-4
+      className="w-full text-left rounded-xl border border-white/10 p-4
         hover:border-primary-light/50 hover:shadow-sm transition-all
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-ink-primary text-sm truncate">{req.item_name}</p>
-          <p className="text-xs text-ink-secondary mt-0.5">
+          <p className="font-semibold text-white text-sm truncate">{req.item_name}</p>
+          <p className="text-xs text-slate-300/70 mt-0.5">
             {req.department} · by {req.requested_by} · {timeAgo(req.created_at)}
           </p>
         </div>
@@ -218,7 +218,7 @@ function RequestCard({
 
       {isPending && hasCost && (
         <div className="mt-2 flex items-center gap-2">
-          <span className="text-xs text-ink-tertiary">Manager estimate:</span>
+          <span className="text-xs text-slate-400/50">Manager estimate:</span>
           <span className="text-sm font-semibold tabular-nums text-status-pending">
             {formatKsh(req.estimated_cost) ?? req.estimated_cost}
           </span>
@@ -226,7 +226,7 @@ function RequestCard({
       )}
 
       {isPending && !hasCost && (
-        <p className="mt-2 text-xs text-ink-secondary italic">Awaiting manager cost estimate</p>
+        <p className="mt-2 text-xs text-slate-300/70 italic">Awaiting manager cost estimate</p>
       )}
     </button>
   )
@@ -262,7 +262,7 @@ export default function PurchaseApprovalsScreen() {
   return (
     <div className="p-4 max-w-2xl mx-auto">
       <div className="mb-5">
-        <h1 className="font-serif text-2xl text-ink-primary">Purchase Approvals</h1>
+        <h1 className="font-serif text-2xl text-white">Purchase Approvals</h1>
         {pendingCount > 0 && (
           <p className="text-xs text-status-pending font-semibold mt-0.5">
             {pendingCount} request{pendingCount !== 1 ? 's' : ''} awaiting your decision
@@ -271,7 +271,7 @@ export default function PurchaseApprovalsScreen() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 bg-cream-alt rounded-xl p-1 mb-4" role="tablist">
+      <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-4" role="tablist">
         {TAB_LABELS.map(({ key, label }) => (
           <button
             key={key}
@@ -281,8 +281,8 @@ export default function PurchaseApprovalsScreen() {
             className={[
               'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
               tab === key
-                ? 'bg-cream-card text-ink-primary shadow-sm'
-                : 'text-ink-secondary hover:text-ink-primary',
+                ? 'bg-transparent text-white shadow-sm'
+                : 'text-slate-300/70 hover:text-white',
             ].join(' ')}
           >
             {label}
@@ -299,14 +299,14 @@ export default function PurchaseApprovalsScreen() {
       <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search requests..." label="Search requests" />
 
       {searchQ && filtered.length === 0 && !isLoading && (
-        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+        <p className="text-sm text-slate-400/50 text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
       )}
 
       {/* List */}
       {isLoading && (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-cream-alt bg-cream-card p-4 space-y-2">
+            <div key={i} className="rounded-xl border border-white/10 bg-transparent p-4 space-y-2">
               <Skeleton variant="text" className="w-40 h-4" />
               <Skeleton variant="text" className="w-56 h-3" />
             </div>

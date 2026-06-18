@@ -10,11 +10,11 @@ interface StaffUser { id: string; username: string; role: string; department: st
 interface Meta { roles: { id: string; name: string; level: number }[]; departments: { id: string; name: string }[] }
 
 const BLANK = { username:'', password:'', roleId:'', deptId:'', fullName:'', phone:'', wageRate:'', wagePeriod:'', hireDate:'', nationalId:'', emgName:'', emgPhone:'' }
-const inp = 'w-full rounded-xl px-3 py-2.5 border border-cream-alt bg-cream-card text-sm text-ink-primary focus:outline-none focus:border-primary-dark'
+const inp = 'w-full rounded-xl px-3 py-2.5 border border-white/10 bg-transparent text-sm text-white focus:outline-none focus:border-primary-dark'
 const toE164 = (p: string) => { const s = p.replace(/\s+/g,''); return s.startsWith('+254')?s : s.startsWith('254')?'+'+s : s.startsWith('0')?'+254'+s.slice(1):s }
 const extractErr = (e: unknown) => (e as {response?:{data?:{error?:string}}})?.response?.data?.error ?? 'Something went wrong.'
 const LBL = ({ children }: { children: React.ReactNode }) => (
-  <label className="block text-[10px] tracking-widest uppercase text-ink-secondary mb-1">{children}</label>
+  <label className="block text-[10px] tracking-widest uppercase text-slate-300/70 mb-1">{children}</label>
 )
 
 export default function StaffAccountsScreen() {
@@ -100,11 +100,11 @@ export default function StaffAccountsScreen() {
               <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0}}
                 className="rounded-2xl border-2 border-primary-dark bg-primary-dark/5 p-4 space-y-2">
                 <p className="text-xs font-semibold tracking-widest text-primary-dark uppercase">Account ready — give these to the staff member</p>
-                <div className="space-y-1 font-mono text-sm text-ink-primary">
-                  <p><span className="text-ink-tertiary">Username:</span> {credentials.u}</p>
-                  <p><span className="text-ink-tertiary">Password:</span> {credentials.p}</p>
+                <div className="space-y-1 font-mono text-sm text-white">
+                  <p><span className="text-slate-400/50">Username:</span> {credentials.u}</p>
+                  <p><span className="text-slate-400/50">Password:</span> {credentials.p}</p>
                 </div>
-                <p className="text-xs text-ink-secondary">Staff will set their PIN on first login.</p>
+                <p className="text-xs text-slate-300/70">Staff will set their PIN on first login.</p>
                 <button onClick={() => setCredentials(null)} className="text-xs text-primary-dark underline font-medium">Dismiss</button>
               </motion.div>
             )}
@@ -114,10 +114,10 @@ export default function StaffAccountsScreen() {
           <AnimatePresence>
             {showForm && (
               <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}}
-                className="rounded-2xl glass-card glass-shine p-4 space-y-3 overflow-hidden">
+                className="rounded-2xl border border-white/10 p-4 space-y-3 overflow-hidden">
 
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-ink-primary">
+                  <p className="text-sm font-semibold text-white">
                     {step === 1 ? 'New account — login details' : 'Employee profile'}
                   </p>
                   {step === 2 && <span className="text-xs text-status-ok font-semibold">Step 2 of 2</span>}
@@ -191,8 +191,8 @@ export default function StaffAccountsScreen() {
           {/* Add button */}
           {!showForm && (
             <button onClick={() => setShowForm(true)}
-              className="w-full rounded-2xl border-2 border-dashed border-cream-alt py-4
-                text-sm font-semibold text-ink-tertiary hover:border-primary-dark hover:text-primary-dark
+              className="w-full rounded-2xl border-2 border-dashed border-white/10 py-4
+                text-sm font-semibold text-slate-400/50 hover:border-primary-dark hover:text-primary-dark
                 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark">
               + Create new account
             </button>
@@ -202,17 +202,17 @@ export default function StaffAccountsScreen() {
           <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search staff..." label="Search staff" />
 
           {searchQ && staff.length === 0 && !staffLoading && (
-            <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+            <p className="text-sm text-slate-400/50 text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
           )}
 
           {/* Staff list */}
           <div className="space-y-2">
-            {!searchQ && staff.length === 0 && <p className="text-sm text-ink-tertiary text-center py-8">No staff accounts yet.</p>}
+            {!searchQ && staff.length === 0 && <p className="text-sm text-slate-400/50 text-center py-8">No staff accounts yet.</p>}
             {staff.map(u => (
-              <div key={u.id} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl glass-card ${!u.is_active ? 'opacity-60' : ''}`}>
+              <div key={u.id} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border border-white/10 ${!u.is_active ? 'opacity-60' : ''}`}>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink-primary truncate">{u.username}</p>
-                  <p className="text-xs text-ink-secondary">{u.role}{u.department ? ` · ${u.department}` : ''}</p>
+                  <p className="text-sm font-semibold text-white truncate">{u.username}</p>
+                  <p className="text-xs text-slate-300/70">{u.role}{u.department ? ` · ${u.department}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="flex flex-col items-end gap-1">

@@ -95,8 +95,8 @@ export default function LeaveRequestScreen() {
     >
 
       <div>
-        <h1 className="text-xl font-bold text-ink-primary">Leave Request</h1>
-        <p className="text-sm text-ink-tertiary">Submit a leave request — your manager will approve or reject it</p>
+        <h1 className="text-xl font-bold text-white">Leave Request</h1>
+        <p className="text-sm text-slate-400/50">Submit a leave request — your manager will approve or reject it</p>
       </div>
 
       {/* ── Form ─────────────────────────────────────────────────────── */}
@@ -104,7 +104,7 @@ export default function LeaveRequestScreen() {
 
         {/* Leave type */}
         <div>
-          <label className="block text-sm font-medium text-ink-secondary mb-1.5">Leave type *</label>
+          <label className="block text-sm font-medium text-slate-300/70 mb-1.5">Leave type *</label>
           <div className="grid grid-cols-2 gap-2">
             {LEAVE_TYPES.map((lt) => (
               <button
@@ -116,7 +116,7 @@ export default function LeaveRequestScreen() {
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                   leaveType === lt.value
                     ? 'border-primary-dark bg-primary-dark/10 text-primary-dark'
-                    : 'border-cream-alt bg-cream-card text-ink-secondary hover:border-primary-main',
+                    : 'border-white/10 bg-transparent text-slate-300/70 hover:border-primary-main',
                 ].join(' ')}
               >
                 {lt.label}
@@ -128,26 +128,26 @@ export default function LeaveRequestScreen() {
         {/* Dates */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-ink-tertiary mb-1">Start date *</label>
+            <label className="block text-xs font-medium text-slate-400/50 mb-1">Start date *</label>
             <input
               type="date"
               value={startDate}
               min={today}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-xl border border-cream-alt bg-cream-card px-3 py-2.5
-                text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+              className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
+                text-sm text-white focus:outline-none focus:border-primary-dark
                 focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-ink-tertiary mb-1">End date *</label>
+            <label className="block text-xs font-medium text-slate-400/50 mb-1">End date *</label>
             <input
               type="date"
               value={endDate}
               min={startDate}
               onChange={(e) => { setEndDate(e.target.value); setTouched(true) }}
-              className="w-full rounded-xl border border-cream-alt bg-cream-card px-3 py-2.5
-                text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+              className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
+                text-sm text-white focus:outline-none focus:border-primary-dark
                 focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
@@ -156,16 +156,16 @@ export default function LeaveRequestScreen() {
 
         {/* Reason */}
         <div>
-          <label className="block text-sm font-medium text-ink-secondary mb-1.5">
-            Reason <span className="font-normal text-ink-tertiary">(optional)</span>
+          <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+            Reason <span className="font-normal text-slate-400/50">(optional)</span>
           </label>
           <textarea
             rows={3}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Family event, medical appointment…"
-            className="w-full rounded-xl border border-cream-alt bg-cream-card px-4 py-3
-              text-sm text-ink-primary focus:outline-none focus:border-primary-dark
+            className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+              text-sm text-white focus:outline-none focus:border-primary-dark
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />
         </div>
@@ -194,7 +194,7 @@ export default function LeaveRequestScreen() {
 
       {/* ── History ──────────────────────────────────────────────────── */}
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-ink-tertiary mb-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-slate-400/50 mb-3">
           My requests
         </p>
 
@@ -230,17 +230,17 @@ export default function LeaveRequestScreen() {
                 variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
                 transition={{ duration: 0.22, ease: 'easeOut' }}
                 className="flex items-start justify-between gap-3 rounded-xl
-                  bg-cream-alt/30 border border-cream-alt px-4 py-3"
+                  bg-white/5/30 border border-white/10 px-4 py-3"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink-primary capitalize">
+                  <p className="text-sm font-medium text-white capitalize">
                     {r.leave_type.charAt(0) + r.leave_type.slice(1).toLowerCase()} Leave
                   </p>
-                  <p className="text-xs text-ink-tertiary tabular-nums mt-0.5">
+                  <p className="text-xs text-slate-400/50 tabular-nums mt-0.5">
                     {r.start_date} → {r.end_date}
                   </p>
                   {r.reason && (
-                    <p className="text-xs text-ink-tertiary mt-0.5 truncate">{r.reason}</p>
+                    <p className="text-xs text-slate-400/50 mt-0.5 truncate">{r.reason}</p>
                   )}
                 </div>
                 <StatusBadge status={statusVal(r.status)} size="sm" />

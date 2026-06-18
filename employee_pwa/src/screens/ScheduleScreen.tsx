@@ -182,7 +182,7 @@ export default function ScheduleScreen() {
               {/* Day header */}
               <p className={[
                 'text-xs font-semibold uppercase tracking-wider mb-2',
-                isToday ? 'text-primary-dark' : 'text-ink-tertiary',
+                isToday ? 'text-primary-dark' : 'text-slate-400/50',
               ].join(' ')}>
                 {isToday ? `Today · ${label}` : label}
               </p>
@@ -193,9 +193,9 @@ export default function ScheduleScreen() {
                   'rounded-xl border px-4 py-3',
                   isToday
                     ? 'bg-primary-light/20 border-primary-dark/20'
-                    : 'bg-cream-alt/30 border-cream-alt',
+                    : 'bg-white/5/30 border-white/10',
                 ].join(' ')}>
-                  <p className="text-sm text-ink-tertiary">No shift</p>
+                  <p className="text-sm text-slate-400/50">No shift</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -206,14 +206,14 @@ export default function ScheduleScreen() {
                         'rounded-xl border px-4 py-3 flex items-center justify-between gap-3',
                         isToday
                           ? 'bg-primary-light/20 border-primary-dark/20'
-                          : 'bg-cream-card border-cream-alt',
+                          : 'bg-transparent border-white/10',
                       ].join(' ')}
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-ink-primary">
+                        <p className="text-sm font-semibold text-white">
                           {formatTime(shift.start)} – {formatTime(shift.end)}
                         </p>
-                        <p className="text-xs text-ink-tertiary mt-0.5 truncate">{shift.role}</p>
+                        <p className="text-xs text-slate-400/50 mt-0.5 truncate">{shift.role}</p>
                       </div>
                       <StatusBadge status={shiftStatus(shift.status)} />
                     </div>
