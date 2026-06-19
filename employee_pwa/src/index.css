@@ -94,7 +94,12 @@ html {
     margin: 0;
     font-family: 'Hanken Grotesk', sans-serif;
     font-size: var(--font-size-base);
-    background: #0a0e17;
+    background:
+      radial-gradient(ellipse at 10% 90%, rgba(5, 46, 22, 0.3) 0%, transparent 50%),
+      radial-gradient(ellipse at 90% 10%, rgba(12, 34, 64, 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(20, 10, 30, 0.15) 0%, transparent 40%),
+      #080c14;
+    background-attachment: fixed;
     color: #f1f5f9;
   }
 }
@@ -124,27 +129,31 @@ html {
 
 /* ── Background — subtle mesh gradient, not a blurred photo ──────── */
 
-/* ── Glass design system (dark glassmorphism 2025) ───────────────── */
+/* ── Glass design system — FROSTY (visible frosting, not just dark) ── */
 .glass-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   border-radius: 1rem;
 }
 .glass-card-sage {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   border-radius: 1rem;
 }
 .glass-surface {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.75rem;
 }
@@ -166,9 +175,18 @@ html {
   .glass-surface { background: var(--color-cream-card); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
-/* Gradient hero: emerald → emerald-dark for primary buttons + hero tiles */
+/* Gradient buttons — vibrant, not flat */
 .gradient-hero {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+.gradient-warm {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.2);
+}
+.gradient-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);
 }
 
 /* Skeleton shimmer retuned for parchment/sage base */
