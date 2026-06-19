@@ -71,9 +71,12 @@ export default function WaiterTabsScreen() {
   })
 
   return (
-    <div className="p-4 max-w-3xl mx-auto space-y-4">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold font-serif text-white">My Tables</h1>
+        <div>
+          <h1 className="text-2xl font-bold font-serif text-white">My Tables</h1>
+          <p className="text-xs text-white/30 mt-0.5">{tabs.length} open table{tabs.length !== 1 ? 's' : ''}</p>
+        </div>
         <Button variant="primary" size="sm" onClick={() => setOpen(true)}>+ New Table</Button>
       </div>
 
@@ -124,8 +127,8 @@ export default function WaiterTabsScreen() {
           const bal = parseFloat(t.balance)
           return (
             <button key={t.id} onClick={() => navigate(`/pos/tabs/${t.id}`)}
-              className="w-full flex items-center justify-between p-4 rounded-2xl border border-white/10
-                bg-transparent hover:bg-white/5 transition-colors text-left">
+              className="w-full flex items-center justify-between p-4 glass-card
+                hover:bg-white/8 transition-all text-left">
               <div>
                 <p className="font-semibold text-white">{t.reference ?? 'Walk-in'}</p>
                 <p className="text-xs text-slate-300/70 mt-0.5">
