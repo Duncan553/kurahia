@@ -90,7 +90,7 @@ html {
     margin: 0;
     font-family: 'Hanken Grotesk', sans-serif;
     font-size: var(--font-size-base);
-    background: #0a0f1a;
+    background: #0a0e17;
     color: #f1f5f9;
   }
 }
@@ -101,16 +101,7 @@ html {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Blurred resort photo background (VisionOS style) ────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: url('/images/resort-bg.jpg') center/cover no-repeat;
-  filter: blur(30px) brightness(0.3) saturate(1.3);
-  transform: scale(1.1);
-}
+/* ── Background — clean dark, no blurred photo ──────────────────── */
 
 /* ── Glass design system (dark glassmorphism 2025) ───────────────── */
 .glass-card {
