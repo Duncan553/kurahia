@@ -91,9 +91,8 @@ html {
     font-family: 'Hanken Grotesk', sans-serif;
     font-size: var(--font-size-base);
     background:
-      radial-gradient(ellipse at 10% 90%, rgba(5, 46, 22, 0.3) 0%, transparent 50%),
-      radial-gradient(ellipse at 90% 10%, rgba(12, 34, 64, 0.25) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 50%, rgba(20, 10, 30, 0.15) 0%, transparent 40%),
+      radial-gradient(ellipse at 10% 85%, rgba(5, 46, 22, 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 15%, rgba(12, 34, 64, 0.2) 0%, transparent 50%),
       #080c14;
     background-attachment: fixed;
     color: #f1f5f9;
