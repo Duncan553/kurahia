@@ -94,11 +94,7 @@ html {
     margin: 0;
     font-family: 'Hanken Grotesk', sans-serif;
     font-size: var(--font-size-base);
-    background:
-      radial-gradient(ellipse at 15% 80%, rgba(6, 78, 59, 0.15) 0%, transparent 45%),
-      radial-gradient(ellipse at 80% 20%, rgba(14, 38, 74, 0.12) 0%, transparent 45%),
-      #060910;
-    background-attachment: fixed;
+    background: #060910;
     color: #f1f5f9;
   }
 }
@@ -126,34 +122,53 @@ html {
   );
 }
 
-/* ── Background — subtle mesh gradient, not a blurred photo ──────── */
+/* ── Background — hybrid: blurred resort photo + gradient mesh + noise ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -10%;
+  z-index: -2;
+  background: url('/images/resort-bg.jpg') center/cover no-repeat;
+  filter: blur(60px) brightness(0.2) saturate(1.4);
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: rgba(8, 10, 18, 0.65);
+  background-image:
+    radial-gradient(ellipse at 15% 20%, hsla(35, 65%, 22%, 0.4) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 40%, hsla(185, 60%, 18%, 0.35) 0%, transparent 50%),
+    radial-gradient(ellipse at 30% 85%, hsla(155, 45%, 14%, 0.3) 0%, transparent 50%);
+}
 
-/* ── Glass — VisionOS file-management style: visible frosted panels ── */
+/* ── Glass panels — Apple-quality: saturate(160%) is the secret ────── */
 .glass-card {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(24px) saturate(1.3);
-  -webkit-backdrop-filter: blur(24px) saturate(1.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1rem;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .glass-card-sage {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 1rem;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 .glass-surface {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 0.75rem;
 }
 .glass-shine {
