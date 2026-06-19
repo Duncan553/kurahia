@@ -19,18 +19,18 @@ export interface ButtonProps extends Omit<ComponentPropsWithoutRef<'button'>, HT
 }
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary:   'bg-primary-dark text-white hover:bg-primary-main',
-  secondary: 'bg-cream-card text-ink-primary border border-primary-dark hover:bg-cream-alt',
-  ghost:     'bg-transparent text-ink-secondary hover:bg-cream-alt',
-  danger:    'bg-status-failed text-white hover:opacity-90',
+  primary:   'bg-gradient-to-b from-emerald-500 to-emerald-700 text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)] hover:from-emerald-400 hover:to-emerald-600 hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] border border-emerald-500/30',
+  secondary: 'bg-white/8 text-white/90 border border-white/15 backdrop-blur-md hover:bg-white/14 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
+  ghost:     'bg-transparent text-white/50 hover:text-emerald-400 hover:bg-emerald-500/8 hover:shadow-[0_0_12px_rgba(16,185,129,0.1)]',
+  danger:    'bg-gradient-to-b from-red-500 to-red-700 text-white shadow-[0_4px_14px_rgba(239,68,68,0.3)] hover:from-red-400 hover:to-red-600 border border-red-500/30',
 }
 
 // sm: min-h-[44px] with compact py fills the touch target with invisible space
 // md/lg: min-h-[44px] directly, content vertically centred
 const SIZE: Record<ButtonSize, string> = {
-  sm: 'text-sm  px-3 py-1   min-h-[44px] rounded',
-  md: 'text-base px-5 py-2.5 min-h-[44px] rounded',
-  lg: 'text-base px-7 py-3   min-h-[44px] rounded',
+  sm: 'text-sm  px-4 py-1.5 min-h-[44px] rounded-xl',
+  md: 'text-base px-5 py-2.5 min-h-[44px] rounded-xl',
+  lg: 'text-base px-7 py-3.5 min-h-[44px] rounded-xl',
 }
 
 function Spinner() {
