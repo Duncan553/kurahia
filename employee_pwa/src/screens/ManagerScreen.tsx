@@ -81,15 +81,15 @@ export default function ManagerScreen() {
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
-  const ACTIONS: { label: string; path: string; svg: React.ReactNode }[] = [
-    { label: 'Staff', path: '/manager/staff', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="6" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M1 17c0-3 2.5-5 6-5s6 2 6 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M15 9v5M17.5 11.5h-5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg> },
-    { label: 'Menu', path: '/manager/menu', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="1" width="14" height="18" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M7 6h6M7 10h6M7 14h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg> },
-    { label: 'Shifts', path: '/manager/shifts', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M7 1v4M13 1v4M3 8h14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg> },
-    { label: 'Attendance', path: '/manager/attendance', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="4" stroke="currentColor" strokeWidth="1.4"/><path d="M3 18c0-4 3-6 7-6s7 2 7 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M14 13l2 2 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-    { label: 'Front Desk', path: '/manager/front-desk', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="6" width="16" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M7 6V4a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="10" cy="11" r="1.5" stroke="currentColor" strokeWidth="1.4"/></svg> },
-    { label: 'Cash', path: '/manager/cash', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="1.4"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M5 10h0M15 10h0" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg> },
-    { label: 'Leave', path: '/manager/leave', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M7 1v4M13 1v4M3 8h14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M7 12l2 2 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-    { label: 'Purchases', path: '/manager/purchases', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 3h2l2 8h8l2-6H7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="15" r="1.5" stroke="currentColor" strokeWidth="1.4"/><circle cx="15" cy="15" r="1.5" stroke="currentColor" strokeWidth="1.4"/></svg> },
+  const ACTIONS: { label: string; desc: string; path: string; svg: React.ReactNode }[] = [
+    { label: 'Staff', desc: 'Create accounts & assign tablets', path: '/manager/staff', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="6" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M1 17c0-3 2.5-5 6-5s6 2 6 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M15 9v5M17.5 11.5h-5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg> },
+    { label: 'Menu', desc: 'Add items, set prices & recipes', path: '/manager/menu', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="1" width="14" height="18" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M7 6h6M7 10h6M7 14h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg> },
+    { label: 'Shifts', desc: 'Schedule who works when', path: '/manager/shifts', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M7 1v4M13 1v4M3 8h14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg> },
+    { label: 'Attendance', desc: "Today's roster — who clocked in", path: '/manager/attendance', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="4" stroke="currentColor" strokeWidth="1.4"/><path d="M3 18c0-4 3-6 7-6s7 2 7 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M14 13l2 2 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+    { label: 'Front Desk', desc: 'Arrivals, departures, occupancy', path: '/manager/front-desk', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="6" width="16" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M7 6V4a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="10" cy="11" r="1.5" stroke="currentColor" strokeWidth="1.4"/></svg> },
+    { label: 'Cash', desc: 'Reconcile staff cash handovers', path: '/manager/cash', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="1.4"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M5 10h0M15 10h0" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg> },
+    { label: 'Leave', desc: 'Approve or reject leave requests', path: '/manager/leave', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M7 1v4M13 1v4M3 8h14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M7 12l2 2 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+    { label: 'Purchases', desc: 'Review restock requests & budgets', path: '/manager/purchases', svg: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 3h2l2 8h8l2-6H7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="15" r="1.5" stroke="currentColor" strokeWidth="1.4"/><circle cx="15" cy="15" r="1.5" stroke="currentColor" strokeWidth="1.4"/></svg> },
   ]
 
   return (
@@ -238,12 +238,15 @@ export default function ManagerScreen() {
                 <motion.button key={a.path}
                   whileHover={{ y: -3 }} whileTap={{ scale: 0.94 }}
                   onClick={() => navigate(a.path)}
-                  className="flex flex-col items-center gap-2 py-3.5 px-2 rounded-xl transition-all
+                  className="flex flex-col items-start gap-2 p-3 rounded-xl transition-all text-left
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400
                     glass-card-sage hover:bg-white/8"
-                  aria-label={a.label}>
+                  aria-label={`${a.label} — ${a.desc}`}>
                   <span className="text-white/60">{a.svg}</span>
-                  <span className="text-[10px] text-white/50 font-medium">{a.label}</span>
+                  <div>
+                    <p className="text-xs text-white font-semibold">{a.label}</p>
+                    <p className="text-[9px] text-white/30 mt-0.5 leading-tight">{a.desc}</p>
+                  </div>
                 </motion.button>
               ))}
             </div>
