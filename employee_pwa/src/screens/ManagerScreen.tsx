@@ -162,17 +162,31 @@ export default function ManagerScreen() {
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
-                  <p className="text-[11px] font-semibold tracking-wider uppercase text-white/30 mb-3">By Department</p>
-                  <div className="space-y-2">
-                    {Object.entries(byDept).map(([dept, { total, low: dLow }]) => (
-                      <div key={dept} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
-                        <span className="text-sm text-white/70">{dept}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm tabular-nums text-white/40">{total}</span>
-                          {dLow > 0 && <span className="text-xs text-red-400 font-bold">⚠{dLow}</span>}
+                  <p className="text-[11px] font-semibold tracking-wider uppercase text-white/30 mb-3">Stock by Department</p>
+                  <div className="space-y-3">
+                    {Object.entries(byDept).map(([dept, { total, low: dLow }]) => {
+                      const healthPct = total > 0 ? Math.round(((total - dLow) / total) * 100) : 100
+                      return (
+                        <div key={dept}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-white/80 font-medium">{dept}</span>
+                            <span className="text-xs tabular-nums text-white/40">
+                              {total - dLow}/{total} OK
+                            </span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${
+                              healthPct === 100 ? 'bg-emerald-500' : healthPct > 60 ? 'bg-amber-500' : 'bg-red-500'
+                            }`} style={{ width: `${healthPct}%` }} />
+                          </div>
+                          {dLow > 0 && (
+                            <p className="text-[10px] text-red-400/70 mt-0.5">
+                              {dLow} item{dLow !== 1 ? 's' : ''} below reorder level
+                            </p>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                     {Object.keys(byDept).length === 0 && <p className="text-sm text-white/20">No items</p>}
                   </div>
                 </div>
