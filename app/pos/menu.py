@@ -68,6 +68,7 @@ def create_menu_item():
     station      = (data.get("prep_station") or PrepStation.NONE.value).upper()
     dept_id      = data.get("department_id")
     description  = data.get("description")
+    image_path   = (data.get("image_path") or "").strip() or None
 
     if not name or raw_price is None or not dept_id:
         return jsonify({"error": "name, price, and department_id are required."}), 400
@@ -89,7 +90,8 @@ def create_menu_item():
 
     with db.session.begin_nested():
         item = MenuItem(name=name, price=price, category=category,
-                        prep_station=station, department_id=dept_id, description=description)
+                        prep_station=station, department_id=dept_id,
+                        description=description, image_path=image_path)
         db.session.add(item)
 
     AuditLog.log(actor=actor.username, action="menu.item.create", target=name)
@@ -120,6 +122,8 @@ def edit_menu_item(item_id):
             item.prep_station = data["prep_station"].upper()
         if "description" in data:
             item.description = data["description"]
+        if "image_path" in data:
+            item.image_path = data["image_path"]
 
     AuditLog.log(actor=actor.username, action="menu.item.edit", target=item.name)
     db.session.commit()

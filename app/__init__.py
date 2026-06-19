@@ -7,9 +7,24 @@ Why a factory? It lets you create multiple app instances with different configs
 Call create_app() once in run.py (or via `flask run`). Extensions are bound here.
 """
 import os
+import logging
+import json
+from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 from .extensions import db, jwt, migrate, limiter
 from config import config
+
+
+class JSONFormatter(logging.Formatter):
+    """Structured JSON log output for production monitoring."""
+    def format(self, record):
+        return json.dumps({
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "msg": record.getMessage(),
+            "module": record.module,
+            "line": record.lineno,
+        }, default=str)
 
 
 def create_app(config_name: str = None) -> Flask:
@@ -23,6 +38,13 @@ def create_app(config_name: str = None) -> Flask:
     # Validate required prod config before going further
     if config_name == "production" and not app.config.get("SQLALCHEMY_DATABASE_URI"):
         raise RuntimeError("DATABASE_URL must be set in production")
+
+    # Structured JSON logging in production
+    if config_name == "production":
+        handler = logging.StreamHandler()
+        handler.setFormatter(JSONFormatter())
+        app.logger.handlers = [handler]
+        app.logger.setLevel(logging.INFO)
 
     # Bind extensions to this specific app instance
     db.init_app(app)
