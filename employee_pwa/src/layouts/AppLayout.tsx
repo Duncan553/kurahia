@@ -193,8 +193,8 @@ function isStation(dept: string | null): boolean {
   return deptIs(dept, 'kitchen', 'bar', 'front-of-house', 'waiter', 'restaurant',
     'spa', 'gym', 'wellness', 'water', 'activit', 'aqua', 'villa', 'housekeep')
 }
-// Personal chrome: managers always; staff only when NOT on a station tablet
-const personal = (level: number, dept: string | null) => level >= 5 || !isStation(dept)
+// Personal chrome: managers always; gate staff (level 3-4) always; level 1 only when NOT on station
+const personal = (level: number, dept: string | null) => level >= 3 || !isStation(dept)
 
 // ── Nav item definition ─────────────────────────────────────────────────────
 
