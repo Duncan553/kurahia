@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton, EmptyState, StatusBadge, useToastStore } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
@@ -183,13 +184,14 @@ function ReconForm({
         <p className="text-xs text-slate-400/50 text-center">
           {result.payments_swept} payment{result.payments_swept !== 1 ? 's' : ''} swept into this reconciliation.
         </p>
-        <button
+        <motion.button
+          whileTap={{ scale: 0.97 }}
           onClick={onClose}
           className="w-full py-3 rounded-xl bg-primary-dark text-white font-semibold
             hover:bg-primary-dark/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
         >
           Done
-        </button>
+        </motion.button>
       </div>
     )
   }
@@ -224,19 +226,27 @@ function ReconForm({
               <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </button>
-          {expanded && (
-            <div className="space-y-1.5 mt-2">
-              {pending.payments.map((p) => (
-                <div key={p.payment_id}
-                  className="flex justify-between text-sm px-3 py-2 rounded-lg bg-white/5/30">
-                  <span className="text-slate-400/50">{timeAgo(p.created_at)}</span>
-                  <span className="font-medium tabular-nums text-white">
-                    KSh {parseFloat(p.amount).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="space-y-1.5 mt-2 overflow-hidden"
+              >
+                {pending.payments.map((p) => (
+                  <div key={p.payment_id}
+                    className="flex justify-between text-sm px-3 py-2 rounded-lg bg-white/5/30">
+                    <span className="text-slate-400/50">{timeAgo(p.created_at)}</span>
+                    <span className="font-medium tabular-nums text-white">
+                      KSh {parseFloat(p.amount).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
@@ -358,7 +368,12 @@ export default function CashReconScreen() {
 
   return (
     <RequireRole minLevel={5}>
-      <div className="p-4 max-w-3xl mx-auto space-y-5">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="p-4 max-w-3xl mx-auto space-y-5"
+      >
 
         <div>
           <h1 className="text-xl font-bold text-white">Cash Reconciliation</h1>
@@ -387,22 +402,31 @@ export default function CashReconScreen() {
                   <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
               </button>
-              {pendingOpen && (
-                <div className="absolute z-10 mt-1 w-full rounded-xl bg-transparent border border-white/10 shadow-lg overflow-hidden">
-                  {(profiles ?? []).length === 0 ? (
-                    <p className="px-4 py-3 text-sm text-slate-400/50">No staff profiles found.</p>
-                  ) : (profiles ?? []).map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => { selectProfile(p); setPendingOpen(false) }}
-                      className="w-full text-left px-4 py-3 text-sm text-white
-                        hover:bg-white/5/60 transition-colors border-b border-white/10 last:border-0"
-                    >
-                      {p.full_name}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <AnimatePresence>
+                {pendingOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                    className="absolute z-10 mt-1 w-full rounded-xl bg-transparent border border-white/10 shadow-lg overflow-hidden"
+                  >
+                    {(profiles ?? []).length === 0 ? (
+                      <p className="px-4 py-3 text-sm text-slate-400/50">No staff profiles found.</p>
+                    ) : (profiles ?? []).map((p) => (
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        key={p.id}
+                        onClick={() => { selectProfile(p); setPendingOpen(false) }}
+                        className="w-full text-left px-4 py-3 text-sm text-white
+                          hover:bg-white/5/60 transition-colors border-b border-white/10 last:border-0"
+                      >
+                        {p.full_name}
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
@@ -459,7 +483,7 @@ export default function CashReconScreen() {
             Select a staff member above to load their pending cash.
           </p>
         )}
-      </div>
+      </motion.div>
     </RequireRole>
   )
 }

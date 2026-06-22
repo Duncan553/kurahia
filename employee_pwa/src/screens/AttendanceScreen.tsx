@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import { Drawer, Skeleton, EmptyState } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
@@ -68,6 +69,10 @@ export default function AttendanceScreen() {
   const [tab,          setTab]          = useState<Tab>('today')
   const [selectedEmp,  setSelectedEmp]  = useState<AttendanceRow | null>(null)
 
+  // Stagger animation variants for lists
+  const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }
+  const itemVariants = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, damping: 25, stiffness: 300 } } }
+
   const { data: todayRows, isLoading: todayLoading, isError: todayError } = useQuery<AttendanceRow[]>({
     queryKey: ['attendance-today'],
     queryFn: () => api.get<AttendanceRow[]>('/hr/attendance/today').then((r) => r.data),
@@ -110,7 +115,12 @@ export default function AttendanceScreen() {
 
   return (
     <RequireRole minLevel={5}>
-      <div className="p-4 max-w-3xl mx-auto space-y-4">
+      <motion.div
+        className="p-4 max-w-3xl mx-auto space-y-4"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      >
 
         <div>
           <h1 className="text-xl font-bold text-white">Attendance</h1>
@@ -184,10 +194,18 @@ export default function AttendanceScreen() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400/50 mb-2">
                     {label} ({rows.length})
                   </p>
-                  <div className="space-y-2">
+                  <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={containerVariants}
+                    className="space-y-2"
+                  >
                     {rows.map((row) => (
-                      <button
+                      <motion.button
                         key={row.shift_id}
+                        variants={itemVariants}
+                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ y: -2 }}
                         onClick={() => setSelectedEmp(row)}
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10
                           bg-transparent hover:bg-white/5/40 transition-colors text-left
@@ -210,9 +228,9 @@ export default function AttendanceScreen() {
                           </p>
                         </div>
                         <StatusChip status={row.status} />
-                      </button>
+                      </motion.button>
                     ))}
-                  </div>
+                  </motion.div>
                 </div>
               )
             })}
@@ -238,29 +256,42 @@ export default function AttendanceScreen() {
                 title="No attendance data for this month."
               />
             )}
-            {!summaryLoading && (summary ?? []).map((row) => (
-              <div key={row.employee_id}
-                className="rounded-xl border border-white/10 bg-transparent px-4 py-3">
-                <p className="text-sm font-semibold text-white">{row.employee_name}</p>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {[
-                    { label: 'Hours', value: parseFloat(row.hours_worked).toFixed(1) },
-                    { label: 'Attended', value: `${row.shifts_attended}/${row.shifts_scheduled}` },
-                    { label: 'Absences', value: row.absent_no_notice, danger: row.absent_no_notice > 0 },
-                  ].map(({ label, value, danger }) => (
-                    <div key={label} className="text-center">
-                      <p className={`text-lg font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-white'}`}>
-                        {value}
-                      </p>
-                      <p className="text-[10px] text-slate-400/50">{label}</p>
+            {!summaryLoading && (summary ?? []).length > 0 && (
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={containerVariants}
+                className="space-y-4"
+              >
+                {summary!.map((row) => (
+                  <motion.div
+                    key={row.employee_id}
+                    variants={itemVariants}
+                    whileHover={{ y: -2 }}
+                    className="rounded-xl border border-white/10 bg-transparent px-4 py-3"
+                  >
+                    <p className="text-sm font-semibold text-white">{row.employee_name}</p>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {[
+                        { label: 'Hours', value: parseFloat(row.hours_worked).toFixed(1) },
+                        { label: 'Attended', value: `${row.shifts_attended}/${row.shifts_scheduled}` },
+                        { label: 'Absences', value: row.absent_no_notice, danger: row.absent_no_notice > 0 },
+                      ].map(({ label, value, danger }) => (
+                        <div key={label} className="text-center">
+                          <p className={`text-lg font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-white'}`}>
+                            {value}
+                          </p>
+                          <p className="text-[10px] text-slate-400/50">{label}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
           </>
         )}
-      </div>
+      </motion.div>
 
       {/* Employee detail drawer */}
       <Drawer

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import { Drawer, Modal, Skeleton, EmptyState, useToastStore } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
@@ -63,6 +64,10 @@ export default function ShiftScreen() {
   })
   const [role,     setRole]     = useState('')
   const [idemKey,  setIdemKey]  = useState(genKey)
+
+  // Animation variants
+  const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }
+  const itemVariants = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, damping: 25, stiffness: 300 } } }
 
   const { data: shifts, isLoading, isError } = useQuery<Shift[]>({
     queryKey: ['shifts'],
@@ -131,7 +136,7 @@ export default function ShiftScreen() {
   function ShiftCard({ shift }: { shift: Shift }) {
     const cancelled = shift.status === 'CANCELLED'
     return (
-      <div className={[
+      <motion.div variants={itemVariants} whileHover={{ y: -2 }} className={[
         'rounded-xl border px-4 py-3 flex items-center gap-3',
         cancelled ? 'border-white/10 bg-white/5/20 opacity-70' : 'border-white/10 bg-transparent',
       ].join(' ')}>
@@ -146,29 +151,36 @@ export default function ShiftScreen() {
           </p>
         </div>
         {!cancelled && (
-          <button
+          <motion.button
+            whileTap={{ scale: 0.97 }}
             onClick={() => setCancelId(shift.id)}
             className="shrink-0 min-h-[44px] text-xs text-status-failed hover:text-status-failed/80
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed
               px-3 flex items-center rounded-lg transition-colors"
           >
             Cancel
-          </button>
+          </motion.button>
         )}
-      </div>
+      </motion.div>
     )
   }
 
   return (
     <RequireRole minLevel={5}>
-      <div className="p-4 max-w-3xl mx-auto space-y-4">
+      <motion.div
+        className="p-4 max-w-3xl mx-auto space-y-4"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      >
 
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-white">Shifts</h1>
             <p className="text-sm text-slate-400/50">Schedule and manage the roster</p>
           </div>
-          <button
+          <motion.button
+            whileTap={{ scale: 0.97 }}
             onClick={() => setDrawerOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-dark text-white
               text-sm font-semibold hover:bg-primary-dark/90 transition-colors
@@ -178,7 +190,7 @@ export default function ShiftScreen() {
               <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             Add
-          </button>
+          </motion.button>
         </div>
 
         {/* Tabs */}
@@ -225,9 +237,9 @@ export default function ShiftScreen() {
                 description="Tap + Add to create one."
               />
             ) : (
-              <div className="space-y-2">
+              <motion.div className="space-y-2" initial="hidden" animate="visible" variants={containerVariants}>
                 {todayShifts.map((s) => <ShiftCard key={s.id} shift={s} />)}
-              </div>
+              </motion.div>
             )}
           </>
         )}
@@ -248,22 +260,22 @@ export default function ShiftScreen() {
                 description="Schedule shifts with the + Add button."
               />
             ) : (
-              <div className="space-y-4">
+              <motion.div className="space-y-4" initial="hidden" animate="visible" variants={containerVariants}>
                 {Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)).map(([dateKey, dayShifts]) => (
-                  <div key={dateKey}>
+                  <motion.div key={dateKey} variants={itemVariants}>
                     <p className="text-xs font-semibold text-slate-400/50 uppercase tracking-wider mb-2">
                       {formatDayLabel(dayShifts[0].start)}
                     </p>
                     <div className="space-y-2">
                       {dayShifts.map((s) => <ShiftCard key={s.id} shift={s} />)}
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             )}
           </>
         )}
-      </div>
+      </motion.div>
 
       {/* Create shift drawer */}
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Add Shift">

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import { Modal, Skeleton, EmptyState, StatusBadge, useToastStore } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
@@ -46,6 +47,9 @@ export default function LeaveApprovalScreen() {
   const [rejectId,    setRejectId]    = useState<string | null>(null)
   const [rejectNotes, setRejectNotes] = useState('')
 
+  const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }
+  const itemVariants = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, damping: 25, stiffness: 300 } } }
+
   const { data: requests, isLoading, isError } = useQuery<LeaveRequest[]>({
     queryKey: ['leave-requests'],
     queryFn: () => api.get<LeaveRequest[]>('/hr/leave-requests').then((r) => r.data),
@@ -91,7 +95,12 @@ export default function LeaveApprovalScreen() {
 
   return (
     <RequireRole minLevel={5}>
-      <div className="p-4 max-w-3xl mx-auto space-y-4">
+      <motion.div
+        className="p-4 max-w-3xl mx-auto space-y-4"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      >
 
         <div>
           <h1 className="text-xl font-bold text-white">Leave Requests</h1>
@@ -150,68 +159,76 @@ export default function LeaveApprovalScreen() {
           />
         )}
 
-        {!isLoading && filtered.map((lr) => {
-          const days = daysBetween(lr.start_date, lr.end_date)
-          const isCancelled = lr.status !== 'PENDING'
-          return (
-            <div
-              key={lr.id}
-              className={[
-                'rounded-2xl border p-4 space-y-3',
-                isCancelled ? 'border-white/10 bg-white/5/20 opacity-80' : 'border-white/10 bg-transparent',
-              ].join(' ')}
-            >
-              {/* Header row */}
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className={`font-semibold text-sm text-white ${isCancelled ? 'line-through opacity-60' : ''}`}>
-                    {lr.employee ?? 'Unknown'}
-                  </p>
-                  <p className="text-xs text-slate-400/50 mt-0.5">
-                    {TYPE_LABELS[lr.leave_type] ?? lr.leave_type}
-                    {' · '}{days} day{days !== 1 ? 's' : ''}
-                  </p>
-                </div>
-                <StatusBadge status={statusToValue(lr.status)} />
-              </div>
+        {!isLoading && filtered.length > 0 && (
+          <motion.div initial="hidden" animate="visible" variants={containerVariants} className="space-y-4">
+            {filtered.map((lr) => {
+              const days = daysBetween(lr.start_date, lr.end_date)
+              const isCancelled = lr.status !== 'PENDING'
+              return (
+                <motion.div
+                  key={lr.id}
+                  variants={itemVariants}
+                  whileHover={{ y: -2 }}
+                  className={[
+                    'rounded-2xl border p-4 space-y-3',
+                    isCancelled ? 'border-white/10 bg-white/5/20 opacity-80' : 'border-white/10 bg-transparent',
+                  ].join(' ')}
+                >
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className={`font-semibold text-sm text-white ${isCancelled ? 'line-through opacity-60' : ''}`}>
+                        {lr.employee ?? 'Unknown'}
+                      </p>
+                      <p className="text-xs text-slate-400/50 mt-0.5">
+                        {TYPE_LABELS[lr.leave_type] ?? lr.leave_type}
+                        {' · '}{days} day{days !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <StatusBadge status={statusToValue(lr.status)} />
+                  </div>
 
-              {/* Date range */}
-              <div className="flex gap-2 text-xs text-slate-400/50">
-                <span>{lr.start_date}</span>
-                <span aria-hidden="true">→</span>
-                <span>{lr.end_date}</span>
-              </div>
+                  {/* Date range */}
+                  <div className="flex gap-2 text-xs text-slate-400/50">
+                    <span>{lr.start_date}</span>
+                    <span aria-hidden="true">{'→'}</span>
+                    <span>{lr.end_date}</span>
+                  </div>
 
-              {/* Reason */}
-              {lr.reason && (
-                <p className="text-xs text-slate-300/70 italic">"{lr.reason}"</p>
-              )}
+                  {/* Reason */}
+                  {lr.reason && (
+                    <p className="text-xs text-slate-300/70 italic">"{lr.reason}"</p>
+                  )}
 
-              {/* Actions — only for PENDING */}
-              {lr.status === 'PENDING' && (
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={() => setApproveId(lr.id)}
-                    className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-primary-dark text-white text-sm font-semibold
-                      hover:bg-primary-dark/90 transition-colors
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => { setRejectId(lr.id); setRejectNotes('') }}
-                    className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-status-failed text-white
-                      text-sm font-semibold hover:bg-status-failed/90 transition-colors
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed"
-                  >
-                    Reject
-                  </button>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+                  {/* Actions — only for PENDING */}
+                  {lr.status === 'PENDING' && (
+                    <div className="flex gap-2 pt-1">
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setApproveId(lr.id)}
+                        className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-primary-dark text-white text-sm font-semibold
+                          hover:bg-primary-dark/90 transition-colors
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
+                      >
+                        Approve
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => { setRejectId(lr.id); setRejectNotes('') }}
+                        className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-status-failed text-white
+                          text-sm font-semibold hover:bg-status-failed/90 transition-colors
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed"
+                      >
+                        Reject
+                      </motion.button>
+                    </div>
+                  )}
+                </motion.div>
+              )
+            })}
+          </motion.div>
+        )}
+      </motion.div>
 
       {/* Approve modal */}
       <Modal

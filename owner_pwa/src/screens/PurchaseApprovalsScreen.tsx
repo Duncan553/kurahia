@@ -202,7 +202,7 @@ function RequestCard({
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left rounded-xl border border-white/10 p-4
+      className="w-full text-left glass-card rounded-xl p-4
         hover:border-primary-light/50 hover:shadow-sm transition-all
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
     >
@@ -260,14 +260,10 @@ export default function PurchaseApprovalsScreen() {
   const pendingCount = (data ?? []).filter(r => r.status === 'PENDING').length
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
+    <div className="p-4 max-w-3xl mx-auto">
       <div className="mb-5">
-        <h1 className="font-serif text-2xl text-white">Purchase Approvals</h1>
-        {pendingCount > 0 && (
-          <p className="text-xs text-status-pending font-semibold mt-0.5">
-            {pendingCount} request{pendingCount !== 1 ? 's' : ''} awaiting your decision
-          </p>
-        )}
+        <h1 className="text-2xl font-bold text-white font-serif">Purchase Approvals</h1>
+        <p className="text-xs text-white/30 mt-0.5">Review and approve restock requests</p>
       </div>
 
       {/* Filter tabs */}

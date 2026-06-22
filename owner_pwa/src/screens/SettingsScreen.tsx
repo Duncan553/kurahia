@@ -83,7 +83,7 @@ function DepartmentsTab() {
         ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-12 rounded-xl" />)
         : (data ?? []).map(d => (
           <div key={d.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-white/10 px-4 py-3">
+            className="flex items-center justify-between gap-3 glass-card rounded-xl px-4 py-3">
             <div className="flex items-center gap-2 min-w-0">
               <span className={`w-2 h-2 rounded-full shrink-0 ${d.is_active ? 'bg-status-paid' : 'bg-ink-tertiary'}`} />
               <span className={`text-sm font-medium truncate ${d.is_active ? 'text-white' : 'text-slate-400/50 line-through'}`}>
@@ -159,7 +159,7 @@ function RolesTab() {
           .sort((a, b) => b.level - a.level)
           .map(r => (
             <div key={r.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 px-4 py-3">
+              className="flex items-center justify-between gap-3 glass-card rounded-xl px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className={`w-2 h-2 rounded-full shrink-0 ${r.is_active ? 'bg-status-paid' : 'bg-ink-tertiary'}`} />
                 <div>
@@ -219,7 +219,7 @@ function BaselinesTab() {
         : (data ?? []).length === 0
           ? <p className="text-sm text-slate-400/50 py-4 text-center">No baselines configured.</p>
           : (data ?? []).map(b => (
-            <div key={b.id} className="rounded-xl border border-white/10 px-4 py-3 space-y-2">
+            <div key={b.id} className="glass-card rounded-xl px-4 py-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className={`text-sm font-medium truncate ${b.is_active ? 'text-white' : 'text-slate-400/50'}`}>
@@ -300,7 +300,7 @@ function SocketRow({ label, endpoint }: { label: string; endpoint: string }) {
   })
 
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-white/10 px-4 py-3">
+    <div className="flex items-start gap-3 glass-card rounded-xl px-4 py-3">
       <span className={`w-2 h-2 rounded-full shrink-0 mt-1 ${
         isLoading ? 'bg-white/5' : data?.configured ? 'bg-status-paid' : 'bg-ink-tertiary'
       }`} />
@@ -389,10 +389,10 @@ export default function SettingsScreen() {
   const [tab, setTab] = useState<TabKey>('departments')
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
+    <div className="p-4 max-w-3xl mx-auto">
       <div className="mb-5">
-        <h1 className="font-serif text-2xl text-white">Settings</h1>
-        <p className="text-xs text-slate-300/70 mt-0.5">Admin controls and personal preferences</p>
+        <h1 className="text-2xl font-bold text-white font-serif">Settings</h1>
+        <p className="text-xs text-white/30 mt-0.5">Business day, system configuration</p>
       </div>
 
       {/* Tab strip */}

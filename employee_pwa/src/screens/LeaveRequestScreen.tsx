@@ -107,9 +107,10 @@ export default function LeaveRequestScreen() {
           <label className="block text-sm font-medium text-slate-300/70 mb-1.5">Leave type *</label>
           <div className="grid grid-cols-2 gap-2">
             {LEAVE_TYPES.map((lt) => (
-              <button
+              <motion.button
                 key={lt.value}
                 type="button"
+                whileTap={{ scale: 0.97 }}
                 onClick={() => setLeaveType(lt.value)}
                 className={[
                   'py-2.5 min-h-[44px] px-3 rounded-xl border text-sm font-medium transition-all text-left',
@@ -120,7 +121,7 @@ export default function LeaveRequestScreen() {
                 ].join(' ')}
               >
                 {lt.label}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -163,15 +164,16 @@ export default function LeaveRequestScreen() {
             rows={3}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g. Family event, medical appointment…"
+            placeholder="e.g. Family event, medical appointment..."
             className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
               text-sm text-white focus:outline-none focus:border-primary-dark
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />
         </div>
 
-        <button
+        <motion.button
           type="submit"
+          whileTap={{ scale: 0.97 }}
           disabled={mutation.isPending}
           className={[
             'w-full py-4 rounded-2xl text-base font-semibold transition-all',
@@ -186,10 +188,10 @@ export default function LeaveRequestScreen() {
                 <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3"/>
                 <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              Submitting…
+              Submitting...
             </span>
           ) : 'Submit Request'}
-        </button>
+        </motion.button>
       </form>
 
       {/* ── History ──────────────────────────────────────────────────── */}
@@ -229,6 +231,7 @@ export default function LeaveRequestScreen() {
                 key={r.id}
                 variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
                 transition={{ duration: 0.22, ease: 'easeOut' }}
+                whileHover={{ y: -2 }}
                 className="flex items-start justify-between gap-3 rounded-xl
                   bg-white/5/30 border border-white/10 px-4 py-3"
               >

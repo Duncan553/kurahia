@@ -70,7 +70,7 @@ function BookingCard({ booking, onSelect }: { booking: Booking; onSelect: () => 
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left rounded-xl border border-white/10 p-4
+      className="w-full text-left glass-card rounded-xl p-4
         hover:border-primary-light/50 hover:shadow-sm transition-all
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
     >
@@ -241,18 +241,11 @@ export default function BookingsScreen() {
     staleTime: 60_000,
   })
 
-  const confirmed = (data ?? []).filter(b => b.status === 'CONFIRMED').length
-  const inHouse   = (data ?? []).filter(b => b.status === 'CHECKED_IN').length
-
   return (
-    <div className="p-4 max-w-2xl mx-auto">
+    <div className="p-4 max-w-3xl mx-auto">
       <div className="mb-5">
-        <h1 className="font-serif text-2xl text-white">Bookings</h1>
-        {!isLoading && (
-          <p className="text-xs text-slate-300/70 mt-0.5">
-            {confirmed} confirmed · {inHouse} in house
-          </p>
-        )}
+        <h1 className="text-2xl font-bold text-white font-serif">Bookings</h1>
+        <p className="text-xs text-white/30 mt-0.5">Villa & event bookings, deposits, check-in</p>
       </div>
 
       {/* Filters */}

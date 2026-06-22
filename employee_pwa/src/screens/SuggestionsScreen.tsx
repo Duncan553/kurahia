@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useToastStore } from '@shared'
 import api from '../lib/axios'
 
@@ -16,6 +17,15 @@ const MAX_BODY = 500
 
 function freshKey(): string {
   return crypto.randomUUID()
+}
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06 } },
+}
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, damping: 25, stiffness: 300 } },
 }
 
 export default function SuggestionsScreen() {
@@ -57,11 +67,23 @@ export default function SuggestionsScreen() {
   }
 
   return (
-    <div className="p-4 max-w-3xl mx-auto">
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+    <motion.div
+      className="p-4 max-w-3xl mx-auto"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+    >
+      <motion.form
+        onSubmit={handleSubmit}
+        noValidate
+        className="space-y-5"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
 
         {/* Category toggle */}
-        <div>
+        <motion.div variants={itemVariants}>
           <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400/50 mb-2">
             Send to
           </label>
@@ -82,19 +104,27 @@ export default function SuggestionsScreen() {
               </button>
             ))}
           </div>
+          <AnimatePresence>
           {category === 'OWNER_PRIVATE' && (
-            <p className="text-xs text-slate-400/50 mt-1.5 flex items-center gap-1.5">
+            <motion.p
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="text-xs text-slate-400/50 mt-1.5 flex items-center gap-1.5"
+            >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                 <rect x="2" y="5" width="8" height="6" rx="1" stroke="currentColor" strokeWidth="1.2" />
                 <path d="M4 5V4a2 2 0 014 0v1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
               </svg>
               Send directly to owner — managers cannot see this.
-            </p>
+            </motion.p>
           )}
-        </div>
+          </AnimatePresence>
+        </motion.div>
 
         {/* Subject */}
-        <div>
+        <motion.div variants={itemVariants}>
           <label htmlFor="subject" className="block text-sm font-semibold text-white mb-1.5">
             Subject
           </label>
@@ -118,10 +148,10 @@ export default function SuggestionsScreen() {
               {subjectError}
             </p>
           )}
-        </div>
+        </motion.div>
 
         {/* Body */}
-        <div>
+        <motion.div variants={itemVariants}>
           <div className="flex items-baseline justify-between mb-1.5">
             <label htmlFor="body" className="block text-sm font-semibold text-white">
               Details
@@ -151,10 +181,12 @@ export default function SuggestionsScreen() {
               {bodyError}
             </p>
           )}
-        </div>
+        </motion.div>
 
         {/* Submit */}
-        <button
+        <motion.button
+          variants={itemVariants}
+          whileTap={{ scale: 0.97 }}
           type="submit"
           disabled={!isValid || mutation.isPending}
           className={[
@@ -173,8 +205,8 @@ export default function SuggestionsScreen() {
               Submitting…
             </span>
           ) : 'Submit Suggestion'}
-        </button>
-      </form>
-    </div>
+        </motion.button>
+      </motion.form>
+    </motion.div>
   )
 }
