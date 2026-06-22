@@ -51,7 +51,7 @@ function StaffCard({
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left flex items-center gap-3 rounded-xl border border-white/10
+      className="w-full text-left flex items-center gap-3 glass-card rounded-xl
         px-4 py-3 hover:border-primary-light/50 hover:shadow-sm transition-all
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
     >
@@ -361,11 +361,11 @@ export default function StaffScreen() {
     : users
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
+    <div className="p-4 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-5 gap-3">
         <div>
-          <h1 className="font-serif text-2xl text-white">Staff</h1>
-          <p className="text-xs text-slate-300/70 mt-0.5">{users.length} total · {users.filter(u => u.is_active).length} active</p>
+          <h1 className="text-2xl font-bold text-white font-serif">Staff</h1>
+          <p className="text-xs text-white/30 mt-0.5">Employee accounts, roles, departments</p>
         </div>
         <Button
           variant="primary"

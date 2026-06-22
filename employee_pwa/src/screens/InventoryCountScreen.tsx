@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import { Drawer, Skeleton, EmptyState, useToastStore, Combobox, SearchInput } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
@@ -81,6 +82,10 @@ export default function InventoryCountScreen() {
   const user        = useAuthStore((s) => s.user)
   const userDept    = user?.department ?? null
   const isOwner     = (user?.role_level ?? 0) >= 10
+
+  // Animation variants
+  const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }
+  const itemVariants = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, damping: 25, stiffness: 300 } } }
 
   // ── Department picker (owner selects dept; manager auto-scoped by backend) ─
   const [selectedDeptId, setSelectedDeptId] = useState<string>('') // '' = All (owner only)
@@ -227,14 +232,15 @@ export default function InventoryCountScreen() {
 
   return (
     <RequireRole minLevel={5}>
-      <div className="p-4 max-w-3xl mx-auto space-y-4">
+      <motion.div className="p-4 max-w-3xl mx-auto space-y-4" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}>
 
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-white">Inventory Count</h1>
             <p className="text-sm text-slate-400/50">Physical count per item — each saves independently</p>
           </div>
-          <button
+          <motion.button
+            whileTap={{ scale: 0.97 }}
             onClick={openAddDrawer}
             className="shrink-0 min-h-[44px] flex items-center gap-1.5 px-3 rounded-xl
               bg-primary-dark text-white text-xs font-semibold
@@ -245,7 +251,7 @@ export default function InventoryCountScreen() {
               <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
             Add item
-          </button>
+          </motion.button>
         </div>
 
         {/* ── Department picker (owner only) ──────────────────────── */}
@@ -341,88 +347,95 @@ export default function InventoryCountScreen() {
               />
             )}
 
-            {!isLoading && countItems.map((item) => {
-              const result = results[item.id]
-              const submitted = !!result && !result.duplicate
-              const adj = result ? parseFloat(result.adjustment) : null
+            {!isLoading && countItems.length > 0 && (
+              <motion.div initial="hidden" animate="visible" variants={containerVariants} className="space-y-3">
+                {countItems.map((item) => {
+                  const result = results[item.id]
+                  const submitted = !!result && !result.duplicate
+                  const adj = result ? parseFloat(result.adjustment) : null
 
-              return (
-                <div
-                  key={item.id}
-                  className={[
-                    'rounded-xl border p-3 space-y-2 transition-colors',
-                    submitted ? 'bg-primary-light/20 border-primary-main/30' : 'bg-white/5/30 border-white/10',
-                  ].join(' ')}
-                >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-white">{item.name}</span>
-                    <span className="text-xs text-slate-400/50">{item.unit}</span>
-                    {item.below_reorder && (
-                      <span className="text-[10px] font-semibold uppercase tracking-wide
-                        bg-status-pending/10 text-status-pending rounded-full px-2 py-0.5">
-                        Reorder
-                      </span>
-                    )}
-                    {item.is_watch_list && (
-                      <span className="text-[10px] font-semibold uppercase tracking-wide
-                        bg-status-failed/10 text-status-failed rounded-full px-2 py-0.5">
-                        Watch
-                      </span>
-                    )}
-                    {submitted && (
-                      <span className="ml-auto text-primary-dark">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                          <circle cx="8" cy="8" r="8" opacity="0.2"/>
-                          <path d="M4.5 8l2.5 2.5L11.5 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                        </svg>
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400/50 tabular-nums shrink-0">
-                      System: {item.current_stock} {item.unit}
-                    </span>
-                    {adj !== null && <VarianceBadge adj={result!.adjustment} watchList={item.is_watch_list} />}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      inputMode="decimal"
-                      placeholder="Counted qty"
-                      value={inputs[item.id] ?? ''}
-                      onChange={(e) => setInputs((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                      disabled={pending.has(item.id)}
-                      className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2
-                        text-sm text-white focus:outline-none focus:border-primary-dark
-                        focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
-                    />
-                    <button
-                      onClick={() => submitCount(item)}
-                      disabled={pending.has(item.id) || !inputs[item.id]?.trim()}
+                  return (
+                    <motion.div
+                      key={item.id}
+                      variants={itemVariants}
+                      whileHover={{ y: -2 }}
                       className={[
-                        'px-4 py-2 min-h-[44px] rounded-xl text-sm font-semibold transition-all shrink-0',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
-                        'disabled:opacity-40 disabled:cursor-not-allowed',
-                        submitted
-                          ? 'bg-primary-main/20 text-primary-dark hover:bg-primary-main/30'
-                          : 'bg-primary-dark text-white hover:bg-primary-dark/90',
+                        'rounded-xl border p-3 space-y-2 transition-colors',
+                        submitted ? 'bg-primary-light/20 border-primary-main/30' : 'bg-white/5/30 border-white/10',
                       ].join(' ')}
                     >
-                      {pending.has(item.id) ? (
-                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3"/>
-                          <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
-                      ) : submitted ? 'Re-count' : 'Save'}
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-white">{item.name}</span>
+                        <span className="text-xs text-slate-400/50">{item.unit}</span>
+                        {item.below_reorder && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wide
+                            bg-status-pending/10 text-status-pending rounded-full px-2 py-0.5">
+                            Reorder
+                          </span>
+                        )}
+                        {item.is_watch_list && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wide
+                            bg-status-failed/10 text-status-failed rounded-full px-2 py-0.5">
+                            Watch
+                          </span>
+                        )}
+                        {submitted && (
+                          <span className="ml-auto text-primary-dark">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                              <circle cx="8" cy="8" r="8" opacity="0.2"/>
+                              <path d="M4.5 8l2.5 2.5L11.5 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                            </svg>
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400/50 tabular-nums shrink-0">
+                          System: {item.current_stock} {item.unit}
+                        </span>
+                        {adj !== null && <VarianceBadge adj={result!.adjustment} watchList={item.is_watch_list} />}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          placeholder="Counted qty"
+                          value={inputs[item.id] ?? ''}
+                          onChange={(e) => setInputs((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                          disabled={pending.has(item.id)}
+                          className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2
+                            text-sm text-white focus:outline-none focus:border-primary-dark
+                            focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
+                        />
+                        <motion.button
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => submitCount(item)}
+                          disabled={pending.has(item.id) || !inputs[item.id]?.trim()}
+                          className={[
+                            'px-4 py-2 min-h-[44px] rounded-xl text-sm font-semibold transition-all shrink-0',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
+                            'disabled:opacity-40 disabled:cursor-not-allowed',
+                            submitted
+                              ? 'bg-primary-main/20 text-primary-dark hover:bg-primary-main/30'
+                              : 'bg-primary-dark text-white hover:bg-primary-dark/90',
+                          ].join(' ')}
+                        >
+                          {pending.has(item.id) ? (
+                            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3"/>
+                              <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                          ) : submitted ? 'Re-count' : 'Save'}
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </motion.div>
+            )}
           </>
         )}
 
@@ -477,10 +490,12 @@ export default function InventoryCountScreen() {
                     </p>
                   </div>
                 )}
-                <div className="space-y-2">
+                <motion.div className="space-y-2" initial="hidden" animate="visible" variants={containerVariants}>
                   {variance.items.map((v) => (
-                    <div
+                    <motion.div
                       key={v.item_id}
+                      variants={itemVariants}
+                      whileHover={{ y: -2 }}
                       className={[
                         'rounded-xl border px-4 py-3',
                         v.flagged
@@ -508,9 +523,9 @@ export default function InventoryCountScreen() {
                           {parseFloat(v.variance_pct) > 0 ? '+' : ''}{v.variance_pct}% variance
                         </p>
                       )}
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </>
             )}
 
@@ -523,7 +538,7 @@ export default function InventoryCountScreen() {
         )}
       </>)}
 
-      </div>
+      </motion.div>
 
       {/* ── Add item drawer ─────────────────────────────────────────── */}
       <Drawer open={addOpen} onClose={() => setAddOpen(false)} title="Add inventory item">

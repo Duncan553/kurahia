@@ -131,10 +131,13 @@ export default function AlertsScreen() {
   const ackingAlert = view.ackingId ? alerts.find(a => a.id === view.ackingId) : null
 
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-4">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
 
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-white font-serif">Judge Alerts</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-white font-serif">Judge Alerts</h1>
+          <p className="text-xs text-white/30 mt-0.5">Silent anomaly detection — theft, waste, overbudget</p>
+        </div>
         {!isLoading && (
           <span className="text-xs text-slate-300/70">
             {alerts.length} {view.filter === 'all' ? 'total' : view.filter}
@@ -199,7 +202,7 @@ export default function AlertsScreen() {
             <div
               key={alert.id}
               className={[
-                'border-l-4 rounded-r-2xl rounded-l-sm border border-white/10 p-4',
+                'border-l-4 rounded-r-2xl rounded-l-sm glass-card p-4',
                 SEV_BORDER[alert.severity] ?? 'border-l-ink-tertiary',
                 alert.status === 'ACKNOWLEDGED' ? 'opacity-50' : '',
               ].join(' ')}

@@ -51,7 +51,7 @@ function KpiCard({ label, value, sub, danger = false }: {
   label: string; value: string; sub?: string; danger?: boolean
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 p-4 space-y-1">
+    <div className="glass-card rounded-2xl p-4 space-y-1">
       <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70">{label}</p>
       <p className={`text-2xl font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-white'}`}>
         {value}
@@ -108,7 +108,7 @@ function RevenueSection({ period }: { period: string }) {
       </div>
 
       {/* 30-day bar chart */}
-      <div className="rounded-2xl border border-white/10 p-4">
+      <div className="glass-card rounded-2xl p-4">
         <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70 mb-3">
           Daily Revenue — last {days} days
         </p>
@@ -178,7 +178,7 @@ function BudgetSection({ period }: { period: string }) {
         <>
           {/* Spend donut */}
           {donutData.length > 0 && (
-            <div className="rounded-2xl border border-white/10 p-4">
+            <div className="glass-card rounded-2xl p-4">
               <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70 mb-2">
                 Spend by Department
               </p>
@@ -206,7 +206,7 @@ function BudgetSection({ period }: { period: string }) {
           {/* Department bars */}
           <div className="space-y-2">
             {active.map(r => (
-              <div key={r.department} className="rounded-xl border border-white/10 px-4 py-3">
+              <div key={r.department} className="glass-card rounded-xl px-4 py-3">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <p className="text-sm font-medium text-white truncate">{r.department}</p>
                   <div className="shrink-0 text-right">
@@ -258,7 +258,7 @@ function ReconStrip({ period }: { period: string }) {
         <button
           key={i.label}
           onClick={() => navigate(i.path)}
-          className="rounded-2xl border border-white/10 px-4 py-3 text-left
+          className="glass-card rounded-2xl px-4 py-3 text-left
             hover:shadow-sm hover:border-primary-light/40 transition-all
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
         >
@@ -281,11 +281,11 @@ export default function FinanceScreen() {
   const [section, setSection] = useState<Section>('revenue')
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
+    <div className="p-4 max-w-3xl mx-auto">
       <div className="flex items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="font-serif text-2xl text-white">Finance</h1>
-          <p className="text-xs text-slate-300/70 mt-0.5">Revenue and department spending</p>
+          <h1 className="text-2xl font-bold text-white font-serif">Finance</h1>
+          <p className="text-xs text-white/30 mt-0.5">Revenue, expenses, reconciliation summaries</p>
         </div>
         {/* Period picker */}
         <label className="sr-only" htmlFor="finance-period">Period</label>

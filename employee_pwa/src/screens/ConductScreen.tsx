@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import { Skeleton, EmptyState, StatusBadge, useToastStore } from '@shared'
 import api from '../lib/axios'
 import { useAuthStore } from '../stores/authStore'
@@ -22,6 +23,15 @@ interface ConductSignature {
   version: number
   title: string
   signed_at: string
+}
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06 } },
+}
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, damping: 25, stiffness: 300 } },
 }
 
 export default function ConductScreen() {
@@ -133,7 +143,12 @@ export default function ConductScreen() {
   const allSigned = rules.every((r) => isSigned(r))
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <motion.div
+      className="flex flex-col h-[calc(100vh-8rem)]"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+    >
 
       {/* Scroll hint banner — disappears once scrollReady */}
       {!scrollReady && !allSigned && (
@@ -148,10 +163,16 @@ export default function ConductScreen() {
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-4 space-y-8"
       >
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="space-y-8"
+        >
         {rules.map((rule) => {
           const sig = isSigned(rule)
           return (
-            <section key={rule.id} aria-labelledby={`rule-${rule.id}-title`}>
+            <motion.section key={rule.id} aria-labelledby={`rule-${rule.id}-title`} variants={itemVariants}>
               {/* Rule header */}
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
@@ -177,7 +198,8 @@ export default function ConductScreen() {
                     Signed on {formatDateTime(sig.signed_at)}
                   </p>
                 ) : (
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => signMutation.mutate({ rule_key: rule.rule_key, version: rule.version })}
                     disabled={!scrollReady || signMutation.isPending}
                     className={[
@@ -189,17 +211,18 @@ export default function ConductScreen() {
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                     ].join(' ')}
                   >
-                    {signMutation.isPending ? 'Signing…' : 'Sign Now'}
-                  </button>
+                    {signMutation.isPending ? 'Signing...' : 'Sign Now'}
+                  </motion.button>
                 )}
               </div>
-            </section>
+            </motion.section>
           )
         })}
 
         {/* Extra bottom padding so last rule doesn't sit right at scroll edge */}
         <div className="h-8" aria-hidden="true" />
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   )
 }

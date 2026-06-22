@@ -16,7 +16,9 @@ function NavCard({ label, description, path, icon, danger }: {
 }) {
   const navigate = useNavigate()
   return (
-    <button
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      whileHover={{ y: -2 }}
       onClick={() => navigate(path)}
       className={[
         'w-full flex items-center gap-4 p-4 rounded-2xl border transition-colors text-left',
@@ -39,7 +41,7 @@ function NavCard({ label, description, path, icon, danger }: {
         className="text-slate-400/50 shrink-0">
         <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-    </button>
+    </motion.button>
   )
 }
 
@@ -161,8 +163,9 @@ export default function ProfileScreen() {
         </p>
         <div className="flex gap-2" role="group" aria-label="Text size">
           {(['S', 'M', 'L'] as FontSizeKey[]).map(key => (
-            <button
+            <motion.button
               key={key}
+              whileTap={{ scale: 0.97 }}
               onClick={() => void changeFontSize(key)}
               aria-pressed={fontSize === key}
               className={[
@@ -174,14 +177,15 @@ export default function ProfileScreen() {
               ].join(' ')}
             >
               {key}
-            </button>
+            </motion.button>
           ))}
         </div>
       </motion.div>
 
       {/* ── Sign out ──────────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="pt-2 border-t border-white/10">
-        <button
+        <motion.button
+          whileTap={{ scale: 0.97 }}
           onClick={signOut}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl
             text-status-failed text-sm font-semibold
@@ -193,7 +197,7 @@ export default function ProfileScreen() {
             <path d="M11 3.5H4a1 1 0 00-1 1v9a1 1 0 001 1h7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
           Sign Out
-        </button>
+        </motion.button>
       </motion.div>
 
       </div>
