@@ -91,8 +91,8 @@ export default function LoginScreen() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.4 }}
               className="w-16 h-16 mx-auto mb-4 rounded-2xl
-                bg-gradient-to-b from-emerald-500/20 to-emerald-700/20
-                backdrop-blur-md border border-emerald-400/20
+                bg-gradient-to-b from-[#F25623]/20 to-[#D94A1A]/20
+                backdrop-blur-md border border-[#FF6B3D]/20
                 flex items-center justify-center shadow-lg"
             >
               <span className="text-2xl font-serif font-bold text-white tracking-tight">K</span>
@@ -183,13 +183,13 @@ export default function LoginScreen() {
                 disabled={!username || !password || loginMutation.isPending}
                 whileTap={{ scale: 0.97 }}
                 className="w-full py-4 rounded-2xl
-                  bg-gradient-to-b from-emerald-500 to-emerald-700
-                  border border-emerald-500/30
+                  bg-gradient-to-b from-[#F25623] to-[#D94A1A]
+                  border border-[#F25623]/30
                   text-white text-sm font-bold tracking-widest uppercase
                   shadow-[0_4px_20px_rgba(16,185,129,0.35)]
-                  hover:from-emerald-400 hover:to-emerald-600
+                  hover:from-[#FF6B3D] hover:to-[#F25623]
                   hover:shadow-[0_6px_24px_rgba(16,185,129,0.45)]
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B3D]
                   disabled:opacity-40 disabled:cursor-not-allowed
                   transition-all"
               >
