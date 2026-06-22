@@ -26,15 +26,15 @@
 
 @theme {
   /* ── System palette (dark glass — VisionOS spatial) ──────────── */
-  --color-primary-main: #10b981;   /* emerald — primary actions */
-  --color-primary-light: #34d399;  /* emerald-light — hover */
-  --color-primary-dark: #059669;   /* emerald-dark — pressed */
-  --color-cream-card: #0f172a;     /* deep navy — page background */
-  --color-cream-alt: rgba(30, 41, 59, 0.6);  /* glass card surface */
-  --color-cream-deep: rgba(30, 41, 59, 0.8); /* pressed glass */
-  --color-ink-primary: #f1f5f9;    /* slate-100 — headlines, body */
-  --color-ink-secondary: rgba(148, 163, 184, 0.7); /* slate-400/70 — secondary */
-  --color-ink-tertiary: rgba(100, 116, 139, 0.5);  /* slate-500/50 — captions */
+  --color-primary-main: #F25623;   /* orange — primary accent (use sparingly) */
+  --color-primary-light: #FF6B3D;  /* orange-light — hover */
+  --color-primary-dark: #D94A1A;   /* orange-dark — pressed */
+  --color-cream-card: #171717;     /* black — page background */
+  --color-cream-alt: rgba(77, 77, 77, 0.4);  /* dark gray — glass card surface */
+  --color-cream-deep: rgba(77, 77, 77, 0.6); /* dark gray — pressed glass */
+  --color-ink-primary: #DEDEDE;    /* light gray — headlines, body */
+  --color-ink-secondary: rgba(222, 222, 222, 0.6); /* light gray/60 — secondary */
+  --color-ink-tertiary: rgba(222, 222, 222, 0.35);  /* light gray/35 — captions */
 
   /* ── Ticket palette (dark-adapted) ───────────────────────────── */
   --color-ticket-paper: rgba(30, 41, 59, 0.8);
@@ -93,8 +93,8 @@ html {
     margin: 0;
     font-family: 'Hanken Grotesk', sans-serif;
     font-size: var(--font-size-base);
-    background: #060910;
-    color: #f1f5f9;
+    background: #171717;
+    color: #DEDEDE;
   }
 }
 
@@ -119,11 +119,10 @@ body::after {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-color: rgba(8, 10, 18, 0.65);
+  background-color: rgba(23, 23, 23, 0.7);
   background-image:
-    radial-gradient(ellipse at 15% 20%, hsla(35, 65%, 22%, 0.4) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 40%, hsla(185, 60%, 18%, 0.35) 0%, transparent 50%),
-    radial-gradient(ellipse at 30% 85%, hsla(155, 45%, 14%, 0.3) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 25%, hsla(15, 70%, 18%, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 70%, hsla(0, 0%, 30%, 0.15) 0%, transparent 45%);
 }
 
 /* ── Glass panels — Apple-quality: saturate(160%) is the secret ────── */
@@ -162,8 +161,8 @@ body::after {
 
 /* Gradient buttons — vibrant, not flat */
 .gradient-hero {
-  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+  background: linear-gradient(135deg, #F25623 0%, #D94A1A 100%);
+  box-shadow: 0 4px 14px rgba(242, 86, 35, 0.25);
 }
 
 /* Skeleton shimmer retuned for parchment/sage base */
