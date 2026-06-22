@@ -675,3 +675,708 @@ five things clearly:
    TanStack Query for API data (server-owned data, cached and auto-refreshed).
 
 You built all of this. Now you can explain all of it.
+
+---
+
+## 8. How Inventory Works (the chain)
+
+Inventory is a chain of events. Every stock change is an append-only
+`StockMovement` row. The current stock level is never stored -- it is always
+`SUM(StockMovement.change_amount)`. That sum IS the truth. Here is the full
+lifecycle, from creating an item to the system automatically requesting more.
+
+### Step 1: Manager creates an InventoryItem
+
+A manager calls `POST /inventory/items` (handled in `app/inventory/items.py`,
+line 67). The endpoint creates an `InventoryItem` row
+(`app/models/inventory_item.py`, line 13) with these key fields:
+
+```python
+InventoryItem(
+    name="Chicken",
+    unit="kg",                 # free-text — never hardcoded
+    department_id=kitchen.id,  # belongs to a department
+    reorder_level="5.0",       # system watches this threshold
+    is_watch_list=True,        # tighter tolerance + daily judge checks
+)
+```
+
+At this point, stock is zero -- no movements exist yet.
+
+### Step 2: Manager records a Purchase
+
+The manager buys 10 kg of chicken for KSh 5,000 and records it via
+`POST /inventory/purchases` (`app/inventory/purchases.py`, line 273).
+
+Two things happen atomically inside `begin_nested()` (line 327):
+
+**1. A StockMovement is created (positive = stock in):**
+```python
+StockMovement(
+    item_id=item.id,
+    change_amount=qty,                   # +10 (positive — stock coming in)
+    reason=MovementReason.PURCHASE.value, # "PURCHASE"
+    actor_id=actor.id,
+    idempotency_key=f"purchase-mv-{idem_key}",
+)
+```
+
+**2. Weighted-average cost updates** (lines 340-346):
+```python
+# new_cpu = 5000 / 10 = KSh 500/kg
+new_cpu = cost / qty
+if old_stock > 0 and item.cost_per_unit is not None:
+    # Blend: (old_stock * old_price + new_qty * new_price) / total_qty
+    item.cost_per_unit = (old_stock * old_cpu + qty * new_cpu) / (old_stock + qty)
+else:
+    item.cost_per_unit = new_cpu  # first purchase — no blending needed
+```
+
+**Why weighted average?** If the last purchase was KSh 450/kg and this one is
+KSh 500/kg, the system blends them. This gives the judge accurate cost data
+for detecting overspend, and gives the owner true inventory value on the
+dashboard. A simple "last price" would swing wildly on a single expensive
+purchase.
+
+The `Purchase` row also stores `receipt_photo_path` -- every purchase requires
+a receipt photo (line 289 rejects without it). This is anti-theft: a manager
+cannot inflate quantities or invent purchases without a physical receipt.
+
+### Step 3: Kitchen marks an order item Ready -- auto-consumption fires
+
+This is where inventory meets POS. When a chef taps "Ready" on a dish:
+
+```
+POST /order-items/{oi_id}/ready
+```
+
+**Backend** (`app/pos/orders.py`, line 262): After the state machine validates
+the transition (RECEIVED -> READY), line 277 calls:
+
+```python
+consume_order_item(oi, actor)   # auto-deduct recipe ingredients
+```
+
+`consume_order_item()` lives at `app/services/consumption.py`, line 28.
+Here is exactly what it does:
+
+1. **Load the recipe** (line 33): Queries `RecipeLine` rows for this
+   `menu_item_id`. A RecipeLine (`app/models/recipe_line.py`) links a
+   `MenuItem` to an `InventoryItem` with a quantity and unit. Example:
+   "Grilled Chicken" recipe has a line: `0.3 kg Chicken`.
+
+2. **Calculate how much to deduct** (lines 41-49):
+   ```python
+   order_qty = Decimal(str(oi.quantity))        # e.g. 2 (customer ordered 2)
+   recipe_qty = Decimal(str(line.quantity))      # e.g. 0.3 kg per dish
+   stock_qty = inv_item.recipe_to_stock(recipe_qty)  # convert ml→bottles if pack item
+   deduct = -(stock_qty * order_qty)             # -(0.3 × 2) = -0.6 kg
+   ```
+
+3. **Write a StockMovement** (lines 56-63):
+   ```python
+   StockMovement(
+       item_id=inv_item.id,
+       change_amount=deduct,                     # -0.6 (negative — stock out)
+       reason=MovementReason.SALE.value,          # "SALE"
+       actor_id=actor.id,
+       idempotency_key=f"sale-{oi.id}-{inv_item.id}",
+   )
+   ```
+
+The idempotency key `sale-{order_item_id}-{inventory_item_id}` means
+double-marking an item READY is harmless -- the second attempt finds the
+existing movement and skips (line 53).
+
+**Pack-size math:** For spirits, the recipe says "50ml vodka" but stock tracks
+bottles (750ml). `recipe_to_stock()` (`app/models/inventory_item.py`, line 56)
+divides: `50 / 750 = 0.0667 bottles`. This way the recipe is human-readable
+(ml) while stock is countable (bottles).
+
+4. **If no recipe exists** (line 37): `_notify_no_recipe()` sends a notification
+   to the head chef saying "Order sold for 'X' but no recipe is set. Stock cannot
+   be auto-deducted." The system does NOT guess -- it flags the gap.
+
+### Step 4: Stock drops below reorder_level -- low-stock notification
+
+After every SALE movement, `_check_low_stock()` runs
+(`app/services/consumption.py`, line 101):
+
+```python
+current = get_current_stock(inv_item.id)           # SUM of all movements
+if current >= Decimal(str(inv_item.reorder_level)):
+    return                                          # still above threshold — nothing to do
+
+# Stock is low — notify the owner
+db.session.add(Notification(
+    recipient_user_id=owner.id,
+    subject=f"Low stock: {inv_item.name}",
+    body=f"{inv_item.name} has dropped to {current} {inv_item.unit} "
+         f"(reorder level: {inv_item.reorder_level} {inv_item.unit}). Please reorder.",
+    ...
+))
+```
+
+**Dedup** (line 122): If the same item was flagged in the last 24 hours, it
+skips. This prevents 50 "low stock: Chicken" notifications on a busy Saturday
+when every order further depletes the same ingredient.
+
+### Step 5: Nightly auto-draft creates DRAFT purchase requests
+
+Every night at 23:00 EAT, a cron job runs `flask inventory auto-draft`
+(`app/cli/inventory.py`, line 68). It scans every active InventoryItem:
+
+```python
+for item in items:
+    current = get_current_stock(item.id)
+    if current >= item.reorder_level:
+        continue   # stock is fine — skip
+
+    # Skip if there's already an open request for this item
+    existing = PurchaseRequest.query.filter(
+        item_id == item.id,
+        status IN ('DRAFT', 'PENDING'),
+    ).first()
+    if existing:
+        continue
+
+    # Suggest buying enough to reach 2x reorder level
+    suggested_qty = (item.reorder_level * 2) - current
+    PurchaseRequest(
+        item_id=item.id,
+        quantity=suggested_qty,
+        status="DRAFT",            # not PENDING — needs manager review first
+        system_generated=True,     # flagged so the UI can show "auto-suggested"
+        requested_by_id=None,      # system, not a person
+    )
+```
+
+**Why `reorder_level * 2`?** If reorder is 5 kg and current stock is 2 kg, the
+suggestion is `(5 * 2) - 2 = 8 kg`. This aims to refill past the reorder point
+with some buffer, so the next restock does not happen tomorrow.
+
+### Step 6: Manager reviews, submits, owner approves
+
+The approval chain lives in `app/inventory/purchases.py`:
+
+1. **Manager sees DRAFT requests** via `GET /inventory/purchase-requests?status=DRAFT`
+   (line 37). The `system_generated` flag tells the UI these are auto-suggestions.
+
+2. **Manager submits** via `POST /inventory/purchase-requests/{id}/submit`
+   (line 143): Changes status from DRAFT to PENDING. The manager can adjust the
+   quantity before submitting.
+
+3. **Manager proposes a budget** via `POST /inventory/purchase-requests/{id}/propose`
+   (line 197): Attaches `estimated_cost` and notes.
+
+4. **Owner approves** via `POST /inventory/purchase-requests/{id}/approve`
+   (line 232): Only role level 10+. Changes status to APPROVED. The owner
+   cannot approve their own request (line 244 -- anti-collusion).
+
+5. **Manager records the actual purchase** via `POST /inventory/purchases`
+   (line 273): Links back to the `purchase_request_id`, marks the request
+   FULFILLED (line 321), and creates the StockMovement that increases stock.
+
+### The full chain in one sentence
+
+**Create item -> Purchase (stock in) -> Customer orders -> Kitchen marks Ready
+-> Auto-consume (stock out) -> Low-stock alert -> Auto-draft request -> Manager
+submits -> Owner approves -> Purchase (stock in again).** A loop. Every step is
+an append-only record. Nothing is ever deleted or overwritten.
+
+---
+
+## 9. How the Judge Works (silent theft detection)
+
+The judge is a silent anomaly detector. It does not accuse anyone. It does not
+block operations. It watches numbers in the background and creates alerts when
+something looks wrong. The owner sees these alerts on the Alerts screen in the
+owner PWA (`owner_pwa/src/screens/AlertsScreen.tsx`). Staff never see them.
+
+### When it runs
+
+Two schedules, triggered by CLI commands (which cron calls):
+
+- **Daily** (`flask judge run-daily` / `flask system run-daily`):
+  Checks watch-list items for spoilage spikes. Fast -- only looks at today.
+
+- **Weekly** (`flask judge run-weekly` / registered in `app/judge/routes.py`,
+  line 84): Runs ratio analysis (consumption vs revenue), cost variance
+  (expected vs actual ingredient spend), and budget checks. Covers the last
+  7 days by default.
+
+Both are defined in `app/judge/engine.py`.
+
+### What it checks
+
+#### RATIO (weekly -- `run_weekly()`, line 191)
+
+"If we made KSh 100,000 in revenue this week, we should have used roughly X kg
+of chicken." The expected ratio comes from `JudgeBaseline` rows
+(`app/models/judge_baseline.py`), seeded by `flask judge seed-baselines`.
+
+```python
+# Example baseline: Chicken — 0.5 kg per KSh 10,000 revenue, 20% tolerance
+consumption = _get_period_consumption(item.id, period_start, period_end)
+expected = baseline.expected_ratio * (revenue / Decimal("10000"))
+deviation_pct = abs(consumption - expected) / expected * 100
+
+if deviation_pct > baseline.tolerance_percent:
+    _fire_alert(item.id, "RATIO", severity, desc, period_start, period_end)
+```
+
+If chicken consumption is 40% above expected, someone might be taking chicken
+home. Or the recipe is wrong. Either way, the owner should look.
+
+#### COST_VARIANCE (weekly -- `_run_cost_variance()`, line 83)
+
+Different angle on the same problem. Instead of comparing consumption to
+revenue, this compares **expected ingredient cost** (from served orders *
+recipe quantities * cost_per_unit) against **actual consumption cost**
+(from stock movements * cost_per_unit).
+
+```python
+# Expected: what recipes say should have been used for all served orders
+# Actual: what stock movements say WAS used
+deviation_pct = abs(actual_cost - expected_cost) / expected_cost * 100
+COST_VARIANCE_THRESHOLD = Decimal("15")   # 15% tolerance
+HIGH_THRESHOLD = Decimal("25")            # above this → HIGH severity
+```
+
+If expected cost is KSh 20,000 but actual is KSh 28,000 (40% over), that is
+either waste, theft, or a recipe that needs updating. All three are worth the
+owner's attention.
+
+#### SPOILAGE_SPIKE (daily -- `run_daily()`, line 246)
+
+Checks watch-list items (high-value or high-theft-risk). If spoilage for a
+single item exceeds the spike threshold in one day, it fires an alert.
+
+```python
+watch_items = InventoryItem.query.filter_by(
+    is_watch_list=True, is_active=True, is_staff_food=False
+).all()
+for item in watch_items:
+    spoilage = _get_spoilage(item.id, period_start, period_end)
+    if spoilage > SPIKE_THRESHOLD:
+        _fire_alert(item.id, "SPOILAGE_SPIKE", AlertSeverity.MEDIUM, desc, ...)
+```
+
+**Why this matters:** A common theft pattern is logging real food as "spoiled"
+to cover the gap. If 20 kg of chicken is logged as spoiled in one day, that
+deserves a question.
+
+#### CASH_SHORTFALL_PATTERN
+
+Detected during cash reconciliation (not in the judge engine directly, but
+flagged by the auto-close health check). When a `CashReconciliation` has
+status SHORT, it appears as a problem in `check_day_health()`
+(`app/services/auto_close.py`, line 49). Repeated shortfalls by the same
+cashier are visible in the reconciliation history.
+
+#### VOID_ABUSE
+
+Handled through the order cancellation audit trail. Every cancel writes to the
+audit log (`app/pos/orders.py`). The dashboard aggregates void rates per staff
+member. Abnormally high rates are surfaced in the owner's analytics.
+
+#### MPESA_FLAGGED / BANK_FLAGGED
+
+When a `PaymentReconciliation` has status FLAGGED
+(`app/models/payment_reconciliation.py`), it means an M-Pesa code or bank
+reference could not be verified. This shows up in the auto-close health check
+(`app/services/auto_close.py`, line 58) and blocks auto-close until resolved.
+
+#### BUDGET_EXCEEDED (weekly -- `_run_budget_exceeded()`, line 150)
+
+Checks every active `Budget` row. If a department has spent more than 100% of
+its monthly budget, the judge fires an alert:
+
+```python
+if spent > budget_amt:
+    _fire_alert(
+        item_id=None,
+        alert_type="BUDGET_EXCEEDED",
+        severity=HIGH if spent > budget_amt * 1.2 else MEDIUM,
+        description=f"{dept_name} department has spent {pct}% of its monthly budget...",
+    )
+```
+
+### How alerts are created -- `fire_alert_if_absent` (idempotent)
+
+Every alert goes through one function: `fire_alert_if_absent()`
+(`app/services/judge_alerts.py`, line 18).
+
+```python
+def fire_alert_if_absent(alert_type, description_key, **alert_fields):
+    # Check: is there already an OPEN alert of this type with this key in description?
+    existing = JudgeAlert.query.filter(
+        alert_type == alert_type,
+        status == OPEN,
+        description LIKE '%{description_key}%',
+    ).first()
+    if existing:
+        return existing, False   # already exists — do nothing
+
+    alert = JudgeAlert(alert_type=alert_type, status=OPEN, **alert_fields)
+    db.session.add(alert)
+    return alert, True           # new alert created
+```
+
+**Why idempotent?** The cron might run twice. A developer might run the judge
+manually then the cron fires 10 minutes later. Without this guard, you get
+duplicate alerts. The dedup key is `(alert_type, description_key, OPEN status)`
+-- if an OPEN alert already mentions this item for this type, no new row is
+created.
+
+### Where the owner sees alerts
+
+The owner PWA has an Alerts screen (`owner_pwa/src/screens/AlertsScreen.tsx`)
+that calls `GET /judge/alerts` (`app/judge/routes.py`, line 26). This endpoint
+is **owner-only** (line 20 checks `role.level >= 10`). Staff never see judge
+alerts -- the system is silent to them by design.
+
+The owner can filter by status (OPEN / ACKNOWLEDGED / ALL) and acknowledge
+alerts via `POST /judge/alerts/{id}/acknowledge` (line 55), which sets
+`acknowledged_at` and `acknowledged_by_id`.
+
+### Alert lifecycle
+
+```
+OPEN → ACKNOWLEDGED → RESOLVED (or DISMISSED)
+```
+
+OPEN alerts with HIGH severity block auto-close (see section 10). This forces
+the owner to look at them before the day can close.
+
+---
+
+## 10. How Auto-Close Works
+
+At the end of every business day, the system checks whether the day was
+"clean" enough to close automatically. If yes, it locks the day's records and
+sends a quiet summary. If not, it alerts the owner with the specific problems.
+
+### Business day cutoff
+
+The business day does NOT end at midnight. It ends at a configurable hour,
+defaulting to 6:00 AM EAT (East Africa Time, UTC+3). This is set in
+`SystemSetting` and read by `_get_start_hour()` in
+`app/services/business_day.py` (line 31).
+
+**Why 6 AM?** Because the resort runs late. A customer paying their bar tab at
+1:00 AM belongs to yesterday's business day, not today's. The 6 AM cutoff
+means "yesterday" runs from 6:00 AM yesterday to 6:00 AM today. Any payment
+at 2:00 AM still counts as yesterday's revenue.
+
+The function `business_day_bounds()` (line 55) converts a date string to UTC
+start/end timestamps:
+
+```python
+def business_day_bounds(date_str: str) -> tuple[datetime, datetime]:
+    d = dt.strptime(date_str, "%Y-%m-%d")
+    start_local = d.replace(hour=start_hour, tzinfo=EAT)  # 6:00 AM EAT
+    start_utc = start_local.astimezone(timezone.utc)       # 3:00 AM UTC
+    return start_utc, start_utc + timedelta(hours=24)      # 24-hour window
+```
+
+### The auto-close trigger
+
+The CLI command `flask system auto-close` (`app/cli/system.py`, line 202)
+runs via cron shortly after the cutoff:
+
+```python
+now = datetime.now(timezone.utc)
+prev = business_day_for(now - timedelta(hours=1))   # which business day just ended?
+start, end = business_day_bounds(prev.strftime("%Y-%m-%d"))
+closed, problems = auto_close_day(start, end)
+```
+
+It subtracts 1 hour from now to find the business day that just ended, then
+calls `auto_close_day()`.
+
+### The 5 health checks
+
+`check_day_health()` (`app/services/auto_close.py`, line 33) returns a list
+of problems. Empty list = all green. Here are the 5 conditions:
+
+**1. Every CASH payment is reconciled** (lines 38-46):
+```python
+unreconciled = Payment.query.filter(
+    method == CASH,
+    created_at_utc in [day_start, day_end),
+    id NOT IN reconciled_payment_ids,
+).count()
+if unreconciled > 0:
+    problems.append(f"{unreconciled} cash payment(s) not reconciled")
+```
+If a waiter collected KSh 3,000 cash but no `CashReconciliation` row covers
+that payment, the day cannot close. Someone needs to count the cash.
+
+**2. No cash shortfalls** (lines 49-55):
+```python
+shortfalls = CashReconciliation.query.filter(
+    created_at_utc in [day_start, day_end),
+    status == SHORT,
+).all()
+for s in shortfalls:
+    problems.append(f"Cash shortfall KSh {abs(s.difference)} ({cashier.username})")
+```
+A reconciliation with status SHORT means the physical cash was less than
+expected. The owner needs to know whose drawer was short and by how much.
+
+**3. No flagged payment reconciliations** (lines 58-64):
+```python
+flagged = PaymentReconciliation.query.filter(
+    created_at_utc in [day_start, day_end),
+    status == FLAGGED,
+).count()
+```
+A FLAGGED M-Pesa or bank payment means the reference code could not be
+verified. It might be a typo, or it might be a fake payment.
+
+**4. No open disputes** (lines 67-71):
+```python
+open_disputes = Dispute.query.filter(
+    status IN (OPEN, UNDER_REVIEW),
+).count()
+```
+A customer or staff dispute that has not been resolved. The day should not be
+locked while money or service complaints are unresolved.
+
+**5. No unresolved HIGH judge alerts** (lines 74-79):
+```python
+high_alerts = JudgeAlert.query.filter(
+    status == OPEN,
+    severity IN (HIGH,),
+).count()
+```
+The judge found something serious (e.g., cost variance above 25%). The owner
+must acknowledge or resolve it before the day locks.
+
+### ALL GREEN -- auto-close
+
+If `check_day_health()` returns an empty list, `auto_close_day()`
+(`app/services/auto_close.py`, line 114) creates a `PeriodClose` row:
+
+```python
+PeriodClose(
+    period_start_utc=day_start,
+    period_end_utc=day_end,
+    closed_by_id=owner.id,
+    safe_count=expected,
+    expected_total_cash=expected,
+    difference=Decimal("0"),
+    status=PeriodCloseStatus.BALANCED.value,
+    notes="Auto-closed (all green)",
+    idempotency_key=f"autoclose-{day_start.date().isoformat()}",
+)
+```
+
+Then it sends a quiet notification to the owner (line 160):
+```
+"Day closed · KSh 85,000 revenue · all reconciled"
+```
+
+The idempotency key `autoclose-{date}` means running the command twice on the
+same day is harmless -- the second run finds the existing PeriodClose (line 118)
+and returns immediately.
+
+### ANY FAIL -- alert the owner
+
+If problems exist, the day is NOT closed. Instead, the owner gets a notification
+(line 128):
+
+```
+Subject: "Day not auto-closed — needs attention"
+Body: "The following issues prevented auto-close:
+  • 3 cash payments not reconciled
+  • Cash shortfall KSh 1,200 (waiter_jane)
+  • 1 unresolved HIGH judge alert"
+```
+
+The owner can then investigate, resolve the problems, and manually close via
+`POST /finance/close-period` (which always works regardless of health checks).
+
+**Why this design?** The owner should not have to babysit clean days. If
+everything checks out, the system closes quietly. But if something is wrong,
+the owner is notified with the exact problems -- no guessing, no "something
+went wrong", just a bullet list of what needs attention.
+
+---
+
+## 11. How the Frontend Knows What to Show
+
+The employee PWA serves every role -- waiter, kitchen, bar, gate, spa, manager
+-- from one app. But a kitchen worker should not see waiter tables, and a waiter
+should not see inventory management. The nav filtering happens in one file:
+`employee_pwa/src/layouts/AppLayout.tsx`.
+
+### The NavItem interface (line 200)
+
+Every navigation item is an object:
+
+```ts
+interface NavItem {
+  id: string
+  path: string
+  label: string
+  Icon: () => ReactElement
+  badge?: boolean
+  visible: (level: number, dept: string | null) => boolean
+}
+```
+
+The `visible` function is the gatekeeper. It takes the user's role level (from
+the JWT claims in Zustand) and their department name, and returns `true` or
+`false`. The layout renders only items where `visible` returns `true`:
+
+```ts
+const visibleItems = NAV_ITEMS.filter((item) => item.visible(roleLevel, department))
+```
+
+That single line (AppLayout.tsx, line 394) is why different users see different
+nav items.
+
+### The `deptIs()` helper (line 183)
+
+```ts
+function deptIs(dept: string | null, ...keywords: string[]): boolean {
+  if (!dept) return false
+  const d = dept.toLowerCase()
+  return keywords.some((k) => d.includes(k))
+}
+```
+
+This does case-insensitive substring matching. `deptIs(dept, 'kitchen')` returns
+true for "Kitchen", "Head Kitchen", or "kitchen-prep". It is intentionally fuzzy
+because department names are owner-configurable (stored in the DB, not hardcoded).
+The owner might call it "Kitchen" or "Food Prep" -- as long as it contains
+"kitchen", the routing works.
+
+### The `isStation()` helper (line 192)
+
+```ts
+function isStation(dept: string | null): boolean {
+  return deptIs(dept, 'kitchen', 'bar', 'front-of-house', 'waiter', 'restaurant',
+    'spa', 'gym', 'wellness', 'water', 'activit', 'aqua', 'villa', 'housekeep')
+}
+```
+
+Station departments work on **shared tablets** bolted to a counter. The kitchen
+has one tablet showing the queue. The bar has one tablet. These are not personal
+devices -- multiple staff share them throughout a shift.
+
+**Why this matters:** Personal items like Clock, Alerts, and Profile should not
+appear on a shared kitchen tablet. Nobody clocks in from the kitchen tablet --
+they use their phone. So `isStation()` returns `true` for these departments,
+and personal nav items use it to hide themselves:
+
+```ts
+const personal = (level: number, dept: string | null) => level >= 3 || !isStation(dept)
+```
+
+This means:
+- **Level 5+ (managers):** Always see personal items. Managers have their own
+  tablets.
+- **Level 3-4 (gate/front desk):** Always see personal items. Gate staff use
+  dedicated devices that are both personal and station.
+- **Level 1 (staff) on a station device:** Personal items hidden. The kitchen
+  tablet shows only the kitchen queue.
+- **Level 1 (staff) on a non-station device:** Personal items visible. A
+  maintenance worker on their phone sees Clock, Alerts, Profile.
+
+### How department drives what you see
+
+Here is how the `visible` function filters for key roles:
+
+**Kitchen staff** (department contains "kitchen"):
+```ts
+{ id: 'kitchen', visible: (_level, dept) => deptIs(dept, 'kitchen') }
+```
+They see: Kitchen queue. That is it (plus Clock/Alerts if on a personal device).
+They do NOT see waiter tables, inventory management, bar queue, or anything
+else. Their tablet is a single-purpose kitchen display.
+
+**Waiters** (department contains "waiter", "restaurant", "front-of-house"):
+```ts
+{ id: 'waiter', visible: (_level, dept) =>
+    deptIs(dept, 'waiter', 'restaurant', 'food', 'beverage', 'f&b', 'front-of-house') }
+```
+They see: Tables (the waiter POS screen). On a personal phone, also Clock and
+Alerts.
+
+**Bar staff** (department contains "bar"):
+```ts
+{ id: 'bar', visible: (_level, dept) => deptIs(dept, 'bar') }
+```
+They see: Bar queue. Same idea as kitchen.
+
+**Gate staff** (level 3-4):
+```ts
+{ id: 'gate-hub', visible: (level) => level >= 3 && level <= 4 }
+{ id: 'checkin',  visible: (level) => level >= 3 && level <= 4 }
+{ id: 'band-lookup', visible: (level) => level >= 3 && level < 5 }
+```
+Gate staff are not filtered by department keyword -- they are filtered by role
+level. Level 3-4 is the "front desk / gate supervisor" range. They see Gate,
+Check-In, Band Lookup, plus personal items.
+
+**Managers** (level 5+):
+```ts
+{ id: 'inventory',   visible: (level) => level >= 5 }
+{ id: 'restock',     visible: (level) => level >= 5 }
+{ id: 'meals',       visible: (level) => level >= 5 }
+{ id: 'maintenance', visible: (level) => level >= 5 }
+{ id: 'manager',     visible: (level) => level >= 5 }
+{ id: 'schedule',    visible: (level) => level >= 5 }
+```
+Managers see everything staff-level screens show for their department, PLUS
+management tools: Inventory, Restock, Staff Meals, Maintenance, the Manager
+dashboard, and Schedule. These are level-gated, not department-gated, because
+a manager of any department needs these tools.
+
+### Station auto-redirect (line 412)
+
+When a station device loads, the default route is `/clock`. But clock-in on a
+shared kitchen tablet makes no sense. So the layout auto-redirects based on
+department:
+
+```ts
+if (location.pathname === '/clock' && roleLevel < 5) {
+  if (deptIs(department, 'kitchen'))                          return <Navigate to="/pos/kitchen" replace />
+  if (deptIs(department, 'bar'))                              return <Navigate to="/pos/bar" replace />
+  if (deptIs(department, 'front-of-house', 'waiter', 'restaurant')) return <Navigate to="/pos/tabs" replace />
+  // ... spa, water, villa, gate
+}
+```
+
+The kitchen tablet logs in and immediately lands on the kitchen queue. No tap
+required. The waiter logs in and lands on their tables. Each role gets dropped
+on the screen they actually need.
+
+Managers (level 5+) are excluded from this redirect. They land on `/clock`
+because they actually use it -- managers clock in from their own tablets.
+
+### Why this design works
+
+1. **One app, many roles.** You do not build separate apps for kitchen, waiter,
+   bar, gate, and manager. You build one app and filter the nav. This means one
+   codebase, one deploy, one PWA install -- the server-side JWT claims determine
+   what the user sees.
+
+2. **Department names are data, not code.** The `deptIs()` function uses
+   substring matching against DB-stored department names. The owner can rename
+   "Kitchen" to "Food Production" and as long as it still contains "kitchen"
+   (or the `deptIs` keywords are updated), routing works. No code change needed.
+
+3. **Station vs personal is a real resort problem.** A kitchen has one tablet
+   screwed to the wall. It should show the queue and nothing else. A waiter
+   carries a phone -- it should show tables plus their personal clock and
+   alerts. `isStation()` solves this split cleanly.
+
+4. **Security is backend-enforced.** The nav filtering is UX convenience, not
+   security. If a kitchen worker somehow navigated to `/inventory/count`, the
+   backend would reject the request with `403 Manager or above required`. The
+   frontend hides what you should not need. The backend blocks what you must
+   not access.
