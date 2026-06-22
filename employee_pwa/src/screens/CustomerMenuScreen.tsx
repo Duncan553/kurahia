@@ -84,7 +84,7 @@ export default function CustomerMenuScreen() {
                     {/* Info */}
                     <div className="p-4">
                       <p className="text-sm font-semibold text-white">{item.name}</p>
-                      <p className="text-sm tabular-nums text-emerald-400 font-bold mt-1">
+                      <p className="text-sm tabular-nums text-[#F25623] font-bold mt-1">
                         {soldOut ? '—' : kes(item.price)}
                       </p>
                     </div>

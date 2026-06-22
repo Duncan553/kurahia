@@ -236,7 +236,7 @@ export default function WaiterTabDetailScreen() {
                   disabled={soldOut}
                   aria-label={soldOut ? `${item.name} — sold out` : `Add ${item.name} to order`}
                   className={`relative text-left rounded-2xl overflow-hidden
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F25623]
                     transition-all glass-card
                     ${soldOut ? 'opacity-40 cursor-not-allowed' : 'hover:shadow-xl hover:border-white/15'}`}
                 >
@@ -260,7 +260,7 @@ export default function WaiterTabDetailScreen() {
                       {item.name}
                     </p>
                     <div className="flex items-center justify-between gap-1 mt-1">
-                      <p className="text-xs tabular-nums font-bold text-emerald-300">
+                      <p className="text-xs tabular-nums font-bold text-[#FF6B3D]">
                         {soldOut ? '—' : kes(item.price)}
                       </p>
                       <StationBadge station={item.prep_station} />
@@ -268,7 +268,7 @@ export default function WaiterTabDetailScreen() {
                   </div>
                   {qty > 0 && (
                     <span className="absolute top-2 right-2 min-w-[24px] h-[24px] rounded-full
-                      bg-emerald-500 text-white flex items-center justify-center
+                      bg-[#F25623] text-white flex items-center justify-center
                       text-[11px] font-bold tabular-nums px-1 shadow-lg">
                       {qty}
                     </span>
