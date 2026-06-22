@@ -137,7 +137,7 @@ function TileCard({
       onKeyDown={href ? (e) => { if (e.key === 'Enter') navigate(href) } : undefined}
       className={[
         'rounded-2xl p-4 space-y-2 border border-white/10 shadow-lg',
-        href ? 'cursor-pointer hover:shadow-xl hover:border-white/20 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400' : '',
+        href ? 'cursor-pointer hover:shadow-xl hover:border-white/20 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F25623]' : '',
         className,
         'glass-card',
       ].join(' ')}

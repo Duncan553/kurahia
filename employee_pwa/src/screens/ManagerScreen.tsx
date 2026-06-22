@@ -128,7 +128,7 @@ export default function ManagerScreen() {
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-[11px] font-semibold tracking-wider uppercase text-white/30">Stock Behavior</p>
-                    <button onClick={() => navigate('/inventory/count')} className="text-[10px] text-emerald-400 hover:text-emerald-300">View All →</button>
+                    <button onClick={() => navigate('/inventory/count')} className="text-[10px] text-[#F25623] hover:text-[#FF6B3D]">View All →</button>
                   </div>
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     <div>
@@ -253,7 +253,7 @@ export default function ManagerScreen() {
                   whileHover={{ y: -3 }} whileTap={{ scale: 0.94 }}
                   onClick={() => navigate(a.path)}
                   className="flex flex-col items-start gap-2 p-3 rounded-xl transition-all text-left
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F25623]
                     glass-card-sage hover:bg-white/8"
                   aria-label={`${a.label} — ${a.desc}`}>
                   <span className="text-white/60">{a.svg}</span>
