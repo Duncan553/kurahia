@@ -139,7 +139,7 @@ export default function NotificationsScreen() {
             disabled={isGrayed}
             className={[
               'w-full text-left px-4 py-4 flex gap-3 items-start transition-colors',
-              'hover:bg-white/5/40 active:bg-white/5/60',
+              'hover:bg-white/5 active:bg-white/8',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark',
               'disabled:opacity-50 disabled:cursor-wait',
             ].join(' ')}

@@ -110,7 +110,7 @@ export default function MaintenanceLogScreen() {
 
         <div>
           <h1 className="text-2xl font-bold text-white font-serif">Equipment Service</h1>
-          <p className="text-xs text-white/30 mt-0.5">Equipment service history</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Equipment service history</p>
         </div>
 
         {/* Filter chips */}
@@ -123,7 +123,7 @@ export default function MaintenanceLogScreen() {
                 'px-3 py-1.5 min-h-[44px] rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0',
                 filter === f.key
                   ? 'bg-[#fa5c29] text-white'
-                  : 'bg-white/5 text-ink-secondary hover:bg-white/5/60',
+                  : 'bg-white/5 text-ink-secondary hover:bg-white/8',
               ].join(' ')}
             >
               {f.label}
@@ -135,13 +135,13 @@ export default function MaintenanceLogScreen() {
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-16 rounded-xl bg-white/5/40 animate-pulse" />
+              <div key={i} className="h-16 rounded-xl bg-white/5 animate-pulse" />
             ))}
           </div>
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
+          <div className="p-4 rounded-xl bg-white/5 text-sm text-ink-tertiary text-center">
             Couldn't load equipment. Check connection.
           </div>
         )}
@@ -173,7 +173,7 @@ export default function MaintenanceLogScreen() {
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
               eq.is_due_service
                 ? 'border-status-failed/30 bg-status-failed/5 hover:bg-status-failed/10'
-                : 'glass-card bg-transparent hover:bg-white/5/40',
+                : 'glass-card bg-transparent hover:bg-white/5',
             ].join(' ')}
           >
             <div className="flex-1 min-w-0">
@@ -215,7 +215,7 @@ export default function MaintenanceLogScreen() {
           <div className="space-y-4">
 
             {/* Equipment summary */}
-            <div className="rounded-xl bg-white/5/40 px-4 py-3 space-y-0.5 text-sm">
+            <div className="rounded-xl bg-white/5 px-4 py-3 space-y-0.5 text-sm">
               <p className="text-ink-tertiary">
                 Last service:{' '}
                 <span className="text-white font-medium">
@@ -233,7 +233,7 @@ export default function MaintenanceLogScreen() {
             </div>
 
             {/* History placeholder — endpoint not yet implemented */}
-            <div className="rounded-xl bg-white/5/20 glass-card px-4 py-3">
+            <div className="rounded-xl bg-white/3 glass-card px-4 py-3">
               <p className="text-xs text-ink-tertiary italic">
                 History will load when the history endpoint ships.
               </p>

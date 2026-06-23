@@ -53,7 +53,7 @@ type Tab = 'today' | 'week'
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   clocked_in:          { label: 'In',             color: 'text-status-paid' },
-  approved_leave:      { label: 'On leave',       color: 'text-blue-600' },
+  approved_leave:      { label: 'On leave',       color: 'text-primary-light' },
   absent_with_notice:  { label: 'Absent (notice)',color: 'text-status-pending' },
   absent_no_notice:    { label: 'Absent',          color: 'text-status-failed' },
 }
@@ -124,7 +124,7 @@ export default function AttendanceScreen() {
 
         <div>
           <h1 className="text-2xl font-bold text-white font-serif">Attendance</h1>
-          <p className="text-xs text-white/30 mt-0.5">Today's clock-in roster</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Today's clock-in roster</p>
         </div>
 
         {/* Absence notices banner */}
@@ -144,7 +144,7 @@ export default function AttendanceScreen() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-white/5/50 rounded-xl p-1">
+        <div className="flex gap-1 bg-white/6 rounded-xl p-1">
           {(['today', 'week'] as Tab[]).map((t) => (
             <button
               key={t}
@@ -168,7 +168,7 @@ export default function AttendanceScreen() {
               </div>
             )}
             {todayError && (
-              <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
+              <div className="p-4 rounded-xl bg-white/5 text-sm text-ink-tertiary text-center">
                 Couldn't load attendance. Check connection.
               </div>
             )}
@@ -208,7 +208,7 @@ export default function AttendanceScreen() {
                         whileHover={{ y: -2 }}
                         onClick={() => setSelectedEmp(row)}
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl glass-card
-                          bg-transparent hover:bg-white/5/40 transition-colors text-left
+                          bg-transparent hover:bg-white/5 transition-colors text-left
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                       >
                         <div className="flex-1 min-w-0">
@@ -301,7 +301,7 @@ export default function AttendanceScreen() {
       >
         {selectedEmp && (
           <div className="space-y-4">
-            <div className="rounded-xl bg-white/5/40 px-4 py-3 text-sm space-y-0.5">
+            <div className="rounded-xl bg-white/5 px-4 py-3 text-sm space-y-0.5">
               <p className="text-ink-tertiary">
                 Shift: <span className="text-white font-medium">
                   {formatTime(selectedEmp.shift_start)} – {formatTime(selectedEmp.shift_end)}

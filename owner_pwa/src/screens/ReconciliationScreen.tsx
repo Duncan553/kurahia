@@ -161,7 +161,7 @@ export default function ReconciliationScreen() {
           <div className="grid sm:grid-cols-3 gap-4">
 
             {/* Corner 1: Receipts */}
-            <div className="rounded-2xl border border-white/10 p-4 space-y-1">
+            <div className="glass-card rounded-2xl p-4 space-y-1">
               <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Receipts</p>
               <Row label="Cash"   value={kes(data.receipts.cash)} />
               <Row label="Card"   value={kes(data.receipts.card)} />
@@ -173,7 +173,7 @@ export default function ReconciliationScreen() {
             </div>
 
             {/* Corner 2: Cash Reconciliation */}
-            <div className="rounded-2xl border border-white/10 p-4 space-y-1">
+            <div className="glass-card rounded-2xl p-4 space-y-1">
               <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Cash Reconciliation</p>
               <Row label="Collected" value={kes(data.cash_reconciliation.total_collected)} />
               <Row label="Expected"  value={kes(data.cash_reconciliation.total_expected)} />
@@ -204,7 +204,7 @@ export default function ReconciliationScreen() {
             </div>
 
             {/* Corner 3: Stock / Judge */}
-            <div className="rounded-2xl border border-white/10 p-4">
+            <div className="glass-card rounded-2xl p-4">
               <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Stock Alerts</p>
               <p className="text-2xl font-bold text-white tabular-nums">
                 {data.stock.open_alerts_count}
@@ -229,7 +229,8 @@ export default function ReconciliationScreen() {
           {data.gaps.length > 0 && (
             <div className="rounded-2xl border border-status-failed/30 bg-status-failed/5 p-4 space-y-1">
               <p className="text-xs font-bold text-status-failed uppercase tracking-widest mb-2">
-                ⚠ Gaps detected
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" className="inline -mt-0.5 mr-1"><path d="M10 3l7.5 13.5H2.5L10 3z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M10 8.5v3M10 14h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                Gaps detected
               </p>
               {data.gaps.map((g, i) => (
                 <p key={i} className="text-sm text-white leading-snug">• {g}</p>

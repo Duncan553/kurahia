@@ -98,11 +98,11 @@ export default function PurchaseReqScreen() {
 
         <div>
           <h1 className="text-2xl font-bold text-white font-serif">Purchase Requests</h1>
-          <p className="text-xs text-white/30 mt-0.5">Submit restock requests</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Submit restock requests</p>
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-1 bg-white/5/50 rounded-xl p-1 overflow-x-auto">
+        <div className="flex gap-1 bg-white/6 rounded-xl p-1 overflow-x-auto">
           {FILTERS.map((f) => (
             <button
               key={f}
@@ -132,7 +132,7 @@ export default function PurchaseReqScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
+          <div className="p-4 rounded-xl bg-white/5 text-sm text-ink-tertiary text-center">
             Couldn't load requests. Check connection.
           </div>
         )}
@@ -172,7 +172,7 @@ export default function PurchaseReqScreen() {
                   key={req.id}
                   className={[
                     'rounded-2xl border p-4 space-y-2',
-                    dim ? 'glass-card bg-white/5/20' : 'glass-card bg-transparent',
+                    dim ? 'glass-card bg-white/3' : 'glass-card bg-transparent',
                   ].join(' ')}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -242,7 +242,7 @@ export default function PurchaseReqScreen() {
             }}
             className="space-y-4"
           >
-            <div className="rounded-xl bg-white/5/40 px-4 py-3 text-sm space-y-0.5">
+            <div className="rounded-xl bg-white/5 px-4 py-3 text-sm space-y-0.5">
               <p className="text-ink-tertiary">
                 Item: <span className="text-white font-medium">{selected.item_name}</span>
               </p>
@@ -330,7 +330,7 @@ export default function PurchaseReqScreen() {
                 <button
                   onClick={() => setConfirmId(null)}
                   className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
-                    text-ink-secondary hover:bg-white/5/40 transition-colors"
+                    text-ink-secondary hover:bg-white/5 transition-colors"
                 >
                   Cancel
                 </button>

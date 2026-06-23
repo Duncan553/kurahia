@@ -203,7 +203,7 @@ function LookupSection() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && lookup()}
-          className="flex-1 rounded-xl border border-cream-alt bg-cream-card px-4 py-2.5
+          className="flex-1 rounded-xl border border-cream-alt bg-transparent px-4 py-2.5
             text-base text-ink-primary focus:outline-none focus:border-[#fa5c29]
             focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
         />
@@ -275,7 +275,8 @@ function WaiverAlert() {
     >
       <div>
         <p className="text-sm font-semibold text-status-pending">
-          ⚠ {count} water booking{count !== 1 ? 's' : ''} missing waiver today
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" className="inline -mt-0.5 mr-1 text-status-pending"><path d="M10 3l7.5 13.5H2.5L10 3z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M10 8.5v3M10 14h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          {count} water booking{count !== 1 ? 's' : ''} missing waiver today
         </p>
         <p className="text-xs text-ink-secondary mt-0.5">
           Guests cannot participate until signed.

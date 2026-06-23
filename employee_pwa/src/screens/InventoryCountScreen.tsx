@@ -68,7 +68,7 @@ function VarianceBadge({ adj, watchList }: { adj: string; watchList: boolean }) 
   const val = parseFloat(adj)
   if (val === 0) return null
   if (val > 0) return (
-    <span className="text-xs font-medium tabular-nums text-blue-600">+{val}</span>
+    <span className="text-xs font-medium tabular-nums text-status-paid">+{val}</span>
   )
   if (watchList) return (
     <span className="flex items-center gap-1 text-xs font-medium tabular-nums text-status-failed">

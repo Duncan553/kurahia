@@ -86,7 +86,7 @@ export default function ServicePayScreen() {
         {/* Header */}
         <div className="mb-4">
           <h1 className="text-2xl font-bold font-serif text-white">{deptName}</h1>
-          <p className="text-xs text-white/40 mt-0.5">Sell · View Stock · Request Restock</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Sell · View Stock · Request Restock</p>
         </div>
 
         {/* Tab switcher */}
@@ -94,7 +94,7 @@ export default function ServicePayScreen() {
           {([['pos', 'Sell'], ['stock', 'Stock'], ['request', 'Request']] as const).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
               className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
-                tab === key ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'
+                tab === key ? 'bg-white/10 text-white' : 'text-ink-tertiary hover:text-ink-secondary'
               }`}>
               {label}
               {key === 'stock' && lowStock.length > 0 && (
@@ -110,7 +110,11 @@ export default function ServicePayScreen() {
             {isLoading && <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} variant="row" />)}</div>}
             {!isLoading && items.length === 0 && (
               <EmptyState
-                icon={<span className="text-4xl">🏷</span>}
+                icon={
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="text-ink-tertiary">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                }
                 title={`No services set up for ${deptName} yet. Ask manager to add items.`}
               />
             )}
@@ -124,7 +128,7 @@ export default function ServicePayScreen() {
                         className="flex items-center gap-3 p-4 glass-card">
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-white">{item.name}</p>
-                          <p className="text-sm text-white/40 tabular-nums">{kes(item.price)}</p>
+                          <p className="text-sm text-ink-tertiary tabular-nums">{kes(item.price)}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {qty > 0 && (
@@ -144,7 +148,7 @@ export default function ServicePayScreen() {
                 {draftCount > 0 && (
                   <div className="border-t border-white/10 pt-4 mt-4 space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-white/60">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
+                      <span className="text-sm text-ink-secondary">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
                       <span className="text-lg font-bold tabular-nums text-white">{kes(total)}</span>
                     </div>
                     <Button variant="primary" size="lg" className="w-full" onClick={() => setStage('pay')}>
@@ -157,14 +161,14 @@ export default function ServicePayScreen() {
             {stage === 'pay' && (
               <div className="space-y-4">
                 <div className="glass-card p-4 text-center">
-                  <p className="text-xs text-white/40 mb-1">Collect</p>
+                  <p className="text-xs text-ink-tertiary mb-1">Collect</p>
                   <p className="text-3xl font-bold tabular-nums text-white">{kes(total)}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {METHODS.map(m => (
                     <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
                       className={`py-3 rounded-xl text-sm font-semibold border transition-colors ${
-                        pay.method === m ? 'bg-[#fa5c29] text-white border-[#fa5c29]' : 'text-white/60 border-white/10'
+                        pay.method === m ? 'bg-[#fa5c29] text-white border-[#fa5c29]' : 'text-ink-secondary border-white/10'
                       }`}>
                       {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}
                     </button>
@@ -175,7 +179,7 @@ export default function ServicePayScreen() {
                   value={pay.amount} onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
                   className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-white focus:outline-none focus:border-[#fa5c29]" />
                 <button onClick={() => setPay(p => ({ ...p, amount: String(total) }))}
-                  className="w-full py-2 rounded-xl text-sm border border-white/10 text-white/60 hover:bg-white/5">
+                  className="w-full py-2 rounded-xl text-sm border border-white/10 text-ink-secondary hover:bg-white/5">
                   Exact — {kes(total)}
                 </button>
                 <div className="flex gap-2">
@@ -192,7 +196,7 @@ export default function ServicePayScreen() {
         {tab === 'stock' && (
           <div className="space-y-3">
             {stockItems.length === 0 ? (
-              <p className="text-sm text-white/40 text-center py-8">No stock items for {deptName}</p>
+              <p className="text-sm text-ink-tertiary text-center py-8">No stock items for {deptName}</p>
             ) : (
               <>
                 {lowStock.length > 0 && (
@@ -235,7 +239,7 @@ export default function ServicePayScreen() {
                 rows={4} value={requestText} onChange={e => setRequestText(e.target.value)}
                 placeholder="e.g. Need more massage oil, running low on towels..."
                 className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                  text-sm text-white placeholder:text-white/30 resize-none
+                  text-sm text-white placeholder:text-ink-tertiary resize-none
                   focus:outline-none focus:border-[#fa5c29]"
               />
               <Button variant="primary" size="md" className="w-full mt-3"
@@ -245,7 +249,7 @@ export default function ServicePayScreen() {
                 Send Request to Manager
               </Button>
             </div>
-            <p className="text-xs text-white/30 text-center">
+            <p className="text-xs text-ink-tertiary text-center">
               Your request goes to the manager as a suggestion. They'll handle restocking.
             </p>
           </div>

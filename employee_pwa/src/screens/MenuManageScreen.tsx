@@ -263,7 +263,7 @@ export default function MenuManageScreen() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-serif text-white">Menu &amp; Services</h1>
-          <p className="text-xs text-white/30 mt-0.5">Add, price, disable items &amp; manage recipes</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Add, price, disable items &amp; manage recipes</p>
         </div>
         <Button variant="primary" size="sm" onClick={() => setAdding(a => !a)}>
           {adding ? 'Close' : '+ Add Item'}
@@ -428,7 +428,7 @@ export default function MenuManageScreen() {
                 </p>
                 {draftLines.map((line, i) => (
                   <div key={line.invItemId}
-                    className="flex items-center gap-2 p-2 rounded-xl bg-white/5/50">
+                    className="flex items-center gap-2 p-2 rounded-xl bg-white/6">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white">{line.invItemName}</p>
                       <p className="text-xs text-ink-tertiary">
@@ -532,7 +532,7 @@ export default function MenuManageScreen() {
                   {['shot', 'cocktail', 'mocktail'].map(t => (
                     <button key={t} onClick={() => setTemplateType(t)}
                       className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-transparent
-                        text-sm text-ink-secondary hover:bg-white/5/40 transition-colors capitalize">
+                        text-sm text-ink-secondary hover:bg-white/5 transition-colors capitalize">
                       {t}
                     </button>
                   ))}
@@ -542,7 +542,7 @@ export default function MenuManageScreen() {
 
             {/* Live cost preview */}
             {draftLines.length > 0 && (
-              <div className="p-3 rounded-xl bg-white/5/50 space-y-2">
+              <div className="p-3 rounded-xl bg-white/6 space-y-2">
                 <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">
                   Cost Preview
                 </p>

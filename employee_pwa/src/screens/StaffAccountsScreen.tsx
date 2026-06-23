@@ -91,7 +91,7 @@ export default function StaffAccountsScreen() {
       <div className="max-w-3xl mx-auto p-4 md:p-6 pb-8 space-y-4">
         <div className="mb-6">
           <h1 className="font-serif text-2xl font-bold text-white">Staff Accounts</h1>
-          <p className="text-xs text-white/30 mt-1">Create accounts, manage access</p>
+          <p className="text-xs text-ink-tertiary mt-1">Create accounts, manage access</p>
         </div>
 
           {/* Credentials handover card */}

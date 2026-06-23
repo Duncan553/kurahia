@@ -124,7 +124,7 @@ export default function CheckInScreen() {
       <RequireRole minLevel={3}>
         <div className="p-4 space-y-3">
           {[1,2,3].map((i) => (
-            <div key={i} className="rounded-2xl bg-white/5/40 p-4 space-y-2">
+            <div key={i} className="rounded-2xl bg-white/5 p-4 space-y-2">
               <Skeleton variant="text" className="w-48" />
               <Skeleton variant="text" className="w-32" />
               <Skeleton variant="badge" className="h-1 w-full" />
@@ -166,11 +166,11 @@ export default function CheckInScreen() {
         {/* ── Header ───────────────────────────────────────────────── */}
         <div>
           <h1 className="text-2xl font-bold text-white font-serif">Front Desk</h1>
-          <p className="text-xs text-white/30 mt-0.5">Booking check-in and admission</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Booking check-in and admission</p>
         </div>
 
         {/* ── Tab bar ──────────────────────────────────────────────── */}
-        <div className="flex gap-1 bg-white/5/50 rounded-xl p-1">
+        <div className="flex gap-1 bg-white/6 rounded-xl p-1">
           {(['arrivals', 'departures', 'occupancy'] as Tab[]).map((t) => {
             const count = t === 'arrivals' ? arrivals.length
               : t === 'departures' ? departures.length
@@ -210,7 +210,7 @@ export default function CheckInScreen() {
                 const waiverBlocked = pendingIds.has(a.booking_id)
                 return (
                   <div key={a.booking_id}
-                    className="rounded-2xl bg-white/5/30 glass-card p-4">
+                    className="rounded-2xl bg-white/4 glass-card p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-semibold text-white truncate">{a.guest_name}</p>
@@ -279,7 +279,7 @@ export default function CheckInScreen() {
                 const hasBalance = balance > 0
                 return (
                   <div key={d.booking_id}
-                    className="rounded-2xl bg-white/5/30 glass-card p-4">
+                    className="rounded-2xl bg-white/4 glass-card p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-semibold text-white truncate">{d.guest_name}</p>
@@ -327,7 +327,7 @@ export default function CheckInScreen() {
               {occupancy.map((o) => (
                 <div key={o.booking_id}
                   className="flex items-center justify-between
-                    rounded-xl bg-white/5/30 glass-card px-4 py-3">
+                    rounded-xl bg-white/4 glass-card px-4 py-3">
                   <div>
                     <p className="font-medium text-white">{o.guest_name}</p>
                     <p className="text-xs text-ink-tertiary">{o.resource ?? '—'}</p>
@@ -349,7 +349,7 @@ export default function CheckInScreen() {
         <button
           onClick={() => setErrorOpen(false)}
           className="w-full py-3 rounded-xl bg-white/5 text-white font-medium
-            hover:bg-white/5/70 transition-colors"
+            hover:bg-white/10 transition-colors"
         >
           OK
         </button>

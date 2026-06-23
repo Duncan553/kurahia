@@ -90,7 +90,7 @@ export default function PinEntryScreen() {
   }, [digits])
 
   return (
-    <div className="min-h-screen bg-cream-card flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-xs">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold font-serif text-ink-primary">Kurahia</h1>

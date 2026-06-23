@@ -81,7 +81,7 @@ export default function BandLookupScreen() {
 
       <div>
         <h1 className="text-2xl font-bold text-white font-serif">Band Lookup</h1>
-        <p className="text-xs text-white/30 mt-0.5">Search wristbands by number</p>
+        <p className="text-xs text-ink-tertiary mt-0.5">Search wristbands by number</p>
       </div>
 
       {/* ── Search ───────────────────────────────────────────────── */}

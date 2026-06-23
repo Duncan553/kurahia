@@ -76,7 +76,7 @@ export default function PinSetupScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-card flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold font-serif text-ink-primary">Set your PIN</h1>

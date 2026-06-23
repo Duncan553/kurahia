@@ -248,19 +248,19 @@ export default function SafetyCheckScreen() {
       <div className="p-4 max-w-3xl mx-auto space-y-5">
         <div>
           <h1 className="text-2xl font-bold text-white font-serif">Safety Check</h1>
-          <p className="text-xs text-white/30 mt-0.5">Equipment safety inspections</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Equipment safety inspections</p>
         </div>
 
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 rounded-xl bg-white/5/40 animate-pulse" />
+              <div key={i} className="h-16 rounded-xl bg-white/5 animate-pulse" />
             ))}
           </div>
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
+          <div className="p-4 rounded-xl bg-white/5 text-sm text-ink-tertiary text-center">
             Couldn't load equipment. Check connection.
           </div>
         )}
@@ -285,7 +285,7 @@ export default function SafetyCheckScreen() {
             key={eq.id}
             onClick={() => selectEquipment(eq)}
             className="w-full flex items-center gap-4 p-4 rounded-2xl glass-card
-              bg-transparent hover:bg-white/5/40 active:bg-white/5/60 transition-colors text-left
+              bg-transparent hover:bg-white/5 active:bg-white/8 transition-colors text-left
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           >
             <div className="flex-1 min-w-0">
@@ -341,14 +341,14 @@ export default function SafetyCheckScreen() {
       {templateLoading && (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-14 rounded-xl bg-white/5/40 animate-pulse" />
+            <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" />
           ))}
         </div>
       )}
 
       {/* No template for this equipment type */}
       {!templateLoading && !template && (
-        <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
+        <div className="p-4 rounded-xl bg-white/5 text-sm text-ink-tertiary text-center">
           No checklist template configured for this equipment type.
         </div>
       )}
