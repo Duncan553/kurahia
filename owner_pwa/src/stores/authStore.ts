@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
 // Only what the JWT gives us + the username the user typed on the login form.
 // No full_name on the backend User model — username is the display identity.
@@ -18,18 +19,23 @@ interface AuthState {
   clearAuth: () => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  accessToken: null,
-  isAuthenticated: false,
-  setupToken: null,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      accessToken: null,
+      isAuthenticated: false,
+      setupToken: null,
 
-  setAuth: (user, accessToken) =>
-    set({ user, accessToken, isAuthenticated: true, setupToken: null }),
+      setAuth: (user, accessToken) =>
+        set({ user, accessToken, isAuthenticated: true, setupToken: null }),
 
-  setSetupToken: (setupToken) =>
-    set({ setupToken }),
+      setSetupToken: (setupToken) =>
+        set({ setupToken }),
 
-  clearAuth: () =>
-    set({ user: null, accessToken: null, isAuthenticated: false, setupToken: null }),
-}))
+      clearAuth: () =>
+        set({ user: null, accessToken: null, isAuthenticated: false, setupToken: null }),
+    }),
+    { name: 'kurahia-owner-auth', storage: createJSONStorage(() => sessionStorage) },
+  ),
+)
