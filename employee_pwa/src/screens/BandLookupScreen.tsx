@@ -80,8 +80,8 @@ export default function BandLookupScreen() {
     <div className="p-4 max-w-3xl mx-auto space-y-5">
 
       <div>
-        <h1 className="text-xl font-bold text-white">Band Lookup</h1>
-        <p className="text-sm text-slate-400/50">Search any wristband by number — see tab balance</p>
+        <h1 className="text-2xl font-bold text-white font-serif">Band Lookup</h1>
+        <p className="text-xs text-white/30 mt-0.5">Search wristbands by number</p>
       </div>
 
       {/* ── Search ───────────────────────────────────────────────── */}
@@ -131,7 +131,7 @@ export default function BandLookupScreen() {
 
       {/* ── Result ───────────────────────────────────────────────── */}
       {result && (
-        <div className="rounded-2xl border border-white/10 bg-transparent shadow-sm overflow-hidden">
+        <div className="rounded-2xl glass-card bg-transparent shadow-sm overflow-hidden">
 
           {/* Header */}
           <div className="bg-primary-dark/10 px-5 py-4 flex items-center justify-between">

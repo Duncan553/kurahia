@@ -123,8 +123,8 @@ export default function AttendanceScreen() {
       >
 
         <div>
-          <h1 className="text-xl font-bold text-white">Attendance</h1>
-          <p className="text-sm text-slate-400/50">Today's roster and monthly summary</p>
+          <h1 className="text-2xl font-bold text-white font-serif">Attendance</h1>
+          <p className="text-xs text-white/30 mt-0.5">Today's clock-in roster</p>
         </div>
 
         {/* Absence notices banner */}
@@ -207,7 +207,7 @@ export default function AttendanceScreen() {
                         whileTap={{ scale: 0.97 }}
                         whileHover={{ y: -2 }}
                         onClick={() => setSelectedEmp(row)}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl glass-card
                           bg-transparent hover:bg-white/5/40 transition-colors text-left
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                       >
@@ -268,7 +268,7 @@ export default function AttendanceScreen() {
                     key={row.employee_id}
                     variants={itemVariants}
                     whileHover={{ y: -2 }}
-                    className="rounded-xl border border-white/10 bg-transparent px-4 py-3"
+                    className="rounded-xl glass-card bg-transparent px-4 py-3"
                   >
                     <p className="text-sm font-semibold text-white">{row.employee_name}</p>
                     <div className="grid grid-cols-3 gap-2 mt-2">
@@ -326,7 +326,7 @@ export default function AttendanceScreen() {
                 </p>
                 {empDetail.events.map((ev) => (
                   <div key={ev.id}
-                    className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-2.5">
+                    className="flex items-center justify-between rounded-xl glass-card px-4 py-2.5">
                     <div>
                       <p className="text-sm font-medium text-white capitalize">
                         {ev.event_type.replace('_', ' ').toLowerCase()}

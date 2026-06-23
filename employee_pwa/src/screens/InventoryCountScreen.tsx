@@ -236,8 +236,8 @@ export default function InventoryCountScreen() {
 
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-white">Inventory Count</h1>
-            <p className="text-sm text-slate-400/50">Physical count per item — each saves independently</p>
+            <h1 className="text-2xl font-bold text-white font-serif">Inventory Count</h1>
+            <p className="text-xs text-white/30 mt-0.5">Stock counts, variance, adjustments</p>
           </div>
           <motion.button
             whileTap={{ scale: 0.97 }}
@@ -361,7 +361,7 @@ export default function InventoryCountScreen() {
                       whileHover={{ y: -2 }}
                       className={[
                         'rounded-xl border p-3 space-y-2 transition-colors',
-                        submitted ? 'bg-primary-light/20 border-primary-main/30' : 'bg-white/5/30 border-white/10',
+                        submitted ? 'bg-primary-light/20 border-primary-main/30' : 'bg-white/5/30 glass-card',
                       ].join(' ')}
                     >
                       <div className="flex items-center gap-2 flex-wrap">
@@ -500,7 +500,7 @@ export default function InventoryCountScreen() {
                         'rounded-xl border px-4 py-3',
                         v.flagged
                           ? 'border-status-failed/40 bg-status-failed/5'
-                          : 'border-white/10 bg-white/5/30',
+                          : 'glass-card bg-white/5/30',
                       ].join(' ')}
                     >
                       <div className="flex items-center justify-between">

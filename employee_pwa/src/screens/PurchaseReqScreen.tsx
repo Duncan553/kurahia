@@ -97,8 +97,8 @@ export default function PurchaseReqScreen() {
       <div className="p-4 max-w-3xl mx-auto space-y-4">
 
         <div>
-          <h1 className="text-xl font-bold text-white">Purchase Requests</h1>
-          <p className="text-sm text-slate-400/50">Add estimated costs — owner approves final purchase</p>
+          <h1 className="text-2xl font-bold text-white font-serif">Purchase Requests</h1>
+          <p className="text-xs text-white/30 mt-0.5">Submit restock requests</p>
         </div>
 
         {/* Filter tabs */}
@@ -172,7 +172,7 @@ export default function PurchaseReqScreen() {
                   key={req.id}
                   className={[
                     'rounded-2xl border p-4 space-y-2',
-                    dim ? 'border-white/10 bg-white/5/20' : 'border-white/10 bg-transparent',
+                    dim ? 'glass-card bg-white/5/20' : 'glass-card bg-transparent',
                   ].join(' ')}
                 >
                   <div className="flex items-start justify-between gap-2">

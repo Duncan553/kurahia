@@ -340,7 +340,7 @@ export default function MenuManageScreen() {
             {deptItems.map(it => (
               <div
                 key={it.id}
-                className={`flex items-center gap-2 p-3 rounded-xl border border-white/10
+                className={`flex items-center gap-2 p-3 rounded-xl glass-card
                   ${!it.is_active ? 'opacity-50' : ''}`}
               >
                 <div className="flex-1 min-w-0">

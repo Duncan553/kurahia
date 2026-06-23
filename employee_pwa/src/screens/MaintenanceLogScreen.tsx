@@ -109,8 +109,8 @@ export default function MaintenanceLogScreen() {
       <div className="p-4 max-w-3xl mx-auto space-y-4">
 
         <div>
-          <h1 className="text-xl font-bold text-white">Equipment Service</h1>
-          <p className="text-sm text-slate-400/50">Log maintenance — tap any row to record a service</p>
+          <h1 className="text-2xl font-bold text-white font-serif">Equipment Service</h1>
+          <p className="text-xs text-white/30 mt-0.5">Equipment service history</p>
         </div>
 
         {/* Filter chips */}
@@ -173,7 +173,7 @@ export default function MaintenanceLogScreen() {
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
               eq.is_due_service
                 ? 'border-status-failed/30 bg-status-failed/5 hover:bg-status-failed/10'
-                : 'border-white/10 bg-transparent hover:bg-white/5/40',
+                : 'glass-card bg-transparent hover:bg-white/5/40',
             ].join(' ')}
           >
             <div className="flex-1 min-w-0">
@@ -233,7 +233,7 @@ export default function MaintenanceLogScreen() {
             </div>
 
             {/* History placeholder — endpoint not yet implemented */}
-            <div className="rounded-xl bg-white/5/20 border border-white/10 px-4 py-3">
+            <div className="rounded-xl bg-white/5/20 glass-card px-4 py-3">
               <p className="text-xs text-slate-400/50 italic">
                 History will load when the history endpoint ships.
               </p>
