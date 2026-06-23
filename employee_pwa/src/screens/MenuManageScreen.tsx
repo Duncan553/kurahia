@@ -13,6 +13,7 @@ interface MenuItem {
   prep_station: string; department_id: string; is_active: boolean
   food_cost: string | null; gross_margin: string | null
   food_cost_pct: string | null; in_stock: boolean | null
+  image_path: string | null
 }
 interface InvItem {
   id: string; name: string; unit: string; cost_per_unit: string | null
@@ -188,6 +189,19 @@ export default function MenuManageScreen() {
     onError: fail,
   })
 
+  // Image upload: POST file to /uploads/menu, then PATCH item with returned path
+  const imageMut = useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File }) => {
+      const form = new FormData()
+      form.append('file', file)
+      const { data } = await api.post<{ path: string }>('/uploads/menu', form)
+      await api.patch(`/menu/items/${id}`, { image_path: data.path })
+      return data.path
+    },
+    onSuccess: () => { ok('Image uploaded.') },
+    onError: fail,
+  })
+
   const recipeMut = useMutation({
     mutationFn: () => api.post(`/menu/items/${recipeFor!.id}/recipe`, {
       lines: draftLines.map(l => ({
@@ -343,6 +357,30 @@ export default function MenuManageScreen() {
                 className={`flex items-center gap-2 p-4 rounded-xl glass-card
                   ${!it.is_active ? 'opacity-50' : ''}`}
               >
+                {/* Item image: show thumbnail if exists, upload button always */}
+                <label className="shrink-0 cursor-pointer group relative">
+                  {it.image_path ? (
+                    <img src={it.image_path} alt={it.name}
+                      className="w-10 h-10 rounded-lg object-cover border border-white/10" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg border border-dashed border-white/20
+                      flex items-center justify-center text-ink-tertiary group-hover:border-[#fa5c29]
+                      transition-colors">
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <rect x="2" y="2" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M2 14l4-4 3 3 4-5 5 6" stroke="currentColor" strokeWidth="1.5"
+                          strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" className="sr-only"
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (file) imageMut.mutate({ id: it.id, file })
+                      e.target.value = ''
+                    }} />
+                </label>
+
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[#f9dcd5] truncate">{it.name}</p>
                   <div className="flex items-center gap-2 flex-wrap">

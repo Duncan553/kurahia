@@ -529,22 +529,18 @@ function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
 
           {/* Right: tab buttons + mute */}
           <div className="flex items-center gap-3">
-            {/* OVERVIEW / SCHEDULE / LOGS tabs */}
+            {/* OVERVIEW tab — only functional tab shown */}
             <div className="hidden sm:flex items-center gap-1">
-              {(['OVERVIEW', 'SCHEDULE', 'LOGS'] as const).map(tab => (
-                <button key={tab}
-                  onClick={() => {
-                    if (tab === 'OVERVIEW') setView('queue')
-                  }}
-                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition-colors
-                    ${(tab === 'OVERVIEW' && view === 'queue')
-                      ? 'text-[#f9dcd5] border-b-2 border-[#f9dcd5]'
-                      : 'text-[#aa8980] hover:text-[#f9dcd5]'
-                    }`}
-                >
-                  {tab}
-                </button>
-              ))}
+              <button
+                onClick={() => setView('queue')}
+                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition-colors
+                  ${view === 'queue'
+                    ? 'text-[#f9dcd5] border-b-2 border-[#f9dcd5]'
+                    : 'text-[#aa8980] hover:text-[#f9dcd5]'
+                  }`}
+              >
+                OVERVIEW
+              </button>
             </div>
 
             <MuteButton />

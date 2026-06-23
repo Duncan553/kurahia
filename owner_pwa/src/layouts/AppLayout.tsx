@@ -168,14 +168,6 @@ export default function AppLayout() {
           {SIDEBAR_ITEMS.map((item) => <SideLink key={item.path} {...item} />)}
         </nav>
 
-        {/* Member Portal button — per Stitch design */}
-        <div className="px-3 pb-3 hidden lg:block">
-          <button className="w-full py-2.5 rounded-lg bg-[#fa5c29] text-white text-xs font-bold tracking-wider
-            hover:bg-[#ffb59f] transition-colors">
-            Member Portal
-          </button>
-        </div>
-
         {/* Support + Log Out */}
         <div className="border-t border-white/5 p-3 space-y-1">
           <button className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-[#aa8980] hover:text-[#f9dcd5] transition-colors text-sm">
