@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Modal, useToastStore } from '@shared'
 import api from '../lib/axios'
 
@@ -44,6 +44,11 @@ const extractErr = (e: unknown) =>
 
 function genKey() { return crypto.randomUUID() }
 
+// ── Animation variants ──────────────────────────────────────────────────────
+
+const fadeIn = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
+const stagger = { visible: { transition: { staggerChildren: 0.07 } } }
+
 // ── Stats header ─────────────────────────────────────────────────────────────
 
 function StatsBar({ stats }: { stats: Stats | undefined }) {
@@ -53,14 +58,17 @@ function StatsBar({ stats }: { stats: Stats | undefined }) {
     { label: 'Entry Revenue', value: stats ? kes(stats.total_entry_fees) : '—' },
   ]
   return (
-    <div className="grid grid-cols-3 gap-2 mb-5">
+    <motion.div className="grid grid-cols-3 gap-2 mb-5"
+      initial="hidden" animate="visible" variants={stagger}>
       {items.map(({ label, value }) => (
-        <div key={label} className="rounded-2xl p-3 text-center border border-amber-200/10">
+        <motion.div key={label} variants={fadeIn}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="rounded-2xl p-3 text-center border border-amber-200/10">
           <p className="text-lg font-bold tabular-nums text-white">{value}</p>
           <p className="text-[10px] text-amber-200/60 uppercase tracking-wide mt-0.5">{label}</p>
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   )
 }
 
@@ -101,14 +109,15 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
       {/* Payment method toggle */}
       <div className="grid grid-cols-4 gap-1.5">
         {METHODS.map(({ value, label }) => (
-          <button key={value} onClick={() => setMethod(value)}
+          <motion.button key={value} onClick={() => setMethod(value)}
+            whileTap={{ scale: 0.97 }}
             className={`min-h-[44px] rounded-xl text-xs font-semibold border transition-colors ${
               method === value
                 ? 'bg-ink-primary text-white border-ink-primary'
                 : 'border-cream-alt text-amber-200/60 hover:bg-cream-alt'
             }`}>
             {label}
-          </button>
+          </motion.button>
         ))}
       </div>
 
@@ -122,11 +131,16 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
         {mut.isPending ? 'Issuing…' : 'Issue Band →'}
       </motion.button>
 
-      {lastBand !== null && (
-        <p className="text-center text-sm text-amber-200/40">
-          Last issued: <span className="font-bold text-white">#{lastBand}</span>
-        </p>
-      )}
+      <AnimatePresence>
+        {lastBand !== null && (
+          <motion.p
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="text-center text-sm text-amber-200/40">
+            Last issued: <span className="font-bold text-white">#{lastBand}</span>
+          </motion.p>
+        )}
+      </AnimatePresence>
 
       <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Issue wristband?">
         <p className="text-base text-amber-200/60 mb-1">
@@ -190,37 +204,46 @@ function LookupSection() {
           className="flex-1 rounded-xl border border-cream-alt bg-cream-card px-4 py-2.5
             text-base text-white focus:outline-none focus:border-primary-dark"
         />
-        <button onClick={lookup} disabled={isFetching}
+        <motion.button onClick={lookup} disabled={isFetching}
+          whileTap={{ scale: 0.97 }}
           className="px-5 py-2.5 rounded-xl bg-ink-primary text-white text-sm font-semibold
             hover:bg-ink-primary/90 transition-colors disabled:opacity-50">
           {isFetching ? '…' : 'Look up'}
-        </button>
+        </motion.button>
       </div>
 
-      {data && (
-        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-cream-alt/50">
-          <div>
-            <span className="font-bold text-white">#{data.band_number}</span>
-            <span className={`ml-2 text-sm font-semibold ${statusColor(data.status)}`}>
-              {data.status}
-            </span>
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-bold tabular-nums text-white">
-              {kes(data.tab_balance)} credit
-            </p>
-            {data.issued_by && (
-              <p className="text-[10px] text-amber-200/60">by {data.issued_by}</p>
-            )}
-          </div>
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {data && (
+          <motion.div key={`result-${data.band_number}`}
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="flex items-center justify-between px-3 py-2 rounded-xl bg-cream-alt/50">
+            <div>
+              <span className="font-bold text-white">#{data.band_number}</span>
+              <span className={`ml-2 text-sm font-semibold ${statusColor(data.status)}`}>
+                {data.status}
+              </span>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-bold tabular-nums text-white">
+                {kes(data.tab_balance)} credit
+              </p>
+              {data.issued_by && (
+                <p className="text-[10px] text-amber-200/60">by {data.issued_by}</p>
+              )}
+            </div>
+          </motion.div>
+        )}
 
-      {isError && query !== null && (
-        <p className="text-sm text-status-failed text-center">
-          Band #{query} not found for today.
-        </p>
-      )}
+        {isError && query !== null && (
+          <motion.p key="error"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="text-sm text-status-failed text-center">
+            Band #{query} not found for today.
+          </motion.p>
+        )}
+      </AnimatePresence>
     </section>
   )
 }
@@ -330,36 +353,42 @@ export default function GateHubScreen() {
 
   return (
     <div className="min-h-screen p-4 md:p-6">
-      <div className="max-w-3xl mx-auto">
+      <motion.div className="max-w-3xl mx-auto"
+        initial="hidden" animate="visible" variants={stagger}>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-base font-bold tracking-widest uppercase text-amber-200">Gate</h1>
           <p className="text-xs text-amber-300/40">
             {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-        <button onClick={refresh} aria-label="Refresh gate stats"
+        <motion.button onClick={refresh} aria-label="Refresh gate stats"
+          whileTap={{ scale: 0.95 }}
           className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-cream-alt
             hover:bg-cream-alt transition-colors text-amber-200/40">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M13.5 8A5.5 5.5 0 112.5 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             <path d="M13.5 5v3h-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {!isLoading && <StatsBar stats={stats} />}
 
-      <WaiverAlert />
+      <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}>
+        <WaiverAlert />
+      </motion.div>
 
-      <div className="mt-4 space-y-4">
+      <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="mt-4 space-y-4">
         <BookingCheckIn />
         <IssueSection onIssued={refresh} />
         <LookupSection />
-      </div>
-      </div>
+      </motion.div>
+      </motion.div>
     </div>
   )
 }

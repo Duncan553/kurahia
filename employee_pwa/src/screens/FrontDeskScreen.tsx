@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton, EmptyState, StatusBadge } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
@@ -56,6 +57,9 @@ function depositStatus(paid: string, required: string): 'paid' | 'pending' {
   return parseFloat(paid) >= parseFloat(required) ? 'paid' : 'pending'
 }
 
+const fadeIn = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
+const stagger = { visible: { transition: { staggerChildren: 0.06 } } }
+
 export default function FrontDeskScreen() {
   const [tab, setTab] = useState<Tab>('arrivals')
   const navigate = useNavigate()
@@ -84,9 +88,11 @@ export default function FrontDeskScreen() {
   return (
     <RequireRole minLevel={5}>
       <div className="min-h-screen p-4 md:p-6">
-        <div className="max-w-2xl mx-auto space-y-4">
+        <motion.div className="max-w-2xl mx-auto space-y-4"
+          initial="hidden" animate="visible" variants={stagger}>
 
-        <div className="flex items-start justify-between">
+        <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-bold text-white font-serif">Front Desk</h1>
             <p className="text-sm text-blue-200/40">
@@ -94,31 +100,38 @@ export default function FrontDeskScreen() {
               {lastUpdated ? ` · updated ${lastUpdated}` : ''}
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Pending waivers warning banner */}
-        {(data?.pending_waivers.length ?? 0) > 0 && (
-          <div className="rounded-xl bg-status-failed/5 border border-status-failed/20 p-3">
-            <p className="text-sm font-semibold text-status-failed">
-              {data!.pending_waivers.length} water activity booking
-              {data!.pending_waivers.length !== 1 ? 's' : ''} missing waiver
-            </p>
-            <div className="mt-1.5 space-y-1">
-              {data!.pending_waivers.map((w) => (
-                <p key={w.booking_id} className="text-xs text-blue-200/60">
-                  {w.guest_name} · {w.resource} · check-in {formatTime(w.check_in)}
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {(data?.pending_waivers.length ?? 0) > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="rounded-xl bg-status-failed/5 border border-status-failed/20 p-3">
+              <p className="text-sm font-semibold text-status-failed">
+                {data!.pending_waivers.length} water activity booking
+                {data!.pending_waivers.length !== 1 ? 's' : ''} missing waiver
+              </p>
+              <div className="mt-1.5 space-y-1">
+                {data!.pending_waivers.map((w) => (
+                  <p key={w.booking_id} className="text-xs text-blue-200/60">
+                    {w.guest_name} · {w.resource} · check-in {formatTime(w.check_in)}
+                  </p>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Tabs with live counts */}
-        <div className="flex gap-1 bg-cream-alt/50 rounded-xl p-1">
+        <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="flex gap-1 bg-cream-alt/50 rounded-xl p-1">
           {(['arrivals', 'departures', 'occupancy'] as Tab[]).map((t) => (
-            <button
+            <motion.button
               key={t}
               onClick={() => setTab(t)}
+              whileTap={{ scale: 0.97 }}
               className={[
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
                 tab === t ? 'bg-cream-card shadow-sm text-white' : 'text-blue-200/40 hover:text-blue-200/60',
@@ -133,9 +146,9 @@ export default function FrontDeskScreen() {
                   ({counts[t]})
                 </span>
               )}
-            </button>
+            </motion.button>
           ))}
-        </div>
+        </motion.div>
 
         {isLoading && (
           <div className="space-y-3">
@@ -144,156 +157,168 @@ export default function FrontDeskScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-cream-alt/40 text-sm text-blue-200/40 text-center">
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            transition={{ duration: 0.25 }}
+            className="p-4 rounded-xl bg-cream-alt/40 text-sm text-blue-200/40 text-center">
             Couldn't load front desk data. Check connection.
-          </div>
+          </motion.div>
         )}
 
         {/* Arrivals */}
-        {tab === 'arrivals' && !isLoading && (
-          <>
-            {counts.arrivals === 0 ? (
-              <EmptyState
-                icon={
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                    <path d="M24 8L8 24h8v14h16V24h8L24 8z" stroke="currentColor" strokeWidth="2"
-                      strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                }
-                title="No arrivals expected today."
-              />
-            ) : (
-              <div className="space-y-2">
-                {data!.arrivals.map((a) => {
-                  const depStatus = depositStatus(a.deposit_paid, a.deposit_required)
-                  return (
-                    <div key={a.booking_id}
-                      className="rounded-2xl border border-white/10 px-4 py-3 space-y-1.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-white">{a.guest_name}</p>
-                        <StatusBadge status={depStatus} />
+        <AnimatePresence mode="wait">
+          {tab === 'arrivals' && !isLoading && (
+            <motion.div key="arrivals"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}>
+              {counts.arrivals === 0 ? (
+                <EmptyState
+                  icon={
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                      <path d="M24 8L8 24h8v14h16V24h8L24 8z" stroke="currentColor" strokeWidth="1.5"
+                        strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  }
+                  title="No arrivals expected today."
+                />
+              ) : (
+                <div className="space-y-2">
+                  {data!.arrivals.map((a) => {
+                    const depStatus = depositStatus(a.deposit_paid, a.deposit_required)
+                    return (
+                      <div key={a.booking_id}
+                        className="rounded-2xl border border-white/10 px-4 py-3 space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold text-white">{a.guest_name}</p>
+                          <StatusBadge status={depStatus} />
+                        </div>
+                        {a.resource && (
+                          <p className="text-xs text-blue-200/40">{a.resource}</p>
+                        )}
+                        <div className="flex gap-4 text-xs text-blue-200/40">
+                          <span>Deposit paid: <span className={`font-medium ${depStatus === 'paid' ? 'text-status-paid' : 'text-status-pending'}`}>
+                            {ksh(a.deposit_paid)}
+                          </span></span>
+                          <span>Required: <span className="font-medium text-white">{ksh(a.deposit_required)}</span></span>
+                        </div>
                       </div>
-                      {a.resource && (
-                        <p className="text-xs text-blue-200/40">{a.resource}</p>
-                      )}
-                      <div className="flex gap-4 text-xs text-blue-200/40">
-                        <span>Deposit paid: <span className={`font-medium ${depStatus === 'paid' ? 'text-status-paid' : 'text-status-pending'}`}>
-                          {ksh(a.deposit_paid)}
-                        </span></span>
-                        <span>Required: <span className="font-medium text-white">{ksh(a.deposit_required)}</span></span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </>
-        )}
+                    )
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
 
-        {/* Departures */}
-        {tab === 'departures' && !isLoading && (
-          <>
-            {counts.departures === 0 ? (
-              <EmptyState
-                icon={
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                    <path d="M24 40L8 24h8V10h16v14h8L24 40z" stroke="currentColor" strokeWidth="2"
-                      strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                }
-                title="No departures expected today."
-              />
-            ) : (
-              <div className="space-y-2">
-                {data!.departures.map((d) => {
-                  const bal = parseFloat(d.tab_balance)
-                  const hasBalance = !isNaN(bal) && bal > 0
-                  return (
-                    <div key={d.booking_id}
-                      className={[
-                        'rounded-2xl border px-4 py-3 space-y-1.5',
-                        hasBalance
-                          ? 'border-status-pending/30 bg-status-pending/5'
-                          : 'border border-white/10',
-                      ].join(' ')}>
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-white">{d.guest_name}</p>
-                        {hasBalance && (
-                          <span className="text-xs font-semibold text-status-pending">
-                            Outstanding
+          {/* Departures */}
+          {tab === 'departures' && !isLoading && (
+            <motion.div key="departures"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}>
+              {counts.departures === 0 ? (
+                <EmptyState
+                  icon={
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                      <path d="M24 40L8 24h8V10h16v14h8L24 40z" stroke="currentColor" strokeWidth="1.5"
+                        strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  }
+                  title="No departures expected today."
+                />
+              ) : (
+                <div className="space-y-2">
+                  {data!.departures.map((d) => {
+                    const bal = parseFloat(d.tab_balance)
+                    const hasBalance = !isNaN(bal) && bal > 0
+                    return (
+                      <div key={d.booking_id}
+                        className={[
+                          'rounded-2xl border px-4 py-3 space-y-1.5',
+                          hasBalance
+                            ? 'border-status-pending/30 bg-status-pending/5'
+                            : 'border border-white/10',
+                        ].join(' ')}>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold text-white">{d.guest_name}</p>
+                          {hasBalance && (
+                            <span className="text-xs font-semibold text-status-pending">
+                              Outstanding
+                            </span>
+                          )}
+                        </div>
+                        {d.resource && (
+                          <p className="text-xs text-blue-200/40">{d.resource}</p>
+                        )}
+                        <p className="text-xs text-blue-200/40">
+                          Tab balance:{' '}
+                          <span className={`font-semibold ${hasBalance ? 'text-status-pending' : 'text-status-paid'}`}>
+                            {ksh(d.tab_balance)}
                           </span>
-                        )}
+                        </p>
                       </div>
-                      {d.resource && (
-                        <p className="text-xs text-blue-200/40">{d.resource}</p>
-                      )}
-                      <p className="text-xs text-blue-200/40">
-                        Tab balance:{' '}
-                        <span className={`font-semibold ${hasBalance ? 'text-status-pending' : 'text-status-paid'}`}>
-                          {ksh(d.tab_balance)}
-                        </span>
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </>
-        )}
+                    )
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
 
-        {/* Occupancy */}
-        {tab === 'occupancy' && !isLoading && (
-          <>
-            {counts.occupancy === 0 ? (
-              <EmptyState
-                icon={
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                    <rect x="8" y="14" width="32" height="26" rx="3" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M16 14V10a8 8 0 0116 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    <circle cx="24" cy="27" r="3" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M24 30v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                }
-                title="No guests checked in."
-              />
-            ) : (
-              <div className="space-y-2">
-                {data!.occupancy.map((o) => {
-                  const bal = parseFloat(o.tab_balance)
-                  const hasBalance = !isNaN(bal) && bal > 0
-                  const clickable = !!o.tab_id
-                  return (
-                    <div
-                      key={o.booking_id}
-                      onClick={() => o.tab_id && navigate(`/pos/tabs/${o.tab_id}`)}
-                      className={[
-                        'rounded-2xl border border-white/10 px-4 py-3 space-y-1.5',
-                        clickable ? 'cursor-pointer hover:bg-cream-alt/60 transition-colors' : '',
-                      ].join(' ')}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-white">{o.guest_name}</p>
-                        {clickable && (
-                          <span className="text-[10px] text-blue-200/40">View tab →</span>
+          {/* Occupancy */}
+          {tab === 'occupancy' && !isLoading && (
+            <motion.div key="occupancy"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}>
+              {counts.occupancy === 0 ? (
+                <EmptyState
+                  icon={
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                      <rect x="8" y="14" width="32" height="26" rx="3" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M16 14V10a8 8 0 0116 0v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="24" cy="27" r="3" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M24 30v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  }
+                  title="No guests checked in."
+                />
+              ) : (
+                <div className="space-y-2">
+                  {data!.occupancy.map((o) => {
+                    const bal = parseFloat(o.tab_balance)
+                    const hasBalance = !isNaN(bal) && bal > 0
+                    const clickable = !!o.tab_id
+                    return (
+                      <motion.div
+                        key={o.booking_id}
+                        whileTap={clickable ? { scale: 0.98 } : undefined}
+                        onClick={() => o.tab_id && navigate(`/pos/tabs/${o.tab_id}`)}
+                        className={[
+                          'rounded-2xl border border-white/10 px-4 py-3 space-y-1.5',
+                          clickable ? 'cursor-pointer hover:bg-cream-alt/60 transition-colors' : '',
+                        ].join(' ')}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold text-white">{o.guest_name}</p>
+                          {clickable && (
+                            <span className="text-[10px] text-blue-200/40">View tab →</span>
+                          )}
+                        </div>
+                        {o.resource && (
+                          <p className="text-xs text-blue-200/40">{o.resource}</p>
                         )}
-                      </div>
-                      {o.resource && (
-                        <p className="text-xs text-blue-200/40">{o.resource}</p>
-                      )}
-                      <p className="text-xs text-blue-200/40">
-                        Running tab:{' '}
-                        <span className={`font-semibold ${hasBalance ? 'text-white' : 'text-blue-200/40'}`}>
-                          {ksh(o.tab_balance)}
-                        </span>
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+                        <p className="text-xs text-blue-200/40">
+                          Running tab:{' '}
+                          <span className={`font-semibold ${hasBalance ? 'text-white' : 'text-blue-200/40'}`}>
+                            {ksh(o.tab_balance)}
+                          </span>
+                        </p>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
       </div>
     </RequireRole>
   )

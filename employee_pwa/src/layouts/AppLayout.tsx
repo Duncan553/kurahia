@@ -15,166 +15,166 @@ import type { Notification } from '../screens/NotificationsScreen'
 // ── Icons (inline SVG — no library dependency) ─────────────────────────────
 
 function ClockIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M11 7v4.5l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M10 6v4.5l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 function ScheduleIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <rect x="3" y="4" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M7 2v4M15 2v4M3 10h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M7 14h2M13 14h2M7 17h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="3" y="3.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M7 1.5v4M13 1.5v4M3 9h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M7 12.5h2M12 12.5h2M7 15.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 function BellIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M11 3a7 7 0 00-7 7v4l-1.5 2.5h17L18 14V10a7 7 0 00-7-7z"
-      stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    <path d="M9 17.5a2 2 0 004 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 2.5a6.5 6.5 0 00-6.5 6.5v3.5L2 14.5h16L16.5 12.5V9A6.5 6.5 0 0010 2.5z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M8.5 16a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 function ProfileIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <circle cx="11" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M3 19c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <circle cx="10" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M3 18c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 // Band search: magnifier
 function BandIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M14 14l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M7 9.5h5M9.5 7v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M13 13l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6 8.5h5M8.5 6v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
 // Gate: wristband icon
 function GateIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <rect x="3" y="5" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
-    <circle cx="11" cy="11" r="2.5" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M3 11h5.5M13.5 11H19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="2.5" y="4.5" width="15" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M2.5 10h5M12.5 10h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 // Check-in: calendar + check
 function CheckInIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <rect x="3" y="4" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M7 2v4M15 2v4M3 10h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M7.5 15l2.5 2.5L15 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="3" y="3.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M7 1.5v4M13 1.5v4M3 9h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M7 13l2.5 2.5L14 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 // Waiver: document + pen
 function WaiverIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <rect x="4" y="3" width="14" height="17" rx="2" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M7 8h8M7 12h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M12 16l1.5-1.5L15 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="4" y="2" width="12" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M7 7h6M7 10.5h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M11.5 14.5l1.5-1.5L14.5 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 // Inventory: grid
 function InventoryIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-    <rect x="12" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-    <rect x="3" y="12" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M12 15.5h7M15.5 12v7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="2.5" y="2.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="11.5" y="2.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="2.5" y="11.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M11.5 14.5h6M14.5 11.5v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
 // Restock: clipboard + arrow up
 function RestockIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <rect x="4" y="4" width="14" height="16" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M8 4V3a1 1 0 011-1h4a1 1 0 011 1v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M11 9v6M8.5 11.5L11 9l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="3.5" y="3.5" width="13" height="15" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M7.5 3.5V2.5a1 1 0 011-1h3a1 1 0 011 1v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 8.5v5.5M7.5 11L10 8.5l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
-// Meals: fork
+// Meals: utensils
 function MealsIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M11 3v4M7 4.5c0 3.5 2 5 4 5s4-1.5 4-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M11 9v10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M6 14h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 2.5v4M6.5 3.5c0 3 1.5 4.5 3.5 4.5s3.5-1.5 3.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 8v9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M5.5 13h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
 // Safety check: shield + checkmark
 function SafetyIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M11 3L4 6v5c0 4.5 3 8.5 7 9.5 4-1 7-5 7-9.5V6L11 3z"
-      stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-    <path d="M8 11l2 2.5L14 9" stroke="currentColor" strokeWidth="1.5"
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 2.5L3.5 5.5v4.5c0 4 2.5 7.5 6.5 8.5 4-1 6.5-4.5 6.5-8.5V5.5L10 2.5z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M7.5 10l2 2.5L13.5 8.5" stroke="currentColor" strokeWidth="1.5"
       strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
 // Maintenance: wrench
 function MaintenanceIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M14.5 4.5a4 4 0 00-4 4c0 .6.1 1.1.3 1.6L4 17a1.4 1.4 0 002 2l6.9-6.8c.5.2 1 .3 1.6.3a4 4 0 000-8z"
-      stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-    <path d="M14.5 4.5v3h-3" stroke="currentColor" strokeWidth="1.5"
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M13.5 4a3.5 3.5 0 00-3.5 3.5c0 .5.1 1 .3 1.4L3.5 15.5a1.2 1.2 0 001.7 1.7l6.6-6.8c.4.2.9.3 1.4.3A3.5 3.5 0 0013.5 4z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M13.5 4v2.5h-2.5" stroke="currentColor" strokeWidth="1.5"
       strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
-// Manager: person + star badge
+// Manager: person + check badge
 function ManagerIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M3 17v-1.5C3 13 6.1 11 11 11s8 2 8 4.5V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="11" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M15 3l1.5 1.5L19 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M3 16v-1c0-2.5 3-4.5 7-4.5s7 2 7 4.5v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="10" cy="6.5" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M14 2.5l1.5 1.5L18 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 
-// Waiter pad: notepad + fork
+// Waiter pad: notepad + pen stroke
 function WaiterIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <rect x="4" y="3" width="14" height="17" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M7 7h8M7 10h8M7 13h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M16 18l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="3.5" y="2" width="13" height="16" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M7 6h6M7 9h6M7 12h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M15 16.5l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
 // Kitchen: pot/flame
 function KitchenIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M4 10h14v7a2 2 0 01-2 2H6a2 2 0 01-2-2v-7z" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M3 10h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M8 10V7c0-1.5 1-2.5 1-4M12 10V7c0-1.5 1-2.5 1-4"
-      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M8 15h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M3.5 9h13v6.5a2 2 0 01-2 2h-9a2 2 0 01-2-2V9z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M3 9h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M7.5 9V6.5c0-1.2.8-2 .8-3.5M12 9V6.5c0-1.2.8-2 .8-3.5"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M7.5 13.5h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
 // Bar: cocktail glass
 function BarIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M5 4l6 8 6-8H5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-    <path d="M11 12v6M7 18h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M7 8h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M4.5 3.5l5.5 7.5 5.5-7.5H4.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 11v5.5M6.5 16.5h7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6.5 7h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
-// Spa/Gym: leaf + dumbbell
+// Spa/Gym: leaf
 function SpaGymIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M11 18C11 18 4 14 4 8.5a7 7 0 0114 0C18 14 11 18 11 18z"
-      stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-    <path d="M11 18V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 17C10 17 3.5 13 3.5 8a6.5 6.5 0 0113 0C16.5 13 10 17 10 17z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 17V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
 // Water: wave
 function WaterIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M2 12c1.5-3 3-3 4.5 0S9.5 15 11 12s3-3 4.5 0 3 3 4.5 0"
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M2 11c1.3-2.5 2.6-2.5 4 0s2.6 2.5 4 0 2.6-2.5 4 0 2.6 2.5 4 0"
       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M2 7c1.5-3 3-3 4.5 0S9.5 10 11 7s3-3 4.5 0 3 3 4.5 0"
+    <path d="M2 6.5c1.3-2.5 2.6-2.5 4 0s2.6 2.5 4 0 2.6-2.5 4 0 2.6 2.5 4 0"
       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M2 17c1.5-3 3-3 4.5 0S9.5 20 11 17s3-3 4.5 0 3 3 4.5 0"
+    <path d="M2 15.5c1.3-2.5 2.6-2.5 4 0s2.6 2.5 4 0 2.6-2.5 4 0 2.6 2.5 4 0"
       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
 // Villa: house
 function VillaIcon() {
-  return <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-    <path d="M3 10L11 3l8 7v9a1 1 0 01-1 1H4a1 1 0 01-1-1V10z"
-      stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-    <rect x="8" y="14" width="6" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.5"/>
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M3 9.5L10 3l7 6.5v8a1 1 0 01-1 1H4a1 1 0 01-1-1v-8z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <rect x="7.5" y="13" width="5" height="5.5" rx="0.5" stroke="currentColor" strokeWidth="1.5"/>
   </svg>
 }
 
