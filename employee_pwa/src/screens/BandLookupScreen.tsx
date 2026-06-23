@@ -80,7 +80,7 @@ export default function BandLookupScreen() {
     <div className="p-4 max-w-3xl mx-auto space-y-5">
 
       <div>
-        <h1 className="text-2xl font-bold text-white font-serif">Band Lookup</h1>
+        <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Band Lookup</h1>
         <p className="text-xs text-ink-tertiary mt-0.5">Search wristbands by number</p>
       </div>
 
@@ -95,7 +95,7 @@ export default function BandLookupScreen() {
           onChange={(e) => { setInput(e.target.value); setResult(null); setNotFound(false) }}
           onKeyDown={handleKey}
           className="flex-1 rounded-xl border border-white/10 bg-transparent px-4 py-3
-            text-lg font-semibold tabular-nums text-white
+            text-lg font-semibold tabular-nums text-[#f9dcd5]
             focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
         />
         <button
@@ -136,7 +136,7 @@ export default function BandLookupScreen() {
           {/* Header */}
           <div className="bg-[#fa5c29]/10 px-5 py-4 flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold tabular-nums text-white">
+              <p className="text-2xl font-bold tabular-nums text-[#f9dcd5]">
                 Band #{result.band_number}
               </p>
               <p className="text-xs text-ink-tertiary mt-0.5 flex items-center">
@@ -167,13 +167,13 @@ export default function BandLookupScreen() {
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between text-sm">
                 <span className="text-ink-tertiary">{label}</span>
-                <span className="text-white font-medium truncate max-w-[55%] text-right">{value}</span>
+                <span className="text-[#f9dcd5] font-medium truncate max-w-[55%] text-right">{value}</span>
               </div>
             ))}
           </div>
 
           {balance > 0 && (
-            <div className="px-5 py-3 border-t border-white/10 bg-status-failed/5">
+            <div className="px-5 py-4 border-t border-white/10 bg-status-failed/5">
               <p className="text-xs text-status-failed font-medium">
                 Outstanding balance — guest must settle before leaving.
               </p>

@@ -9,7 +9,7 @@ interface StaffUser { id: string; username: string; role: string; department: st
 interface Meta { roles: { id: string; name: string; level: number }[]; departments: { id: string; name: string }[] }
 
 const BLANK = { username:'', password:'', roleId:'', deptId:'', fullName:'', phone:'', wageRate:'', wagePeriod:'', hireDate:'', nationalId:'', emgName:'', emgPhone:'' }
-const inp = 'w-full rounded-xl px-3 py-2.5 border border-white/10 bg-transparent text-sm text-white focus:outline-none focus:border-[#fa5c29]'
+const inp = 'w-full rounded-xl px-3 py-2.5 border border-white/10 bg-transparent text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]'
 const toE164 = (p: string) => { const s = p.replace(/\s+/g,''); return s.startsWith('+254')?s : s.startsWith('254')?'+'+s : s.startsWith('0')?'+254'+s.slice(1):s }
 const extractErr = (e: unknown) => (e as {response?:{data?:{error?:string}}})?.response?.data?.error ?? 'Something went wrong.'
 const LBL = ({ children }: { children: React.ReactNode }) => (
@@ -90,7 +90,7 @@ export default function StaffAccountsScreen() {
     <RequireRole minLevel={5}>
       <div className="max-w-3xl mx-auto p-4 md:p-6 pb-8 space-y-4">
         <div className="mb-6">
-          <h1 className="font-serif text-2xl font-bold text-white">Staff Accounts</h1>
+          <h1 className="font-serif text-2xl font-bold text-[#f9dcd5]">Staff Accounts</h1>
           <p className="text-xs text-ink-tertiary mt-1">Create accounts, manage access</p>
         </div>
 
@@ -100,7 +100,7 @@ export default function StaffAccountsScreen() {
               <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0}}
                 className="rounded-2xl border-2 border-[#fa5c29] bg-[#fa5c29]/5 p-4 space-y-2">
                 <p className="text-xs font-semibold tracking-widest text-primary-dark uppercase">Account ready — give these to the staff member</p>
-                <div className="space-y-1 font-mono text-sm text-white">
+                <div className="space-y-1 font-mono text-sm text-[#f9dcd5]">
                   <p><span className="text-ink-tertiary">Username:</span> {credentials.u}</p>
                   <p><span className="text-ink-tertiary">Password:</span> {credentials.p}</p>
                 </div>
@@ -117,7 +117,7 @@ export default function StaffAccountsScreen() {
                 className="glass-card rounded-2xl p-4 space-y-3 overflow-hidden">
 
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-sm font-semibold text-[#f9dcd5]">
                     {step === 1 ? 'New account — login details' : 'Employee profile'}
                   </p>
                   {step === 2 && <span className="text-xs text-status-ok font-semibold">Step 2 of 2</span>}
@@ -211,7 +211,7 @@ export default function StaffAccountsScreen() {
             {staff.map(u => (
               <div key={u.id} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl glass-card ${!u.is_active ? 'opacity-60' : ''}`}>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{u.username}</p>
+                  <p className="text-sm font-semibold text-[#f9dcd5] truncate">{u.username}</p>
                   <p className="text-xs text-ink-secondary">{u.role}{u.department ? ` · ${u.department}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

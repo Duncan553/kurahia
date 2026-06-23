@@ -444,8 +444,8 @@ export default function AppLayout() {
                 'flex items-center gap-3 px-3 lg:px-4 py-2.5 mx-1 rounded-lg transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]',
                 isActive
-                  ? 'bg-[#fa5c29]/10 text-[#ffb59f] border-l-2 border-[#fa5c29]'
-                  : 'text-[#aa8980] hover:text-[#f9dcd5] hover:bg-white/5 border-l-2 border-transparent',
+                  ? 'bg-[#fa5c29]/10 text-[#ffb59f]'
+                  : 'text-[#aa8980] hover:text-[#f9dcd5] hover:bg-white/5',
               ].join(' ')}
             >
               <span className="relative shrink-0">

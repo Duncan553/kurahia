@@ -116,20 +116,20 @@ export default function AttendanceScreen() {
   return (
     <RequireRole minLevel={5}>
       <motion.div
-        className="p-4 max-w-3xl mx-auto space-y-4"
+        className="p-4 max-w-3xl mx-auto space-y-6"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       >
 
         <div>
-          <h1 className="text-2xl font-bold text-white font-serif">Attendance</h1>
+          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Attendance</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Today's clock-in roster</p>
         </div>
 
         {/* Absence notices banner */}
         {(absences ?? []).length > 0 && (
-          <div className="rounded-xl bg-status-pending/5 border border-status-pending/20 p-3">
+          <div className="rounded-xl bg-status-pending/5 border border-status-pending/20 p-4">
             <p className="text-sm font-medium text-status-pending">
               {absences!.length} absence notice{absences!.length !== 1 ? 's' : ''} today
             </p>
@@ -151,7 +151,7 @@ export default function AttendanceScreen() {
               onClick={() => setTab(t)}
               className={[
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
-                tab === t ? 'bg-transparent shadow-sm text-white' : 'text-ink-tertiary hover:text-ink-secondary',
+                tab === t ? 'bg-transparent shadow-sm text-[#f9dcd5]' : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               {t === 'today' ? 'Today' : 'Month summary'}
@@ -213,7 +213,7 @@ export default function AttendanceScreen() {
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-white">
+                            <span className="text-sm font-semibold text-[#f9dcd5]">
                               {row.employee_name ?? 'Unknown'}
                             </span>
                             {row.late && (
@@ -268,17 +268,17 @@ export default function AttendanceScreen() {
                     key={row.employee_id}
                     variants={itemVariants}
                     whileHover={{ y: -2 }}
-                    className="rounded-xl glass-card bg-transparent px-4 py-3"
+                    className="rounded-xl glass-card bg-transparent px-4 py-4"
                   >
-                    <p className="text-sm font-semibold text-white">{row.employee_name}</p>
-                    <div className="grid grid-cols-3 gap-2 mt-2">
+                    <p className="text-sm font-semibold text-[#f9dcd5]">{row.employee_name}</p>
+                    <div className="grid grid-cols-3 gap-4 mt-2">
                       {[
                         { label: 'Hours', value: parseFloat(row.hours_worked).toFixed(1) },
                         { label: 'Attended', value: `${row.shifts_attended}/${row.shifts_scheduled}` },
                         { label: 'Absences', value: row.absent_no_notice, danger: row.absent_no_notice > 0 },
                       ].map(({ label, value, danger }) => (
                         <div key={label} className="text-center">
-                          <p className={`text-lg font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-white'}`}>
+                          <p className={`text-lg font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-[#f9dcd5]'}`}>
                             {value}
                           </p>
                           <p className="text-[10px] text-ink-tertiary">{label}</p>
@@ -303,7 +303,7 @@ export default function AttendanceScreen() {
           <div className="space-y-4">
             <div className="rounded-xl bg-white/5 px-4 py-3 text-sm space-y-0.5">
               <p className="text-ink-tertiary">
-                Shift: <span className="text-white font-medium">
+                Shift: <span className="text-[#f9dcd5] font-medium">
                   {formatTime(selectedEmp.shift_start)} – {formatTime(selectedEmp.shift_end)}
                 </span>
               </p>
@@ -312,7 +312,7 @@ export default function AttendanceScreen() {
               </p>
               {empDetail && (
                 <p className="text-ink-tertiary">
-                  Hours worked: <span className="text-white font-medium">
+                  Hours worked: <span className="text-[#f9dcd5] font-medium">
                     {parseFloat(empDetail.hours_worked).toFixed(1)}h
                   </span>
                 </p>
@@ -328,7 +328,7 @@ export default function AttendanceScreen() {
                   <div key={ev.id}
                     className="flex items-center justify-between rounded-xl glass-card px-4 py-2.5">
                     <div>
-                      <p className="text-sm font-medium text-white capitalize">
+                      <p className="text-sm font-medium text-[#f9dcd5] capitalize">
                         {ev.event_type.replace('_', ' ').toLowerCase()}
                       </p>
                       {ev.is_manual_override && (

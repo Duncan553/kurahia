@@ -32,7 +32,7 @@ function NavCard({ label, description, path, icon, danger }: {
         {icon}
       </span>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold ${danger ? 'text-status-failed' : 'text-white'}`}>
+        <p className={`text-sm font-semibold ${danger ? 'text-status-failed' : 'text-[#f9dcd5]'}`}>
           {label}
         </p>
         <p className="text-xs text-ink-tertiary mt-0.5">{description}</p>
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="mb-6 p-4">
-        <h1 className="font-serif text-2xl font-bold text-white">PROFILE.</h1>
+        <h1 className="font-serif text-2xl font-bold text-[#f9dcd5]">PROFILE.</h1>
         <p className="text-xs text-ink-tertiary mt-1">KURAHIA STAFF</p>
       </div>
 
@@ -85,7 +85,7 @@ export default function ProfileScreen() {
           {user?.username?.[0]?.toUpperCase() ?? '?'}
         </div>
         <div>
-          <p className="text-base font-bold text-white">{user?.username}</p>
+          <p className="text-base font-bold text-[#f9dcd5]">{user?.username}</p>
           <p className="text-sm text-ink-tertiary">
             {roleName(user?.role_level ?? 0)}
             {user?.department ? ` · ${user.department}` : ''}

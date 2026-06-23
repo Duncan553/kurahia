@@ -118,7 +118,7 @@ function SideLink({ path, label, Icon }: NavItem) {
         'flex items-center gap-3 px-4 py-3 rounded-lg mx-2 transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]',
         isActive
-          ? 'bg-[#fa5c29]/10 text-[#ffb59f] border-l-2 border-[#fa5c29]'
+          ? 'bg-[#fa5c29]/10 text-[#ffb59f]'
           : 'text-[#aa8980] hover:bg-white/5 hover:text-[#f9dcd5]',
       ].join(' ')}
     >

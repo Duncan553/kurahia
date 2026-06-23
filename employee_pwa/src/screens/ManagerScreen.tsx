@@ -145,7 +145,7 @@ export default function ManagerScreen() {
           variants={{ visible: { transition: { staggerChildren: 0.06 } } }}>
 
           {/* ── Row 1: Greeting + Pending approvals ──────────────── */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 mb-6">
             <motion.div variants={anim}>
               <p className="text-sm text-ink-tertiary">{greeting},</p>
               <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
@@ -168,7 +168,7 @@ export default function ManagerScreen() {
           </div>
 
           {/* ── Row 2: Stock chart (wide) + Department breakdown ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-6">
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
@@ -176,7 +176,7 @@ export default function ManagerScreen() {
                     <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary">Stock Behavior</p>
                     <button onClick={() => navigate('/inventory/count')} className="text-[10px] text-[#fa5c29] hover:text-[#ffb59f]">View All →</button>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="grid grid-cols-3 gap-4 mb-4">
                     <div>
                       <p className="text-2xl font-bold tabular-nums text-ink-primary">{items.length}</p>
                       <p className="text-[10px] text-ink-tertiary">Total</p>
@@ -241,7 +241,7 @@ export default function ManagerScreen() {
           </div>
 
           {/* ── Row 3: Budget + Low stock ─────────────────────────── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-6">
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
@@ -293,14 +293,14 @@ export default function ManagerScreen() {
           {/* ── Row 4: Action tiles — ALL features ────────────────── */}
           <motion.div variants={anim}>
             <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-3">Manage</p>
-            <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {ACTIONS.map(a => (
                 <motion.button key={a.path}
                   whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
                   onClick={() => navigate(a.path)}
-                  className="flex flex-col items-start gap-2 p-3 rounded-xl transition-all text-left
+                  className="flex flex-col items-start gap-2 p-4 rounded-xl transition-all text-left
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]
-                    glass-card-sage hover:bg-white/8"
+                    glass-card hover:bg-white/8"
                   aria-label={`${a.label} — ${a.desc}`}>
                   <span className="text-ink-secondary">{a.svg}</span>
                   <div>

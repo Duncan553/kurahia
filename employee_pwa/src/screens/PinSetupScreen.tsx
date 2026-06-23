@@ -108,11 +108,11 @@ export default function PinSetupScreen() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.8, ease: 'easeOut' }}
       >
-        <p className="font-serif text-5xl font-bold tracking-widest text-white leading-none"
+        <p className="font-serif text-5xl font-bold tracking-widest text-[#f9dcd5] leading-none"
           style={{ textShadow: '0 2px 20px rgba(0,0,0,0.55)' }}>
           WATERFRONT<br />COUNTRY CLUB
         </p>
-        <p className="mt-2 text-[10px] tracking-[0.3em] uppercase text-white/60 font-medium">
+        <p className="mt-2 text-[10px] tracking-[0.3em] uppercase text-[#f9dcd5]/60 font-medium">
           JUJA · KIAMBU · KENYA
         </p>
       </motion.div>
@@ -120,7 +120,7 @@ export default function PinSetupScreen() {
       {/* ── Torn card ─────────────────────────────────────────────── */}
       <div className="relative z-10 flex min-h-screen">
         <motion.div
-          className="login-torn-edge w-full md:w-[52%] bg-cream-card min-h-screen"
+          className="login-torn-edge w-full md:w-[52%] glass-card min-h-screen"
           initial={{ x: -60, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.25, ease: 'easeOut' }}

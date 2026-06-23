@@ -58,7 +58,7 @@ export default function AbsenceNoticeScreen() {
     <div className="p-4 max-w-3xl mx-auto space-y-6">
 
       <div>
-        <h1 className="text-xl font-bold text-white">Absence Notice</h1>
+        <h1 className="text-xl font-bold text-[#f9dcd5]">Absence Notice</h1>
         <p className="text-sm text-ink-tertiary">Calling in? Record it so your manager knows immediately</p>
       </div>
 
@@ -103,7 +103,7 @@ export default function AbsenceNoticeScreen() {
               placeholder="Brief description…"
               autoFocus
               className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                text-sm text-white focus:outline-none focus:border-[#fa5c29]
+                text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-primary-dark/20 resize-none"
             />
             {customErr && <p className="text-sm text-status-failed mt-1">{customErr}</p>}
@@ -111,7 +111,7 @@ export default function AbsenceNoticeScreen() {
         )}
 
         {reason && (
-          <div className="rounded-xl bg-status-pending/5 border border-status-pending/20 p-3">
+          <div className="rounded-xl bg-status-pending/5 border border-status-pending/20 p-4">
             <p className="text-sm text-status-pending font-medium">
               This will notify your manager immediately.
             </p>
