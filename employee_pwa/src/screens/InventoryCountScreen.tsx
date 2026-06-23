@@ -445,7 +445,7 @@ export default function InventoryCountScreen() {
           {tab === 'overview' && (
             <>
               {/* ── Top stat cards row: 3 cards ────────────────────── */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {/* Total Items */}
                 <ErrorBoundary level="tile">
                   <motion.div variants={fadeIn}>
@@ -507,7 +507,7 @@ export default function InventoryCountScreen() {
                     <p className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-3">
                       Departmental Health
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {Object.entries(byDept).map(([dept, { total, low }]) => {
                         // Health % = items NOT below reorder / total
                         const healthPct = total > 0 ? Math.round(((total - low) / total) * 100) : 100
@@ -670,7 +670,7 @@ export default function InventoryCountScreen() {
                   {isLoading && (
                     <div className="space-y-3 mt-4">
                       {[1,2,3,4].map((i) => (
-                        <div key={i} className="rounded-xl bg-white/5 p-3 flex items-center justify-between gap-3">
+                        <div key={i} className="rounded-xl bg-white/5 p-4 flex items-center justify-between gap-3">
                           <Skeleton variant="text" className="w-32" />
                           <Skeleton variant="button" className="w-24 h-9" />
                         </div>
@@ -709,7 +709,7 @@ export default function InventoryCountScreen() {
                             variants={itemVariants}
                             whileHover={{ y: -2 }}
                             className={[
-                              'rounded-xl border p-3 space-y-2 transition-colors',
+                              'rounded-xl border p-4 space-y-2 transition-colors',
                               submitted ? 'bg-[#fa5c29]/10 border-[#fa5c29]/30' : 'glass-card',
                             ].join(' ')}
                           >
@@ -857,7 +857,7 @@ export default function InventoryCountScreen() {
                   {!varFetching && variance && (
                     <>
                       {variance.flagged_count > 0 && (
-                        <div className="rounded-xl bg-status-failed/5 border border-status-failed/20 p-3">
+                        <div className="rounded-xl bg-status-failed/5 border border-status-failed/20 p-4">
                           <p className="text-sm text-status-failed font-medium">
                             {variance.flagged_count} item{variance.flagged_count > 1 ? 's' : ''} flagged for review
                           </p>

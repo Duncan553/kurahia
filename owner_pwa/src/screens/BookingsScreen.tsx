@@ -260,7 +260,7 @@ export default function BookingsScreen() {
               onClick={() => setStatusFilter(t.key)}
               className={[
                 'shrink-0 flex-1 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap px-2',
-                statusFilter === t.key ? 'bg-transparent text-white shadow-sm' : 'text-ink-secondary hover:text-white',
+                statusFilter === t.key ? 'bg-white/10 text-[#f9dcd5]' : 'text-ink-secondary hover:text-[#f9dcd5]',
               ].join(' ')}
             >
               {t.label}
@@ -277,11 +277,11 @@ export default function BookingsScreen() {
             value={dateFilter}
             onChange={e => setDateFilter(e.target.value)}
             className="flex-1 text-xs border border-white/10 bg-transparent rounded-lg px-2 py-1.5
-              text-white focus:outline-none focus:ring-2 focus:ring-primary-main"
+              text-[#f9dcd5] focus:outline-none focus:ring-2 focus:ring-primary-main"
           />
           {dateFilter && (
             <button onClick={() => setDateFilter('')}
-              className="text-xs text-ink-tertiary hover:text-white">
+              className="text-xs text-ink-tertiary hover:text-[#f9dcd5]">
               Clear
             </button>
           )}

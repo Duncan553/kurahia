@@ -289,13 +289,13 @@ export default function ClockScreen() {
 
           {/* Schedule + Assigned To */}
           <div className="mt-4 w-full grid grid-cols-2 gap-4">
-            <div className="glass-card-sage rounded-xl p-3 text-center">
+            <div className="glass-card-sage rounded-xl p-4 text-center">
               <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">Schedule</p>
               <p className="text-xs text-ink-secondary">
                 {isClockedIn ? 'On Shift' : 'No active shift'}
               </p>
             </div>
-            <div className="glass-card-sage rounded-xl p-3 text-center">
+            <div className="glass-card-sage rounded-xl p-4 text-center">
               <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">Assigned To</p>
               <p className="text-xs text-ink-secondary">
                 {lastEvent?.shift_id ? 'Scheduled Shift' : 'Walk-in'}

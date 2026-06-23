@@ -64,7 +64,7 @@ function DepartmentsTab() {
           onChange={e => setNewName(e.target.value)}
           placeholder="New department name…"
           className="flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
-            text-white placeholder:text-ink-tertiary
+            text-[#f9dcd5] placeholder:text-ink-tertiary
             focus:outline-none focus:ring-2 focus:ring-primary-main"
           onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) createMut.mutate(newName.trim()) }}
         />
@@ -86,14 +86,14 @@ function DepartmentsTab() {
             className="flex items-center justify-between gap-3 glass-card rounded-xl px-4 py-3">
             <div className="flex items-center gap-2 min-w-0">
               <span className={`w-2 h-2 rounded-full shrink-0 ${d.is_active ? 'bg-status-paid' : 'bg-ink-tertiary'}`} />
-              <span className={`text-sm font-medium truncate ${d.is_active ? 'text-white' : 'text-ink-tertiary line-through'}`}>
+              <span className={`text-sm font-medium truncate ${d.is_active ? 'text-[#f9dcd5]' : 'text-ink-tertiary line-through'}`}>
                 {d.name}
               </span>
             </div>
             <div className="flex gap-1 shrink-0">
               <button
                 onClick={() => { setEditTarget(d); setEditName(d.name) }}
-                className="px-2 py-1 text-xs text-ink-secondary hover:text-white rounded"
+                className="px-2 py-1 text-xs text-ink-secondary hover:text-[#f9dcd5] rounded"
                 aria-label={`Edit ${d.name}`}
               >Edit</button>
               <button
@@ -163,7 +163,7 @@ function RolesTab() {
               <div className="flex items-center gap-3">
                 <span className={`w-2 h-2 rounded-full shrink-0 ${r.is_active ? 'bg-status-paid' : 'bg-ink-tertiary'}`} />
                 <div>
-                  <p className={`text-sm font-medium ${r.is_active ? 'text-white' : 'text-ink-tertiary'}`}>{r.name}</p>
+                  <p className={`text-sm font-medium ${r.is_active ? 'text-[#f9dcd5]' : 'text-ink-tertiary'}`}>{r.name}</p>
                   <p className="text-xs text-ink-secondary">Level {r.level} · {levelLabel(r.level)}</p>
                 </div>
               </div>
@@ -222,20 +222,20 @@ function BaselinesTab() {
             <div key={b.id} className="glass-card rounded-xl px-4 py-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className={`text-sm font-medium truncate ${b.is_active ? 'text-white' : 'text-ink-tertiary'}`}>
+                  <p className={`text-sm font-medium truncate ${b.is_active ? 'text-[#f9dcd5]' : 'text-ink-tertiary'}`}>
                     {b.item_name ?? b.item_id}
                   </p>
                   <p className="text-xs text-ink-secondary">{b.business_driver}</p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-xs font-semibold tabular-nums text-white">{b.expected_ratio}</p>
+                  <p className="text-xs font-semibold tabular-nums text-[#f9dcd5]">{b.expected_ratio}</p>
                   <p className="text-xs text-ink-secondary">±{b.tolerance_percent}%</p>
                 </div>
               </div>
               <div className="flex gap-1">
                 <button
                   onClick={() => { setEditTarget(b); setEditRatio(b.expected_ratio); setEditTolerance(b.tolerance_percent) }}
-                  className="px-2 py-1 text-xs text-ink-secondary hover:text-white rounded"
+                  className="px-2 py-1 text-xs text-ink-secondary hover:text-[#f9dcd5] rounded"
                 >Edit</button>
                 <button
                   onClick={() => toggleMut.mutate({ id: b.id, active: !b.is_active })}
@@ -251,8 +251,8 @@ function BaselinesTab() {
       <Modal open={editTarget !== null} onClose={() => setEditTarget(null)} title="Edit Baseline">
         <div className="space-y-4">
           <p className="text-sm text-ink-secondary">
-            Item: <span className="font-medium text-white">{editTarget?.item_name}</span>
-            <br />Driver: <span className="font-medium text-white">{editTarget?.business_driver}</span>
+            Item: <span className="font-medium text-[#f9dcd5]">{editTarget?.item_name}</span>
+            <br />Driver: <span className="font-medium text-[#f9dcd5]">{editTarget?.business_driver}</span>
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -305,7 +305,7 @@ function SocketRow({ label, endpoint }: { label: string; endpoint: string }) {
         isLoading ? 'bg-white/5' : data?.configured ? 'bg-status-paid' : 'bg-ink-tertiary'
       }`} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white">{label}</p>
+        <p className="text-sm font-medium text-[#f9dcd5]">{label}</p>
         {!isLoading && (
           <p className={`text-xs mt-0.5 ${data?.configured ? 'text-ink-tertiary' : 'text-status-pending'}`}>
             {data?.message ?? '—'}
@@ -391,7 +391,7 @@ export default function SettingsScreen() {
   return (
     <div className="p-4 max-w-3xl mx-auto">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-white font-serif">Settings</h1>
+        <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Settings</h1>
         <p className="text-xs text-ink-tertiary mt-0.5">Business day, system configuration</p>
       </div>
 
@@ -407,7 +407,7 @@ export default function SettingsScreen() {
               'shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap',
               tab === t.key
                 ? 'bg-[#fa5c29] text-white'
-                : 'bg-white/5 text-ink-secondary hover:text-white',
+                : 'bg-white/5 text-ink-secondary hover:text-[#f9dcd5]',
             ].join(' ')}
           >
             {t.label}

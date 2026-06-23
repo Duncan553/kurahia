@@ -179,7 +179,7 @@ export default function ConductScreen() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">
                     {rule.category} · v{rule.version}
                   </p>
-                  <h2 id={`rule-${rule.id}-title`} className="text-base font-bold text-white mt-0.5">
+                  <h2 id={`rule-${rule.id}-title`} className="text-base font-bold text-[#f9dcd5] mt-0.5">
                     {rule.title}
                   </h2>
                 </div>

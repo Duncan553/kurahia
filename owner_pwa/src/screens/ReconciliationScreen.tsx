@@ -112,12 +112,12 @@ export default function ReconciliationScreen() {
   )
 
   return (
-    <div className="p-4 max-w-4xl mx-auto space-y-4">
+    <div className="p-4 max-w-6xl mx-auto space-y-4">
 
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white font-serif">Three-Way Reconciliation</h1>
+          <h1 className="text-xl font-bold text-[#f9dcd5] font-serif">Three-Way Reconciliation</h1>
           <p className="text-xs text-ink-secondary mt-0.5">Receipts · Cash · Stock</p>
         </div>
         {/* Date picker */}
@@ -129,7 +129,7 @@ export default function ReconciliationScreen() {
           max={todayNairobi()}
           onChange={e => setView(v => ({ ...v, date: e.target.value }))}
           className="rounded-xl border border-white/10 bg-transparent px-3 py-2
-            text-sm text-white focus:outline-none focus:border-[#fa5c29]"
+            text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
         />
       </div>
 
@@ -167,8 +167,8 @@ export default function ReconciliationScreen() {
               <Row label="Card"   value={kes(data.receipts.card)} />
               <Row label="M-Pesa" value={kes(data.receipts.mpesa)} />
               <div className="mt-2 pt-2 border-t border-white/10 flex justify-between">
-                <span className="text-xs font-semibold text-white">Total</span>
-                <span className="text-sm font-bold tabular-nums text-white">{kes(data.receipts.total)}</span>
+                <span className="text-xs font-semibold text-[#f9dcd5]">Total</span>
+                <span className="text-sm font-bold tabular-nums text-[#f9dcd5]">{kes(data.receipts.total)}</span>
               </div>
             </div>
 
@@ -206,7 +206,7 @@ export default function ReconciliationScreen() {
             {/* Corner 3: Stock / Judge */}
             <div className="glass-card rounded-2xl p-4">
               <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Stock Alerts</p>
-              <p className="text-2xl font-bold text-white tabular-nums">
+              <p className="text-2xl font-bold text-[#f9dcd5] tabular-nums">
                 {data.stock.open_alerts_count}
               </p>
               <p className="text-xs text-ink-secondary mb-3">open alert{data.stock.open_alerts_count !== 1 ? 's' : ''}</p>
@@ -233,7 +233,7 @@ export default function ReconciliationScreen() {
                 Gaps detected
               </p>
               {data.gaps.map((g, i) => (
-                <p key={i} className="text-sm text-white leading-snug">• {g}</p>
+                <p key={i} className="text-sm text-[#f9dcd5] leading-snug">• {g}</p>
               ))}
             </div>
           )}
@@ -305,7 +305,7 @@ export default function ReconciliationScreen() {
               value={view.safeCount}
               onChange={e => setView(v => ({ ...v, safeCount: e.target.value }))}
               className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                text-base text-white focus:outline-none focus:border-[#fa5c29]"
+                text-base text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
             />
           </div>
           <div className="flex gap-2 justify-end">

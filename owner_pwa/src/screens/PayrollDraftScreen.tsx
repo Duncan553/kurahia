@@ -89,7 +89,7 @@ export default function PayrollDraftScreen() {
 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-xl font-bold text-white font-serif">Payroll Draft</h1>
+          <h1 className="text-xl font-bold text-[#f9dcd5] font-serif">Payroll Draft</h1>
           {data && (
             <p className="text-xs text-ink-tertiary mt-0.5">
               {data.period_start} → {data.period_end}
@@ -137,7 +137,7 @@ export default function PayrollDraftScreen() {
                   className="flex items-center justify-between gap-4 px-4 py-3
                     rounded-2xl border border-white/10">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{e.employee_name}</p>
+                    <p className="text-sm font-semibold text-[#f9dcd5] truncate">{e.employee_name}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {e.wage_period && (
                         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${PERIOD_BADGE[e.wage_period] ?? 'bg-white/5 text-ink-tertiary'}`}>
@@ -154,7 +154,7 @@ export default function PayrollDraftScreen() {
                   <div className="text-right shrink-0">
                     <p className="text-xs text-ink-tertiary tabular-nums">{e.hours_worked}h worked</p>
                     {gross != null ? (
-                      <p className="text-sm font-bold text-white tabular-nums mt-0.5">{kes(gross)}</p>
+                      <p className="text-sm font-bold text-[#f9dcd5] tabular-nums mt-0.5">{kes(gross)}</p>
                     ) : (
                       <p className="text-xs text-ink-tertiary mt-0.5">No wage set</p>
                     )}
@@ -166,7 +166,7 @@ export default function PayrollDraftScreen() {
 
           {/* Summary footer */}
           <div className="flex items-center justify-between px-4 py-3 rounded-2xl
-            bg-ink-primary text-white">
+            bg-ink-primary text-[#f9dcd5]">
             <p className="text-sm font-semibold">Total gross payroll</p>
             <p className="text-base font-bold tabular-nums">{kes(totalGross)}</p>
           </div>

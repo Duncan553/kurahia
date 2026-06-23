@@ -127,7 +127,7 @@ export default function LeaveRequestScreen() {
         </div>
 
         {/* Dates */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-ink-tertiary mb-1">Start date *</label>
             <input
@@ -136,7 +136,7 @@ export default function LeaveRequestScreen() {
               min={today}
               onChange={(e) => setStartDate(e.target.value)}
               className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
-                text-sm text-white focus:outline-none focus:border-[#fa5c29]
+                text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
@@ -148,7 +148,7 @@ export default function LeaveRequestScreen() {
               min={startDate}
               onChange={(e) => { setEndDate(e.target.value); setTouched(true) }}
               className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
-                text-sm text-white focus:outline-none focus:border-[#fa5c29]
+                text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
@@ -166,7 +166,7 @@ export default function LeaveRequestScreen() {
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Family event, medical appointment..."
             className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-              text-sm text-white focus:outline-none focus:border-[#fa5c29]
+              text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />
         </div>
@@ -236,7 +236,7 @@ export default function LeaveRequestScreen() {
                   glass-card px-4 py-3"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-white capitalize">
+                  <p className="text-sm font-medium text-[#f9dcd5] capitalize">
                     {r.leave_type.charAt(0) + r.leave_type.slice(1).toLowerCase()} Leave
                   </p>
                   <p className="text-xs text-ink-tertiary tabular-nums mt-0.5">

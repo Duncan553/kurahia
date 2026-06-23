@@ -262,7 +262,7 @@ export default function MenuManageScreen() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold font-serif text-white">Menu &amp; Services</h1>
+          <h1 className="text-2xl font-bold font-serif text-[#f9dcd5]">Menu &amp; Services</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Add, price, disable items &amp; manage recipes</p>
         </div>
         <Button variant="primary" size="sm" onClick={() => setAdding(a => !a)}>
@@ -340,11 +340,11 @@ export default function MenuManageScreen() {
             {deptItems.map(it => (
               <div
                 key={it.id}
-                className={`flex items-center gap-2 p-3 rounded-xl glass-card
+                className={`flex items-center gap-2 p-4 rounded-xl glass-card
                   ${!it.is_active ? 'opacity-50' : ''}`}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{it.name}</p>
+                  <p className="text-sm font-semibold text-[#f9dcd5] truncate">{it.name}</p>
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-xs text-ink-tertiary">
                       {it.prep_station === 'NONE' ? 'no queue' : it.prep_station.toLowerCase()}
@@ -392,7 +392,7 @@ export default function MenuManageScreen() {
                 ) : (
                   <button
                     onClick={() => setPriceEdit({ id: it.id, price: it.price })}
-                    className="text-sm font-bold tabular-nums text-white underline decoration-dotted shrink-0"
+                    className="text-sm font-bold tabular-nums text-[#f9dcd5] underline decoration-dotted shrink-0"
                   >
                     KSh {parseFloat(it.price).toLocaleString('en-KE')}
                   </button>
@@ -430,7 +430,7 @@ export default function MenuManageScreen() {
                   <div key={line.invItemId}
                     className="flex items-center gap-2 p-2 rounded-xl bg-white/6">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white">{line.invItemName}</p>
+                      <p className="text-sm font-medium text-[#f9dcd5]">{line.invItemName}</p>
                       <p className="text-xs text-ink-tertiary">
                         {(() => {
                           const inv = invItems.find(x => x.id === line.invItemId)
@@ -542,7 +542,7 @@ export default function MenuManageScreen() {
 
             {/* Live cost preview */}
             {draftLines.length > 0 && (
-              <div className="p-3 rounded-xl bg-white/6 space-y-2">
+              <div className="p-4 rounded-xl bg-white/6 space-y-2">
                 <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">
                   Cost Preview
                 </p>
@@ -550,13 +550,13 @@ export default function MenuManageScreen() {
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-ink-secondary">Food cost</span>
-                      <span className="tabular-nums font-semibold text-white">
+                      <span className="tabular-nums font-semibold text-[#f9dcd5]">
                         KSh {draftCost.food_cost.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-ink-secondary">Gross margin</span>
-                      <span className="tabular-nums font-semibold text-white">
+                      <span className="tabular-nums font-semibold text-[#f9dcd5]">
                         KSh {draftCost.gross_margin.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>

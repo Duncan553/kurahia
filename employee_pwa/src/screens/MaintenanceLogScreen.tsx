@@ -109,7 +109,7 @@ export default function MaintenanceLogScreen() {
       <div className="p-4 max-w-3xl mx-auto space-y-4">
 
         <div>
-          <h1 className="text-2xl font-bold text-white font-serif">Equipment Service</h1>
+          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Equipment Service</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Equipment service history</p>
         </div>
 
@@ -178,7 +178,7 @@ export default function MaintenanceLogScreen() {
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-white">{eq.name}</span>
+                <span className="font-semibold text-[#f9dcd5]">{eq.name}</span>
                 {eq.is_due_service && (
                   <span className="text-[10px] font-semibold uppercase tracking-wide
                     bg-status-failed/10 text-status-failed rounded-full px-2 py-0.5">
@@ -218,14 +218,14 @@ export default function MaintenanceLogScreen() {
             <div className="rounded-xl bg-white/5 px-4 py-3 space-y-0.5 text-sm">
               <p className="text-ink-tertiary">
                 Last service:{' '}
-                <span className="text-white font-medium">
+                <span className="text-[#f9dcd5] font-medium">
                   {formatDateNairobi(selectedEq.last_service_utc)}
                 </span>
               </p>
               {selectedEq.service_interval_days && (
                 <p className="text-ink-tertiary">
                   Interval:{' '}
-                  <span className="text-white font-medium">
+                  <span className="text-[#f9dcd5] font-medium">
                     every {selectedEq.service_interval_days} days
                   </span>
                 </p>
@@ -251,7 +251,7 @@ export default function MaintenanceLogScreen() {
                   value={performedAt}
                   onChange={(e) => setPerformedAt(e.target.value)}
                   className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                    text-sm text-white focus:outline-none focus:border-[#fa5c29]
+                    text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                     focus:ring-2 focus:ring-primary-dark/20"
                 />
               </div>
@@ -267,7 +267,7 @@ export default function MaintenanceLogScreen() {
                   placeholder="Describe the work performed…"
                   className={[
                     'w-full rounded-xl border bg-transparent px-4 py-3',
-                    'text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary-dark/20 resize-none',
+                    'text-sm text-[#f9dcd5] focus:outline-none focus:ring-2 focus:ring-primary-dark/20 resize-none',
                     notesErr
                       ? 'border-status-failed focus:border-status-failed'
                       : 'border-white/10 focus:border-[#fa5c29]',
@@ -291,7 +291,7 @@ export default function MaintenanceLogScreen() {
                   onChange={(e) => setCost(e.target.value)}
                   placeholder="0.00"
                   className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                    text-sm text-white focus:outline-none focus:border-[#fa5c29]
+                    text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                     focus:ring-2 focus:ring-primary-dark/20"
                 />
               </div>

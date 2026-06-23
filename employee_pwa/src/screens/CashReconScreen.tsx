@@ -96,7 +96,7 @@ function HoldToConfirm({
       aria-label={`${label}. Hold Space for 2 seconds to confirm.`}
       className={[
         'relative w-full py-4 rounded-2xl overflow-hidden',
-        'bg-status-failed text-white font-semibold text-base select-none',
+        'bg-status-failed text-[#f9dcd5] font-semibold text-base select-none',
         'disabled:opacity-50 disabled:cursor-not-allowed transition-all',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed',
       ].join(' ')}
@@ -166,7 +166,7 @@ function ReconForm({
           result.status === 'SHORT'    ? 'bg-status-failed/10 border border-status-failed/30' :
                                          'bg-status-pending/10 border border-status-pending/30',
         ].join(' ')}>
-          <p className="text-2xl font-bold tabular-nums text-white">
+          <p className="text-2xl font-bold tabular-nums text-[#f9dcd5]">
             KSh {Math.abs(diff).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
           </p>
           <StatusBadge status={result.status.toLowerCase() as 'paid' | 'pending' | 'cancelled'} />
@@ -199,9 +199,9 @@ function ReconForm({
   return (
     <div className="space-y-5">
       {/* Staff summary */}
-      <div className="glass-card rounded-xl px-4 py-3">
+      <div className="glass-card rounded-xl px-4 py-4">
         <p className="text-sm text-ink-tertiary">Expected cash from {pending.staff_name}</p>
-        <p className="text-3xl font-bold tabular-nums text-white mt-0.5">
+        <p className="text-3xl font-bold tabular-nums text-[#f9dcd5] mt-0.5">
           KSh {parseFloat(pending.expected_total).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
         </p>
         <p className="text-xs text-ink-tertiary mt-1">
@@ -215,7 +215,7 @@ function ReconForm({
           <button
             onClick={() => setExpanded((e) => !e)}
             className="w-full min-h-[44px] flex items-center justify-between text-sm text-ink-secondary
-              hover:text-white transition-colors
+              hover:text-[#f9dcd5] transition-colors
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark rounded"
           >
             <span>Payment breakdown</span>
@@ -239,7 +239,7 @@ function ReconForm({
                   <div key={p.payment_id}
                     className="flex justify-between text-sm px-3 py-2 rounded-lg bg-white/4">
                     <span className="text-ink-tertiary">{timeAgo(p.created_at)}</span>
-                    <span className="font-medium tabular-nums text-white">
+                    <span className="font-medium tabular-nums text-[#f9dcd5]">
                       KSh {parseFloat(p.amount).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -265,7 +265,7 @@ function ReconForm({
           onChange={(e) => setActualRaw(e.target.value)}
           placeholder="0.00"
           className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-            text-2xl font-bold tabular-nums text-white
+            text-2xl font-bold tabular-nums text-[#f9dcd5]
             focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
         />
         {actualRaw && (
@@ -291,7 +291,7 @@ function ReconForm({
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Any discrepancy reason…"
           className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-            text-sm text-white focus:outline-none focus:border-[#fa5c29]
+            text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
             focus:ring-2 focus:ring-primary-dark/20 resize-none"
         />
       </div>
@@ -376,7 +376,7 @@ export default function CashReconScreen() {
       >
 
         <div>
-          <h1 className="text-2xl font-bold text-white font-serif">Cash Reconciliation</h1>
+          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Cash Reconciliation</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Reconcile cash handovers vs expected</p>
         </div>
 
@@ -395,7 +395,7 @@ export default function CashReconScreen() {
                   border border-white/10 bg-transparent text-left
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
               >
-                <span className={selectedProfile ? 'text-white font-medium' : 'text-ink-tertiary'}>
+                <span className={selectedProfile ? 'text-[#f9dcd5] font-medium' : 'text-ink-tertiary'}>
                   {selectedProfile ? selectedProfile.full_name : 'Choose a staff member…'}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={`transition-transform ${pendingOpen ? 'rotate-180' : ''}`}>
@@ -418,7 +418,7 @@ export default function CashReconScreen() {
                         whileTap={{ scale: 0.97 }}
                         key={p.id}
                         onClick={() => { selectProfile(p); setPendingOpen(false) }}
-                        className="w-full text-left px-4 py-3 text-sm text-white
+                        className="w-full text-left px-4 py-3 text-sm text-[#f9dcd5]
                           hover:bg-white/8 transition-colors border-b border-white/10 last:border-0"
                       >
                         {p.full_name}
