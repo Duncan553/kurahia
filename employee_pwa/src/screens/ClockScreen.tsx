@@ -218,7 +218,7 @@ export default function ClockScreen() {
         {/* ── Glass container card ─────────────────────────────────── */}
         <motion.div
           variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
-          className="glass-card rounded-2xl glass-card p-8 md:p-10 w-full max-w-md flex flex-col items-center"
+          className="glass-card rounded-2xl p-8 md:p-10 w-full max-w-md flex flex-col items-center"
         >
           {/* Date label — e.g. "MONDAY, JUNE 22" */}
           <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-ink-tertiary mb-6">
