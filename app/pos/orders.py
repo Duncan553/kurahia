@@ -93,8 +93,10 @@ def create_order():
             mi_id = line.get("menu_item_id")
             qty   = Decimal(str(line.get("quantity", 1)))
             mi    = db.session.get(MenuItem, mi_id)
-            if not mi or not mi.is_active:
-                return jsonify({"error": f"Menu item '{mi_id}' is disabled or does not exist. Re-enable it or choose another."}), 400
+            if not mi:
+                return jsonify({"error": f"Menu item '{mi_id}' not found."}), 404
+            if not mi.is_active:
+                return jsonify({"error": f"'{mi.name}' is disabled. Re-enable it or choose another."}), 400
 
             # Stock pre-check: warn if recipe ingredients are depleted
             from app.models.recipe_line import RecipeLine

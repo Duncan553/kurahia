@@ -35,7 +35,7 @@ def list_roles():
     if actor.role.level < 5:
         return jsonify({"error": "Manager or above required."}), 403
     include_disabled = request.args.get("include_disabled", "false").lower() == "true"
-    query = db.session.query(Role)
+    query = db.session.query(Role).filter(Role.level < actor.role.level)
     if not include_disabled:
         query = query.filter_by(is_active=True)
     return jsonify([
