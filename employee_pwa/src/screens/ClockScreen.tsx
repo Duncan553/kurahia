@@ -218,19 +218,19 @@ export default function ClockScreen() {
         {/* ── Glass container card ─────────────────────────────────── */}
         <motion.div
           variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
-          className="glass-card rounded-2xl border border-white/10 p-8 w-full max-w-sm flex flex-col items-center"
+          className="glass-card rounded-2xl border border-white/10 p-8 md:p-10 w-full max-w-md flex flex-col items-center"
         >
-          {/* Date label */}
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-ink-tertiary mb-4">
+          {/* Date label — e.g. "MONDAY, JUNE 22" */}
+          <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-ink-tertiary mb-6">
             {dateLabel}
           </p>
 
-          {/* Huge time display */}
+          {/* Massive time display — Fraunces serif like Stitch design */}
           <motion.div
             variants={{ hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1 } }}
-            className="mb-8"
+            className="mb-10"
           >
-            <p className="text-6xl md:text-7xl font-bold font-mono text-ink-primary tabular-nums tracking-tight leading-none">
+            <p className="text-7xl md:text-8xl font-bold font-serif text-ink-primary tabular-nums tracking-tight leading-none">
               {hours}<span className="text-ink-tertiary">:</span>{minutes}
             </p>
           </motion.div>
@@ -272,32 +272,40 @@ export default function ClockScreen() {
           </motion.button>
 
           {/* Shift status + Start time — below the button */}
-          <div className="mt-8 w-full grid grid-cols-2 gap-4 text-center">
+          <div className="mt-10 w-full grid grid-cols-2 gap-6 text-center">
             <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">Shift Status</p>
+              <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-ink-tertiary mb-1">
+                Shift Status
+              </p>
               <p className="text-sm font-semibold text-ink-primary">
                 {isClockedIn ? `On duty: ${dutyTime(dutyMinutes)}` : 'Off Duty'}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">Start Time</p>
+              <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-ink-tertiary mb-1">
+                Start Time
+              </p>
               <p className="text-sm font-semibold text-ink-primary">
                 {isClockedIn && lastEvent ? formatTime(lastEvent.occurred_at) : '--:--'}
               </p>
             </div>
           </div>
 
-          {/* Schedule + Assigned To */}
-          <div className="mt-4 w-full grid grid-cols-2 gap-4">
+          {/* Schedule + Assigned To — bottom info boxes */}
+          <div className="mt-6 w-full grid grid-cols-2 gap-4">
             <div className="glass-card-sage rounded-xl p-4 text-center">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">Schedule</p>
-              <p className="text-xs text-ink-secondary">
+              <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-ink-tertiary mb-1">
+                Schedule
+              </p>
+              <p className="text-xs font-medium text-ink-secondary">
                 {isClockedIn ? 'On Shift' : 'No active shift'}
               </p>
             </div>
             <div className="glass-card-sage rounded-xl p-4 text-center">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">Assigned To</p>
-              <p className="text-xs text-ink-secondary">
+              <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-ink-tertiary mb-1">
+                Assigned To
+              </p>
+              <p className="text-xs font-medium text-ink-secondary">
                 {lastEvent?.shift_id ? 'Scheduled Shift' : 'Walk-in'}
               </p>
             </div>
