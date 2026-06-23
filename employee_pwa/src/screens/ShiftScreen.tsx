@@ -144,7 +144,7 @@ export default function ShiftScreen() {
           <p className={`text-sm font-semibold text-white ${cancelled ? 'line-through' : ''}`}>
             {shift.employee_name ?? 'Unknown'}
           </p>
-          <p className="text-xs text-slate-400/50 mt-0.5 flex items-center">
+          <p className="text-xs text-ink-tertiary mt-0.5 flex items-center">
             <StatusDot status={shift.status} />
             {formatTime(shift.start)} – {formatTime(shift.end)}
             {shift.role ? ` · ${shift.role}` : ''}
@@ -201,7 +201,7 @@ export default function ShiftScreen() {
               onClick={() => setTab(t)}
               className={[
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
-                tab === t ? 'bg-transparent shadow-sm text-white' : 'text-slate-400/50 hover:text-slate-300/70',
+                tab === t ? 'bg-transparent shadow-sm text-white' : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               {t === 'today' ? `Today (${todayShifts.length})` : `Upcoming (${upcomingShifts.length})`}
@@ -216,7 +216,7 @@ export default function ShiftScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
+          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
             Couldn't load shifts. Check connection.
           </div>
         )}
@@ -263,7 +263,7 @@ export default function ShiftScreen() {
               <motion.div className="space-y-4" initial="hidden" animate="visible" variants={containerVariants}>
                 {Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)).map(([dateKey, dayShifts]) => (
                   <motion.div key={dateKey} variants={itemVariants}>
-                    <p className="text-xs font-semibold text-slate-400/50 uppercase tracking-wider mb-2">
+                    <p className="text-xs font-semibold text-ink-tertiary uppercase tracking-wider mb-2">
                       {formatDayLabel(dayShifts[0].start)}
                     </p>
                     <div className="space-y-2">
@@ -284,7 +284,7 @@ export default function ShiftScreen() {
           className="space-y-4"
         >
           <div>
-            <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+            <label className="block text-sm font-medium text-ink-secondary mb-1.5">
               Employee *
             </label>
             <select
@@ -302,7 +302,7 @@ export default function ShiftScreen() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-300/70 mb-1.5">Start *</label>
+              <label className="block text-sm font-medium text-ink-secondary mb-1.5">Start *</label>
               <input
                 type="datetime-local"
                 value={startDT}
@@ -312,7 +312,7 @@ export default function ShiftScreen() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300/70 mb-1.5">End *</label>
+              <label className="block text-sm font-medium text-ink-secondary mb-1.5">End *</label>
               <input
                 type="datetime-local"
                 value={endDT}
@@ -324,7 +324,7 @@ export default function ShiftScreen() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+            <label className="block text-sm font-medium text-ink-secondary mb-1.5">
               Role / position (optional)
             </label>
             <input
@@ -360,14 +360,14 @@ export default function ShiftScreen() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-300/70">
+          <p className="text-sm text-ink-secondary">
             This will cancel the shift permanently. The employee will not receive an automatic notification — notify them manually.
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => setCancelId(null)}
               className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
-                text-slate-300/70 hover:bg-white/5/40 transition-colors"
+                text-ink-secondary hover:bg-white/5/40 transition-colors"
             >
               Keep shift
             </button>

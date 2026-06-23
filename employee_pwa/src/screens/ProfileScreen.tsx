@@ -21,24 +21,24 @@ function NavCard({ label, description, path, icon, danger }: {
       whileHover={{ y: -2 }}
       onClick={() => navigate(path)}
       className={[
-        'w-full flex items-center gap-4 p-4 rounded-2xl border transition-colors text-left',
+        'w-full flex items-center gap-4 p-4 rounded-2xl transition-colors text-left',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
         danger
-          ? 'border-status-failed/20 bg-status-failed/5 hover:bg-status-failed/10'
-          : 'border-white/10 bg-transparent hover:bg-white/5/40 active:bg-white/5/60',
+          ? 'border border-status-failed/20 bg-status-failed/5 hover:bg-status-failed/10'
+          : 'glass-card hover:bg-white/5/40 active:bg-white/5/60',
       ].join(' ')}
     >
-      <span className={danger ? 'text-status-failed shrink-0' : 'text-slate-300/70 shrink-0'}>
+      <span className={danger ? 'text-status-failed shrink-0' : 'text-ink-secondary shrink-0'}>
         {icon}
       </span>
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-semibold ${danger ? 'text-status-failed' : 'text-white'}`}>
           {label}
         </p>
-        <p className="text-xs text-slate-400/50 mt-0.5">{description}</p>
+        <p className="text-xs text-ink-tertiary mt-0.5">{description}</p>
       </div>
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"
-        className="text-slate-400/50 shrink-0">
+        className="text-ink-tertiary shrink-0">
         <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </motion.button>
@@ -86,7 +86,7 @@ export default function ProfileScreen() {
         </div>
         <div>
           <p className="text-base font-bold text-white">{user?.username}</p>
-          <p className="text-sm text-slate-400/50">
+          <p className="text-sm text-ink-tertiary">
             {roleName(user?.role_level ?? 0)}
             {user?.department ? ` · ${user.department}` : ''}
           </p>
@@ -95,7 +95,7 @@ export default function ProfileScreen() {
 
       {/* ── HR actions ────────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400/50 px-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary px-1">
           Leave & Attendance
         </p>
         <NavCard
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
 
       {/* ── Company actions ───────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400/50 px-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary px-1">
           Company
         </p>
         <NavCard
@@ -158,7 +158,7 @@ export default function ProfileScreen() {
 
       {/* ── Accessibility: font size ──────────────────────────────── */}
       <motion.div variants={itemVariants} className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-300/70 px-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-secondary px-1">
           Text Size
         </p>
         <div className="flex gap-2" role="group" aria-label="Text size">
@@ -173,7 +173,7 @@ export default function ProfileScreen() {
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                 fontSize === key
                   ? 'bg-ink-primary text-white border-ink-primary'
-                  : 'border-white/10 text-slate-300/70 hover:bg-white/5',
+                  : 'border-white/10 text-ink-secondary hover:bg-white/5',
               ].join(' ')}
             >
               {key}

@@ -176,7 +176,7 @@ export default function ConductScreen() {
               {/* Rule header */}
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400/50">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">
                     {rule.category} · v{rule.version}
                   </p>
                   <h2 id={`rule-${rule.id}-title`} className="text-base font-bold text-white mt-0.5">
@@ -187,14 +187,14 @@ export default function ConductScreen() {
               </div>
 
               {/* Rule body */}
-              <div className="text-sm text-slate-300/70 leading-relaxed whitespace-pre-wrap">
+              <div className="text-sm text-ink-secondary leading-relaxed whitespace-pre-wrap">
                 {rule.body}
               </div>
 
               {/* Signature state */}
               <div className="mt-4">
                 {sig ? (
-                  <p className="text-xs text-slate-400/50">
+                  <p className="text-xs text-ink-tertiary">
                     Signed on {formatDateTime(sig.signed_at)}
                   </p>
                 ) : (
@@ -207,7 +207,7 @@ export default function ConductScreen() {
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                       scrollReady
                         ? 'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.98]'
-                        : 'bg-white/5 text-slate-300/70 cursor-not-allowed',
+                        : 'bg-white/5 text-ink-secondary cursor-not-allowed',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                     ].join(' ')}
                   >

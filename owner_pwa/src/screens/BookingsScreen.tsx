@@ -77,7 +77,7 @@ function BookingCard({ booking, onSelect }: { booking: Booking; onSelect: () => 
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-white text-sm truncate">{booking.guest_name}</p>
-          <p className="text-xs text-slate-300/70 mt-0.5">
+          <p className="text-xs text-ink-secondary mt-0.5">
             {booking.resource_name ?? 'Unknown resource'}
             {booking.number_of_guests > 1 && ` · ${booking.number_of_guests} guests`}
           </p>
@@ -85,7 +85,7 @@ function BookingCard({ booking, onSelect }: { booking: Booking; onSelect: () => 
         <StatusBadge status={bookingStatus(booking.status)} />
       </div>
 
-      <div className="mt-2 text-xs text-slate-300/70 space-y-0.5">
+      <div className="mt-2 text-xs text-ink-secondary space-y-0.5">
         <p>
           Check-in: <span className="font-medium text-white">
             {fmtDate(booking.check_in_planned)} {fmtTime(booking.check_in_planned)}
@@ -133,7 +133,7 @@ function BookingDrawer({
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="font-semibold text-white text-base">{booking.guest_name}</p>
-            <p className="text-xs text-slate-300/70">{booking.guest_phone}</p>
+            <p className="text-xs text-ink-secondary">{booking.guest_phone}</p>
           </div>
           <StatusBadge status={bookingStatus(booking.status)} />
         </div>
@@ -152,19 +152,19 @@ function BookingDrawer({
             ['Deposit paid', formatKsh(booking.deposit_paid)],
           ].map(([label, value]) => (
             <div key={label} className="flex justify-between gap-2">
-              <span className="text-slate-300/70 text-xs">{label}</span>
+              <span className="text-ink-secondary text-xs">{label}</span>
               <span className="font-medium text-white text-xs tabular-nums text-right">{value}</span>
             </div>
           ))}
           {booking.check_in_actual && (
             <div className="flex justify-between gap-2">
-              <span className="text-slate-300/70 text-xs">Actual check-in</span>
+              <span className="text-ink-secondary text-xs">Actual check-in</span>
               <span className="font-medium text-status-paid text-xs">{fmtDate(booking.check_in_actual)} {fmtTime(booking.check_in_actual)}</span>
             </div>
           )}
           {booking.notes && (
             <div>
-              <p className="text-xs text-slate-300/70">Notes</p>
+              <p className="text-xs text-ink-secondary">Notes</p>
               <p className="text-xs text-white mt-0.5 italic">"{booking.notes}"</p>
             </div>
           )}
@@ -207,7 +207,7 @@ function BookingDrawer({
       )}
 
       {!canCancel && (
-        <p className="text-xs text-slate-400/50 text-center">
+        <p className="text-xs text-ink-tertiary text-center">
           This booking is {booking.status.toLowerCase()} — cannot be cancelled.
         </p>
       )}
@@ -260,7 +260,7 @@ export default function BookingsScreen() {
               onClick={() => setStatusFilter(t.key)}
               className={[
                 'shrink-0 flex-1 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap px-2',
-                statusFilter === t.key ? 'bg-transparent text-white shadow-sm' : 'text-slate-300/70 hover:text-white',
+                statusFilter === t.key ? 'bg-transparent text-white shadow-sm' : 'text-ink-secondary hover:text-white',
               ].join(' ')}
             >
               {t.label}
@@ -270,7 +270,7 @@ export default function BookingsScreen() {
 
         {/* Date filter */}
         <div className="flex items-center gap-2">
-          <label htmlFor="booking-date" className="text-xs text-slate-300/70 shrink-0">Check-in date:</label>
+          <label htmlFor="booking-date" className="text-xs text-ink-secondary shrink-0">Check-in date:</label>
           <input
             id="booking-date"
             type="date"
@@ -281,7 +281,7 @@ export default function BookingsScreen() {
           />
           {dateFilter && (
             <button onClick={() => setDateFilter('')}
-              className="text-xs text-slate-400/50 hover:text-white">
+              className="text-xs text-ink-tertiary hover:text-white">
               Clear
             </button>
           )}
@@ -291,7 +291,7 @@ export default function BookingsScreen() {
       <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search bookings..." label="Search bookings" />
 
       {searchQ && (data ?? []).length === 0 && !isLoading && (
-        <p className="text-sm text-slate-400/50 text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+        <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
       )}
 
       {/* List */}
@@ -318,7 +318,7 @@ export default function BookingsScreen() {
 
       {!isLoading && !isError && (data ?? []).length === 0 && (
         <div className="py-12 text-center">
-          <p className="text-slate-300/70 text-sm">
+          <p className="text-ink-secondary text-sm">
             {dateFilter ? `No ${statusFilter || 'bookings'} on ${dateFilter}` : `No ${statusFilter.toLowerCase() || 'bookings'}`}
           </p>
         </div>

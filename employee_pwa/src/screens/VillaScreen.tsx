@@ -55,8 +55,7 @@ export default function VillaScreen() {
       <motion.div variants={fadeIn} transition={{ duration: 0.35, ease: 'easeOut' }}
         className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {VILLAS.map(v => (
-          <div key={v.name} className="rounded-2xl overflow-hidden border border-amber-200/10"
-            style={{ background: 'rgba(45, 31, 21, 0.7)', backdropFilter: 'blur(12px)' }}>
+          <div key={v.name} className="glass-card rounded-2xl overflow-hidden">
             <div className="h-24 bg-amber-900/30 flex items-center justify-center text-amber-200/30 text-xs">
               {v.name}
             </div>
@@ -110,7 +109,7 @@ export default function VillaScreen() {
           return (
             <motion.button key={t.id} onClick={() => navigate(`/pos/tabs/${t.id}`)}
               whileTap={{ scale: 0.98 }}
-              className="w-full flex items-center justify-between p-4 rounded-2xl border border-amber-200/10
+              className="w-full flex items-center justify-between p-4 rounded-2xl glass-card
                 hover:bg-cream-alt transition-colors text-left">
               <div>
                 <p className="font-semibold text-white">{t.reference ?? 'Villa Guest'}</p>

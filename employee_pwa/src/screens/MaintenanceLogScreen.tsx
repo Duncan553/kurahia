@@ -123,7 +123,7 @@ export default function MaintenanceLogScreen() {
                 'px-3 py-1.5 min-h-[44px] rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0',
                 filter === f.key
                   ? 'bg-primary-dark text-white'
-                  : 'bg-white/5 text-slate-300/70 hover:bg-white/5/60',
+                  : 'bg-white/5 text-ink-secondary hover:bg-white/5/60',
               ].join(' ')}
             >
               {f.label}
@@ -141,7 +141,7 @@ export default function MaintenanceLogScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
+          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
             Couldn't load equipment. Check connection.
           </div>
         )}
@@ -187,17 +187,17 @@ export default function MaintenanceLogScreen() {
                 )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-slate-400/50 capitalize">
+                <span className="text-xs text-ink-tertiary capitalize">
                   {eq.equipment_type.replace(/_/g, ' ')}
                 </span>
-                <span className="text-xs text-slate-400/50" aria-hidden="true">·</span>
-                <span className="text-xs text-slate-400/50">
+                <span className="text-xs text-ink-tertiary" aria-hidden="true">·</span>
+                <span className="text-xs text-ink-tertiary">
                   Last: {formatDateNairobi(eq.last_service_utc)}
                 </span>
               </div>
             </div>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-              className="text-slate-400/50 shrink-0" aria-hidden="true">
+              className="text-ink-tertiary shrink-0" aria-hidden="true">
               <path d="M6 4l4 4-4 4" stroke="currentColor"
                 strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -216,14 +216,14 @@ export default function MaintenanceLogScreen() {
 
             {/* Equipment summary */}
             <div className="rounded-xl bg-white/5/40 px-4 py-3 space-y-0.5 text-sm">
-              <p className="text-slate-400/50">
+              <p className="text-ink-tertiary">
                 Last service:{' '}
                 <span className="text-white font-medium">
                   {formatDateNairobi(selectedEq.last_service_utc)}
                 </span>
               </p>
               {selectedEq.service_interval_days && (
-                <p className="text-slate-400/50">
+                <p className="text-ink-tertiary">
                   Interval:{' '}
                   <span className="text-white font-medium">
                     every {selectedEq.service_interval_days} days
@@ -234,7 +234,7 @@ export default function MaintenanceLogScreen() {
 
             {/* History placeholder — endpoint not yet implemented */}
             <div className="rounded-xl bg-white/5/20 glass-card px-4 py-3">
-              <p className="text-xs text-slate-400/50 italic">
+              <p className="text-xs text-ink-tertiary italic">
                 History will load when the history endpoint ships.
               </p>
             </div>
@@ -243,7 +243,7 @@ export default function MaintenanceLogScreen() {
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
               <div>
-                <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+                <label className="block text-sm font-medium text-ink-secondary mb-1.5">
                   Performed at
                 </label>
                 <input
@@ -257,7 +257,7 @@ export default function MaintenanceLogScreen() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+                <label className="block text-sm font-medium text-ink-secondary mb-1.5">
                   Notes *
                 </label>
                 <textarea
@@ -279,7 +279,7 @@ export default function MaintenanceLogScreen() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+                <label className="block text-sm font-medium text-ink-secondary mb-1.5">
                   Cost (KES, optional)
                 </label>
                 <input

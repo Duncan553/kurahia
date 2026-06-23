@@ -182,7 +182,7 @@ export default function ScheduleScreen() {
               {/* Day header */}
               <p className={[
                 'text-xs font-semibold uppercase tracking-wider mb-2',
-                isToday ? 'text-primary-dark' : 'text-slate-400/50',
+                isToday ? 'text-primary-dark' : 'text-ink-tertiary',
               ].join(' ')}>
                 {isToday ? `Today · ${label}` : label}
               </p>
@@ -190,12 +190,12 @@ export default function ScheduleScreen() {
               {/* Shifts for this day */}
               {dayShifts.length === 0 ? (
                 <div className={[
-                  'rounded-xl border px-4 py-3',
+                  'rounded-xl px-4 py-3',
                   isToday
-                    ? 'bg-primary-light/20 border-primary-dark/20'
-                    : 'bg-white/5/30 border-white/10',
+                    ? 'border bg-primary-light/20 border-primary-dark/20'
+                    : 'glass-card',
                 ].join(' ')}>
-                  <p className="text-sm text-slate-400/50">No shift</p>
+                  <p className="text-sm text-ink-tertiary">No shift</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -203,17 +203,17 @@ export default function ScheduleScreen() {
                     <div
                       key={shift.id}
                       className={[
-                        'rounded-xl border px-4 py-3 flex items-center justify-between gap-3',
+                        'rounded-xl px-4 py-3 flex items-center justify-between gap-3',
                         isToday
-                          ? 'bg-primary-light/20 border-primary-dark/20'
-                          : 'bg-transparent border-white/10',
+                          ? 'border bg-primary-light/20 border-primary-dark/20'
+                          : 'glass-card',
                       ].join(' ')}
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-white">
                           {formatTime(shift.start)} – {formatTime(shift.end)}
                         </p>
-                        <p className="text-xs text-slate-400/50 mt-0.5 truncate">{shift.role}</p>
+                        <p className="text-xs text-ink-tertiary mt-0.5 truncate">{shift.role}</p>
                       </div>
                       <StatusBadge status={shiftStatus(shift.status)} />
                     </div>

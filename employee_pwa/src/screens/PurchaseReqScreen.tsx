@@ -111,7 +111,7 @@ export default function PurchaseReqScreen() {
                 'flex-1 py-2 min-h-[44px] px-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
                 filter === f
                   ? 'bg-transparent shadow-sm text-white'
-                  : 'text-slate-400/50 hover:text-slate-300/70',
+                  : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               {f.charAt(0) + f.slice(1).toLowerCase()}
@@ -132,7 +132,7 @@ export default function PurchaseReqScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
+          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
             Couldn't load requests. Check connection.
           </div>
         )}
@@ -158,11 +158,11 @@ export default function PurchaseReqScreen() {
           <div key={dept} className="space-y-2">
             {/* Department header */}
             <div className="flex items-center gap-3">
-              <p className="text-[10px] tracking-[0.2em] uppercase font-semibold text-slate-400/50 whitespace-nowrap">
+              <p className="text-[10px] tracking-[0.2em] uppercase font-semibold text-ink-tertiary whitespace-nowrap">
                 {dept}
               </p>
               <div className="flex-1 h-px bg-white/5" />
-              <span className="text-[10px] text-slate-400/50">{reqs.length}</span>
+              <span className="text-[10px] text-ink-tertiary">{reqs.length}</span>
             </div>
 
             {reqs.map((req) => {
@@ -180,7 +180,7 @@ export default function PurchaseReqScreen() {
                       <p className={`text-sm font-semibold text-white ${dim ? 'opacity-70' : ''}`}>
                         {req.item_name ?? 'Unknown item'}
                       </p>
-                      <p className="text-xs text-slate-400/50 mt-0.5">
+                      <p className="text-xs text-ink-tertiary mt-0.5">
                         Qty: {parseFloat(req.quantity).toLocaleString()}
                         {req.requested_by ? ` · by ${req.requested_by}` : ''}
                       </p>
@@ -189,11 +189,11 @@ export default function PurchaseReqScreen() {
                   </div>
 
                   {req.notes && (
-                    <p className="text-xs text-slate-300/70 italic">"{req.notes}"</p>
+                    <p className="text-xs text-ink-secondary italic">"{req.notes}"</p>
                   )}
 
                   {req.estimated_cost && (
-                    <p className="text-xs text-slate-400/50">
+                    <p className="text-xs text-ink-tertiary">
                       Estimated:{' '}
                       <span className="font-semibold text-white">
                         KSh {parseFloat(req.estimated_cost).toLocaleString()}
@@ -243,23 +243,23 @@ export default function PurchaseReqScreen() {
             className="space-y-4"
           >
             <div className="rounded-xl bg-white/5/40 px-4 py-3 text-sm space-y-0.5">
-              <p className="text-slate-400/50">
+              <p className="text-ink-tertiary">
                 Item: <span className="text-white font-medium">{selected.item_name}</span>
               </p>
-              <p className="text-slate-400/50">
+              <p className="text-ink-tertiary">
                 Qty: <span className="text-white font-medium">
                   {parseFloat(selected.quantity).toLocaleString()}
                 </span>
               </p>
               {selected.requested_by && (
-                <p className="text-slate-400/50">
+                <p className="text-ink-tertiary">
                   Requested by: <span className="text-white font-medium">{selected.requested_by}</span>
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+              <label className="block text-sm font-medium text-ink-secondary mb-1.5">
                 Estimated cost (KSh) *
               </label>
               <input
@@ -277,7 +277,7 @@ export default function PurchaseReqScreen() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+              <label className="block text-sm font-medium text-ink-secondary mb-1.5">
                 Manager notes (optional)
               </label>
               <textarea
@@ -291,7 +291,7 @@ export default function PurchaseReqScreen() {
               />
             </div>
 
-            <p className="text-xs text-slate-400/50">
+            <p className="text-xs text-ink-tertiary">
               This sends the estimated cost to the owner for final approval. You cannot approve purchases.
             </p>
 
@@ -322,7 +322,7 @@ export default function PurchaseReqScreen() {
           const req = requests?.find((r) => r.id === confirmId)
           return (
             <div className="space-y-4">
-              <p className="text-sm text-slate-300/70">
+              <p className="text-sm text-ink-secondary">
                 Submit <strong>KSh {parseFloat(cost).toLocaleString()}</strong> as estimated cost for{' '}
                 <strong>{req?.item_name}</strong>? The owner will be notified to approve.
               </p>
@@ -330,7 +330,7 @@ export default function PurchaseReqScreen() {
                 <button
                   onClick={() => setConfirmId(null)}
                   className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
-                    text-slate-300/70 hover:bg-white/5/40 transition-colors"
+                    text-ink-secondary hover:bg-white/5/40 transition-colors"
                 >
                   Cancel
                 </button>

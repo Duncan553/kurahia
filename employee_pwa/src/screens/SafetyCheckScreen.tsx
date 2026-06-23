@@ -260,7 +260,7 @@ export default function SafetyCheckScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
+          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
             Couldn't load equipment. Check connection.
           </div>
         )}
@@ -293,12 +293,12 @@ export default function SafetyCheckScreen() {
                 <span className="font-semibold text-white">{eq.name}</span>
                 {eq.is_due_service && <ServiceDueBadge />}
               </div>
-              <p className="text-xs text-slate-400/50 capitalize mt-0.5">
+              <p className="text-xs text-ink-tertiary capitalize mt-0.5">
                 {eq.equipment_type.replace(/_/g, ' ')}
               </p>
             </div>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-              className="text-slate-400/50 shrink-0" aria-hidden="true">
+              className="text-ink-tertiary shrink-0" aria-hidden="true">
               <path d="M6 4l4 4-4 4" stroke="currentColor"
                 strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -329,7 +329,7 @@ export default function SafetyCheckScreen() {
         <div>
           <h1 className="text-xl font-bold text-white">{selectedEq.name}</h1>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-sm text-slate-400/50 capitalize">
+            <span className="text-sm text-ink-tertiary capitalize">
               {selectedEq.equipment_type.replace(/_/g, ' ')}
             </span>
             {selectedEq.is_due_service && <ServiceDueBadge />}
@@ -348,7 +348,7 @@ export default function SafetyCheckScreen() {
 
       {/* No template for this equipment type */}
       {!templateLoading && !template && (
-        <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
+        <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
           No checklist template configured for this equipment type.
         </div>
       )}
@@ -356,7 +356,7 @@ export default function SafetyCheckScreen() {
       {/* Checklist */}
       {!templateLoading && template && (
         <>
-          <p className="text-xs text-slate-400/50">
+          <p className="text-xs text-ink-tertiary">
             All {template.count} items must be confirmed before equipment can be used.
           </p>
 
@@ -382,7 +382,7 @@ export default function SafetyCheckScreen() {
                 aria-hidden="true"
               />
             </div>
-            <span className="text-xs tabular-nums text-slate-400/50 shrink-0">
+            <span className="text-xs tabular-nums text-ink-tertiary shrink-0">
               {checkedCount}/{template.items.length}
             </span>
           </div>

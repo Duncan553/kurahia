@@ -18,10 +18,10 @@ interface TabDetail {
 }
 
 const ITEM_BADGE: Record<string, { bg: string; icon: string }> = {
-  PENDING:   { bg: 'bg-white/5 text-blue-200/40',            icon: '◌' },
+  PENDING:   { bg: 'bg-white/5 text-ink-tertiary',            icon: '◌' },
   RECEIVED:  { bg: 'bg-status-pending/10 text-status-pending',  icon: '◐' },
   READY:     { bg: 'bg-status-paid/10 text-status-paid',        icon: '✓' },
-  SERVED:    { bg: 'bg-white/5 text-blue-200/40',            icon: '✓' },
+  SERVED:    { bg: 'bg-white/5 text-ink-tertiary',            icon: '✓' },
   CANCELLED: { bg: 'bg-status-failed/10 text-status-failed',    icon: '×' },
 }
 
@@ -37,7 +37,7 @@ function StationBadge({ station }: { station: string }) {
     ? 'bg-status-pending/10 text-status-pending'
     : station === 'BAR'
       ? 'bg-primary-light/20 text-primary-dark'
-      : 'bg-white/5 text-blue-200/40'
+      : 'bg-white/5 text-ink-tertiary'
   return (
     <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${cls}`}>
       {label}
@@ -187,7 +187,7 @@ export default function WaiterTabDetailScreen() {
             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
               activeCat === cat
                 ? 'bg-ink-primary text-white'
-                : 'bg-white/5 text-blue-200/60 hover:bg-cream-deep'
+                : 'bg-white/5 text-ink-secondary hover:bg-cream-deep'
             }`}>
             {cat}
           </button>
@@ -209,15 +209,15 @@ export default function WaiterTabDetailScreen() {
         ) : filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-2">
             {searchQ ? (
-              <p className="text-sm text-blue-200/40 text-center">
+              <p className="text-sm text-ink-tertiary text-center">
                 No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu
               </p>
             ) : items.length === 0 ? (
-              <p className="text-sm text-blue-200/40 text-center">
+              <p className="text-sm text-ink-tertiary text-center">
                 No menu items yet &middot; Ask manager to add items
               </p>
             ) : (
-              <p className="text-sm text-blue-200/40 text-center">
+              <p className="text-sm text-ink-tertiary text-center">
                 No items in this category
               </p>
             )}
@@ -291,7 +291,7 @@ export default function WaiterTabDetailScreen() {
         <div className="flex items-center justify-between">
           <div>
             <p className="font-bold text-white text-lg">{tab?.reference ?? 'Walk-in'}</p>
-            <p className="text-xs text-blue-200/40">Tab #{tabId?.slice(0, 8)}</p>
+            <p className="text-xs text-ink-tertiary">Tab #{tabId?.slice(0, 8)}</p>
           </div>
           <span className={`text-sm font-bold tabular-nums px-2 py-1 rounded-lg ${
             bal > 0 ? 'bg-status-failed/10 text-status-failed' : 'bg-status-paid/10 text-status-paid'
@@ -307,7 +307,7 @@ export default function WaiterTabDetailScreen() {
         {/* Draft items */}
         {draftEntries.length > 0 && (
           <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-200/40 mb-2">New Order</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">New Order</p>
             <AnimatePresence mode="popLayout">
               {draftEntries.map(e => (
                 <motion.div key={e.id}
@@ -320,7 +320,7 @@ export default function WaiterTabDetailScreen() {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white truncate">{e.name}</p>
-                    <p className="text-xs text-blue-200/40 tabular-nums">{kes(e.price)} each</p>
+                    <p className="text-xs text-ink-tertiary tabular-nums">{kes(e.price)} each</p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <motion.button whileTap={{ scale: 0.85 }}
@@ -346,7 +346,7 @@ export default function WaiterTabDetailScreen() {
                       value={draftNotes[e.id] ?? ''}
                       onChange={ev => setDraftNotes(n => ({ ...n, [e.id]: ev.target.value }))}
                       className="w-full text-xs rounded-lg border border-white/10 bg-transparent/50 px-2 py-1.5
-                        text-blue-200/60 placeholder:text-blue-200/40/50
+                        text-ink-secondary placeholder:text-ink-tertiary/50
                         focus:outline-none focus:border-primary-dark"
                     />
                   </div>
@@ -354,7 +354,7 @@ export default function WaiterTabDetailScreen() {
               ))}
             </AnimatePresence>
             <div className="flex justify-between items-center pt-3">
-              <span className="text-sm text-blue-200/60">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
+              <span className="text-sm text-ink-secondary">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
               <span className="text-base font-bold tabular-nums text-white">{kes(draftTotal)}</span>
             </div>
           </div>
@@ -362,7 +362,7 @@ export default function WaiterTabDetailScreen() {
 
         {draftEntries.length === 0 && allOrderItems.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 gap-2">
-            <p className="text-sm text-blue-200/40 text-center">
+            <p className="text-sm text-ink-tertiary text-center">
               Tap menu items to start the order &middot; Karibu
             </p>
           </div>
@@ -371,17 +371,17 @@ export default function WaiterTabDetailScreen() {
         {/* Existing order items */}
         {allOrderItems.length > 0 && (
           <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-200/40 mb-2">Kitchen / Bar</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Kitchen / Bar</p>
             {allOrderItems.map(oi => {
               const badge = ITEM_BADGE[oi.status] ?? ITEM_BADGE.PENDING
               return (
                 <div key={oi.id} className="flex items-center gap-2 py-2 border-b border-white/10 last:border-0">
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm text-blue-200/60 truncate block">
+                    <span className="text-sm text-ink-secondary truncate block">
                       {oi.quantity}× {oi.name}
                     </span>
                     {oi.notes && (
-                      <span className="text-xs italic text-blue-200/40 block truncate">
+                      <span className="text-xs italic text-ink-tertiary block truncate">
                         {oi.notes}
                       </span>
                     )}
@@ -417,10 +417,10 @@ export default function WaiterTabDetailScreen() {
         {/* Charges */}
         {(tab?.charges ?? []).length > 0 && (
           <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-200/40 mb-2">Charges</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Charges</p>
             {tab!.charges.map(c => (
               <div key={c.id} className="flex justify-between py-2 border-b border-white/10 last:border-0">
-                <span className="text-sm text-blue-200/60">{c.description}</span>
+                <span className="text-sm text-ink-secondary">{c.description}</span>
                 <span className="text-sm tabular-nums font-semibold">{kes(c.amount)}</span>
               </div>
             ))}
@@ -430,10 +430,10 @@ export default function WaiterTabDetailScreen() {
         {/* Payments */}
         {(tab?.payments ?? []).length > 0 && (
           <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-200/40 mb-2">Payments</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Payments</p>
             {tab!.payments.map(p => (
               <div key={p.id} className="flex justify-between py-2 border-b border-white/10 last:border-0">
-                <span className="text-sm text-blue-200/60">{p.method}</span>
+                <span className="text-sm text-ink-secondary">{p.method}</span>
                 <span className="text-sm tabular-nums font-semibold text-status-paid">−{kes(p.amount)}</span>
               </div>
             ))}
@@ -449,14 +449,14 @@ export default function WaiterTabDetailScreen() {
         {/* Payment form */}
         {bal > 0 && tab?.status !== 'CLOSED' && (
           <div className="space-y-3">
-            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-200/40">Record Payment</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Record Payment</p>
             <div className="grid grid-cols-2 gap-2">
               {METHODS.map(m => (
                 <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
                   className={`py-2 rounded-xl text-sm font-semibold border transition-colors ${
                     pay.method === m
                       ? 'bg-primary-dark text-white border-primary-dark'
-                      : 'bg-transparent text-blue-200/60 border-white/10 hover:border-primary-dark/50'
+                      : 'bg-transparent text-ink-secondary border-white/10 hover:border-primary-dark/50'
                   }`}>
                   {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}
                 </button>
@@ -509,7 +509,7 @@ export default function WaiterTabDetailScreen() {
     <Modal open={!!cancelId} onClose={() => setCancelId(null)} title="Cancel Item">
       {cancelItem && (
         <div className="space-y-4">
-          <p className="text-sm text-blue-200/60">
+          <p className="text-sm text-ink-secondary">
             Cancel <strong>{cancelItem.quantity}× {cancelItem.name}</strong>?
             {cancelItem.status === 'RECEIVED' && ' The kitchen has already started preparing this.'}
           </p>
@@ -542,7 +542,7 @@ export default function WaiterTabDetailScreen() {
         style={{ background: 'rgba(22, 33, 62, 0.8)', backdropFilter: 'blur(12px)' }}>
         <button onClick={() => navigate('/pos/tabs')}
           aria-label="Back to tables"
-          className="text-blue-200/40 hover:text-white text-sm transition-colors">
+          className="text-ink-tertiary hover:text-white text-sm transition-colors">
           ← Back
         </button>
         <p className="flex-1 font-bold text-white truncate">{tab?.reference ?? 'Walk-in'}</p>
@@ -563,14 +563,14 @@ export default function WaiterTabDetailScreen() {
           <p className="font-serif text-2xl font-bold text-white text-center">
             {tab?.reference ?? 'New Table'}
           </p>
-          <p className="text-sm text-blue-200/60 text-center">How would you like to start?</p>
+          <p className="text-sm text-ink-secondary text-center">How would you like to start?</p>
           <div className="flex gap-3 w-full max-w-xs">
             <motion.button whileTap={{ scale: 0.97 }}
               onClick={() => { setEntryChoice('menu'); navigate(`/pos/menu/${tabId ?? ''}`) }}
               className="flex-1 py-4 rounded-2xl glass-card text-center">
               <span className="text-2xl mb-1 block">📖</span>
               <span className="text-sm font-semibold text-white">Show Menu</span>
-              <span className="text-[10px] text-blue-200/40 block mt-0.5">Guest wants to browse</span>
+              <span className="text-[10px] text-ink-tertiary block mt-0.5">Guest wants to browse</span>
             </motion.button>
             <motion.button whileTap={{ scale: 0.97 }}
               onClick={() => setEntryChoice('order')}
@@ -590,7 +590,7 @@ export default function WaiterTabDetailScreen() {
             className={`flex-1 py-3 text-sm font-semibold capitalize transition-colors ${
               mobilePane === v
                 ? 'text-primary-dark border-b-2 border-primary-dark'
-                : 'text-blue-200/40 hover:text-blue-200/60'
+                : 'text-ink-tertiary hover:text-ink-secondary'
             }`}>
             {v === 'menu' ? `Menu${draftCount > 0 ? ` (${draftCount})` : ''}` : 'Order'}
           </button>

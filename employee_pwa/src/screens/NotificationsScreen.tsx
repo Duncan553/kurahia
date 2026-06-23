@@ -150,12 +150,12 @@ export default function NotificationsScreen() {
               aria-hidden="true"
             />
             <div className="flex-1 min-w-0">
-              <p className={['text-sm truncate', isUnread ? 'font-semibold text-white' : 'text-slate-300/70'].join(' ')}>
+              <p className={['text-sm truncate', isUnread ? 'font-semibold text-white' : 'text-ink-secondary'].join(' ')}>
                 {notif.subject}
               </p>
-              <p className="text-xs text-slate-400/50 mt-0.5 line-clamp-2">{notif.body}</p>
+              <p className="text-xs text-ink-tertiary mt-0.5 line-clamp-2">{notif.body}</p>
               {notif.sent_at && (
-                <p className="text-[10px] text-slate-400/50/60 mt-1">{timeAgo(notif.sent_at)}</p>
+                <p className="text-[10px] text-ink-tertiary/60 mt-1">{timeAgo(notif.sent_at)}</p>
               )}
             </div>
           </motion.button>

@@ -55,7 +55,7 @@ function DepositBar({ paid, required }: { paid: string; required: string }) {
   const full = pct >= 100
   return (
     <div className="mt-1.5">
-      <div className="flex justify-between text-[10px] text-slate-400/50 mb-0.5">
+      <div className="flex justify-between text-[10px] text-ink-tertiary mb-0.5">
         <span>Deposit</span>
         <span className="tabular-nums">KSh {p.toLocaleString()} / {r.toLocaleString()}</span>
       </div>
@@ -183,7 +183,7 @@ export default function CheckInScreen() {
                   'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
                   tab === t
                     ? 'bg-transparent shadow-sm text-white'
-                    : 'text-slate-400/50 hover:text-slate-300/70',
+                    : 'text-ink-tertiary hover:text-ink-secondary',
                 ].join(' ')}
               >
                 {t} {count > 0 && <span className="font-bold">({count})</span>}
@@ -214,7 +214,7 @@ export default function CheckInScreen() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-semibold text-white truncate">{a.guest_name}</p>
-                        <p className="text-xs text-slate-400/50">{a.resource ?? 'No resource'}</p>
+                        <p className="text-xs text-ink-tertiary">{a.resource ?? 'No resource'}</p>
                       </div>
                       <button
                         onClick={() => checkInMutation.mutate(a.booking_id)}
@@ -223,7 +223,7 @@ export default function CheckInScreen() {
                           'shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                           waiverBlocked
-                            ? 'bg-white/5 text-slate-400/50 cursor-not-allowed'
+                            ? 'bg-white/5 text-ink-tertiary cursor-not-allowed'
                             : 'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.98]',
                           'disabled:opacity-60',
                         ].join(' ')}
@@ -283,7 +283,7 @@ export default function CheckInScreen() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-semibold text-white truncate">{d.guest_name}</p>
-                        <p className="text-xs text-slate-400/50">{d.resource ?? 'No resource'}</p>
+                        <p className="text-xs text-ink-tertiary">{d.resource ?? 'No resource'}</p>
                         {hasBalance && (
                           <p className="text-xs text-status-pending font-medium mt-0.5 tabular-nums">
                             Outstanding: KSh {balance.toLocaleString()}
@@ -330,9 +330,9 @@ export default function CheckInScreen() {
                     rounded-xl bg-white/5/30 glass-card px-4 py-3">
                   <div>
                     <p className="font-medium text-white">{o.guest_name}</p>
-                    <p className="text-xs text-slate-400/50">{o.resource ?? '—'}</p>
+                    <p className="text-xs text-ink-tertiary">{o.resource ?? '—'}</p>
                   </div>
-                  <span className="text-sm tabular-nums text-slate-300/70 font-medium">
+                  <span className="text-sm tabular-nums text-ink-secondary font-medium">
                     KSh {parseFloat(o.tab_balance).toLocaleString()} on tab
                   </span>
                 </div>
@@ -345,7 +345,7 @@ export default function CheckInScreen() {
 
       {/* ── Error modal ──────────────────────────────────────────────────── */}
       <Modal open={errorOpen} onClose={() => setErrorOpen(false)} title="Action failed">
-        <p className="text-base text-slate-300/70 mb-6">{errorMsg}</p>
+        <p className="text-base text-ink-secondary mb-6">{errorMsg}</p>
         <button
           onClick={() => setErrorOpen(false)}
           className="w-full py-3 rounded-xl bg-white/5 text-white font-medium

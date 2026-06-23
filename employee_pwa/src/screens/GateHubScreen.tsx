@@ -63,7 +63,7 @@ function StatsBar({ stats }: { stats: Stats | undefined }) {
       {items.map(({ label, value }) => (
         <motion.div key={label} variants={fadeIn}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="rounded-2xl p-3 text-center border border-white/10">
+          className="glass-card rounded-2xl p-3 text-center">
           <p className="text-lg font-bold tabular-nums text-ink-primary">{value}</p>
           <p className="text-[10px] text-ink-secondary uppercase tracking-wide mt-0.5">{label}</p>
         </motion.div>
@@ -100,7 +100,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
   })
 
   return (
-    <section className="rounded-2xl border border-white/10 p-4 space-y-3 mb-4">
+    <section className="glass-card rounded-2xl p-4 space-y-3 mb-4">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-ink-primary">Issue Band</p>
         <p className="text-sm font-bold tabular-nums text-ink-primary">{kes(ENTRY_FEE)}</p>
@@ -192,7 +192,7 @@ function LookupSection() {
     s === 'ACTIVE' ? 'text-status-paid' : 'text-ink-tertiary'
 
   return (
-    <section className="rounded-2xl border border-white/10 p-4 space-y-3 mb-4">
+    <section className="glass-card rounded-2xl p-4 space-y-3 mb-4">
       <p className="text-sm font-semibold text-ink-primary">Look Up Band</p>
       <div className="flex gap-2">
         <label htmlFor="gate-band-number" className="sr-only">Band number</label>
@@ -316,7 +316,7 @@ function BookingCheckIn() {
   if (arrivals.length === 0) return null
 
   return (
-    <section className="rounded-2xl border border-white/10 p-4 space-y-3 mb-4">
+    <section className="glass-card rounded-2xl p-4 space-y-3 mb-4">
       <p className="text-sm font-semibold text-ink-primary">
         Expected Arrivals ({arrivals.length})
       </p>

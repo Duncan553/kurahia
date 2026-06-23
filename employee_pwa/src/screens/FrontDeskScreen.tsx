@@ -95,7 +95,7 @@ export default function FrontDeskScreen() {
           className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-bold text-white font-serif">Front Desk</h1>
-            <p className="text-sm text-blue-200/40">
+            <p className="text-sm text-ink-tertiary">
               {data?.date ?? 'Today'} · read-only
               {lastUpdated ? ` · updated ${lastUpdated}` : ''}
             </p>
@@ -115,7 +115,7 @@ export default function FrontDeskScreen() {
               </p>
               <div className="mt-1.5 space-y-1">
                 {data!.pending_waivers.map((w) => (
-                  <p key={w.booking_id} className="text-xs text-blue-200/60">
+                  <p key={w.booking_id} className="text-xs text-ink-secondary">
                     {w.guest_name} · {w.resource} · check-in {formatTime(w.check_in)}
                   </p>
                 ))}
@@ -134,14 +134,14 @@ export default function FrontDeskScreen() {
               whileTap={{ scale: 0.97 }}
               className={[
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
-                tab === t ? 'bg-cream-card shadow-sm text-white' : 'text-blue-200/40 hover:text-blue-200/60',
+                tab === t ? 'bg-cream-card shadow-sm text-white' : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               {t.charAt(0).toUpperCase() + t.slice(1)}
               {!isLoading && (
                 <span className={[
                   'ml-1 text-[10px] font-bold',
-                  tab === t ? 'text-white' : 'text-blue-200/40',
+                  tab === t ? 'text-white' : 'text-ink-tertiary',
                 ].join(' ')}>
                   ({counts[t]})
                 </span>
@@ -160,7 +160,7 @@ export default function FrontDeskScreen() {
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             transition={{ duration: 0.25 }}
-            className="p-4 rounded-xl bg-cream-alt/40 text-sm text-blue-200/40 text-center">
+            className="p-4 rounded-xl bg-cream-alt/40 text-sm text-ink-tertiary text-center">
             Couldn't load front desk data. Check connection.
           </motion.div>
         )}
@@ -187,15 +187,15 @@ export default function FrontDeskScreen() {
                     const depStatus = depositStatus(a.deposit_paid, a.deposit_required)
                     return (
                       <div key={a.booking_id}
-                        className="rounded-2xl border border-white/10 px-4 py-3 space-y-1.5">
+                        className="glass-card rounded-2xl px-4 py-3 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-semibold text-white">{a.guest_name}</p>
                           <StatusBadge status={depStatus} />
                         </div>
                         {a.resource && (
-                          <p className="text-xs text-blue-200/40">{a.resource}</p>
+                          <p className="text-xs text-ink-tertiary">{a.resource}</p>
                         )}
-                        <div className="flex gap-4 text-xs text-blue-200/40">
+                        <div className="flex gap-4 text-xs text-ink-tertiary">
                           <span>Deposit paid: <span className={`font-medium ${depStatus === 'paid' ? 'text-status-paid' : 'text-status-pending'}`}>
                             {ksh(a.deposit_paid)}
                           </span></span>
@@ -232,10 +232,10 @@ export default function FrontDeskScreen() {
                     return (
                       <div key={d.booking_id}
                         className={[
-                          'rounded-2xl border px-4 py-3 space-y-1.5',
+                          'rounded-2xl px-4 py-3 space-y-1.5',
                           hasBalance
-                            ? 'border-status-pending/30 bg-status-pending/5'
-                            : 'border border-white/10',
+                            ? 'border border-status-pending/30 bg-status-pending/5'
+                            : 'glass-card',
                         ].join(' ')}>
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-semibold text-white">{d.guest_name}</p>
@@ -246,9 +246,9 @@ export default function FrontDeskScreen() {
                           )}
                         </div>
                         {d.resource && (
-                          <p className="text-xs text-blue-200/40">{d.resource}</p>
+                          <p className="text-xs text-ink-tertiary">{d.resource}</p>
                         )}
-                        <p className="text-xs text-blue-200/40">
+                        <p className="text-xs text-ink-tertiary">
                           Tab balance:{' '}
                           <span className={`font-semibold ${hasBalance ? 'text-status-pending' : 'text-status-paid'}`}>
                             {ksh(d.tab_balance)}
@@ -291,22 +291,22 @@ export default function FrontDeskScreen() {
                         whileTap={clickable ? { scale: 0.98 } : undefined}
                         onClick={() => o.tab_id && navigate(`/pos/tabs/${o.tab_id}`)}
                         className={[
-                          'rounded-2xl border border-white/10 px-4 py-3 space-y-1.5',
+                          'glass-card rounded-2xl px-4 py-3 space-y-1.5',
                           clickable ? 'cursor-pointer hover:bg-cream-alt/60 transition-colors' : '',
                         ].join(' ')}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-semibold text-white">{o.guest_name}</p>
                           {clickable && (
-                            <span className="text-[10px] text-blue-200/40">View tab →</span>
+                            <span className="text-[10px] text-ink-tertiary">View tab →</span>
                           )}
                         </div>
                         {o.resource && (
-                          <p className="text-xs text-blue-200/40">{o.resource}</p>
+                          <p className="text-xs text-ink-tertiary">{o.resource}</p>
                         )}
-                        <p className="text-xs text-blue-200/40">
+                        <p className="text-xs text-ink-tertiary">
                           Running tab:{' '}
-                          <span className={`font-semibold ${hasBalance ? 'text-white' : 'text-blue-200/40'}`}>
+                          <span className={`font-semibold ${hasBalance ? 'text-white' : 'text-ink-tertiary'}`}>
                             {ksh(o.tab_balance)}
                           </span>
                         </p>

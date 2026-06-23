@@ -123,7 +123,7 @@ export default function BandLookupScreen() {
           <p className="text-sm font-medium text-status-failed">
             Band #{input} not found for today.
           </p>
-          <p className="text-xs text-slate-400/50 mt-1">
+          <p className="text-xs text-ink-tertiary mt-1">
             Check the number is correct or try a different date.
           </p>
         </div>
@@ -139,7 +139,7 @@ export default function BandLookupScreen() {
               <p className="text-2xl font-bold tabular-nums text-white">
                 Band #{result.band_number}
               </p>
-              <p className="text-xs text-slate-400/50 mt-0.5 flex items-center">
+              <p className="text-xs text-ink-tertiary mt-0.5 flex items-center">
                 <StatusDot status={result.status} />
                 {result.status.charAt(0) + result.status.slice(1).toLowerCase()}
                 {' · '}
@@ -147,7 +147,7 @@ export default function BandLookupScreen() {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-slate-400/50 mb-0.5">Tab balance</p>
+              <p className="text-xs text-ink-tertiary mb-0.5">Tab balance</p>
               <p className={[
                 'text-2xl font-bold tabular-nums',
                 balance > 0 ? 'text-status-failed' : 'text-status-paid',
@@ -166,7 +166,7 @@ export default function BandLookupScreen() {
               ...(result.notes ? [{ label: 'Notes', value: result.notes }] : []),
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between text-sm">
-                <span className="text-slate-400/50">{label}</span>
+                <span className="text-ink-tertiary">{label}</span>
                 <span className="text-white font-medium truncate max-w-[55%] text-right">{value}</span>
               </div>
             ))}
