@@ -56,6 +56,15 @@ def create_app(config_name: str = None) -> Flask:
     with app.app_context():
         from app import models  # noqa: F401
 
+        # SQLite: enforce foreign keys (off by default)
+        from sqlalchemy import event
+        @event.listens_for(db.engine, "connect")
+        def _set_sqlite_pragma(dbapi_conn, connection_record):
+            if "sqlite" in str(db.engine.url):
+                cursor = dbapi_conn.cursor()
+                cursor.execute("PRAGMA foreign_keys=ON")
+                cursor.close()
+
     # Register blueprints (URL namespaces)
     from app.auth import auth_bp, users_bp
     app.register_blueprint(auth_bp)
