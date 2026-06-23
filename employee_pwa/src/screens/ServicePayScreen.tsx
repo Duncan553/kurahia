@@ -135,7 +135,7 @@ export default function ServicePayScreen() {
                             </>
                           )}
                           <button onClick={() => setDraft(d => ({ ...d, [item.id]: (d[item.id] ?? 0) + 1 }))}
-                            className="w-9 h-9 rounded-full bg-[#F25623] text-white font-bold flex items-center justify-center">+</button>
+                            className="w-9 h-9 rounded-full bg-[#fa5c29] text-white font-bold flex items-center justify-center">+</button>
                         </div>
                       </motion.div>
                     )
@@ -164,7 +164,7 @@ export default function ServicePayScreen() {
                   {METHODS.map(m => (
                     <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
                       className={`py-3 rounded-xl text-sm font-semibold border transition-colors ${
-                        pay.method === m ? 'bg-[#F25623] text-white border-[#F25623]' : 'text-white/60 border-white/10'
+                        pay.method === m ? 'bg-[#fa5c29] text-white border-[#fa5c29]' : 'text-white/60 border-white/10'
                       }`}>
                       {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}
                     </button>
@@ -173,7 +173,7 @@ export default function ServicePayScreen() {
                 <input type="number" min="0" step="0.01" inputMode="decimal"
                   placeholder="Amount received (KSh)"
                   value={pay.amount} onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
-                  className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-white focus:outline-none focus:border-[#F25623]" />
+                  className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-white focus:outline-none focus:border-[#fa5c29]" />
                 <button onClick={() => setPay(p => ({ ...p, amount: String(total) }))}
                   className="w-full py-2 rounded-xl text-sm border border-white/10 text-white/60 hover:bg-white/5">
                   Exact — {kes(total)}
@@ -236,7 +236,7 @@ export default function ServicePayScreen() {
                 placeholder="e.g. Need more massage oil, running low on towels..."
                 className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
                   text-sm text-white placeholder:text-white/30 resize-none
-                  focus:outline-none focus:border-[#F25623]"
+                  focus:outline-none focus:border-[#fa5c29]"
               />
               <Button variant="primary" size="md" className="w-full mt-3"
                 loading={requestMut.isPending}

@@ -442,9 +442,9 @@ export default function AppLayout() {
             <NavLink key={id} to={path} end={path === '/clock'}
               className={({ isActive }) => [
                 'flex items-center gap-3 px-3 lg:px-4 py-2.5 mx-1 rounded-lg transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F25623]',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]',
                 isActive
-                  ? 'bg-white/8 text-white border-l-2 border-[#F25623]'
+                  ? 'bg-white/8 text-white border-l-2 border-[#fa5c29]'
                   : 'text-white/40 hover:text-white/70 hover:bg-white/3 border-l-2 border-transparent',
               ].join(' ')}
             >
@@ -465,8 +465,8 @@ export default function AppLayout() {
         {/* User */}
         <div className="p-2 border-t border-white/5">
           <div className="flex items-center gap-2 px-2">
-            <div className="w-8 h-8 rounded-full bg-[#F25623]/20 border border-[#F25623]/20
-              flex items-center justify-center text-[#F25623] text-xs font-bold shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[#fa5c29]/20 border border-[#fa5c29]/20
+              flex items-center justify-center text-[#fa5c29] text-xs font-bold shrink-0">
               {user?.username?.[0]?.toUpperCase() ?? '?'}
             </div>
             <div className="hidden lg:block flex-1 min-w-0">
@@ -487,8 +487,8 @@ export default function AppLayout() {
           style={{ background: 'rgba(11, 17, 32, 0.9)' }}>
           <span className="text-lg font-bold font-serif text-white">Kurahia</span>
           <button onClick={signOut}
-            className="w-8 h-8 rounded-full bg-[#F25623]/20 flex items-center justify-center
-              text-[#F25623] text-sm font-bold" aria-label="Sign out">
+            className="w-8 h-8 rounded-full bg-[#fa5c29]/20 flex items-center justify-center
+              text-[#fa5c29] text-sm font-bold" aria-label="Sign out">
             {user?.username?.[0]?.toUpperCase() ?? '?'}
           </button>
         </header>
@@ -513,7 +513,7 @@ export default function AppLayout() {
             >
               <Suspense fallback={
                 <div className="flex items-center justify-center py-24">
-                  <div className="w-7 h-7 rounded-full border-2 border-[#F25623] border-t-transparent animate-spin" />
+                  <div className="w-7 h-7 rounded-full border-2 border-[#fa5c29] border-t-transparent animate-spin" />
                 </div>
               }>
                 <Outlet />
@@ -531,8 +531,8 @@ export default function AppLayout() {
               className={({ isActive }) => [
                 'flex-1 flex flex-col items-center justify-center gap-0.5 py-2',
                 'min-h-[56px] relative transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F25623] focus-visible:ring-inset',
-                isActive ? 'text-[#F25623]' : 'text-white/30 hover:text-white/60',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29] focus-visible:ring-inset',
+                isActive ? 'text-[#fa5c29]' : 'text-white/30 hover:text-white/60',
               ].join(' ')}
             >
               <span className="relative">
