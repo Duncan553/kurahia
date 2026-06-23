@@ -107,17 +107,32 @@ export default function FrontDeskScreen() {
   return (
     <RequireRole minLevel={5}>
       <div className="min-h-screen p-4 md:p-6">
-        <motion.div className="max-w-2xl mx-auto space-y-4"
+        <motion.div className="max-w-6xl mx-auto"
           initial="hidden" animate="visible" variants={stagger}>
 
+        {/* Header + hero stats */}
         <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="flex items-start justify-between">
+          className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-xl font-bold text-[#f9dcd5] font-serif">Front Desk</h1>
-            <p className="text-sm text-ink-tertiary">
-              {data?.date ?? 'Today'} · read-only
+            <h1 className="text-3xl font-bold text-[#f9dcd5] font-serif">Front Desk</h1>
+            <p className="text-sm text-ink-tertiary mt-1">
+              {data?.date ?? 'Today'}
               {lastUpdated ? ` · updated ${lastUpdated}` : ''}
             </p>
+          </div>
+          <div className="flex gap-4">
+            <div className="glass-card px-5 py-3 text-center">
+              <p className="text-2xl font-bold tabular-nums text-[#f9dcd5]">{counts.arrivals}</p>
+              <p className="text-[10px] uppercase tracking-widest text-ink-tertiary">Arrivals</p>
+            </div>
+            <div className="glass-card px-5 py-3 text-center">
+              <p className="text-2xl font-bold tabular-nums text-[#f9dcd5]">{counts.departures}</p>
+              <p className="text-[10px] uppercase tracking-widest text-ink-tertiary">Departures</p>
+            </div>
+            <div className="glass-card px-5 py-3 text-center">
+              <p className="text-2xl font-bold tabular-nums text-[#fa5c29]">{counts.occupancy}</p>
+              <p className="text-[10px] uppercase tracking-widest text-ink-tertiary">In-House</p>
+            </div>
           </div>
         </motion.div>
 
