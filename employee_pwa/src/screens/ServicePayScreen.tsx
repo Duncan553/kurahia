@@ -187,7 +187,7 @@ export default function ServicePayScreen() {
                       <span className="text-sm text-ink-secondary">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
                       <span className="text-lg font-bold tabular-nums text-[#f9dcd5]">{kes(total)}</span>
                     </div>
-                    <Button variant="primary" size="lg" className="w-full" onClick={() => setStage('pay')}>
+                    <Button variant="primary" size="lg" className="w-full" onClick={() => { setPay(p => ({ ...p, amount: String(total) })); setStage('pay') }}>
                       Proceed to Payment →
                     </Button>
                   </div>
