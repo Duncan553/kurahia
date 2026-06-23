@@ -25,20 +25,20 @@
 }
 
 @theme {
-  /* ── System palette (dark glass — VisionOS spatial) ──────────── */
-  --color-primary-main: #F25623;   /* orange — primary accent (use sparingly) */
-  --color-primary-light: #FF6B3D;  /* orange-light — hover */
-  --color-primary-dark: #D94A1A;   /* orange-dark — pressed */
-  --color-cream-card: #171717;     /* black — page background */
-  --color-cream-alt: rgba(77, 77, 77, 0.4);  /* dark gray — glass card surface */
-  --color-cream-deep: rgba(77, 77, 77, 0.6); /* dark gray — pressed glass */
-  --color-ink-primary: #DEDEDE;    /* light gray — headlines, body */
-  --color-ink-secondary: rgba(222, 222, 222, 0.6); /* light gray/60 — secondary */
-  --color-ink-tertiary: rgba(222, 222, 222, 0.35);  /* light gray/35 — captions */
+  /* ── System palette (Stitch warm dark) ───────────────────────── */
+  --color-primary-main: #fa5c29;   /* warm orange accent (use sparingly) */
+  --color-primary-light: #ffb59f;  /* lighter orange for text */
+  --color-primary-dark: #af3000;   /* pressed orange */
+  --color-cream-card: #1e100c;     /* warm dark brown bg */
+  --color-cream-alt: rgba(43, 28, 24, 0.6);   /* warm surface */
+  --color-cream-deep: rgba(66, 49, 44, 0.6);  /* warm surface variant */
+  --color-ink-primary: #f9dcd5;    /* warm off-white text */
+  --color-ink-secondary: rgba(227, 190, 180, 0.7); /* warm secondary */
+  --color-ink-tertiary: rgba(170, 137, 128, 0.5);  /* warm tertiary */
 
-  /* ── Ticket palette (dark-adapted) ───────────────────────────── */
-  --color-ticket-paper: rgba(30, 41, 59, 0.8);
-  --color-ticket-alt: rgba(30, 41, 59, 0.6);
+  /* ── Ticket palette (warm-adapted) ───────────────────────────── */
+  --color-ticket-paper: rgba(43, 28, 24, 0.8);
+  --color-ticket-alt: rgba(43, 28, 24, 0.6);
   --color-ticket-ink: #f1f5f9;
   --color-stamp-red: #ef4444;
   --color-leaf-green: #10b981;
@@ -93,8 +93,8 @@ html {
     margin: 0;
     font-family: 'Hanken Grotesk', sans-serif;
     font-size: var(--font-size-base);
-    background: #171717;
-    color: #DEDEDE;
+    background: #1e100c;
+    color: #f9dcd5;
   }
 }
 
@@ -112,9 +112,8 @@ body::before {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(ellipse 60% 50% at 15% 80%, rgba(242, 86, 35, 0.04) 0%, transparent 100%),
-    radial-gradient(ellipse 50% 60% at 85% 20%, rgba(77, 77, 77, 0.06) 0%, transparent 100%),
-    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(222, 222, 222, 0.02) 0%, transparent 100%);
+    radial-gradient(ellipse 60% 50% at 15% 80%, rgba(250, 92, 41, 0.04) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 60% at 85% 20%, rgba(66, 49, 44, 0.08) 0%, transparent 100%);
   pointer-events: none;
 }
 
@@ -127,7 +126,7 @@ body::before {
   border-radius: 1rem;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 .glass-card-sage {
   background: rgba(255, 255, 255, 0.04);
@@ -154,8 +153,8 @@ body::before {
 
 /* Gradient buttons — vibrant, not flat */
 .gradient-hero {
-  background: linear-gradient(135deg, #F25623 0%, #D94A1A 100%);
-  box-shadow: 0 4px 14px rgba(242, 86, 35, 0.25);
+  background: linear-gradient(135deg, #fa5c29 0%, #af3000 100%);
+  box-shadow: 0 4px 14px rgba(250, 92, 41, 0.25);
 }
 
 /* Skeleton shimmer retuned for parchment/sage base */
@@ -166,9 +165,9 @@ body::before {
 .animate-pulse {
   background: linear-gradient(
     90deg,
-    rgba(30, 41, 59, 0.5) 25%,
-    rgba(51, 65, 85, 0.3) 50%,
-    rgba(30, 41, 59, 0.5) 75%
+    rgba(43, 28, 24, 0.5) 25%,
+    rgba(66, 49, 44, 0.3) 50%,
+    rgba(43, 28, 24, 0.5) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;

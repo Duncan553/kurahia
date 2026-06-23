@@ -19,9 +19,9 @@ export interface ButtonProps extends Omit<ComponentPropsWithoutRef<'button'>, HT
 }
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary:   'bg-gradient-to-b from-[#F25623] to-[#D94A1A] text-white shadow-[0_4px_14px_rgba(242,86,35,0.3)] hover:from-[#FF6B3D] hover:to-[#F25623] hover:shadow-[0_6px_20px_rgba(242,86,35,0.4)] border border-[#F25623]/30',
-  secondary: 'bg-white/8 text-[#DEDEDE] border border-white/15 backdrop-blur-md hover:bg-white/14 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
-  ghost:     'bg-transparent text-white/50 hover:text-[#F25623] hover:bg-[#F25623]/8 hover:shadow-[0_0_12px_rgba(242,86,35,0.1)]',
+  primary:   'bg-gradient-to-b from-[#fa5c29] to-[#af3000] text-white shadow-[0_4px_14px_rgba(250,92,41,0.3)] hover:from-[#ffb59f] hover:to-[#fa5c29] hover:shadow-[0_6px_20px_rgba(250,92,41,0.4)] border border-[#fa5c29]/30',
+  secondary: 'bg-white/8 text-[#f9dcd5] border border-white/15 backdrop-blur-md hover:bg-white/14 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
+  ghost:     'bg-transparent text-white/50 hover:text-[#fa5c29] hover:bg-[#fa5c29]/8 hover:shadow-[0_0_12px_rgba(250,92,41,0.1)]',
   danger:    'bg-gradient-to-b from-red-500 to-red-700 text-white shadow-[0_4px_14px_rgba(239,68,68,0.3)] hover:from-red-400 hover:to-red-600 border border-red-500/30',
 }
 

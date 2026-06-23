@@ -61,14 +61,21 @@ export default function LoginScreen() {
   }
 
   return (
-    /* Solid #171717 background — no photo, clean dark canvas */
+    /* Warm dark background with resort photo overlay */
     <div className="relative min-h-screen bg-cream-card flex items-center justify-center px-6">
+
+      {/* Resort background photo with warm dark overlay */}
+      <div className="absolute inset-0">
+        <img src="/images/resort-bg.jpg" alt="" aria-hidden="true"
+          className="w-full h-full object-cover" />
+        <div className="absolute inset-0" style={{ background: 'rgba(30, 16, 12, 0.75)' }} />
+      </div>
 
       {/* Ambient glow — faint orange radial behind the card for depth */}
       <div
         className="pointer-events-none absolute w-[480px] h-[480px] rounded-full opacity-[0.07]"
         style={{
-          background: 'radial-gradient(circle, #F25623 0%, transparent 70%)',
+          background: 'radial-gradient(circle, #fa5c29 0%, transparent 70%)',
         }}
       />
 
@@ -95,7 +102,7 @@ export default function LoginScreen() {
             Kurahia
           </h1>
           <p className="text-xs text-ink-tertiary mt-1.5 tracking-wide uppercase">
-            Staff Portal
+            Waterfront Club
           </p>
         </div>
 
@@ -125,7 +132,7 @@ export default function LoginScreen() {
                   border transition-all duration-200
                   focus:outline-none disabled:opacity-50
                   ${focused === 'user'
-                    ? 'border-[#F25623]/50 shadow-[0_0_0_2px_rgba(242,86,35,0.12)]'
+                    ? 'border-[#fa5c29]/50 shadow-[0_0_0_2px_rgba(250,92,41,0.12)]'
                     : 'border-white/[0.08] hover:border-white/[0.14]'
                   }`}
               />
@@ -152,7 +159,7 @@ export default function LoginScreen() {
                   border transition-all duration-200
                   focus:outline-none disabled:opacity-50
                   ${focused === 'pass'
-                    ? 'border-[#F25623]/50 shadow-[0_0_0_2px_rgba(242,86,35,0.12)]'
+                    ? 'border-[#fa5c29]/50 shadow-[0_0_0_2px_rgba(250,92,41,0.12)]'
                     : 'border-white/[0.08] hover:border-white/[0.14]'
                   }`}
               />
@@ -177,11 +184,11 @@ export default function LoginScreen() {
               disabled={!username || !password || loginMutation.isPending}
               whileTap={{ scale: 0.97 }}
               className="w-full py-3.5 rounded-xl
-                bg-[#F25623] hover:bg-[#FF6B3D] active:bg-[#D94A1A]
+                bg-[#fa5c29] hover:bg-[#ffb59f] active:bg-[#af3000]
                 text-white text-sm font-semibold tracking-wider uppercase
-                shadow-[0_4px_16px_rgba(242,86,35,0.3)]
-                hover:shadow-[0_6px_20px_rgba(242,86,35,0.4)]
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F25623]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-card
+                shadow-[0_4px_16px_rgba(250,92,41,0.3)]
+                hover:shadow-[0_6px_20px_rgba(250,92,41,0.4)]
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-card
                 disabled:opacity-35 disabled:cursor-not-allowed disabled:shadow-none
                 transition-all duration-200"
             >
