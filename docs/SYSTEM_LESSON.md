@@ -1380,3 +1380,562 @@ because they actually use it -- managers clock in from their own tablets.
    backend would reject the request with `403 Manager or above required`. The
    frontend hides what you should not need. The backend blocks what you must
    not access.
+
+---
+
+## 12. How File Uploads Work
+
+The system needs images everywhere: menu item photos, employee profile
+pictures, purchase receipt scans, villa gallery shots. All uploads go through
+one endpoint in `app/uploads/__init__.py`. Here is how it works, step by step.
+
+### The endpoint: POST /uploads/<category>
+
+The URL has a dynamic segment: `<category>`. This tells the backend WHERE to
+save the file. The valid categories are defined in a dictionary (line 24):
+
+```python
+UPLOAD_TARGETS = {
+    "menu":    "employee_pwa/public/images/menu",
+    "profile": "employee_pwa/public/images/profiles",
+    "receipt": "employee_pwa/public/images/receipts",
+    "villa":   "employee_pwa/public/images/villas",
+    "spa":     "employee_pwa/public/images/spa",
+    "water":   "employee_pwa/public/images/water",
+    "general": "employee_pwa/public/images/uploads",
+}
+```
+
+So `POST /uploads/menu` saves to the menu folder. `POST /uploads/profile`
+saves to the profiles folder. If someone sends `POST /uploads/banana`, the
+endpoint rejects it with `400 Unknown category` (line 56). The dictionary is
+the allowlist -- nothing else gets through.
+
+### How files are saved
+
+When a valid upload arrives, the endpoint does four things:
+
+**1. Validate the file type** (line 62):
+```python
+def _allowed(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+```
+`ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}` -- only image formats.
+No PDFs, no ZIPs, no `.exe` hiding as a `.jpg`. The check uses the file
+extension, not the content type header (which can be spoofed, but the
+extension determines what the browser renders).
+
+**2. Check the file size** (lines 65-69):
+```python
+file.seek(0, os.SEEK_END)   # jump to end of file
+size = file.tell()            # tell() gives position = file size in bytes
+file.seek(0)                  # rewind for saving
+if size > MAX_FILE_SIZE:      # MAX_FILE_SIZE = 5 * 1024 * 1024 = 5MB
+    return jsonify({"error": "File too large. Maximum 5MB."}), 400
+```
+Why `seek` instead of `len()`? Because `request.files['file']` is a stream,
+not a byte string. You cannot call `len()` on a stream. Instead, you seek to
+the end, ask where you are (that is the size), then rewind so `file.save()`
+reads from the beginning.
+
+**3. Generate a UUID filename** (lines 71-72):
+```python
+ext = file.filename.rsplit(".", 1)[1].lower()        # "photo.JPG" → "jpg"
+unique_name = f"{uuid.uuid4().hex[:12]}.{ext}"       # "a1b2c3d4e5f6.jpg"
+```
+The original filename is thrown away. Why? Two reasons:
+- **Collision prevention:** Two staff members uploading `photo.jpg` would
+  overwrite each other. UUID filenames are unique.
+- **Security:** Original filenames can contain path traversal attacks like
+  `../../etc/passwd.jpg`. By generating our own name, the attacker's filename
+  is never used in any file path.
+
+**4. Save and return the public path** (lines 73-81):
+```python
+dest = _upload_dir(category) / unique_name       # e.g. employee_pwa/public/images/menu/a1b2c3d4e5f6.jpg
+file.save(str(dest))
+
+public_path = f"/images/{category}/{unique_name}"  # "/images/menu/a1b2c3d4e5f6.jpg"
+```
+The file is saved to `employee_pwa/public/images/<category>/`. The response
+returns the PUBLIC path -- the path the browser uses to load the image. Vite
+serves everything in `public/` at the root URL, so `/images/menu/a1b2c3d4e5f6.jpg`
+maps directly to the file on disk.
+
+### How the path connects to the database
+
+The response JSON looks like:
+```json
+{"path": "/images/menu/a1b2c3d4e5f6.jpg", "filename": "a1b2c3d4e5f6.jpg"}
+```
+
+The frontend takes that `path` value and saves it to the relevant model:
+
+- **Menu items:** `MenuItem.image_path = "/images/menu/a1b2c3d4e5f6.jpg"`
+  (`app/models/menu_item.py`, line 31). The waiter's menu grid uses this path
+  in an `<img src={item.image_path}>` tag.
+
+- **Employee profiles:** `EmployeeProfile.photo_path = "/images/profiles/x9y8z7w6v5u4.jpg"`
+  (`app/models/employee_profile.py`, line 25). The profile screen and staff
+  directory use this.
+
+The path is just a string in the database. The actual file lives in the PWA's
+`public/` directory. This is important: if you delete the file but not the
+database row, the image breaks. If you delete the database row but not the
+file, the file becomes an orphan. Both models store the path, neither owns
+the file lifecycle -- that is a deliberate simplicity trade-off for a v1
+system.
+
+### Security measures (summary)
+
+1. **Category allowlist** -- only 7 known categories. Unknown = 400.
+2. **File type check** -- only jpg, jpeg, png, webp. Everything else = 400.
+3. **Size limit** -- 5MB max. Prevents a staff member filling the disk.
+4. **UUID filename** -- original filename discarded. Prevents path traversal
+   and collisions.
+5. **`@require_active_user`** -- kill switch. Fired staff cannot upload.
+6. **Audit log** -- every upload is logged with actor, category, and filename.
+
+### How the PWA service worker precaches uploaded images
+
+Here is the key insight: uploaded images are NOT individually precached. The
+service worker precaches the **app shell** -- the HTML, CSS, JS bundles, fonts,
+and icons that make the app work offline. This is configured in
+`vite.config.ts` (line 19):
+
+```ts
+injectManifest: {
+  globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2,wav}'],
+},
+```
+
+That `**/*.png` pattern catches any PNG in the `public/` directory at BUILD
+time. So if an image was uploaded before the next deploy, it gets precached
+in the next service worker update. But images uploaded AFTER the build are
+NOT precached -- they load from the network like any dynamic content.
+
+This is fine for a resort on a LAN. The tablets are always connected to the
+local server. Menu images load fast over the local network. If the network
+drops, the app shell still works (offline-capable), but new images from the
+server would not load until the connection returns.
+
+The service worker (`employee_pwa/src/sw.ts`) also registers runtime caching
+for the `/menu/items` API route with a NetworkFirst strategy (line 32):
+```ts
+registerRoute(
+  ({ url, request }) => request.method === 'GET' && url.pathname.startsWith('/menu/items'),
+  new NetworkFirst({
+    cacheName: 'menu',
+    plugins: [new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 3600 })],
+  })
+)
+```
+This caches the menu DATA (including `image_path` strings) for 1 hour. The
+images themselves are served as static files from Vite's `public/` directory.
+
+---
+
+## 13. How the Frontend Routes Work
+
+The employee PWA is a single-page app. All routing happens in
+`employee_pwa/src/main.tsx`. Here is how it is structured.
+
+### React Router setup
+
+The app uses `createBrowserRouter` (line 89) -- React Router v6's data router.
+This creates a route tree that looks like a nested folder structure:
+
+```
+/login              → LoginScreen        (public)
+/pin                → PinEntryScreen      (public)
+/pin/setup          → PinSetupScreen      (public)
+
+AuthGate (checks login)
+├── /kiosk/*        → Kiosk screens      (no nav chrome)
+└── AppLayout (nav bar, sidebar)
+    ├── /clock      → ClockScreen        (all staff)
+    ├── /schedule   → ScheduleScreen     (all staff)
+    ├── /pos/tabs   → WaiterTabsScreen   (dept-filtered)
+    ├── /pos/kitchen → KitchenQueueScreen (dept-filtered)
+    ├── RoleGate (level 3+)
+    │   ├── /gate/hub    → GateHubScreen
+    │   └── /gate/issue  → WristbandScreen
+    └── RoleGate (level 5+)
+        ├── /manager          → ManagerScreen
+        ├── /inventory/count  → InventoryCountScreen
+        └── /manager/staff    → StaffAccountsScreen
+```
+
+### What lazy() does and why
+
+Most screens are loaded with `lazy()` (lines 44-83):
+
+```ts
+const ScheduleScreen = lazy(() => import('./screens/ScheduleScreen'))
+const ManagerScreen = lazy(() => import('./screens/ManagerScreen'))
+```
+
+`lazy()` tells React: "do NOT load this component's JavaScript until someone
+actually navigates to its route." This is called **code splitting**.
+
+**Why it matters:** Without lazy loading, the browser downloads ALL screen
+code on first load -- the manager screen, inventory screen, gate screen,
+every screen -- even if you are a kitchen worker who will never see most of
+them. With lazy loading, the kitchen worker's browser only downloads the
+kitchen queue code. The manager screen code is never fetched until a manager
+navigates to `/manager`.
+
+Notice which screens are NOT lazy (lines 17-23):
+```ts
+import LoginScreen       from './screens/LoginScreen'
+import PinEntryScreen    from './screens/PinEntryScreen'
+import PinSetupScreen    from './screens/PinSetupScreen'
+import ClockScreen       from './screens/ClockScreen'
+```
+
+These are eagerly loaded because EVERY user hits them: login, PIN entry, and
+clock-in. Making these lazy would add a visible loading spinner on the first
+screen every user sees. Not worth it.
+
+**How Suspense catches the loading state:** When a lazy component is loading,
+React needs a fallback to show. The `AuthGate` component
+(`employee_pwa/src/components/AuthGate.tsx`, line 17) wraps `<Outlet />` in
+`<Suspense>`:
+
+```tsx
+return <Suspense fallback={chunkFallback}><Outlet /></Suspense>
+```
+
+`chunkFallback` (line 7) is a simple spinner:
+```tsx
+const chunkFallback = (
+  <div className="min-h-screen flex items-center justify-center bg-cream-card">
+    <div className="w-8 h-8 rounded-full border-2 border-primary-dark border-t-transparent animate-spin" />
+  </div>
+)
+```
+
+So the user sees a centered spinner for a fraction of a second while the lazy
+chunk downloads, then the real screen appears. On the resort LAN, this is
+near-instant.
+
+### How AppLayout wraps all routes
+
+The route tree nests staff routes inside `<AppLayout />` (line 109):
+
+```tsx
+{
+  element: <ErrorBoundary><AppLayout /></ErrorBoundary>,
+  children: [
+    { path: '/clock',    element: <ClockScreen /> },
+    { path: '/schedule', element: <ScheduleScreen /> },
+    // ... all staff routes
+  ],
+}
+```
+
+`AppLayout` renders the sidebar nav, the top bar, and an `<Outlet />` where
+the child route's component appears. Every screen inside AppLayout gets the
+nav chrome automatically. Kiosk routes sit OUTSIDE AppLayout (line 100-105)
+because kiosks are customer-facing and should not show the staff nav bar.
+
+The `<ErrorBoundary>` wrapping AppLayout is a React error boundary. If any
+screen throws a render error, the boundary catches it and shows a recovery
+UI instead of crashing the entire app. This is important for a resort system
+-- a bug in one screen should not take down the whole tablet.
+
+### How RoleGate guards work
+
+Some routes need role-level restrictions BEYOND just being logged in. The
+`RoleGate` component (`employee_pwa/src/components/AuthGate.tsx`, line 21)
+handles this:
+
+```tsx
+export function RoleGate({ minLevel }: { minLevel: number }) {
+  const user = useAuthStore((s) => s.user)
+  if (!user || user.role_level < minLevel) {
+    return (
+      <EmptyState
+        title="You don't have access to this area."
+        description="Ask your manager if you think this is a mistake."
+        actionLabel="Go back"
+        onAction={() => navigate(-1)}
+      />
+    )
+  }
+  return <Outlet />
+}
+```
+
+It reads `role_level` from the Zustand auth store (which got it from the JWT
+claims at login). If the user's level is below `minLevel`, they see a locked
+icon and a "Go back" button -- not a redirect. This is deliberate: the nav
+shell stays visible so the user is not disoriented. They just see "you cannot
+access this" inside the content area.
+
+In the route tree, `RoleGate` wraps groups of routes (lines 148-157, 163-181):
+```tsx
+// Gate routes — level 3+
+{ element: <RoleGate minLevel={3} />, children: [
+    { path: '/gate/hub', element: <GateHubScreen /> },
+    { path: '/gate/issue', element: <WristbandScreen /> },
+] },
+
+// Manager routes — level 5+
+{ element: <RoleGate minLevel={5} />, children: [
+    { path: '/manager', element: <ManagerScreen /> },
+    { path: '/inventory/count', element: <InventoryCountScreen /> },
+] },
+```
+
+**Remember: this is UX, not security.** A determined user could type
+`/manager` in the URL bar and the RoleGate would block the UI -- but the
+REAL security is the backend. Every API call behind `/manager` checks
+`@require_active_user` and role level. Even if the frontend gate broke,
+the backend would return `403`.
+
+### How the PIN entry screen gates the main app
+
+The very first thing a user sees is `/pin` -- the PinEntryScreen. The root
+route `/` redirects to `/clock` (line 111), but `/clock` is inside `AuthGate`.
+If the user is not authenticated, `AuthGate` (line 14-15) redirects to `/pin`:
+
+```tsx
+const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+if (!isAuthenticated) return <Navigate to="/pin" replace />
+```
+
+The flow is:
+1. User opens the app -> hits `/` -> redirects to `/clock`
+2. `/clock` is inside `AuthGate` -> not authenticated -> redirects to `/pin`
+3. User enters their PIN -> backend returns JWT tokens -> Zustand stores them
+4. `isAuthenticated` becomes `true` -> `AuthGate` lets them through
+5. User sees `/clock` (or gets auto-redirected to their department screen,
+   as described in section 11)
+
+The catch-all route `{ path: '*', element: <LoginScreen /> }` (line 187)
+sends any unknown URL to the login screen. So if someone types `/asdf`,
+they land on login instead of a blank page.
+
+---
+
+## 14. How Glass Cards Work (the CSS trick)
+
+The app uses a frosted glass effect on panels and cards. This is the same
+visual trick Apple uses in macOS and iOS. The code is in
+`employee_pwa/src/index.css`, and it is surprisingly simple once you
+understand the three ingredients.
+
+### Ingredient 1: backdrop-filter: blur(20px) saturate(160%)
+
+The core of the glass effect is one CSS line (line 123):
+```css
+backdrop-filter: blur(20px) saturate(160%);
+```
+
+`backdrop-filter` applies visual effects to what is BEHIND the element, not
+the element itself. Think of it like looking through frosted glass at a
+painting -- the painting gets blurry, the glass itself stays sharp.
+
+- **blur(20px)** -- blurs everything behind the panel by 20 pixels. This
+  creates the frosted effect. Higher values = more frosted, less see-through.
+- **saturate(160%)** -- boosts the color saturation of the blurred content
+  by 60%. This is Apple's secret sauce. Without it, the blur looks washed
+  out and flat -- like smudged paint. With 160% saturation, the blurred
+  colors stay rich and vibrant, which makes the glass feel luminous, alive.
+  It is the difference between cheap frosted plastic and expensive crystal.
+
+### Ingredient 2: Ambient gradients behind the glass
+
+Here is the thing most people miss: `backdrop-filter: blur()` blurs whatever
+is behind the element. If what is behind it is a flat solid color, blurring a
+flat color gives you... the same flat color. The glass looks invisible. No
+depth, no texture, no point.
+
+That is why `body::before` (lines 109-118) paints subtle gradients:
+```css
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 80%, rgba(250, 92, 41, 0.04) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 60% at 85% 20%, rgba(66, 49, 44, 0.08) 0%, transparent 100%);
+}
+```
+
+Two very faint radial gradients: a warm orange glow in the bottom-left corner
+and a dark brown glow in the top-right. Both are nearly invisible on their own
+(4% and 8% opacity). But when a glass panel sits on top of them, the blur
+amplifies these subtle color shifts into visible texture. The glass picks up
+a slight warm tint in the bottom-left and a cooler tone in the top-right.
+
+**This is the recipe:** ambient gradients BEHIND + blur + saturate ON TOP =
+convincing frosted glass. Remove the gradients and the glass goes flat.
+
+### Ingredient 3: The inset highlight trick
+
+Look at the `box-shadow` on `.glass-card` (lines 127-129):
+```css
+box-shadow:
+  0 8px 32px rgba(0, 0, 0, 0.3),               /* outer shadow — depth */
+  inset 0 1px 0 rgba(255, 255, 255, 0.12);      /* inner top highlight */
+```
+
+Two shadows working together:
+- **Outer shadow** (0 8px 32px, black at 30%): Makes the card float off the
+  background. Standard depth cue.
+- **Inset top highlight** (inset 0 1px, white at 12%): A thin white line at
+  the very top of the card. This simulates light catching the top edge of a
+  real glass panel. It is subtle -- 12% opacity -- but it is what makes the
+  panel look three-dimensional instead of flat. Without this single pixel of
+  light, the card looks like a colored rectangle. With it, your brain reads
+  it as a physical surface catching light from above.
+
+### The three glass levels
+
+The CSS defines three levels of glass with decreasing intensity:
+
+**`.glass-card`** -- the strongest glass (line 121):
+```css
+background: rgba(255, 255, 255, 0.06);     /* very faint white tint */
+backdrop-filter: blur(20px) saturate(160%); /* heavy blur + saturation */
+border: 1px solid rgba(255, 255, 255, 0.08); /* subtle white border */
+```
+Used for primary cards -- the main content panels on every screen.
+
+**`.glass-card-sage`** -- medium glass (line 131):
+```css
+background: rgba(255, 255, 255, 0.04);     /* even fainter tint */
+backdrop-filter: blur(16px) saturate(150%); /* less blur, less saturation */
+```
+Used for secondary panels -- things like list items inside a glass card. The
+weaker blur prevents a distracting "glass on glass" effect.
+
+**`.glass-surface`** -- lightest glass (line 141):
+```css
+background: rgba(255, 255, 255, 0.05);
+backdrop-filter: blur(12px) saturate(140%);
+border-radius: 0.75rem;                     /* slightly smaller radius */
+```
+Used for small interactive elements like buttons, input backgrounds, status
+badges. Just enough glass to feel part of the system without being heavy.
+
+### Accessibility: prefers-reduced-transparency
+
+The CSS also handles users who have reduced transparency enabled in their OS
+(lines 148-152):
+```css
+@media (prefers-reduced-transparency) {
+  .glass-card { background: var(--color-cream-card); backdrop-filter: none; }
+  .glass-card-sage { background: var(--color-cream-alt); backdrop-filter: none; }
+  .glass-surface { background: var(--color-cream-card); backdrop-filter: none; }
+}
+```
+This turns off the blur entirely and falls back to solid background colors.
+The app still works and looks clean -- it just loses the glass effect.
+
+---
+
+## 15. How the Color Palette Tells a Story
+
+The palette is called "Stitch lakeside noir." Every color was chosen to match
+the subject matter: a lakeside resort with wooden decks, sunset views, and
+warm hospitality. This is not a random dark theme. The colors tell you WHERE
+you are.
+
+### The background: #1e100c (warm brownish black)
+
+```css
+--color-cream-card: #1e100c;   /* warm dark brown bg */
+```
+
+This is NOT a cold gray-black like `#171717` (what you get from Tailwind's
+`zinc-900`) or a blue-black like `#0f172a` (Tailwind's `slate-900`). It is a
+warm brownish black -- like dark wood or coffee. If you put `#1e100c` next to
+`#171717` on screen, you immediately feel the difference. The warm one feels
+like an evening lounge. The cold one feels like a code editor.
+
+**Why it matters:** A resort app lives on tablets at poolside bars, lakeside
+restaurants, wooden reception desks. Cold tech colors feel alien in that
+environment. Warm browns feel natural -- they match the wood, the soil, the
+evening light. The staff sees this screen 8 hours a day. It should feel like
+it belongs in the building.
+
+### The text: #f9dcd5 (warm off-white)
+
+```css
+--color-ink-primary: #f9dcd5;  /* warm off-white text */
+```
+
+This is NOT `#DEDEDE` (neutral gray) or `#ffffff` (pure white). It is a warm
+peachy off-white. If you squint, it has a faint pink-orange tint. Next to pure
+white text, `#f9dcd5` looks softer, easier on the eyes, and -- critically --
+it matches the warm background. Cool white text on a warm background fights
+itself. Warm text on a warm background feels unified.
+
+The secondary text uses `rgba(227, 190, 180, 0.7)` -- the same warm tone but
+at 70% opacity. Tertiary text (labels, timestamps) drops to
+`rgba(170, 137, 128, 0.5)` -- a muted warm gray at 50%. Same warmth
+throughout. The hierarchy is built with opacity, not hue shifts.
+
+### The accent: #fa5c29 (orange)
+
+```css
+--color-primary-main: #fa5c29; /* warm orange accent (use sparingly) */
+```
+
+Orange is the only bright color in the system. It is used SPARINGLY:
+- Primary action buttons (CTA -- "Send Order", "Issue Band", "Submit")
+- The gradient-hero class: `linear-gradient(135deg, #fa5c29, #af3000)`
+- Badge counts (unread notifications)
+
+That is it. Orange never appears in body text, secondary buttons, status
+colors, or backgrounds. Why? Because a bright accent loses its power if you
+use it everywhere. If every button is orange, none of them feel important. By
+keeping orange rare, the eye is drawn to it instantly -- "this is the thing
+to tap."
+
+**Why orange specifically?** It is the color of a Kenyan sunset over the lake.
+It is the color of ripe fruit, warm firelight, terra cotta. It belongs at a
+resort in a way that blue (#3b82f6) or purple (#8b5cf6) never would. Blue
+says "tech company." Orange says "sunset bar."
+
+### The secondary: #aa8980 (muted warm gray)
+
+```css
+--color-ink-tertiary: rgba(170, 137, 128, 0.5);  /* warm tertiary */
+```
+
+The muted warm gray (`#aa8980` at 50% opacity) handles secondary text,
+timestamps, placeholder text, and subtle dividers. It is warm -- not the cool
+`#9ca3af` (Tailwind `gray-400`) you see in most dark themes. It sits
+naturally between the dark background and the light text without introducing
+a cold note.
+
+### The design principle: "ground in subject matter"
+
+The entire palette follows one principle: **the colors should feel like the
+place the app lives in.** This is what designers call "grounding in subject
+matter."
+
+- A bank app uses navy blue and white -- trust, authority, clean.
+- A fitness app uses neon green on black -- energy, intensity, performance.
+- A resort app uses warm browns, peachy whites, and sunset orange -- wood,
+  warmth, hospitality, evening light by the lake.
+
+If you took this palette and put it on a hospital app, it would feel wrong.
+If you took a hospital's cool blues and put them on this resort system, it
+would feel wrong. The colors match the building. That is the point.
+
+### How this connects to the glass effect
+
+The warm palette is what makes the glass cards work. The ambient gradients
+behind the glass use `rgba(250, 92, 41, 0.04)` -- a ghost of the orange
+accent -- and `rgba(66, 49, 44, 0.08)` -- a ghost of the brown background.
+When the glass blurs these warm gradients, the panels pick up a subtle warm
+glow that matches everything else. If the palette were cold blue and the
+gradients were warm orange, the glass would look muddy and confused. The
+warmth is consistent from background to gradient to glass to text. Everything
+belongs together.
