@@ -471,7 +471,7 @@ export default function AppLayout() {
             </div>
             <div className="hidden lg:block flex-1 min-w-0">
               <p className="text-xs font-medium text-white truncate">{user?.username}</p>
-              <button onClick={signOut} className="text-[10px] text-red-400/50 hover:text-red-400">
+              <button onClick={signOut} className="text-[10px] text-status-failed/50 hover:text-status-failed">
                 Sign out
               </button>
             </div>

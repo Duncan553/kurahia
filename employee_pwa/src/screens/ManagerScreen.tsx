@@ -158,7 +158,7 @@ export default function ManagerScreen() {
             <ErrorBoundary level="tile">
               <G onClick={() => navigate('/manager/purchases')}>
                 <div className="p-5 text-center">
-                  <p className={`text-4xl font-bold tabular-nums ${pending.length > 0 ? 'text-amber-400' : 'text-white/20'}`}>
+                  <p className={`text-4xl font-bold tabular-nums ${pending.length > 0 ? 'text-status-pending' : 'text-white/20'}`}>
                     {pending.length}
                   </p>
                   <p className="text-xs text-white/30 mt-1">Pending Approvals</p>
@@ -182,11 +182,11 @@ export default function ManagerScreen() {
                       <p className="text-[10px] text-white/30">Total</p>
                     </div>
                     <div>
-                      <p className={`text-2xl font-bold tabular-nums ${low.length > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{low.length}</p>
+                      <p className={`text-2xl font-bold tabular-nums ${low.length > 0 ? 'text-status-failed' : 'text-status-paid'}`}>{low.length}</p>
                       <p className="text-[10px] text-white/30">Low</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold tabular-nums text-emerald-400">{items.length - low.length}</p>
+                      <p className="text-2xl font-bold tabular-nums text-status-paid">{items.length - low.length}</p>
                       <p className="text-[10px] text-white/30">OK</p>
                     </div>
                   </div>
@@ -196,7 +196,7 @@ export default function ManagerScreen() {
                         <BarChart data={chartData}>
                           <Bar dataKey="stock" fill="rgba(16,185,129,0.4)" radius={[4,4,0,0]} />
                           <Bar dataKey="reorder" fill="rgba(239,68,68,0.2)" radius={[4,4,0,0]} />
-                          <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, fontSize: 11, color: '#fff' }} />
+                          <Tooltip contentStyle={{ background: '#1e100c', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, fontSize: 11, color: '#f9dcd5' }} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -222,11 +222,11 @@ export default function ManagerScreen() {
                           </div>
                           <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                             <div className={`h-full rounded-full transition-all ${
-                              healthPct === 100 ? 'bg-emerald-500' : healthPct > 60 ? 'bg-amber-500' : 'bg-red-500'
+                              healthPct === 100 ? 'bg-status-paid' : healthPct > 60 ? 'bg-status-pending' : 'bg-status-failed'
                             }`} style={{ width: `${healthPct}%` }} />
                           </div>
                           {dLow > 0 && (
-                            <p className="text-[10px] text-red-400/70 mt-0.5">
+                            <p className="text-[10px] text-status-failed/70 mt-0.5">
                               {dLow} item{dLow !== 1 ? 's' : ''} below reorder level
                             </p>
                           )}
@@ -252,14 +252,14 @@ export default function ManagerScreen() {
                         <div key={r.department}>
                           <div className="flex justify-between text-xs mb-1">
                             <span className="text-white/60">{r.department}</span>
-                            <span className={`font-bold tabular-nums ${r.over_budget ? 'text-red-400' : r.pct_used > 80 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                            <span className={`font-bold tabular-nums ${r.over_budget ? 'text-status-failed' : r.pct_used > 80 ? 'text-status-pending' : 'text-status-paid'}`}>
                               {Math.round(r.pct_used)}%
                             </span>
                           </div>
                           <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                             <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(r.pct_used, 100)}%` }}
                               transition={{ duration: 0.8 }}
-                              className={`h-full rounded-full ${r.over_budget ? 'bg-red-500' : r.pct_used > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                              className={`h-full rounded-full ${r.over_budget ? 'bg-status-failed' : r.pct_used > 80 ? 'bg-status-pending' : 'bg-status-paid'}`} />
                           </div>
                         </div>
                       ))}
@@ -273,12 +273,12 @@ export default function ManagerScreen() {
               <G>
                 <div className="p-5">
                   <p className="text-[11px] font-semibold tracking-wider uppercase text-white/30 mb-3">Low Stock</p>
-                  {low.length === 0 ? <p className="text-sm text-emerald-400/60">All healthy ✓</p> : (
+                  {low.length === 0 ? <p className="text-sm text-status-paid/60">All healthy</p> : (
                     <div className="space-y-2">
                       {low.slice(0, 6).map(i => (
                         <div key={i.id} className="flex justify-between text-sm">
                           <span className="text-white/60 truncate">{i.name}</span>
-                          <span className="text-red-400 tabular-nums font-semibold shrink-0 ml-2">
+                          <span className="text-status-failed tabular-nums font-semibold shrink-0 ml-2">
                             {parseFloat(i.current_stock)} {i.unit}
                           </span>
                         </div>
