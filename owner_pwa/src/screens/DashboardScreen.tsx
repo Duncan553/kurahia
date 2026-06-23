@@ -387,7 +387,7 @@ function ResortHealthSection() {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-serif font-bold text-ink-primary">Resort Health</h2>
+        <h2 className="text-2xl font-serif font-bold text-[#f9dcd5]">Resort Health</h2>
         {/* Tabs */}
         <div className="flex rounded-xl overflow-hidden border border-white/10">
           {(['overview', 'departments'] as const).map(t => (
