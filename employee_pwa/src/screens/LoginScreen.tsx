@@ -18,9 +18,6 @@ interface JWTClaims extends Record<string, unknown> {
   department?: string | null
 }
 
-const HERO_URL =
-  'https://waterfrontcountryclub.com/wp-content/uploads/2025/08/DJI_0669-scaled.jpg'
-
 export default function LoginScreen() {
   const navigate = useNavigate()
   const { setAuth, setSetupToken } = useAuthStore()
@@ -35,11 +32,13 @@ export default function LoginScreen() {
     onSuccess: (data) => {
       setErrorMsg('')
       const claims = decodeJWT<JWTClaims>(data.access_token)
+      // If backend requires PIN setup, redirect there with a temp token
       if (data.requires_pin_setup) {
         setSetupToken(data.access_token)
         navigate('/pin/setup', { state: { username } })
         return
       }
+      // Normal login — store auth and go to clock screen
       setAuth(
         { id: claims.sub, username, role_level: claims.role_level, department: claims.department ?? null },
         data.access_token,
@@ -62,164 +61,158 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    /* Solid #171717 background — no photo, clean dark canvas */
+    <div className="relative min-h-screen bg-cream-card flex items-center justify-center px-6">
 
-      {/* Background image */}
+      {/* Ambient glow — faint orange radial behind the card for depth */}
+      <div
+        className="pointer-events-none absolute w-[480px] h-[480px] rounded-full opacity-[0.07]"
+        style={{
+          background: 'radial-gradient(circle, #F25623 0%, transparent 70%)',
+        }}
+      />
+
+      {/* Main content — vertically centered column */}
       <motion.div
-        className="absolute inset-0"
-        initial={{ opacity: 0, scale: 1.03 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.2, ease: 'easeOut' }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="w-full max-w-[380px] relative z-10"
       >
-        <img src={HERO_URL} alt="" aria-hidden="true"
-          className="w-full h-full object-cover object-center" />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/60 via-primary-dark/40 to-primary-dark/70" />
-      </motion.div>
-
-      {/* Glass login card */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen px-6 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3, ease: 'easeOut' }}
-          className="w-full max-w-[400px]"
-        >
-          {/* Brand */}
-          <div className="text-center mb-8">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.4 }}
-              className="w-16 h-16 mx-auto mb-4 rounded-2xl
-                bg-gradient-to-b from-[#F25623]/20 to-[#D94A1A]/20
-                backdrop-blur-md border border-[#FF6B3D]/20
-                flex items-center justify-center shadow-lg"
-            >
-              <span className="text-2xl font-serif font-bold text-white tracking-tight">K</span>
-            </motion.div>
-            <h1 className="font-serif text-4xl font-bold text-white tracking-tight
-              drop-shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
-              Kurahia
-            </h1>
-            <p className="text-sm text-white/70 mt-1">Staff Portal</p>
-          </div>
-
-          {/* Frosted glass card */}
-          <div className="rounded-3xl p-8 border border-white/20 shadow-2xl
-            bg-cream-card/25 backdrop-blur-xl
-            before:absolute before:inset-0 before:rounded-3xl before:bg-gradient-to-b
-            before:from-white/10 before:to-transparent before:pointer-events-none relative overflow-hidden">
-
-            <form onSubmit={handleSubmit} noValidate className="relative space-y-5">
-
-              <div>
-                <label htmlFor="login-username"
-                  className="block text-xs font-semibold text-white/80 mb-1.5 uppercase tracking-wider">
-                  Username
-                </label>
-                <div className={`rounded-xl border transition-all ${
-                  focused === 'user'
-                    ? 'border-white/50 shadow-[0_0_0_3px_rgba(255,255,255,0.1)]'
-                    : 'border-white/20'
-                }`}>
-                  <input
-                    id="login-username"
-                    type="text"
-                    autoComplete="username"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    onFocus={() => setFocused('user')}
-                    onBlur={() => setFocused(null)}
-                    disabled={loginMutation.isPending}
-                    placeholder="e.g. wachira"
-                    className="w-full rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3.5
-                      text-sm text-white font-medium
-                      placeholder:text-white/40
-                      focus:outline-none disabled:opacity-50"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="login-password"
-                  className="block text-xs font-semibold text-white/80 mb-1.5 uppercase tracking-wider">
-                  Password
-                </label>
-                <div className={`rounded-xl border transition-all ${
-                  focused === 'pass'
-                    ? 'border-white/50 shadow-[0_0_0_3px_rgba(255,255,255,0.1)]'
-                    : 'border-white/20'
-                }`}>
-                  <input
-                    id="login-password"
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    onFocus={() => setFocused('pass')}
-                    onBlur={() => setFocused(null)}
-                    disabled={loginMutation.isPending}
-                    className="w-full rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3.5
-                      text-sm text-white font-medium
-                      placeholder:text-white/40
-                      focus:outline-none disabled:opacity-50"
-                  />
-                </div>
-              </div>
-
-              {errorMsg && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-2 p-3 rounded-xl bg-status-failed/20 border border-status-failed/30"
-                >
-                  <span className="text-white text-sm shrink-0 mt-0.5">!</span>
-                  <p role="alert" className="text-sm text-white font-medium">{errorMsg}</p>
-                </motion.div>
-              )}
-
-              <motion.button
-                type="submit"
-                disabled={!username || !password || loginMutation.isPending}
-                whileTap={{ scale: 0.97 }}
-                className="w-full py-4 rounded-2xl
-                  bg-gradient-to-b from-[#F25623] to-[#D94A1A]
-                  border border-[#F25623]/30
-                  text-white text-sm font-bold tracking-widest uppercase
-                  shadow-[0_4px_20px_rgba(16,185,129,0.35)]
-                  hover:from-[#FF6B3D] hover:to-[#F25623]
-                  hover:shadow-[0_6px_24px_rgba(16,185,129,0.45)]
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B3D]
-                  disabled:opacity-40 disabled:cursor-not-allowed
-                  transition-all"
-              >
-                {loginMutation.isPending ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
-                      <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    Signing in&hellip;
-                  </span>
-                ) : 'Sign In'}
-              </motion.button>
-            </form>
-
-            <div className="mt-5 text-center relative">
-              <button type="button" onClick={() => navigate('/pin')}
-                className="text-xs text-white/60 hover:text-white font-medium
-                  transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded">
-                Use PIN instead &rarr;
-              </button>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <p className="text-center text-[10px] text-white/40 mt-6 tracking-widest uppercase">
-            Waterfront Country Club &middot; Juja
+        {/* Brand mark */}
+        <div className="text-center mb-10">
+          <motion.div
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="w-14 h-14 mx-auto mb-5 rounded-2xl
+              bg-white/[0.06] border border-white/[0.08]
+              flex items-center justify-center"
+          >
+            <span className="text-xl font-serif font-bold text-ink-primary tracking-tight">K</span>
+          </motion.div>
+          <h1 className="font-serif text-3xl font-bold text-ink-primary tracking-tight">
+            Kurahia
+          </h1>
+          <p className="text-xs text-ink-tertiary mt-1.5 tracking-wide uppercase">
+            Staff Portal
           </p>
-        </motion.div>
-      </div>
+        </div>
+
+        {/* Glass form card */}
+        <div className="glass-card p-7">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
+
+            {/* Username field */}
+            <div>
+              <label htmlFor="login-username"
+                className="block text-xs font-medium text-ink-secondary mb-2 tracking-wide">
+                Username
+              </label>
+              <input
+                id="login-username"
+                type="text"
+                autoComplete="username"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                onFocus={() => setFocused('user')}
+                onBlur={() => setFocused(null)}
+                disabled={loginMutation.isPending}
+                placeholder="e.g. wachira"
+                className={`w-full rounded-xl bg-white/[0.04] px-4 py-3
+                  text-sm text-ink-primary font-medium
+                  placeholder:text-ink-tertiary
+                  border transition-all duration-200
+                  focus:outline-none disabled:opacity-50
+                  ${focused === 'user'
+                    ? 'border-[#F25623]/50 shadow-[0_0_0_2px_rgba(242,86,35,0.12)]'
+                    : 'border-white/[0.08] hover:border-white/[0.14]'
+                  }`}
+              />
+            </div>
+
+            {/* Password field */}
+            <div>
+              <label htmlFor="login-password"
+                className="block text-xs font-medium text-ink-secondary mb-2 tracking-wide">
+                Password
+              </label>
+              <input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                onFocus={() => setFocused('pass')}
+                onBlur={() => setFocused(null)}
+                disabled={loginMutation.isPending}
+                className={`w-full rounded-xl bg-white/[0.04] px-4 py-3
+                  text-sm text-ink-primary font-medium
+                  placeholder:text-ink-tertiary
+                  border transition-all duration-200
+                  focus:outline-none disabled:opacity-50
+                  ${focused === 'pass'
+                    ? 'border-[#F25623]/50 shadow-[0_0_0_2px_rgba(242,86,35,0.12)]'
+                    : 'border-white/[0.08] hover:border-white/[0.14]'
+                  }`}
+              />
+            </div>
+
+            {/* Error message */}
+            {errorMsg && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-start gap-2.5 p-3 rounded-xl
+                  bg-status-failed/10 border border-status-failed/20"
+              >
+                <span className="text-status-failed text-xs font-bold shrink-0 mt-0.5">!</span>
+                <p role="alert" className="text-sm text-ink-primary">{errorMsg}</p>
+              </motion.div>
+            )}
+
+            {/* Submit button — the ONLY orange element */}
+            <motion.button
+              type="submit"
+              disabled={!username || !password || loginMutation.isPending}
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-3.5 rounded-xl
+                bg-[#F25623] hover:bg-[#FF6B3D] active:bg-[#D94A1A]
+                text-white text-sm font-semibold tracking-wider uppercase
+                shadow-[0_4px_16px_rgba(242,86,35,0.3)]
+                hover:shadow-[0_6px_20px_rgba(242,86,35,0.4)]
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F25623]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-card
+                disabled:opacity-35 disabled:cursor-not-allowed disabled:shadow-none
+                transition-all duration-200"
+            >
+              {loginMutation.isPending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
+                    <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  Signing in&hellip;
+                </span>
+              ) : 'Sign In'}
+            </motion.button>
+          </form>
+
+          {/* Divider + PIN alternative */}
+          <div className="mt-5 pt-4 border-t border-white/[0.06] text-center">
+            <button type="button" onClick={() => navigate('/pin')}
+              className="text-xs text-ink-tertiary hover:text-ink-secondary font-medium
+                transition-colors duration-200
+                focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 rounded">
+              Use PIN instead
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-[10px] text-ink-tertiary mt-8 tracking-widest uppercase">
+          Waterfront Country Club &middot; Juja
+        </p>
+      </motion.div>
     </div>
   )
 }

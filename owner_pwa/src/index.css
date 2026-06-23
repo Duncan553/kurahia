@@ -99,7 +99,18 @@ html {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Background — solid dark with subtle gradient for glass depth ──── */
+/* ── Background — ambient gradients give glass something to blur ───── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 80%, rgba(242, 86, 35, 0.04) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 60% at 85% 20%, rgba(77, 77, 77, 0.06) 0%, transparent 100%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(222, 222, 222, 0.02) 0%, transparent 100%);
+  pointer-events: none;
+}
 
 /* ── Glass panels — Apple-quality: saturate(160%) is the secret ────── */
 .glass-card {
