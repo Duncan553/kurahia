@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useToastStore } from '@shared'
+import { useToastStore, Button } from '@shared'
+import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 import { playOrderAlert, isMuted, setMuted as setAudioMuted } from '../lib/audio'
 import AudioEnableSplash from '../components/AudioEnableSplash'
@@ -71,10 +72,29 @@ function groupByOrder(items: QueueItem[]): OrderGroup[] {
 /* ── Stock Board (unchanged) ────────────────────────────────────────────────── */
 
 function StockBoard() {
+  const addToast = useToastStore(s => s.addToast)
+  const dept = useAuthStore(s => s.user?.department) ?? 'Station'
+
   const { data: items = [], isLoading } = useQuery<StockItem[]>({
     queryKey: ['station-stock'],
     queryFn: () => api.get<StockItem[]>('/inventory/items').then(r => r.data),
     refetchInterval: 60_000,
+  })
+
+  // Alert Manager: send a suggestion with all low-stock items listed
+  const alertMut = useMutation({
+    mutationFn: (lowItems: StockItem[]) => {
+      const itemList = lowItems.map(i =>
+        `${i.name}: ${parseFloat(i.current_stock)} ${i.unit} (reorder at ${parseFloat(i.reorder_level)} ${i.unit})`
+      ).join('\n')
+      return api.post('/suggestions', {
+        category: 'MANAGEMENT',
+        subject: `Low stock alert from ${dept}`,
+        body: `The following items are below reorder level:\n${itemList}`,
+      })
+    },
+    onSuccess: () => addToast({ type: 'success', message: 'Manager has been alerted about low stock.' }),
+    onError: () => addToast({ type: 'error', message: 'Could not send alert. Try again.' }),
   })
 
   if (isLoading) return (
@@ -92,10 +112,15 @@ function StockBoard() {
   return (
     <div className="space-y-4">
       {low.length > 0 && (
-        <div className="rounded-2xl border border-status-failed/40 bg-status-failed/10 p-3">
+        <div className="rounded-2xl border border-status-failed/40 bg-status-failed/10 p-3 space-y-2">
           <p className="text-status-failed text-sm font-bold">
             {low.length} item{low.length !== 1 ? 's' : ''} below reorder level
           </p>
+          <Button variant="primary" size="sm" className="w-full"
+            loading={alertMut.isPending}
+            onClick={() => alertMut.mutate(low)}>
+            Alert Manager
+          </Button>
         </div>
       )}
       {items.map(it => {
