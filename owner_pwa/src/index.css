@@ -99,15 +99,20 @@ html {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Background — ambient gradients give glass something to blur ───── */
+/* ── Background — resort photo + warm overlay (glass needs real content) ── */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
+  z-index: -2;
+  background: url('/images/resort-bg.jpg') center/cover no-repeat;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
   z-index: -1;
-  background:
-    radial-gradient(ellipse 60% 50% at 15% 80%, rgba(250, 92, 41, 0.04) 0%, transparent 100%),
-    radial-gradient(ellipse 50% 60% at 85% 20%, rgba(66, 49, 44, 0.08) 0%, transparent 100%);
+  background: rgba(30, 16, 12, 0.82);
   pointer-events: none;
 }
 
