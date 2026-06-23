@@ -30,6 +30,16 @@ interface ClockResponse {
   duplicate?: boolean
 }
 
+/* Live wall clock — ticks every second */
+function useWallClock() {
+  const [now, setNow] = useState(new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1_000)
+    return () => clearInterval(id)
+  }, [])
+  return now
+}
+
 export default function ClockScreen() {
   const queryClient = useQueryClient()
   const addToast = useToastStore((s) => s.addToast)
@@ -38,6 +48,7 @@ export default function ClockScreen() {
   const [btnDisabled, setBtnDisabled] = useState(false)
   const [dutyMinutes, setDutyMinutes] = useState(0)
   const [showLogout, setShowLogout] = useState(false)
+  const now = useWallClock()
 
   // Staff-accessible endpoint — returns only the current user's own status
   const { data, isLoading, isError, error, refetch } = useQuery<ClockStatus>({
@@ -141,6 +152,12 @@ export default function ClockScreen() {
     mutation.mutate()
   }
 
+  /* Format helpers for the Stitch layout */
+  const dateLabel = now.toLocaleDateString('en-KE', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase()
+  const hours = now.getHours().toString().padStart(2, '0')
+  const minutes = now.getMinutes().toString().padStart(2, '0')
+  const isClockingIn = !isClockedIn
+
   // ── LOADING ───────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
@@ -164,7 +181,7 @@ export default function ClockScreen() {
             </svg>
           }
           title="Your profile isn't set up yet."
-          description="Ask your manager to complete your employee profile under Manager → Staff. You can't clock in until then."
+          description="Ask your manager to complete your employee profile under Manager - Staff. You can't clock in until then."
         />
       </div>
     )
@@ -190,115 +207,138 @@ export default function ClockScreen() {
     )
   }
 
-  const isClockingIn = !isClockedIn
-
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
-    <div className="mb-6 p-4">
-      <h1 className="font-serif text-2xl font-bold text-white">CLOCK.</h1>
-      <p className="text-xs text-white/30 mt-1">KURAHIA STAFF</p>
-    </div>
-    <motion.div
-      className="flex-1 flex flex-col items-center justify-center p-6 gap-6"
-      initial="hidden"
-      animate="visible"
-      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
-    >
-      {/* Status label */}
-      <motion.p
-        variants={{ hidden: { opacity: 0, y: -8 }, visible: { opacity: 1, y: 0 } }}
-        className="text-sm font-medium text-slate-400/50 uppercase tracking-widest"
+      <motion.div
+        className="flex-1 flex flex-col items-center justify-center p-6"
+        initial="hidden"
+        animate="visible"
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
       >
-        {isClockedIn ? 'On Duty' : 'Off Duty'}
-      </motion.p>
+        {/* ── Glass container card ─────────────────────────────────── */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
+          className="glass-card rounded-2xl border border-white/10 p-8 w-full max-w-sm flex flex-col items-center"
+        >
+          {/* Date label */}
+          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-ink-tertiary mb-4">
+            {dateLabel}
+          </p>
 
-      {/* Duty timer — only while clocked in */}
-      <AnimatePresence mode="wait">
-        {isClockedIn && lastEvent && (
+          {/* Huge time display */}
           <motion.div
-            key="timer"
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.85 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="text-center"
+            variants={{ hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1 } }}
+            className="mb-8"
           >
-            <p className="text-4xl font-bold font-mono text-white tabular-nums">
-              {dutyTime(dutyMinutes)}
-            </p>
-            <p className="text-xs text-slate-300/70 mt-1">
-              since {formatTime(lastEvent.occurred_at)}
+            <p className="text-6xl md:text-7xl font-bold font-mono text-ink-primary tabular-nums tracking-tight leading-none">
+              {hours}<span className="text-ink-tertiary">:</span>{minutes}
             </p>
           </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Main action button */}
-      <motion.button
-        variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-        whileTap={{ scale: 0.97 }}
-        onClick={handleTap}
-        disabled={btnDisabled || mutation.isPending}
-        aria-label={isClockingIn ? 'Clock in' : 'Clock out'}
-        className={[
-          'w-full max-w-xs h-16 rounded-2xl text-lg font-semibold transition-colors',
-          'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2',
-          'disabled:opacity-50 disabled:cursor-not-allowed',
-          isClockingIn
-            ? 'bg-primary-dark text-white hover:bg-primary-dark/90 focus-visible:ring-primary-dark'
-            : 'bg-transparent text-primary-dark border-2 border-primary-dark hover:bg-primary-dark/5 focus-visible:ring-primary-dark',
-        ].join(' ')}
-      >
-        {mutation.isPending ? (
-          <span className="flex items-center justify-center gap-2">
-            <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.25" />
-              <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            {isClockingIn ? 'Clocking in…' : 'Clocking out…'}
-          </span>
-        ) : (
-          isClockingIn ? 'Clock In' : 'Clock Out'
-        )}
-      </motion.button>
-
-      {/* Offline badge */}
-      <AnimatePresence>
-        {!navigator.onLine && (
-          <motion.p
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="text-xs text-status-pending flex items-center gap-1.5"
+          {/* Big orange circle button */}
+          <motion.button
+            variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            whileTap={{ scale: 0.93 }}
+            onClick={handleTap}
+            disabled={btnDisabled || mutation.isPending}
+            aria-label={isClockingIn ? 'Clock in' : 'Clock out'}
+            className={[
+              'w-36 h-36 rounded-full flex flex-col items-center justify-center gap-2 transition-all shadow-lg',
+              'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-card',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+              isClockingIn
+                ? 'bg-primary-main hover:bg-primary-main/90 focus-visible:ring-primary-main'
+                : 'bg-transparent border-2 border-primary-main text-primary-main hover:bg-primary-main/10 focus-visible:ring-primary-main',
+            ].join(' ')}
           >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
-              <circle cx="6" cy="6" r="5" />
-            </svg>
-            Offline — tap to queue event
-          </motion.p>
-        )}
-      </AnimatePresence>
-    </motion.div>
+            {mutation.isPending ? (
+              <svg className="animate-spin w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.25" />
+                <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <>
+                {/* Clock icon */}
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className={isClockingIn ? 'text-white' : ''} aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className={`text-sm font-bold uppercase tracking-wider ${isClockingIn ? 'text-white' : ''}`}>
+                  {isClockingIn ? 'Clock In' : 'Clock Out'}
+                </span>
+              </>
+            )}
+          </motion.button>
 
-    {/* Shift-end logout prompt — tablet handover */}
-    <Modal open={showLogout} onClose={() => setShowLogout(false)} title="Shift ended" size="sm">
-      <div className="space-y-4">
-        <p className="text-sm text-slate-300/70">
-          Hand the tablet to your manager or the next person. Log out now to protect this account.
-        </p>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" className="flex-1" onClick={() => setShowLogout(false)}>
-            Stay Logged In
-          </Button>
-          <Button variant="primary" size="sm" className="flex-1"
-            onClick={() => { clearAuth(); navigate('/pin') }}>
-            Log Out
-          </Button>
+          {/* Shift status + Start time — below the button */}
+          <div className="mt-8 w-full grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">Shift Status</p>
+              <p className="text-sm font-semibold text-ink-primary">
+                {isClockedIn ? `On duty: ${dutyTime(dutyMinutes)}` : 'Off Duty'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">Start Time</p>
+              <p className="text-sm font-semibold text-ink-primary">
+                {isClockedIn && lastEvent ? formatTime(lastEvent.occurred_at) : '--:--'}
+              </p>
+            </div>
+          </div>
+
+          {/* Schedule + Assigned To */}
+          <div className="mt-4 w-full grid grid-cols-2 gap-4">
+            <div className="glass-card-sage rounded-xl p-3 text-center">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">Schedule</p>
+              <p className="text-xs text-ink-secondary">
+                {isClockedIn ? 'On Shift' : 'No active shift'}
+              </p>
+            </div>
+            <div className="glass-card-sage rounded-xl p-3 text-center">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">Assigned To</p>
+              <p className="text-xs text-ink-secondary">
+                {lastEvent?.shift_id ? 'Scheduled Shift' : 'Walk-in'}
+              </p>
+            </div>
+          </div>
+
+          {/* Offline badge */}
+          <AnimatePresence>
+            {!navigator.onLine && (
+              <motion.p
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mt-4 text-xs text-status-pending flex items-center gap-1.5"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+                  <circle cx="6" cy="6" r="5" />
+                </svg>
+                Offline — tap to queue event
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </motion.div>
+
+      {/* Shift-end logout prompt — tablet handover */}
+      <Modal open={showLogout} onClose={() => setShowLogout(false)} title="Shift ended" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-ink-secondary">
+            Hand the tablet to your manager or the next person. Log out now to protect this account.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" className="flex-1" onClick={() => setShowLogout(false)}>
+              Stay Logged In
+            </Button>
+            <Button variant="primary" size="sm" className="flex-1"
+              onClick={() => { clearAuth(); navigate('/pin') }}>
+              Log Out
+            </Button>
+          </div>
         </div>
-      </div>
-    </Modal>
-
+      </Modal>
     </div>
   )
 }
