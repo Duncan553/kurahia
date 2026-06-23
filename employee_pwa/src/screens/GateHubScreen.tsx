@@ -64,7 +64,7 @@ function StatsBar({ stats }: { stats: Stats | undefined }) {
         <motion.div key={label} variants={fadeIn}
           transition={{ duration: 0.35, ease: 'easeOut' }}
           className="rounded-2xl p-3 text-center border border-white/10">
-          <p className="text-lg font-bold tabular-nums text-white">{value}</p>
+          <p className="text-lg font-bold tabular-nums text-ink-primary">{value}</p>
           <p className="text-[10px] text-ink-secondary uppercase tracking-wide mt-0.5">{label}</p>
         </motion.div>
       ))}
@@ -102,8 +102,8 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
   return (
     <section className="rounded-2xl border border-white/10 p-4 space-y-3 mb-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-white">Issue Band</p>
-        <p className="text-sm font-bold tabular-nums text-white">{kes(ENTRY_FEE)}</p>
+        <p className="text-sm font-semibold text-ink-primary">Issue Band</p>
+        <p className="text-sm font-bold tabular-nums text-ink-primary">{kes(ENTRY_FEE)}</p>
       </div>
 
       {/* Payment method toggle */}
@@ -125,8 +125,10 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
         whileTap={{ scale: 0.98 }}
         onClick={() => setConfirmOpen(true)}
         disabled={mut.isPending}
+        aria-label="Issue wristband"
         className="w-full py-4 rounded-2xl bg-primary-dark text-white text-base font-semibold
-          hover:bg-primary-dark/90 transition-colors disabled:opacity-50"
+          hover:bg-primary-dark/90 transition-colors disabled:opacity-50
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
       >
         {mut.isPending ? 'Issuing…' : 'Issue Band →'}
       </motion.button>
@@ -137,7 +139,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
             initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="text-center text-sm text-ink-tertiary">
-            Last issued: <span className="font-bold text-white">#{lastBand}</span>
+            Last issued: <span className="font-bold text-ink-primary">#{lastBand}</span>
           </motion.p>
         )}
       </AnimatePresence>
@@ -145,7 +147,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
       <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Issue wristband?">
         <p className="text-base text-ink-secondary mb-1">
           Opens a new tab and records{' '}
-          <strong className="text-white">{kes(ENTRY_FEE)}</strong>{' '}
+          <strong className="text-ink-primary">{kes(ENTRY_FEE)}</strong>{' '}
           via {METHODS.find(m => m.value === method)?.label}.
         </p>
         <p className="text-sm text-ink-tertiary mb-6">Payment cannot be reversed.</p>
@@ -191,7 +193,7 @@ function LookupSection() {
 
   return (
     <section className="rounded-2xl border border-white/10 p-4 space-y-3 mb-4">
-      <p className="text-sm font-semibold text-white">Look Up Band</p>
+      <p className="text-sm font-semibold text-ink-primary">Look Up Band</p>
       <div className="flex gap-2">
         <label htmlFor="gate-band-number" className="sr-only">Band number</label>
         <input
@@ -202,12 +204,15 @@ function LookupSection() {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && lookup()}
           className="flex-1 rounded-xl border border-cream-alt bg-cream-card px-4 py-2.5
-            text-base text-white focus:outline-none focus:border-primary-dark"
+            text-base text-ink-primary focus:outline-none focus:border-primary-dark
+            focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
         />
         <motion.button onClick={lookup} disabled={isFetching}
           whileTap={{ scale: 0.97 }}
+          aria-label="Look up wristband"
           className="px-5 py-2.5 rounded-xl bg-ink-primary text-white text-sm font-semibold
-            hover:bg-ink-primary/90 transition-colors disabled:opacity-50">
+            hover:bg-ink-primary/90 transition-colors disabled:opacity-50
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]">
           {isFetching ? '…' : 'Look up'}
         </motion.button>
       </div>
@@ -219,13 +224,13 @@ function LookupSection() {
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="flex items-center justify-between px-3 py-2 rounded-xl bg-cream-alt/50">
             <div>
-              <span className="font-bold text-white">#{data.band_number}</span>
+              <span className="font-bold text-ink-primary">#{data.band_number}</span>
               <span className={`ml-2 text-sm font-semibold ${statusColor(data.status)}`}>
                 {data.status}
               </span>
             </div>
             <div className="text-right">
-              <p className="text-sm font-bold tabular-nums text-white">
+              <p className="text-sm font-bold tabular-nums text-ink-primary">
                 {kes(data.tab_balance)} credit
               </p>
               {data.issued_by && (
@@ -312,13 +317,13 @@ function BookingCheckIn() {
 
   return (
     <section className="rounded-2xl border border-white/10 p-4 space-y-3 mb-4">
-      <p className="text-sm font-semibold text-white">
+      <p className="text-sm font-semibold text-ink-primary">
         Expected Arrivals ({arrivals.length})
       </p>
       {arrivals.map(a => (
         <div key={a.id} className="flex items-center justify-between gap-3 py-2 border-b border-cream-alt last:border-0">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white truncate">{a.guest_name}</p>
+            <p className="text-sm font-semibold text-ink-primary truncate">{a.guest_name}</p>
             <p className="text-xs text-ink-tertiary">{a.resource_name} · {a.number_of_guests} guest{a.number_of_guests !== 1 ? 's' : ''}</p>
           </div>
           <motion.button whileTap={{ scale: 0.95 }}

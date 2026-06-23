@@ -257,9 +257,11 @@ function KanbanView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount:
                           <motion.button whileTap={{ scale: 0.94 }}
                             onClick={() => actMut.mutate({ id: item.order_item_id, action: 'receive' })}
                             disabled={actMut.isPending}
+                            aria-label={`Start cooking ${item.menu_item ?? 'item'}`}
                             className="flex-1 py-2.5 rounded-xl text-sm font-semibold
                               bg-primary-main text-white
-                              hover:bg-primary-main/90 transition-colors disabled:opacity-50">
+                              hover:bg-primary-main/90 transition-colors disabled:opacity-50
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]">
                             Start Cooking
                           </motion.button>
                         )}
@@ -268,17 +270,21 @@ function KanbanView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount:
                             <motion.button whileTap={{ scale: 0.94 }}
                               onClick={() => actMut.mutate({ id: item.order_item_id, action: 'receive' })}
                               disabled={actMut.isPending}
+                              aria-label={`Bump ${item.menu_item ?? 'item'}`}
                               className="flex-1 py-2.5 rounded-xl text-sm font-semibold
                                 border border-white/10 text-ink-secondary
-                                hover:bg-white/5 transition-colors disabled:opacity-50">
+                                hover:bg-white/5 transition-colors disabled:opacity-50
+                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]">
                               Bump
                             </motion.button>
                             <motion.button whileTap={{ scale: 0.94 }}
                               onClick={() => actMut.mutate({ id: item.order_item_id, action: 'ready' })}
                               disabled={actMut.isPending}
+                              aria-label={`Mark ${item.menu_item ?? 'item'} ready`}
                               className="flex-1 py-2.5 rounded-xl text-sm font-semibold
                                 bg-primary-main text-white
-                                hover:bg-primary-main/90 transition-colors disabled:opacity-50">
+                                hover:bg-primary-main/90 transition-colors disabled:opacity-50
+                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]">
                               &#10003; Mark Ready
                             </motion.button>
                           </>

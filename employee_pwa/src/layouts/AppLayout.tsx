@@ -426,11 +426,11 @@ export default function AppLayout() {
 
       {/* ── Left Nav Rail (sm+) ─────────────────────────────────── */}
       <aside className="hidden sm:flex flex-col w-16 lg:w-52 shrink-0 border-r border-white/5"
-        style={{ background: 'rgba(11, 17, 32, 0.95)', backdropFilter: 'blur(20px)' }}>
+        style={{ background: 'rgba(30, 16, 12, 0.95)', backdropFilter: 'blur(20px)' }}>
 
         {/* Logo */}
         <div className="h-14 flex items-center justify-center lg:justify-start lg:px-4 border-b border-white/5">
-          <span className="text-white font-bold font-serif text-lg">
+          <span className="text-[#f9dcd5] font-bold font-serif text-lg">
             <span className="hidden lg:block">Kurahia</span>
             <span className="lg:hidden">K</span>
           </span>
@@ -444,8 +444,8 @@ export default function AppLayout() {
                 'flex items-center gap-3 px-3 lg:px-4 py-2.5 mx-1 rounded-lg transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]',
                 isActive
-                  ? 'bg-white/8 text-white border-l-2 border-[#fa5c29]'
-                  : 'text-white/40 hover:text-white/70 hover:bg-white/3 border-l-2 border-transparent',
+                  ? 'bg-[#fa5c29]/10 text-[#ffb59f] border-l-2 border-[#fa5c29]'
+                  : 'text-[#aa8980] hover:text-[#f9dcd5] hover:bg-white/5 border-l-2 border-transparent',
               ].join(' ')}
             >
               <span className="relative shrink-0">
@@ -470,7 +470,7 @@ export default function AppLayout() {
               {user?.username?.[0]?.toUpperCase() ?? '?'}
             </div>
             <div className="hidden lg:block flex-1 min-w-0">
-              <p className="text-xs font-medium text-white truncate">{user?.username}</p>
+              <p className="text-xs font-medium text-[#f9dcd5] truncate">{user?.username}</p>
               <button onClick={signOut} className="text-[10px] text-status-failed/50 hover:text-status-failed">
                 Sign out
               </button>
@@ -484,8 +484,8 @@ export default function AppLayout() {
 
         {/* Mobile top bar (sm: hidden since sidebar has logo) */}
         <header className="sm:hidden h-14 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
-          style={{ background: 'rgba(11, 17, 32, 0.9)' }}>
-          <span className="text-lg font-bold font-serif text-white">Kurahia</span>
+          style={{ background: 'rgba(30, 16, 12, 0.9)' }}>
+          <span className="text-lg font-bold font-serif text-[#f9dcd5]">Kurahia</span>
           <button onClick={signOut}
             className="w-8 h-8 rounded-full bg-[#fa5c29]/20 flex items-center justify-center
               text-[#fa5c29] text-sm font-bold" aria-label="Sign out">
@@ -524,7 +524,7 @@ export default function AppLayout() {
 
         {/* Mobile bottom nav (sm: hidden since sidebar replaces it) */}
         <nav className="sm:hidden shrink-0 flex border-t border-white/5"
-          style={{ background: 'rgba(11, 17, 32, 0.95)' }}
+          style={{ background: 'rgba(30, 16, 12, 0.95)' }}
           aria-label="Main navigation">
           {visibleItems.slice(0, 5).map(({ id, path, label, Icon, badge }) => (
             <NavLink key={id} to={path} end={path === '/clock'}
@@ -532,7 +532,7 @@ export default function AppLayout() {
                 'flex-1 flex flex-col items-center justify-center gap-0.5 py-2',
                 'min-h-[56px] relative transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29] focus-visible:ring-inset',
-                isActive ? 'text-[#fa5c29]' : 'text-white/30 hover:text-white/60',
+                isActive ? 'text-[#fa5c29]' : 'text-[#aa8980] hover:text-[#f9dcd5]',
               ].join(' ')}
             >
               <span className="relative">

@@ -147,21 +147,21 @@ export default function ManagerScreen() {
           {/* ── Row 1: Greeting + Pending approvals ──────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 mb-4">
             <motion.div variants={anim}>
-              <p className="text-sm text-white/30">{greeting},</p>
-              <h1 className="font-serif text-3xl md:text-4xl font-bold text-white tracking-tight">
+              <p className="text-sm text-ink-tertiary">{greeting},</p>
+              <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
                 {user?.username ?? 'Manager'}
               </h1>
-              <p className="text-xs text-white/20 mt-1">
+              <p className="text-xs text-ink-tertiary/60 mt-1">
                 Operations · {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
             </motion.div>
             <ErrorBoundary level="tile">
               <G onClick={() => navigate('/manager/purchases')}>
                 <div className="p-5 text-center">
-                  <p className={`text-4xl font-bold tabular-nums ${pending.length > 0 ? 'text-status-pending' : 'text-white/20'}`}>
+                  <p className={`text-4xl font-bold tabular-nums ${pending.length > 0 ? 'text-status-pending' : 'text-ink-tertiary/60'}`}>
                     {pending.length}
                   </p>
-                  <p className="text-xs text-white/30 mt-1">Pending Approvals</p>
+                  <p className="text-xs text-ink-tertiary mt-1">Pending Approvals</p>
                 </div>
               </G>
             </ErrorBoundary>
@@ -173,21 +173,21 @@ export default function ManagerScreen() {
               <G>
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <p className="text-[11px] font-semibold tracking-wider uppercase text-white/30">Stock Behavior</p>
+                    <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary">Stock Behavior</p>
                     <button onClick={() => navigate('/inventory/count')} className="text-[10px] text-[#fa5c29] hover:text-[#ffb59f]">View All →</button>
                   </div>
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     <div>
-                      <p className="text-2xl font-bold tabular-nums text-white">{items.length}</p>
-                      <p className="text-[10px] text-white/30">Total</p>
+                      <p className="text-2xl font-bold tabular-nums text-ink-primary">{items.length}</p>
+                      <p className="text-[10px] text-ink-tertiary">Total</p>
                     </div>
                     <div>
                       <p className={`text-2xl font-bold tabular-nums ${low.length > 0 ? 'text-status-failed' : 'text-status-paid'}`}>{low.length}</p>
-                      <p className="text-[10px] text-white/30">Low</p>
+                      <p className="text-[10px] text-ink-tertiary">Low</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold tabular-nums text-status-paid">{items.length - low.length}</p>
-                      <p className="text-[10px] text-white/30">OK</p>
+                      <p className="text-[10px] text-ink-tertiary">OK</p>
                     </div>
                   </div>
                   {chartData.length > 0 && (
@@ -208,15 +208,15 @@ export default function ManagerScreen() {
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
-                  <p className="text-[11px] font-semibold tracking-wider uppercase text-white/30 mb-3">Stock by Department</p>
+                  <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-3">Stock by Department</p>
                   <div className="space-y-3">
                     {Object.entries(byDept).map(([dept, { total, low: dLow }]) => {
                       const healthPct = total > 0 ? Math.round(((total - dLow) / total) * 100) : 100
                       return (
                         <div key={dept}>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm text-white/80 font-medium">{dept}</span>
-                            <span className="text-xs tabular-nums text-white/40">
+                            <span className="text-sm text-ink-primary/80 font-medium">{dept}</span>
+                            <span className="text-xs tabular-nums text-ink-tertiary/80">
                               {total - dLow}/{total} OK
                             </span>
                           </div>
@@ -233,7 +233,7 @@ export default function ManagerScreen() {
                         </div>
                       )
                     })}
-                    {Object.keys(byDept).length === 0 && <p className="text-sm text-white/20">No items</p>}
+                    {Object.keys(byDept).length === 0 && <p className="text-sm text-ink-tertiary/60">No items</p>}
                   </div>
                 </div>
               </G>
@@ -245,13 +245,13 @@ export default function ManagerScreen() {
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
-                  <p className="text-[11px] font-semibold tracking-wider uppercase text-white/30 mb-3">Budget Burn</p>
-                  {budgets.length === 0 ? <p className="text-sm text-white/20">No budgets set</p> : (
+                  <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-3">Budget Burn</p>
+                  {budgets.length === 0 ? <p className="text-sm text-ink-tertiary/60">No budgets set</p> : (
                     <div className="space-y-3">
                       {budgets.slice(0, 5).map(r => (
                         <div key={r.department}>
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-white/60">{r.department}</span>
+                            <span className="text-ink-secondary">{r.department}</span>
                             <span className={`font-bold tabular-nums ${r.over_budget ? 'text-status-failed' : r.pct_used > 80 ? 'text-status-pending' : 'text-status-paid'}`}>
                               {Math.round(r.pct_used)}%
                             </span>
@@ -272,12 +272,12 @@ export default function ManagerScreen() {
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
-                  <p className="text-[11px] font-semibold tracking-wider uppercase text-white/30 mb-3">Low Stock</p>
+                  <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-3">Low Stock</p>
                   {low.length === 0 ? <p className="text-sm text-status-paid/60">All healthy</p> : (
                     <div className="space-y-2">
                       {low.slice(0, 6).map(i => (
                         <div key={i.id} className="flex justify-between text-sm">
-                          <span className="text-white/60 truncate">{i.name}</span>
+                          <span className="text-ink-secondary truncate">{i.name}</span>
                           <span className="text-status-failed tabular-nums font-semibold shrink-0 ml-2">
                             {parseFloat(i.current_stock)} {i.unit}
                           </span>
@@ -292,7 +292,7 @@ export default function ManagerScreen() {
 
           {/* ── Row 4: Action tiles — ALL features ────────────────── */}
           <motion.div variants={anim}>
-            <p className="text-[11px] font-semibold tracking-wider uppercase text-white/30 mb-3">Manage</p>
+            <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-3">Manage</p>
             <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
               {ACTIONS.map(a => (
                 <motion.button key={a.path}
@@ -302,10 +302,10 @@ export default function ManagerScreen() {
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]
                     glass-card-sage hover:bg-white/8"
                   aria-label={`${a.label} — ${a.desc}`}>
-                  <span className="text-white/60">{a.svg}</span>
+                  <span className="text-ink-secondary">{a.svg}</span>
                   <div>
-                    <p className="text-xs text-white font-semibold">{a.label}</p>
-                    <p className="text-[9px] text-white/30 mt-0.5 leading-tight">{a.desc}</p>
+                    <p className="text-xs text-ink-primary font-semibold">{a.label}</p>
+                    <p className="text-[9px] text-ink-tertiary mt-0.5 leading-tight">{a.desc}</p>
                   </div>
                 </motion.button>
               ))}
