@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, EmptyState, StatusBadge } from '@shared'
+import { Skeleton, EmptyState, StatusBadge, Button, useToastStore } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 import { formatTime } from '../lib/format'
@@ -60,9 +60,28 @@ function depositStatus(paid: string, required: string): 'paid' | 'pending' {
 const fadeIn = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
 const stagger = { visible: { transition: { staggerChildren: 0.06 } } }
 
+const extractErr = (e: unknown) =>
+  (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
+
 export default function FrontDeskScreen() {
   const [tab, setTab] = useState<Tab>('arrivals')
+  const [band, setBand] = useState('')
   const navigate = useNavigate()
+  const addToast = useToastStore(s => s.addToast)
+
+  // Wristband lookup: find a guest's band tab and navigate to charge against it
+  const bandMut = useMutation({
+    mutationFn: (num: string) =>
+      api.get<{ tab_id: string; status: string }>(`/gate/bands/${num.trim()}`).then(r => r.data),
+    onSuccess: (data) => {
+      if (data.status !== 'ACTIVE') {
+        addToast({ type: 'error', message: 'That band is not active.' })
+        return
+      }
+      navigate(`/pos/tabs/${data.tab_id}`)
+    },
+    onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
+  })
 
   const { data, isLoading, isError, dataUpdatedAt } = useQuery<FrontDeskData>({
     queryKey: ['front-desk-today'],
@@ -100,6 +119,26 @@ export default function FrontDeskScreen() {
               {lastUpdated ? ` · updated ${lastUpdated}` : ''}
             </p>
           </div>
+        </motion.div>
+
+        {/* Wristband lookup — look up guest tab by band number */}
+        <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="flex gap-2">
+          <input
+            type="number" min="1" inputMode="numeric"
+            aria-label="Wristband number"
+            placeholder="Wristband # — look up guest tab"
+            value={band}
+            onChange={e => setBand(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && band && bandMut.mutate(band)}
+            className="flex-1 rounded-xl border border-white/10 bg-transparent px-4 py-2.5
+              text-sm text-[#f9dcd5] placeholder:text-ink-tertiary
+              focus:outline-none focus:border-[#fa5c29] focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+          />
+          <Button variant="ghost" size="sm" loading={bandMut.isPending}
+            onClick={() => band && bandMut.mutate(band)}>
+            Open Band
+          </Button>
         </motion.div>
 
         {/* Pending waivers warning banner */}

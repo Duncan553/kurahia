@@ -287,7 +287,7 @@ export default function ScheduleScreen() {
                 </div>
               </div>
               <Link
-                to="/schedule"
+                to="/manager/attendance"
                 className="text-xs font-semibold text-primary-main hover:text-primary-main/80
                   transition-colors underline underline-offset-2"
               >

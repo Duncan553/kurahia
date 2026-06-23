@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Skeleton, EmptyState, Button, useToastStore } from '@shared'
@@ -17,12 +18,14 @@ const METHODS = ['CASH', 'MPESA', 'CARD', 'BANK_TRANSFER']
 export default function ServicePayScreen() {
   const dept = useAuthStore(s => s.user?.department)
   const addToast = useToastStore(s => s.addToast)
+  const navigate = useNavigate()
 
   const [draft, setDraft] = useState<Record<string, number>>({})
   const [pay, setPay] = useState({ method: 'CASH', amount: '' })
   const [stage, setStage] = useState<'select' | 'pay'>('select')
   const [tab, setTab] = useState<'pos' | 'stock' | 'request'>('pos')
   const [requestText, setRequestText] = useState('')
+  const [band, setBand] = useState('')
   const idem = useState(() => crypto.randomUUID())[0]
 
   const { data: items = [], isLoading } = useQuery<MenuItem[]>({
@@ -76,6 +79,20 @@ export default function ServicePayScreen() {
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
 
+  // Wristband lookup: find a guest's band tab and navigate to charge against it
+  const bandMut = useMutation({
+    mutationFn: (num: string) =>
+      api.get<{ tab_id: string; status: string }>(`/gate/bands/${num.trim()}`).then(r => r.data),
+    onSuccess: (data) => {
+      if (data.status !== 'ACTIVE') {
+        addToast({ type: 'error', message: 'That band is not active. Send the guest to the gate.' })
+        return
+      }
+      navigate(`/pos/tabs/${data.tab_id}`)
+    },
+    onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
+  })
+
   const lowStock = stockItems.filter(i => i.below_reorder)
   const deptName = dept ?? 'Services'
 
@@ -87,6 +104,25 @@ export default function ServicePayScreen() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold font-serif text-[#f9dcd5]">{deptName}</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Sell · View Stock · Request Restock</p>
+        </div>
+
+        {/* Wristband lookup — charge service to the guest's band credit */}
+        <div className="flex gap-2 mb-6">
+          <input
+            type="number" min="1" inputMode="numeric"
+            aria-label="Wristband number"
+            placeholder="Wristband # — charge to band credit"
+            value={band}
+            onChange={e => setBand(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && band && bandMut.mutate(band)}
+            className="flex-1 rounded-xl border border-white/10 bg-transparent px-4 py-2.5
+              text-sm text-[#f9dcd5] placeholder:text-ink-tertiary
+              focus:outline-none focus:border-[#fa5c29] focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+          />
+          <Button variant="ghost" size="sm" loading={bandMut.isPending}
+            onClick={() => band && bandMut.mutate(band)}>
+            Open Band
+          </Button>
         </div>
 
         {/* Tab switcher */}
