@@ -11,11 +11,11 @@ interface InvItem {
 }
 
 /* Reusable glass panel */
-function Glass({ children, className = '' }: {
-  children: React.ReactNode; className?: string
+function Glass({ children, className = '', onClick }: {
+  children: React.ReactNode; className?: string; onClick?: () => void
 }) {
   return (
-    <div className={`glass-card overflow-hidden ${className}`}>
+    <div className={`glass-card overflow-hidden ${className}`} onClick={onClick} role={onClick ? 'button' : undefined}>
       <div className="relative">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
         {children}
@@ -170,12 +170,9 @@ export default function HeadChefScreen() {
                     <div className="p-5">
                       <div className="flex items-center justify-between mb-4">
                         <SectionLabel>Low Stock Alerts</SectionLabel>
-                        <button
-                          onClick={() => navigate('/inventory/count')}
-                          className="text-[10px] font-semibold text-[#fa5c29] hover:text-[#fa5c29]/80
-                            transition-colors uppercase tracking-wider">
-                          View All &rarr;
-                        </button>
+                        <span className="text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">
+                          {low.length} item{low.length !== 1 ? 's' : ''}
+                        </span>
                       </div>
 
                       {low.length > 0 ? (
@@ -217,14 +214,11 @@ export default function HeadChefScreen() {
                                   </p>
                                 </div>
 
-                                {/* Reorder button */}
-                                <button
-                                  onClick={() => navigate('/inventory/purchase-request')}
-                                  className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider
-                                    bg-primary-main/15 text-primary-main border border-primary-main/20
-                                    hover:bg-primary-main/25 transition-colors shrink-0">
-                                  Reorder
-                                </button>
+                                {/* Low stock indicator (read-only — chef can't reorder) */}
+                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider
+                                  bg-status-failed/15 text-status-failed shrink-0">
+                                  Low
+                                </span>
                               </div>
                             )
                           })}
@@ -241,64 +235,66 @@ export default function HeadChefScreen() {
             {/* RIGHT COLUMN — Recipes, Menu, Variance, Kitchen tiles */}
             <div className="space-y-4">
 
-              {/* Recipes tile */}
-              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
-                <Glass>
+              {/* Recipes tile — navigate to menu/recipe editor */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
+                whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+                <Glass className="cursor-pointer" onClick={() => navigate('/manager/menu')}>
                   <div className="p-5">
                     <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
                       Recipes
                     </p>
-                    <p className="text-3xl font-bold tabular-nums text-[#f9dcd5] mb-1">
-                      {items.length > 0 ? Math.round(items.length * 1.2) : '—'}
+                    <p className="text-sm text-[#f9dcd5] mb-1">
+                      Enter &amp; edit recipes per dish
                     </p>
-                    <p className="text-[10px] text-ink-tertiary">Active</p>
+                    <p className="text-[10px] text-[#fa5c29]">Open →</p>
                   </div>
                 </Glass>
               </motion.div>
 
-              {/* Menu tile */}
-              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
-                <Glass>
+              {/* Menu tile — navigate to menu editor */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
+                whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+                <Glass className="cursor-pointer" onClick={() => navigate('/manager/menu')}>
                   <div className="p-5">
                     <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
                       Menu
                     </p>
-                    <p className="text-lg font-bold text-[#f9dcd5] mb-1">
-                      Current Menu
+                    <p className="text-sm text-[#f9dcd5] mb-1">
+                      Add dishes, set prices
                     </p>
-                    <p className="text-[10px] text-ink-tertiary">Active service</p>
+                    <p className="text-[10px] text-[#fa5c29]">Open →</p>
                   </div>
                 </Glass>
               </motion.div>
 
-              {/* Variance tile */}
-              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
-                <Glass>
+              {/* Variance tile — navigate to inventory variance tab */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
+                whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+                <Glass className="cursor-pointer" onClick={() => navigate('/inventory/count')}>
                   <div className="p-5">
                     <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
                       Variance
                     </p>
-                    <p className="text-2xl font-bold tabular-nums text-[#fa5c29] mb-1">
-                      {low.length > 0
-                        ? `-${((low.length / Math.max(items.length, 1)) * 100).toFixed(1)}%`
-                        : '0.0%'}
+                    <p className="text-sm text-[#f9dcd5] mb-1">
+                      Expected vs actual use
                     </p>
-                    <p className="text-[10px] text-ink-tertiary">vs Target</p>
+                    <p className="text-[10px] text-[#fa5c29]">Open →</p>
                   </div>
                 </Glass>
               </motion.div>
 
-              {/* Kitchen stations tile */}
-              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
-                <Glass>
+              {/* Kitchen queue tile — navigate to live queue */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
+                whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+                <Glass className="cursor-pointer" onClick={() => navigate('/pos/kitchen')}>
                   <div className="p-5">
                     <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
-                      Kitchen
+                      Kitchen Queue
                     </p>
-                    <p className="text-2xl font-bold tabular-nums text-[#f9dcd5] mb-1">
-                      8
+                    <p className="text-sm text-[#f9dcd5] mb-1">
+                      Live order queue
                     </p>
-                    <p className="text-[10px] text-ink-tertiary">Stations Active</p>
+                    <p className="text-[10px] text-[#fa5c29]">Open →</p>
                   </div>
                 </Glass>
               </motion.div>
