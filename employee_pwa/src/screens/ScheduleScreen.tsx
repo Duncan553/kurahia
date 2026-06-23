@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Skeleton, EmptyState, StatusBadge } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
-import { formatTime, formatDayLabel, toDateKey, todayKey, nextNDays } from '../lib/format'
+import { formatTime, toDateKey, todayKey } from '../lib/format'
 
 interface Shift {
   id: string
@@ -16,7 +17,7 @@ interface Shift {
   status: string
 }
 
-// Map backend shift status strings → StatusBadge variants
+// Map backend shift status strings to StatusBadge variants
 function shiftStatus(s: string): StatusValue {
   const map: Record<string, StatusValue> = {
     SCHEDULED: 'confirmed',
@@ -29,8 +30,42 @@ function shiftStatus(s: string): StatusValue {
   return map[s.toUpperCase()] ?? 'confirmed'
 }
 
-const DAYS = nextNDays(7)
+// Build 7-day week starting from Monday of the current week
+function currentWeekDays(): string[] {
+  const now = new Date()
+  const dayOfWeek = now.getDay() // 0=Sun
+  // Offset to Monday: if Sun (0) go back 6, otherwise go back (dayOfWeek - 1)
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now)
+    d.setDate(now.getDate() + mondayOffset + i)
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(d)
+  })
+}
+
+const DAYS = currentWeekDays()
 const TODAY = todayKey()
+
+// Animation variants
+const fadeIn = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
+const stagger = { visible: { transition: { staggerChildren: 0.06 } } }
+
+// Weekday name from date key (e.g. "2026-06-22" => "Monday")
+function weekdayName(dateKey: string): string {
+  return new Intl.DateTimeFormat('en-KE', {
+    timeZone: 'Africa/Nairobi',
+    weekday: 'long',
+  }).format(new Date(dateKey + 'T12:00:00'))
+}
+
+// Short date label (e.g. "June 22")
+function shortDate(dateKey: string): string {
+  return new Intl.DateTimeFormat('en-KE', {
+    timeZone: 'Africa/Nairobi',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(dateKey + 'T12:00:00'))
+}
 
 export default function ScheduleScreen() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -48,6 +83,19 @@ export default function ScheduleScreen() {
     const key = toDateKey(s.start)
     if (!byDay.has(key)) byDay.set(key, [])
     byDay.get(key)!.push(s)
+  }
+
+  // Compute summary stats for the week
+  let totalHours = 0
+  let shiftCount = 0
+  for (const dayKey of DAYS) {
+    const dayShifts = byDay.get(dayKey) ?? []
+    for (const s of dayShifts) {
+      const startMs = new Date(s.start).getTime()
+      const endMs = new Date(s.end).getTime()
+      totalHours += (endMs - startMs) / 3_600_000
+      shiftCount++
+    }
   }
 
   // Pull-to-refresh gesture
@@ -162,68 +210,200 @@ export default function ScheduleScreen() {
       )}
 
       <motion.div
-        className="p-4 space-y-4"
+        className="p-4 md:p-6 max-w-6xl mx-auto"
         initial="hidden"
         animate="visible"
-        variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+        variants={stagger}
       >
-        {DAYS.map((dayKey) => {
-          const isToday = dayKey === TODAY
-          const dayShifts = byDay.get(dayKey) ?? []
-          // Format the day label from the key
-          const label = formatDayLabel(dayKey + 'T12:00:00')
+        {/* ── Page header: title + action buttons ─────────────────────── */}
+        <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
+          className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-6">
+          <div>
+            <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#f9dcd5] tracking-tight">
+              My Schedule
+            </h1>
+            <p className="text-sm text-ink-secondary mt-1">
+              Manage your upcoming shifts and time-off requests.
+            </p>
+          </div>
 
-          return (
-            <motion.div
-              key={dayKey}
-              variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
+          {/* Action buttons — link to existing routes */}
+          <div className="flex gap-2 shrink-0">
+            <Link
+              to="/absence"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold
+                border border-white/10 bg-white/5 text-[#f9dcd5] hover:bg-white/10 transition-colors"
             >
-              {/* Day header */}
-              <p className={[
-                'text-xs font-semibold uppercase tracking-wider mb-2',
-                isToday ? 'text-primary-dark' : 'text-ink-tertiary',
-              ].join(' ')}>
-                {isToday ? `Today · ${label}` : label}
-              </p>
+              Absence Notice
+            </Link>
+            <Link
+              to="/leave"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold
+                bg-primary-main text-white hover:bg-primary-main/90 transition-colors"
+            >
+              Request Leave
+            </Link>
+          </div>
+        </motion.div>
 
-              {/* Shifts for this day */}
-              {dayShifts.length === 0 ? (
-                <div className={[
-                  'rounded-xl px-4 py-3',
-                  isToday
-                    ? 'border bg-primary-light/20 border-[#fa5c29]/20'
-                    : 'glass-card',
-                ].join(' ')}>
-                  <p className="text-sm text-ink-tertiary">No shift</p>
+        {/* ── 7-day grid + Summary sidebar ────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+          {/* Day cards grid: 4 columns on first row, 3 on second (Mon-Thu / Fri-Sun) */}
+          <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+              {DAYS.slice(0, 4).map((dayKey) => (
+                <DayCard key={dayKey} dayKey={dayKey} isToday={dayKey === TODAY} shifts={byDay.get(dayKey) ?? []} />
+              ))}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {DAYS.slice(4).map((dayKey) => (
+                <DayCard key={dayKey} dayKey={dayKey} isToday={dayKey === TODAY} shifts={byDay.get(dayKey) ?? []} />
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Summary card — right sidebar */}
+          <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
+            <div className="glass-card rounded-2xl p-5">
+              <h3 className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-4">
+                Summary
+              </h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="text-center">
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
+                    Total Hours
+                  </p>
+                  <p className="text-3xl font-bold tabular-nums text-[#f9dcd5]">
+                    {totalHours.toFixed(1)}
+                  </p>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {dayShifts.map((shift) => (
-                    <div
-                      key={shift.id}
-                      className={[
-                        'rounded-xl px-4 py-3 flex items-center justify-between gap-3',
-                        isToday
-                          ? 'border bg-primary-light/20 border-[#fa5c29]/20'
-                          : 'glass-card',
-                      ].join(' ')}
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#f9dcd5]">
-                          {formatTime(shift.start)} – {formatTime(shift.end)}
-                        </p>
-                        <p className="text-xs text-ink-tertiary mt-0.5 truncate">{shift.role}</p>
-                      </div>
-                      <StatusBadge status={shiftStatus(shift.status)} />
-                    </div>
-                  ))}
+                <div className="text-center">
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
+                    Shifts
+                  </p>
+                  <p className="text-3xl font-bold tabular-nums text-[#f9dcd5]">
+                    {shiftCount}
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/schedule"
+                className="text-xs font-semibold text-primary-main hover:text-primary-main/80
+                  transition-colors underline underline-offset-2"
+              >
+                View Full Timesheet
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* ── Shift Reminders section ─────────────────────────────────── */}
+        <motion.div variants={fadeIn} transition={{ duration: 0.3 }} className="mt-6">
+          <div className="glass-card rounded-2xl p-5">
+            <h3 className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-4 flex items-center gap-2">
+              {/* Clock/reminder icon */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-[#aa8980]" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Shift Reminders
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+              {[
+                'Please clock in at least 10 minutes before your shift starts for handover.',
+                'Meal breaks are 45 minutes and must be coordinated with your supervisor.',
+                'Uniforms must be pressed and name tags clearly visible at all times.',
+                'Absence notices must be submitted through the portal at least 4 hours prior.',
+              ].map((reminder, i) => (
+                <div key={i} className="flex items-start gap-2.5">
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#aa8980] shrink-0" />
+                  <p className="text-xs text-ink-secondary leading-relaxed">{reminder}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </div>
+  )
+}
+
+/* ── Day card component ──────────────────────────────────────────── */
+function DayCard({
+  dayKey,
+  isToday,
+  shifts,
+}: {
+  dayKey: string
+  isToday: boolean
+  shifts: Shift[]
+}) {
+  const dayName = weekdayName(dayKey)
+  const dateStr = shortDate(dayKey)
+
+  return (
+    <div
+      className={[
+        'glass-card rounded-2xl p-4 flex flex-col min-h-[140px]',
+        isToday ? 'ring-1 ring-status-paid/40' : '',
+      ].join(' ')}
+    >
+      {/* Day header row: weekday + optional today badge */}
+      <div className="flex items-center justify-between mb-1">
+        <p className={`text-sm font-bold ${isToday ? 'text-status-paid' : 'text-[#f9dcd5]'}`}>
+          {isToday ? 'Today' : dayName}
+        </p>
+        {isToday && (
+          <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide
+            bg-status-paid/20 text-status-paid">
+            Active
+          </span>
+        )}
+      </div>
+
+      {/* Date subtitle */}
+      <p className="text-[10px] text-ink-tertiary mb-3">
+        {isToday ? `${dayName}, ${dateStr}` : dateStr}
+      </p>
+
+      {/* Shift content */}
+      {shifts.length === 0 ? (
+        <div className="flex-1 flex items-center">
+          <p className="text-xs text-ink-tertiary italic">No shift scheduled</p>
+        </div>
+      ) : (
+        <div className="flex-1 space-y-2">
+          {shifts.map((shift) => (
+            <div key={shift.id}>
+              {/* Time range */}
+              <div className="flex items-center gap-1.5 mb-1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-ink-tertiary shrink-0" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <p className="text-xs font-semibold text-[#f9dcd5] tabular-nums">
+                  {formatTime(shift.start)} — {formatTime(shift.end)}
+                </p>
+              </div>
+
+              {/* Department / role */}
+              <div className="flex items-center gap-1.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-ink-tertiary shrink-0" aria-hidden="true">
+                  <path d="M3 21h18M5 21V7l7-4 7 4v14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <p className="text-[10px] text-ink-secondary truncate">{shift.role}</p>
+              </div>
+
+              {/* Status badge for non-today cards */}
+              {!isToday && (
+                <div className="mt-1.5">
+                  <StatusBadge status={shiftStatus(shift.status)} />
                 </div>
               )}
-            </motion.div>
-          )
-        })}
-      </motion.div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

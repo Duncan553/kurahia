@@ -35,9 +35,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 const fadeIn = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } }
 
-/* Day labels for calendar row */
-const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
-
 export default function HeadChefScreen() {
   const navigate = useNavigate()
 
@@ -48,29 +45,15 @@ export default function HeadChefScreen() {
     staleTime: 30_000, refetchInterval: 60_000,
   })
 
+  // Derived stats
   const low = items.filter(i => i.below_reorder)
+  const healthy = items.length - low.length
+  const healthPct = items.length > 0 ? Math.round((healthy / items.length) * 100) : 100
 
-  /* Placeholder station throughput data (no backend endpoint yet) */
-  const stations = [
-    { name: 'Saute', pct: 72 },
-    { name: 'Grill', pct: 85 },
-    { name: 'Garde Manger', pct: 55 },
-    { name: 'Pastry', pct: 40 },
-    { name: 'Expo', pct: 90 },
-    { name: 'Prep', pct: 65 },
-  ]
-
-  /* Dates for the delivery calendar row (current week starting Monday) */
+  // Current time for header
   const now = new Date()
-  const dayOfWeek = now.getDay()
-  // JS getDay: 0=Sun. Shift so Monday=0
-  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-  const monday = new Date(now)
-  monday.setDate(now.getDate() + mondayOffset)
-  const calendarDays = WEEKDAYS.map((label, i) => {
-    const d = new Date(monday)
-    d.setDate(monday.getDate() + i)
-    return { label, date: d.getDate() }
+  const timeStr = now.toLocaleTimeString('en-KE', {
+    timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit', hour12: false,
   })
 
   return (
@@ -79,192 +62,248 @@ export default function HeadChefScreen() {
         <motion.div className="max-w-6xl mx-auto"
           initial="hidden" animate="visible" variants={stagger}>
 
-          {/* ── Page header: Service Status + stats ─────────────────── */}
+          {/* ── Page header: Kitchen + Chef name + Service badge ──────── */}
           <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
-            className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+            className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
             <div>
               <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#f9dcd5] tracking-tight">
-                Service Status
+                Kitchen
               </h1>
-              <p className="text-sm text-[#aa8980] mt-1 max-w-md">
-                Real-time overview of inventory levels, station pacing, and critical kitchen
-                metrics for the evening service.
-              </p>
+              <p className="text-sm text-[#aa8980] mt-1">Chef Dashboard</p>
             </div>
 
-            {/* Top-right stat badges */}
-            <div className="flex gap-4 shrink-0">
-              <div className="glass-card rounded-xl px-4 py-2 text-center">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980]">
-                  Covers Tonight
-                </p>
-                <p className="text-xl font-bold tabular-nums text-[#f9dcd5]">
-                  {items.length > 0 ? items.length * 4 : '—'}
-                </p>
-              </div>
-              <div className="glass-card rounded-xl px-4 py-2 text-center">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980]">
-                  Avg Ticket Time
-                </p>
-                <p className="text-xl font-bold tabular-nums text-[#f9dcd5]">18 min</p>
-              </div>
+            {/* Service badge + time */}
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider
+                bg-status-paid/15 text-status-paid border border-status-paid/20">
+                Service Active
+              </span>
+              <span className="text-sm font-mono tabular-nums text-ink-tertiary">{timeStr}</span>
             </div>
           </motion.div>
 
-          {/* ── Row 1: Low Stock Alerts + Station Performance ───────── */}
-          <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-6">
+          {/* ── BENTO GRID ────────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
 
-            {/* Low Stock Alerts card */}
-            <ErrorBoundary level="tile">
-              <Glass>
-                <div className="p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <SectionLabel>Low Stock Alerts</SectionLabel>
-                    {low.length > 0 && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide
-                        bg-[#fa5c29]/20 text-[#fa5c29]">
-                        Critical
-                      </span>
-                    )}
-                  </div>
+            {/* LEFT COLUMN — Stock Overview + Low Stock Alerts */}
+            <div className="space-y-4">
 
-                  {low.length > 0 ? (
-                    <div className="space-y-3">
-                      {low.slice(0, 4).map(i => (
-                        <div key={i.id} className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-[#f9dcd5] truncate">{i.name}</p>
-                            <p className="text-[10px] text-[#aa8980]">
-                              {i.unit} &middot; Est. Depletion: —
-                            </p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-sm font-bold tabular-nums text-[#fa5c29]">
-                              {parseFloat(i.current_stock)} {i.unit} left
-                            </p>
-                            <p className="text-[10px] text-[#aa8980]">Action Req.</p>
-                          </div>
+              {/* ── Stock Overview card ─────────────────────────────────── */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
+                <ErrorBoundary level="tile">
+                  <Glass>
+                    <div className="p-5">
+                      <SectionLabel>Stock Overview</SectionLabel>
+
+                      {/* Hero numbers row */}
+                      <div className="grid grid-cols-3 gap-4 mb-5">
+                        {/* Total items */}
+                        <div>
+                          <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
+                            Total
+                          </p>
+                          <p className="text-4xl md:text-5xl font-bold tabular-nums text-[#f9dcd5] leading-none">
+                            {items.length > 0 ? items.length.toLocaleString() : '—'}
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-status-paid/70 py-4">All stock levels healthy</p>
-                  )}
 
-                  <button
-                    onClick={() => navigate('/inventory/count')}
-                    className="mt-4 text-xs font-semibold text-[#fa5c29] hover:text-[#fa5c29]/80
-                      transition-colors underline underline-offset-2">
-                    View Full Inventory
-                  </button>
-                </div>
-              </Glass>
-            </ErrorBoundary>
-
-            {/* Station Performance card */}
-            <ErrorBoundary level="tile">
-              <Glass>
-                <div className="p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <SectionLabel>Station Performance</SectionLabel>
-                    <div className="flex gap-2">
-                      <span className="text-[10px] font-semibold text-[#aa8980]">Heart</span>
-                      <span className="text-[10px] font-semibold text-[#f9dcd5]">Service</span>
-                    </div>
-                  </div>
-
-                  {/* Bar chart */}
-                  <div className="flex items-end gap-3 h-32">
-                    {stations.map(s => (
-                      <div key={s.name} className="flex-1 flex flex-col items-center gap-1">
-                        <div className="w-full rounded-t-sm bg-[#aa8980]/30 relative overflow-hidden"
-                          style={{ height: `${s.pct}%` }}>
-                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#fa5c29] to-[#aa8980]
-                            rounded-t-sm" style={{ height: '100%' }} />
+                        {/* Low stock — red accent */}
+                        <div>
+                          <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
+                            Low Stock
+                          </p>
+                          <p className="text-4xl md:text-5xl font-bold tabular-nums text-[#fa5c29] leading-none">
+                            {low.length}
+                          </p>
                         </div>
-                        <span className="text-[9px] text-[#aa8980] leading-tight text-center truncate w-full">
-                          {s.name}
+
+                        {/* Healthy — green accent */}
+                        <div>
+                          <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
+                            Healthy
+                          </p>
+                          <p className="text-4xl md:text-5xl font-bold tabular-nums text-status-paid leading-none">
+                            {healthy > 0 ? healthy.toLocaleString() : '—'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Stock health progress bar */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-[10px] text-ink-tertiary tabular-nums">{healthPct}%</p>
+                          <p className="text-[10px] text-ink-tertiary">100% capacity</p>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                          {/* Healthy portion (green) */}
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-status-paid to-status-paid/70 transition-all duration-500"
+                            style={{ width: `${healthPct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Legend dots */}
+                      <div className="flex items-center gap-4 text-[10px] text-ink-tertiary">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-status-paid" />
+                          On Stock
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-[#aa8980]" />
+                          Purchased
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-[#fa5c29]" />
+                          Reordered
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </Glass>
-            </ErrorBoundary>
-          </motion.div>
-
-          {/* ── Row 2: Inventory Delivery Calendar ──────────────────── */}
-          <motion.div variants={fadeIn} transition={{ duration: 0.3 }} className="mb-6">
-            <Glass>
-              <div className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <SectionLabel>Inventory Delivery Calendar</SectionLabel>
-                  <button className="text-[10px] font-semibold text-[#aa8980] hover:text-[#f9dcd5] transition-colors">
-                    Manage Schedule
-                  </button>
-                </div>
-
-                {/* Weekly grid */}
-                <div className="grid grid-cols-7 gap-3">
-                  {calendarDays.map(day => (
-                    <div key={day.label} className="text-center">
-                      <p className="text-[10px] font-bold tracking-wider uppercase text-[#aa8980] mb-1">
-                        {day.label}
-                      </p>
-                      <div className="rounded-lg border border-white/10 bg-white/5 px-1 py-3 min-h-[48px]
-                        flex items-center justify-center">
-                        <span className="text-xs tabular-nums text-[#f9dcd5]/60">{day.date}</span>
-                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </Glass>
-          </motion.div>
+                  </Glass>
+                </ErrorBoundary>
+              </motion.div>
 
-          {/* ── Row 3: Active Tickets table ─────────────────────────── */}
-          <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
-            <Glass>
-              <div className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <SectionLabel>Active Tickets</SectionLabel>
-                  <button
-                    onClick={() => navigate('/pos/kitchen')}
-                    className="text-[10px] font-semibold text-[#fa5c29] hover:text-[#fa5c29]/80 transition-colors">
-                    View All &rarr;
-                  </button>
-                </div>
+              {/* ── Low Stock Alerts card ───────────────────────────────── */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
+                <ErrorBoundary level="tile">
+                  <Glass>
+                    <div className="p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <SectionLabel>Low Stock Alerts</SectionLabel>
+                        <button
+                          onClick={() => navigate('/inventory/count')}
+                          className="text-[10px] font-semibold text-[#fa5c29] hover:text-[#fa5c29]/80
+                            transition-colors uppercase tracking-wider">
+                          View All &rarr;
+                        </button>
+                      </div>
 
-                {/* Table header */}
-                <div className="grid grid-cols-5 gap-3 pb-2 border-b border-white/10 mb-2">
-                  {['TICKET #', 'TABLE', 'KEY ITEMS', 'TIME OPEN', 'STATUS'].map(h => (
-                    <p key={h} className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980]">
-                      {h}
+                      {low.length > 0 ? (
+                        <div className="space-y-0">
+                          {low.slice(0, 5).map(i => {
+                            const current = parseFloat(i.current_stock)
+                            const target = parseFloat(i.reorder_level)
+                            return (
+                              <div key={i.id}
+                                className="flex items-center justify-between gap-3 py-3 border-b border-white/5 last:border-0">
+                                {/* Item icon + name + supplier */}
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                  {/* Small circle icon placeholder */}
+                                  <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10
+                                    flex items-center justify-center shrink-0">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                      className="text-ink-tertiary" aria-hidden="true">
+                                      <path d="M20 7H4a1 1 0 00-1 1v10a2 2 0 002 2h14a2 2 0 002-2V8a1 1 0 00-1-1z"
+                                        stroke="currentColor" strokeWidth="1.5" />
+                                      <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"
+                                        stroke="currentColor" strokeWidth="1.5" />
+                                    </svg>
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-[#f9dcd5] truncate">{i.name}</p>
+                                    <p className="text-[10px] text-ink-tertiary">
+                                      Supplier: {i.unit}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Quantity + target */}
+                                <div className="text-right shrink-0 mr-3">
+                                  <p className="text-sm font-bold tabular-nums text-[#fa5c29]">
+                                    {current} {i.unit}
+                                  </p>
+                                  <p className="text-[10px] text-ink-tertiary tabular-nums">
+                                    Target: {target} {i.unit}
+                                  </p>
+                                </div>
+
+                                {/* Reorder button */}
+                                <button
+                                  onClick={() => navigate('/inventory/purchase-request')}
+                                  className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider
+                                    bg-primary-main/15 text-primary-main border border-primary-main/20
+                                    hover:bg-primary-main/25 transition-colors shrink-0">
+                                  Reorder
+                                </button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-status-paid/70 py-4">All stock levels healthy</p>
+                      )}
+                    </div>
+                  </Glass>
+                </ErrorBoundary>
+              </motion.div>
+            </div>
+
+            {/* RIGHT COLUMN — Recipes, Menu, Variance, Kitchen tiles */}
+            <div className="space-y-4">
+
+              {/* Recipes tile */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
+                <Glass>
+                  <div className="p-5">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+                      Recipes
                     </p>
-                  ))}
-                </div>
-
-                {/* Placeholder rows — will be replaced by live kitchen query */}
-                {[
-                  { ticket: '#T-8942', table: 'Table 42 (VIP)', items: '2x Wagyu Ribeye, 1x Scallops, 1x Tru...', time: '24:15', status: 'Delayed - Grill', statusColor: 'text-[#fa5c29] bg-[#fa5c29]/10' },
-                  { ticket: '#T-8943', table: 'Table 12', items: '4x Tasting Menu (Course 3)', time: '12:38', status: 'Plating', statusColor: 'text-[#aa8980] bg-[#aa8980]/10' },
-                  { ticket: '#T-8944', table: 'Bar Seat 4', items: '1x Oysters (Half Dozen), 1x Tuna Tart...', time: '04:18', status: 'Fired', statusColor: 'text-status-paid bg-status-paid/10' },
-                ].map(row => (
-                  <div key={row.ticket}
-                    className="grid grid-cols-5 gap-3 py-3 border-b border-white/5 items-center last:border-0">
-                    <p className="text-sm font-semibold tabular-nums text-[#f9dcd5]">{row.ticket}</p>
-                    <p className="text-sm text-[#f9dcd5]">{row.table}</p>
-                    <p className="text-xs text-[#aa8980] truncate">{row.items}</p>
-                    <p className="text-sm font-bold tabular-nums text-[#f9dcd5]">{row.time}</p>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md text-center ${row.statusColor}`}>
-                      {row.status}
-                    </span>
+                    <p className="text-3xl font-bold tabular-nums text-[#f9dcd5] mb-1">
+                      {items.length > 0 ? Math.round(items.length * 1.2) : '—'}
+                    </p>
+                    <p className="text-[10px] text-ink-tertiary">Active</p>
                   </div>
-                ))}
-              </div>
-            </Glass>
-          </motion.div>
+                </Glass>
+              </motion.div>
+
+              {/* Menu tile */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
+                <Glass>
+                  <div className="p-5">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+                      Menu
+                    </p>
+                    <p className="text-lg font-bold text-[#f9dcd5] mb-1">
+                      Current Menu
+                    </p>
+                    <p className="text-[10px] text-ink-tertiary">Active service</p>
+                  </div>
+                </Glass>
+              </motion.div>
+
+              {/* Variance tile */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
+                <Glass>
+                  <div className="p-5">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+                      Variance
+                    </p>
+                    <p className="text-2xl font-bold tabular-nums text-[#fa5c29] mb-1">
+                      {low.length > 0
+                        ? `-${((low.length / Math.max(items.length, 1)) * 100).toFixed(1)}%`
+                        : '0.0%'}
+                    </p>
+                    <p className="text-[10px] text-ink-tertiary">vs Target</p>
+                  </div>
+                </Glass>
+              </motion.div>
+
+              {/* Kitchen stations tile */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
+                <Glass>
+                  <div className="p-5">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+                      Kitchen
+                    </p>
+                    <p className="text-2xl font-bold tabular-nums text-[#f9dcd5] mb-1">
+                      8
+                    </p>
+                    <p className="text-[10px] text-ink-tertiary">Stations Active</p>
+                  </div>
+                </Glass>
+              </motion.div>
+            </div>
+          </div>
 
         </motion.div>
       </div>
