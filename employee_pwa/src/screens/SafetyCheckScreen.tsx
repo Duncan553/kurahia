@@ -247,8 +247,8 @@ export default function SafetyCheckScreen() {
     return (
       <div className="p-4 max-w-3xl mx-auto space-y-5">
         <div>
-          <h1 className="text-xl font-bold text-white">Safety Check</h1>
-          <p className="text-sm text-slate-400/50">Pre-use checklist — select equipment to begin</p>
+          <h1 className="text-2xl font-bold text-white font-serif">Safety Check</h1>
+          <p className="text-xs text-white/30 mt-0.5">Equipment safety inspections</p>
         </div>
 
         {isLoading && (
@@ -284,7 +284,7 @@ export default function SafetyCheckScreen() {
           <button
             key={eq.id}
             onClick={() => selectEquipment(eq)}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-white/10
+            className="w-full flex items-center gap-4 p-4 rounded-2xl glass-card
               bg-transparent hover:bg-white/5/40 active:bg-white/5/60 transition-colors text-left
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           >

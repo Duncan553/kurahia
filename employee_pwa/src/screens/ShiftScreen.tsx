@@ -138,7 +138,7 @@ export default function ShiftScreen() {
     return (
       <motion.div variants={itemVariants} whileHover={{ y: -2 }} className={[
         'rounded-xl border px-4 py-3 flex items-center gap-3',
-        cancelled ? 'border-white/10 bg-white/5/20 opacity-70' : 'border-white/10 bg-transparent',
+        cancelled ? 'glass-card bg-white/5/20 opacity-70' : 'glass-card bg-transparent',
       ].join(' ')}>
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-semibold text-white ${cancelled ? 'line-through' : ''}`}>
@@ -176,8 +176,8 @@ export default function ShiftScreen() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Shifts</h1>
-            <p className="text-sm text-slate-400/50">Schedule and manage the roster</p>
+            <h1 className="text-2xl font-bold text-white font-serif">Shifts</h1>
+            <p className="text-xs text-white/30 mt-0.5">Create and manage shift schedules</p>
           </div>
           <motion.button
             whileTap={{ scale: 0.97 }}

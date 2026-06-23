@@ -376,8 +376,8 @@ export default function CashReconScreen() {
       >
 
         <div>
-          <h1 className="text-xl font-bold text-white">Cash Reconciliation</h1>
-          <p className="text-sm text-slate-400/50">Reconcile end-of-shift cash handover per staff member</p>
+          <h1 className="text-2xl font-bold text-white font-serif">Cash Reconciliation</h1>
+          <p className="text-xs text-white/30 mt-0.5">Reconcile cash handovers vs expected</p>
         </div>
 
         {/* Staff selector */}

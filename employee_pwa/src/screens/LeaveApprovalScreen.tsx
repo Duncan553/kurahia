@@ -103,8 +103,8 @@ export default function LeaveApprovalScreen() {
       >
 
         <div>
-          <h1 className="text-xl font-bold text-white">Leave Requests</h1>
-          <p className="text-sm text-slate-400/50">Review and action leave requests</p>
+          <h1 className="text-2xl font-bold text-white font-serif">Leave Requests</h1>
+          <p className="text-xs text-white/30 mt-0.5">Review staff leave requests</p>
         </div>
 
         {/* Status filter tabs */}
@@ -171,7 +171,7 @@ export default function LeaveApprovalScreen() {
                   whileHover={{ y: -2 }}
                   className={[
                     'rounded-2xl border p-4 space-y-3',
-                    isCancelled ? 'border-white/10 bg-white/5/20 opacity-80' : 'border-white/10 bg-transparent',
+                    isCancelled ? 'glass-card bg-white/5/20 opacity-80' : 'glass-card bg-transparent',
                   ].join(' ')}
                 >
                   {/* Header row */}
