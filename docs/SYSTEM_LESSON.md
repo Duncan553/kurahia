@@ -1939,3 +1939,549 @@ glow that matches everything else. If the palette were cold blue and the
 gradients were warm orange, the glass would look muddy and confused. The
 warmth is consistent from background to gradient to glass to text. Everything
 belongs together.
+
+---
+
+## 16. How Bookings Work
+
+Bookings manage villa reservations, event venue rentals, and water-activity
+sessions. The system tracks the full lifecycle from a phone enquiry to
+check-out, including deposits, waivers, and no-show detection.
+
+### BookableResource -- what can be reserved
+
+Before anyone can make a booking, a manager creates a `BookableResource`
+(`app/models/bookable_resource.py`). Each resource has a `resource_type`:
+
+```python
+class ResourceType(str, enum.Enum):
+    VILLA          = "VILLA"          # overnight stays
+    EVENT_VENUE    = "EVENT_VENUE"    # conference room, garden, etc.
+    WATER_ACTIVITY = "WATER_ACTIVITY" # jet ski slot, boat session
+    OTHER          = "OTHER"
+```
+
+A resource also has `base_price` (Decimal), an optional `capacity` (max
+guests), and `is_active` (the standard soft-delete flag). Only the owner
+can change `base_price` (`resources.py`, line 101 checks
+`actor.role.level < OWNER_LEVEL`).
+
+### The booking lifecycle
+
+A booking moves through a state machine defined in `app/models/booking.py`
+(line 26):
+
+```python
+VALID_BOOKING_TRANSITIONS = {
+    HELD:        {CONFIRMED, CANCELLED, NO_SHOW},
+    CONFIRMED:   {CHECKED_IN, CANCELLED},
+    CHECKED_IN:  {CHECKED_OUT},
+    CHECKED_OUT: set(),   # terminal
+    CANCELLED:   set(),   # terminal
+    NO_SHOW:     set(),   # terminal
+}
+```
+
+```
+HELD -> CONFIRMED -> CHECKED_IN -> CHECKED_OUT
+  \-> CANCELLED     \-> CANCELLED
+  \-> NO_SHOW
+```
+
+Here is what happens at each step:
+
+**1. HELD (creation)**
+Front desk calls `POST /bookings` (`bookings/core.py`, line 70). The endpoint:
+
+- Locks the resource row with `SELECT FOR UPDATE` (line 113) so no concurrent
+  request can pass the overlap check at the same time.
+- Runs `check_capacity()` -- if the resource has a capacity limit, rejects
+  bookings that exceed it.
+- Runs `check_resource_availability()` (`app/services/booking.py`, line 31) --
+  looks for any HELD, CONFIRMED, or CHECKED_IN booking whose dates overlap.
+  If a conflict exists, returns 409 with a plain-English message.
+- Calls `compute_base_total()` to snapshot the price. Villas are priced per
+  night (`nights = (check_out.date() - check_in.date()).days`). Activities
+  use a flat session rate. This snapshot is stored as `base_total` on the
+  Booking row and **never changes**, even if the owner changes the resource
+  price tomorrow.
+- Auto-matches or creates a `GuestRecord` by phone number
+  (`get_or_create_guest_record()`, line 95 in services/booking.py). Repeat
+  guests are linked automatically.
+- For VILLAs, sets `deposit_required` to 30% of `base_total` (line 134).
+
+**2. CONFIRMED (deposit gate)**
+Front desk calls `POST /bookings/<id>/confirm` (`core.py`, line 167). Before
+the transition is accepted, the endpoint checks:
+
+```python
+deposit_paid = get_deposit_total(booking_id)
+if booking.deposit_required > Decimal("0") and deposit_paid < booking.deposit_required:
+    return 400, "A deposit of X is required to confirm. Recorded so far: Y."
+```
+
+`get_deposit_total()` (`services/booking.py`, line 109) sums all DEPOSIT
+BookingPayments for this booking. If the guest has not paid enough, the
+booking stays HELD. This forces the front desk to collect the deposit BEFORE
+confirming.
+
+**3. CHECKED_IN (opens a villa tab)**
+Front desk calls `POST /bookings/<id>/check-in` (`core.py`, line 200). This
+triggers `open_villa_tab()` (`services/booking.py`, line 147):
+
+```python
+def open_villa_tab(booking, actor_id):
+    tab = Tab(tab_type=VILLA, reference="Lakeside Villa A / John Doe", ...)
+    booking.tab_id = tab.id
+    booking.status = CHECKED_IN
+    booking.check_in_actual_utc = now
+    transfer_deposit_to_tab(booking, tab, actor_id)   # deposit becomes tab credit
+```
+
+The deposit the guest already paid becomes a credit Payment on the tab (line
+133 in services/booking.py). From this point on, the tab works exactly like
+a wristband tab -- charges accumulate, the balance moves toward zero.
+
+**4. CHECKED_OUT (closes the tab)**
+Front desk calls `POST /bookings/<id>/check-out` (`core.py`, line 229). The
+endpoint calls `is_tab_closable()` -- the same function used for walk-in tabs.
+If the tab balance is not settled or items are still in the kitchen, check-out
+is blocked:
+
+```python
+ok, reason = is_tab_closable(booking.tab_id)
+if not ok:
+    return 400, reason + outstanding_balance
+```
+
+When allowed, the tab is closed, the booking status becomes CHECKED_OUT, and
+the guest record's `last_visit_utc` is updated (line 270).
+
+### Deposits -- how money flows before check-in
+
+Deposits are recorded via `POST /booking-payments` (`bookings/deposits.py`,
+line 23). A `BookingPayment` row links a `Payment` to a `Booking` with a
+`purpose` (DEPOSIT or BALANCE).
+
+The key design: **deposit Payments have `tab_id=NULL`** (line 67). Why? Because
+the tab does not exist yet -- it is created at check-in. The deposit exists
+in the accounting system as a standalone Payment row. At check-in,
+`transfer_deposit_to_tab()` creates a NEW credit Payment on the tab for the
+deposit total. The original deposit records are never modified (append-only).
+
+### Waivers -- the safety gate for water activities
+
+Before a checked-in guest can book a water-activity session (jet ski, boat
+ride), they must sign a `Waiver` (`app/models/waiver.py`). The waiver is
+created via `POST /waivers` (`bookings/waivers.py`, line 19) with:
+
+- `booking_id` -- which booking this covers
+- `activity_type` -- WATER_ACTIVITY or GENERAL
+- `signed_by_name` -- the guest's name (the person accepting risk)
+- `signature_proof` -- optional base64 PNG of a drawn signature
+
+The gate is enforced in `POST /bookings/<id>/water-sessions` (`core.py`,
+line 416):
+
+```python
+if not has_active_waiver(booking_id, "WATER_ACTIVITY"):
+    return 403, "This guest has not signed the water-activity waiver."
+```
+
+`has_active_waiver()` (`services/booking.py`, line 216) checks for a Waiver
+row where `is_active=True`. A waiver can be revoked
+(`POST /waivers/<id>/revoke`), which sets `is_active=False` without deleting
+the record. Once revoked, the guest cannot book more water sessions until a
+new waiver is signed.
+
+**Why this matters:** Jet skis and boats are genuinely dangerous. The resort
+needs a legal record that the guest accepted the risk before they got on the
+water. The system enforces this -- no waiver, no charge, no session.
+
+### No-show sweep -- the daily CLI command
+
+Every day, cron runs `flask bookings flag-no-shows` (`app/cli/bookings.py`,
+line 116). This calls `flag_no_shows()` (`services/booking.py`, line 169):
+
+```python
+def flag_no_shows(now=None):
+    now = now or datetime.now(timezone.utc)
+    candidates = Booking.query.filter(status IN (HELD, CONFIRMED))
+    for b in candidates:
+        if b.check_in_planned_utc < now:
+            b.status = NO_SHOW
+    return count
+```
+
+Any booking that is still HELD or CONFIRMED after its planned check-in time
+has passed gets flipped to NO_SHOW. This is a terminal state -- the booking
+cannot be recovered. The resource is freed for new bookings.
+
+There is also `flask bookings release-holds` (`cli/bookings.py`, line 124),
+which auto-cancels HELD bookings older than N hours (default 24). This
+prevents indefinite holds from blocking the calendar.
+
+### The front-desk dashboard
+
+`GET /front-desk/today` (`bookings/dashboard.py`, line 22) gives the front
+desk everything they need in one call:
+
+- **Arrivals:** HELD or CONFIRMED bookings with check-in today
+- **Departures:** CHECKED_IN bookings with check-out today (includes tab balance)
+- **Occupancy:** all currently CHECKED_IN bookings
+- **Pending waivers:** today's water-activity bookings that still need a signed waiver
+
+This single endpoint powers the front desk's morning view: who is arriving,
+who is leaving, who still owes money, and who needs to sign a waiver before
+they can use the lake.
+
+---
+
+## 17. How Equipment & Maintenance Work
+
+Equipment tracking handles everything with a motor, wheels, or moving parts:
+jet skis, motorboats, paddle boats, bicycles, golf carts, generators. The
+system tracks registration, scheduled servicing, daily safety inspections,
+and maintenance history.
+
+### Equipment registration
+
+A manager creates equipment via `POST /equipment` (`equipment/core.py`,
+line 38). The `Equipment` model (`app/models/equipment.py`, line 19) stores:
+
+```python
+Equipment(
+    name="Jet Ski #2",
+    equipment_type="jetski",          # free-text, but templates match on this
+    department_id=water_dept.id,      # which department owns it
+    service_interval_days=30,         # needs service every 30 days
+    status=EquipmentStatus.ACTIVE,    # ACTIVE, MAINTENANCE, or RETIRED
+    is_active=True,                   # soft-delete flag
+)
+```
+
+The `equipment_type` is free text -- "jetski", "motorboat", "bicycle",
+"generator". It is case-insensitive throughout the system.
+
+### is_due_service -- derived, never stored
+
+This is the key property. It lives on the model as a `@property`
+(`app/models/equipment.py`, line 46):
+
+```python
+@property
+def is_due_service(self) -> bool:
+    if not self.service_interval_days or not self.last_service_utc:
+        return False
+    now = datetime.now(timezone.utc)
+    last = self.last_service_utc
+    return (now - last).days >= self.service_interval_days
+```
+
+It computes the answer fresh every time from `last_service_utc` and
+`service_interval_days`. There is no `due_service` column in the database.
+If the jet ski's service interval is 30 days and the last service was 31
+days ago, `is_due_service` returns True. Log a maintenance event, and it
+returns False again (because `last_service_utc` gets updated).
+
+This follows the same design principle as stock levels and tab balances:
+**derived state, never stored.** No desync bugs. No stale flags.
+
+### Safety checks -- daily pre-use inspections
+
+Before a piece of equipment is used, a staff member runs a safety check via
+`POST /equipment/<id>/safety-check` (`equipment/core.py`, line 174). Any
+staff member can do this (level 1+), because the person running the check
+is typically the activities staff on the ground.
+
+Each equipment type has a **checklist template** defined in
+`equipment/safety_templates.py` (line 13):
+
+```python
+SAFETY_CHECKLIST_TEMPLATES = {
+    "jetski": [
+        "life_jackets_on_board",
+        "engine_oil_level_checked",
+        "fuel_level_ok",
+        "kill_switch_lanyard_present",
+        "guest_waiver_confirmed",
+    ],
+    "motorboat": [
+        "life_jackets_on_board",
+        "engine_oil_level_checked",
+        "fuel_level_ok",
+        "navigation_lights_working",
+        "guest_waiver_confirmed",
+    ],
+    "paddle_boat": [
+        "life_jackets_on_board",
+        "hull_integrity_checked",
+        "paddles_present",
+        "drainage_plug_in_place",
+        "guest_waiver_confirmed",
+    ],
+    "bicycle": [
+        "brakes_working",
+        "tires_inflated",
+        "chain_lubricated",
+        "seat_adjusted",
+        "helmet_provided",
+    ],
+}
+```
+
+The endpoint validates that **every item** in the template is present in the
+request body AND marked `{"checked": true}`. If ANY item is missing or not
+checked, the entire safety check is rejected (line 199):
+
+```python
+not_confirmed = missing + unchecked
+if not_confirmed:
+    return 400, f"Safety check failed. All {len(template)} items must be checked."
+```
+
+**Why all-or-nothing?** Because a jet ski with a working engine but no life
+jackets is not safe. Partial passes are meaningless -- either the equipment
+is safe to use or it is not.
+
+The `SafetyCheck` model (`app/models/equipment.py`, line 83) stores
+`passed=True/False`, the `check_items` JSON blob (every item's result), and
+who performed it and when. This is an append-only audit trail of every
+inspection.
+
+### Maintenance logging
+
+When equipment is serviced, a manager logs it via
+`POST /equipment/<id>/maintenance` (`equipment/core.py`, line 128). This
+creates a `MaintenanceLog` row (`app/models/equipment.py`, line 60) with:
+
+- `performed_at_utc` -- when the service happened
+- `performed_by_id` -- which staff member did it
+- `notes` -- what was done ("Oil change, filter replaced")
+- `cost` -- how much it cost (Decimal, nullable)
+
+After logging, the endpoint updates the equipment:
+
+```python
+# Update last service date (line 160-164)
+if not existing or performed_at > existing:
+    eq.last_service_utc = performed_at
+eq.status = EquipmentStatus.ACTIVE   # back to active after service
+```
+
+This is important: `last_service_utc` is only updated if the new service date
+is LATER than the existing one. If someone backdates a maintenance log (e.g.,
+recording a service from last week), it does not accidentally push the
+last-service date backward. And the status is reset to ACTIVE -- the
+equipment is back in use after servicing.
+
+### How a jet ski's day looks
+
+Here is a concrete day for "Jet Ski #2":
+
+1. **Morning:** Activities staff runs `POST /equipment/{id}/safety-check`
+   with all 5 jetski template items checked. The check passes and is logged.
+
+2. **Midday:** A guest wants to ride. Staff checks the booking -- the guest
+   has a signed WATER_ACTIVITY waiver (section 16). The charge is posted to
+   their tab.
+
+3. **After 30 days:** `GET /equipment` returns `"is_due_service": true` for
+   Jet Ski #2. The manager sees it flagged on the maintenance screen.
+
+4. **Service day:** A mechanic services the jet ski. The manager logs it via
+   `POST /equipment/{id}/maintenance` with notes and cost. `is_due_service`
+   flips back to false. The 30-day clock resets.
+
+### Adding a new equipment type
+
+To add, say, golf carts:
+
+1. Add a template in `safety_templates.py`:
+   ```python
+   "golf_cart": ["brakes_working", "battery_charged", "tires_ok",
+                  "steering_responsive", "horn_working"]
+   ```
+
+2. Create the equipment with `equipment_type="golf_cart"`.
+
+That is it. No code changes needed -- the endpoint and template lookup
+(`get_template()` at line 45) discover the new type automatically by
+matching the lowercase `equipment_type` string against the dictionary keys.
+
+---
+
+## 18. How Suggestions & Disputes Work
+
+Both systems handle sensitive human information -- staff feedback and
+formal complaints. They share a design pattern called **query-layer
+authorization**: certain rows are structurally invisible to managers. Not
+hidden behind a UI toggle. Not filtered in JavaScript. Absent from the
+SQL query results.
+
+### Suggestions -- two-tier confidential feedback
+
+The `Suggestion` model (`app/models/suggestion.py`) has two categories:
+
+```python
+class SuggestionCategory(str, enum.Enum):
+    MANAGEMENT    = "MANAGEMENT"      # visible to manager+
+    OWNER_PRIVATE = "OWNER_PRIVATE"   # visible to owner ONLY
+```
+
+Any staff member can submit a suggestion via `POST /suggestions`
+(`suggestions/core.py`, line 48). The key rules:
+
+- **MANAGEMENT** suggestions: attributed (the submitter's name is stored).
+  Visible to managers and the owner. A manager can review, action, or
+  dismiss them.
+
+- **OWNER_PRIVATE** suggestions: can be **anonymous**
+  (`submitted_by_user_id=NULL`, `submitted_by_name="anonymous"`). Only the
+  owner ever sees them. When submitted, the owner is immediately notified
+  (`_notify_owner()`, line 95).
+
+**Why anonymous is allowed for OWNER_PRIVATE but not MANAGEMENT:**
+If a waiter has a complaint about their manager, they need to tell the owner
+without the manager ever knowing. Anonymous MANAGEMENT suggestions are
+blocked (line 66) because the manager handling them needs to know who to
+follow up with.
+
+### Why OWNER_PRIVATE is structurally absent from manager queries
+
+This is the most important design detail. Look at `list_suggestions()`
+(`suggestions/core.py`, line 119):
+
+```python
+q = db.session.query(Suggestion)
+
+# QUERY-LAYER FILTER: managers only see MANAGEMENT; owners see both
+if actor.role.level < OWNER_LEVEL:
+    q = q.filter_by(category=SuggestionCategory.MANAGEMENT.value)
+```
+
+For a manager, the SQL query is literally
+`SELECT * FROM suggestions WHERE category='MANAGEMENT'`. OWNER_PRIVATE rows
+are not in the result set. They are not filtered out after loading. They are
+never loaded at all.
+
+And if a manager tries to access an OWNER_PRIVATE suggestion by ID directly
+(`GET /suggestions/<id>`), line 152 returns 404:
+
+```python
+if (suggestion.category == OWNER_PRIVATE and actor.role.level < OWNER_LEVEL):
+    return 404, "Suggestion not found."
+```
+
+Not 403 ("you don't have permission"). 404 ("it doesn't exist"). The manager
+cannot even tell whether the ID belongs to a real suggestion or a made-up
+one. This is deliberate: a 403 would confirm the suggestion exists. A 404
+reveals nothing.
+
+**Why this design instead of just hiding it in the UI?**
+Because UI-level hiding is one JavaScript change away from being bypassed. A
+curious manager with browser dev tools could see the suggestion IDs in
+network requests. With query-layer filtering, the IDs never leave the server.
+The Python query never includes them. There is nothing to intercept.
+
+### Disputes -- formal complaint lifecycle
+
+Disputes are more structured than suggestions. They handle employee-to-employee
+complaints: performance issues, interpersonal conflicts, conduct violations.
+
+The `Dispute` model (`app/models/dispute.py`) has a state machine:
+
+```python
+VALID_DISPUTE_TRANSITIONS = {
+    OPEN:         {UNDER_REVIEW, DISMISSED},
+    UNDER_REVIEW: {RESOLVED, DISMISSED},
+    RESOLVED:     set(),   # terminal
+    DISMISSED:    set(),   # terminal
+}
+```
+
+```
+OPEN -> UNDER_REVIEW -> RESOLVED
+                      \-> DISMISSED
+     \-> DISMISSED
+```
+
+Here is the lifecycle:
+
+**1. Filing** (`POST /disputes`, `disputes/core.py`, line 61): Any employee
+with an `EmployeeProfile` can file a dispute. They provide:
+- `category` -- PERFORMANCE, INTERPERSONAL, CONDUCT_VIOLATION, or OTHER
+- `description` -- what happened
+- `priority` -- LOW, MEDIUM, or HIGH
+- `is_owner_only` -- if True, only the owner can see this dispute
+- `subject_employee_ids` -- which employees the complaint is about
+
+Each subject employee creates a `DisputeSubject` row (line 97), linking
+the dispute to the person it is about. This is a one-to-many relationship:
+one dispute can name multiple people.
+
+**2. Claiming** (`POST /disputes/<id>/claim`, line 121): A manager (or
+owner) claims the dispute, moving it to UNDER_REVIEW. They become the
+`assigned_to` -- the person responsible for investigating.
+
+**3. Resolution** (`POST /disputes/<id>/resolve`, line 143): The assigned
+manager writes `resolution_notes` (required, line 157) explaining what
+was decided. The dispute moves to RESOLVED (terminal).
+
+**4. Dismissal** (`POST /disputes/<id>/dismiss`, line 168): If the dispute
+is unfounded, it can be dismissed at any point (from OPEN or UNDER_REVIEW).
+A reason is recorded.
+
+### is_owner_only on disputes -- same pattern, different flag
+
+Disputes use `is_owner_only` (a boolean column) instead of a category enum,
+but the authorization pattern is identical to suggestions. Look at
+`list_disputes()` (`disputes/core.py`, line 192):
+
+```python
+if actor.role.level >= OWNER_LEVEL:
+    pass  # sees everything
+elif actor.role.level >= MANAGER_LEVEL:
+    q = q.filter_by(is_owner_only=False)   # query-layer filter
+else:
+    # Employee: only see disputes they filed
+    q = q.filter_by(reporter_employee_id=profile.id)
+```
+
+Three access tiers:
+1. **Owner:** sees all disputes.
+2. **Manager:** sees only disputes where `is_owner_only=False`. Owner-only
+   disputes do not exist in their query.
+3. **Staff:** sees only disputes they personally filed.
+
+The `_get_dispute_visible()` helper (line 111) enforces the same structural
+404 on individual access:
+
+```python
+def _get_dispute_visible(dispute_id, actor):
+    dispute = db.session.get(Dispute, dispute_id)
+    if not dispute:
+        return None
+    if dispute.is_owner_only and actor.role.level < OWNER_LEVEL:
+        return None   # structural 404
+```
+
+Every lifecycle endpoint (claim, resolve, dismiss) goes through this helper.
+A manager who somehow learns an owner-only dispute's ID gets 404, not 403.
+
+**Why this matters for a resort:** Imagine a waiter wants to report that a
+manager is stealing cash. If the dispute is visible to managers, the accused
+manager can see the complaint, find out who filed it, and retaliate. With
+`is_owner_only=True`, the dispute goes directly to the owner. The manager
+never learns it exists. The waiter is protected.
+
+### The shared pattern across both systems
+
+Suggestions and disputes both implement **pattern 15** from the CLAUDE.md
+cross-cutting patterns: "Query-level authorization (OWNER_PRIVATE rows
+STRUCTURALLY ABSENT for non-owners)."
+
+The principle: do not rely on the frontend to hide sensitive data. Do not
+rely on a 403 check that still confirms the data exists. Make the data
+invisible at the database query layer. If the SQL never returns the row,
+no amount of API probing can reveal it.
