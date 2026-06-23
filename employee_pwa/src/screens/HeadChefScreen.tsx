@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { RequireRole } from '../components/AuthGate'
-import { ErrorBoundary } from '@shared'
+import { ErrorBoundary, useToastStore } from '@shared'
 import api from '../lib/axios'
 
 interface InvItem {
@@ -35,8 +36,65 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 const fadeIn = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } }
 
+/* ── Restock Request Form — sends a suggestion to management ────────────────── */
+function RestockRequestForm({ onClose }: { onClose: () => void }) {
+  const addToast = useToastStore(s => s.addToast)
+  const [subject, setSubject] = useState('')
+  const [body, setBody]       = useState('')
+
+  const mut = useMutation({
+    mutationFn: () => api.post('/suggestions', {
+      category: 'MANAGEMENT',
+      subject: subject.trim() || 'Restock request from kitchen',
+      body: body.trim(),
+    }),
+    onSuccess: () => {
+      addToast({ type: 'success', message: 'Restock request sent to manager.' })
+      onClose()
+    },
+    onError: (e) => {
+      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
+      addToast({ type: 'error', message: msg })
+    },
+  })
+
+  return (
+    <form onSubmit={e => { e.preventDefault(); if (body.trim()) mut.mutate() }}
+      className="p-5 space-y-3">
+      <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+        Request Restock
+      </p>
+      <input
+        placeholder="Subject (e.g. Need more cooking oil)"
+        value={subject} onChange={e => setSubject(e.target.value)}
+        className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+          text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
+      />
+      <textarea
+        required placeholder="What do you need? Include items and estimated quantities."
+        value={body} onChange={e => setBody(e.target.value)} rows={3}
+        className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+          text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] resize-none"
+      />
+      <div className="flex gap-2">
+        <button type="button" onClick={onClose}
+          className="flex-1 py-2.5 rounded-xl border border-white/10 text-[#aa8980] text-sm font-semibold
+            hover:bg-white/5 transition-colors">
+          Cancel
+        </button>
+        <button type="submit" disabled={!body.trim() || mut.isPending}
+          className="flex-1 py-2.5 rounded-xl bg-[#fa5c29] text-white text-sm font-semibold
+            hover:bg-[#fa5c29]/90 transition-colors disabled:opacity-50">
+          {mut.isPending ? 'Sending…' : 'Send Request'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 export default function HeadChefScreen() {
   const navigate = useNavigate()
+  const [showRestock, setShowRestock] = useState(false)
 
   /* ── Existing query — inventory items ─────────────────────────────── */
   const { data: items = [] } = useQuery<InvItem[]>({
@@ -297,6 +355,29 @@ export default function HeadChefScreen() {
                     <p className="text-[10px] text-[#fa5c29]">Open →</p>
                   </div>
                 </Glass>
+              </motion.div>
+
+              {/* Request Restock tile — sends suggestion to manager */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
+                {showRestock ? (
+                  <Glass>
+                    <RestockRequestForm onClose={() => setShowRestock(false)} />
+                  </Glass>
+                ) : (
+                  <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+                    <Glass className="cursor-pointer" onClick={() => setShowRestock(true)}>
+                      <div className="p-5">
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+                          Request Restock
+                        </p>
+                        <p className="text-sm text-[#f9dcd5] mb-1">
+                          Send restock request to manager
+                        </p>
+                        <p className="text-[10px] text-[#fa5c29]">Open →</p>
+                      </div>
+                    </Glass>
+                  </motion.div>
+                )}
               </motion.div>
             </div>
           </div>
