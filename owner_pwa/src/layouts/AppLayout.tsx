@@ -144,7 +144,7 @@ export default function AppLayout() {
   useEffect(() => { void loadFontSizePref() }, [])
 
   return (
-    <div className="h-screen flex bg-cream-card">
+    <div className="h-screen flex">
 
       {/* ── Sidebar — hidden on mobile, icons-only on tablet, full on desktop ── */}
       <aside className="hidden sm:flex flex-col w-16 lg:w-56 shrink-0 border-r border-white/5"
