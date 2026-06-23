@@ -94,7 +94,14 @@ def test_c2b_callback_idempotent(app):
 
 def test_stk_callback_success_links_tab(app):
     """STK success callback → Payment + Recon created, tab_id linked via checkout_request_id."""
-    mpesa_daraja._register_pending_stk("ws_CO_99999", "tab-uuid-abc")
+    from app.models.tab import Tab
+    from app.models.user import User
+    user = db.session.query(User).first()
+    tab = Tab(status="OPEN", opened_by_id=user.id)
+    db.session.add(tab)
+    db.session.flush()
+
+    mpesa_daraja._register_pending_stk("ws_CO_99999", tab.id)
 
     ok, payment_id = mpesa_daraja.handle_stk_callback(
         _stk_success_payload(checkout_id="ws_CO_99999", receipt="LMN8Z5A3VB", amount=750)
@@ -105,7 +112,7 @@ def test_stk_callback_success_links_tab(app):
     p = db.session.get(Payment, payment_id)
     assert p is not None
     assert p.mpesa_code == "LMN8Z5A3VB"
-    assert p.tab_id == "tab-uuid-abc"
+    assert p.tab_id == tab.id
 
     recon = db.session.query(PaymentReconciliation).filter_by(payment_id=payment_id).first()
     assert recon is not None
@@ -145,11 +152,16 @@ def test_pending_stk_persists_across_simulated_restart(app):
     """
     from datetime import datetime, timezone, timedelta
 
-    # Directly insert a row (simulating what initiate_stk_push would have done
-    # before the "restart")
+    from app.models.tab import Tab
+    from app.models.user import User
+    user = db.session.query(User).first()
+    tab = Tab(status="OPEN", opened_by_id=user.id)
+    db.session.add(tab)
+    db.session.flush()
+
     row = PendingSTKPush(
         checkout_request_id="ws_CO_RESTART_001",
-        tab_id="tab-persist-abc",
+        tab_id=tab.id,
         expires_at_utc=datetime.now(timezone.utc) + timedelta(hours=1),
     )
     db.session.add(row)
@@ -182,7 +194,7 @@ def test_pending_stk_persists_across_simulated_restart(app):
 
     assert ok is True
     p = db.session.get(Payment, payment_id)
-    assert p.tab_id == "tab-persist-abc"
+    assert p.tab_id == tab.id
 
     # Row cleaned up after successful callback
     assert db.session.query(PendingSTKPush).filter_by(
