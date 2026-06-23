@@ -158,6 +158,9 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(guests_bp)
     app.register_blueprint(dashboard_bp)
 
+    from app.uploads import uploads_bp
+    app.register_blueprint(uploads_bp)
+
     from app.events import events_bp, event_types_bp
     app.register_blueprint(events_bp)
     app.register_blueprint(event_types_bp)
