@@ -383,24 +383,20 @@ export default function InventoryCountScreen() {
 
           {/* ── Department picker (owner only) ──────────────────────── */}
           {isOwner && tab !== 'overview' && (
-            <motion.div variants={fadeIn} className="mb-4">
-              <p className="text-[10px] uppercase tracking-widest text-[#aa8980] font-medium mb-2">Department</p>
-              <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+            <motion.div variants={fadeIn} className="mb-6">
+              <label className="text-[10px] uppercase tracking-widest text-[#aa8980] font-medium mb-2 block">Department</label>
+              <select
+                value={selectedDeptId}
+                onChange={(e) => setSelectedDeptId(e.target.value)}
+                className="w-full max-w-xs rounded-xl glass-card px-4 py-3 min-h-[44px]
+                  text-sm text-[#f9dcd5] bg-transparent
+                  focus:outline-none focus:ring-2 focus:ring-[#fa5c29]/40"
+              >
+                <option value="" className="bg-[#1e100c]">Select department...</option>
                 {departments?.map((d) => (
-                  <button
-                    key={d.id}
-                    onClick={() => setSelectedDeptId(d.id)}
-                    className={[
-                      'px-3 py-1.5 min-h-[44px] rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0',
-                      selectedDeptId === d.id
-                        ? 'bg-[#fa5c29] text-white'
-                        : 'bg-white/5 text-[#aa8980] hover:bg-white/10',
-                    ].join(' ')}
-                  >
-                    {d.name}
-                  </button>
+                  <option key={d.id} value={d.id} className="bg-[#1e100c]">{d.name}</option>
                 ))}
-              </div>
+              </select>
               {!selectedDeptId && (
                 <p className="mt-3 text-sm text-[#aa8980]">Select a department to view its inventory.</p>
               )}
