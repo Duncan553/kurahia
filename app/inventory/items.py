@@ -86,6 +86,11 @@ def create_item():
     if not name or not unit or not dept_id:
         return jsonify({"error": "name, unit, and department_id are required"}), 400
 
+    from app.models.department import Department
+    dept = db.session.get(Department, dept_id)
+    if not dept or not dept.is_active:
+        return jsonify({"error": "Department not found or disabled."}), 404
+
     # Smart defaults: when category is set but pack_size isn't, apply known defaults
     if category and pack_size is None:
         defaults = CATEGORY_PACK_DEFAULTS.get(category.lower())
