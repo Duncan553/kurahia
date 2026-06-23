@@ -391,7 +391,7 @@ export default function InventoryCountScreen() {
                     key={d.id}
                     onClick={() => setSelectedDeptId(d.id)}
                     className={[
-                      'px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0',
+                      'px-3 py-1.5 min-h-[44px] rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0',
                       selectedDeptId === d.id
                         ? 'bg-[#fa5c29] text-white'
                         : 'bg-white/5 text-[#aa8980] hover:bg-white/10',

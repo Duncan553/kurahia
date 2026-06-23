@@ -76,7 +76,7 @@ function BookingCard({ booking, onSelect }: { booking: Booking; onSelect: () => 
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-white text-sm truncate">{booking.guest_name}</p>
+          <p className="font-semibold text-[#f9dcd5] text-sm truncate">{booking.guest_name}</p>
           <p className="text-xs text-ink-secondary mt-0.5">
             {booking.resource_name ?? 'Unknown resource'}
             {booking.number_of_guests > 1 && ` · ${booking.number_of_guests} guests`}
@@ -87,7 +87,7 @@ function BookingCard({ booking, onSelect }: { booking: Booking; onSelect: () => 
 
       <div className="mt-2 text-xs text-ink-secondary space-y-0.5">
         <p>
-          Check-in: <span className="font-medium text-white">
+          Check-in: <span className="font-medium text-[#f9dcd5]">
             {fmtDate(booking.check_in_planned)} {fmtTime(booking.check_in_planned)}
           </span>
         </p>
@@ -132,7 +132,7 @@ function BookingDrawer({
       <div className="rounded-xl bg-white/5 p-4 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="font-semibold text-white text-base">{booking.guest_name}</p>
+            <p className="font-semibold text-[#f9dcd5] text-base">{booking.guest_name}</p>
             <p className="text-xs text-ink-secondary">{booking.guest_phone}</p>
           </div>
           <StatusBadge status={bookingStatus(booking.status)} />
@@ -153,7 +153,7 @@ function BookingDrawer({
           ].map(([label, value]) => (
             <div key={label} className="flex justify-between gap-2">
               <span className="text-ink-secondary text-xs">{label}</span>
-              <span className="font-medium text-white text-xs tabular-nums text-right">{value}</span>
+              <span className="font-medium text-[#f9dcd5] text-xs tabular-nums text-right">{value}</span>
             </div>
           ))}
           {booking.check_in_actual && (
@@ -165,7 +165,7 @@ function BookingDrawer({
           {booking.notes && (
             <div>
               <p className="text-xs text-ink-secondary">Notes</p>
-              <p className="text-xs text-white mt-0.5 italic">"{booking.notes}"</p>
+              <p className="text-xs text-[#f9dcd5] mt-0.5 italic">"{booking.notes}"</p>
             </div>
           )}
         </div>
@@ -244,12 +244,12 @@ export default function BookingsScreen() {
   return (
     <div className="p-4 max-w-3xl mx-auto">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-white font-serif">Bookings</h1>
+        <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Bookings</h1>
         <p className="text-xs text-ink-tertiary mt-0.5">Villa & event bookings, deposits, check-in</p>
       </div>
 
       {/* Filters */}
-      <div className="space-y-3 mb-4">
+      <div className="space-y-3 mb-6">
         {/* Status tabs */}
         <div className="flex gap-1 bg-white/5 rounded-xl p-1 overflow-x-auto scrollbar-none" role="tablist">
           {STATUS_TABS.map(t => (

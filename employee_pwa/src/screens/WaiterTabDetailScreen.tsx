@@ -186,7 +186,7 @@ export default function WaiterTabDetailScreen() {
           <button key={cat} onClick={() => setActiveCat(cat)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
               activeCat === cat
-                ? 'bg-ink-primary text-white'
+                ? 'bg-ink-primary text-[#f9dcd5]'
                 : 'bg-white/5 text-ink-secondary hover:bg-cream-deep'
             }`}>
             {cat}
@@ -203,7 +203,7 @@ export default function WaiterTabDetailScreen() {
       {/* Item grid */}
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         {menuLoading ? (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-4">
             {[1,2,3,4,5,6].map(i => <div key={i} className="h-24 rounded-2xl bg-white/5 animate-pulse" />)}
           </div>
         ) : filteredItems.length === 0 ? (
@@ -223,7 +223,7 @@ export default function WaiterTabDetailScreen() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {filteredItems.map(item => {
               const qty = draft[item.id] ?? 0
               const soldOut = item.in_stock === false
@@ -257,8 +257,8 @@ export default function WaiterTabDetailScreen() {
                     )}
                   </div>
                   {/* Info */}
-                  <div className="p-3">
-                    <p className={`text-sm font-semibold text-white leading-snug ${soldOut ? 'line-through' : ''}`}>
+                  <div className="p-4">
+                    <p className={`text-sm font-semibold text-[#f9dcd5] leading-snug ${soldOut ? 'line-through' : ''}`}>
                       {item.name}
                     </p>
                     <div className="flex items-center justify-between gap-1 mt-1">
@@ -292,7 +292,7 @@ export default function WaiterTabDetailScreen() {
       <div className="shrink-0 px-4 pt-4 pb-3 border-b border-white/10">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-bold text-white text-lg">{tab?.reference ?? 'Walk-in'}</p>
+            <p className="font-bold text-[#f9dcd5] text-lg">{tab?.reference ?? 'Walk-in'}</p>
             <p className="text-xs text-ink-tertiary">Tab #{tabId?.slice(0, 8)}</p>
           </div>
           <span className={`text-sm font-bold tabular-nums px-2 py-1 rounded-lg ${
@@ -321,14 +321,14 @@ export default function WaiterTabDetailScreen() {
                   className="flex items-center gap-2 py-2 border-b border-white/10 last:border-0"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{e.name}</p>
+                    <p className="text-sm font-semibold text-[#f9dcd5] truncate">{e.name}</p>
                     <p className="text-xs text-ink-tertiary tabular-nums">{kes(e.price)} each</p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <motion.button whileTap={{ scale: 0.85 }}
                       aria-label={`Decrease ${e.name} quantity`}
                       onClick={() => decItem(e.id)}
-                      className="w-7 h-7 rounded-full bg-white/5 text-white font-bold text-sm
+                      className="w-7 h-7 rounded-full bg-white/5 text-[#f9dcd5] font-bold text-sm
                         flex items-center justify-center">−</motion.button>
                     <span className="w-5 text-center text-sm font-bold tabular-nums">{e.qty}</span>
                     <motion.button whileTap={{ scale: 0.85 }}
@@ -337,7 +337,7 @@ export default function WaiterTabDetailScreen() {
                       className="w-7 h-7 rounded-full bg-[#fa5c29] text-white font-bold text-sm
                         flex items-center justify-center">+</motion.button>
                   </div>
-                  <span className="text-sm font-bold tabular-nums text-white w-16 text-right shrink-0">
+                  <span className="text-sm font-bold tabular-nums text-[#f9dcd5] w-16 text-right shrink-0">
                     {kes(e.price * e.qty)}
                   </span>
                   <div className="w-full mt-1">
@@ -357,7 +357,7 @@ export default function WaiterTabDetailScreen() {
             </AnimatePresence>
             <div className="flex justify-between items-center pt-3">
               <span className="text-sm text-ink-secondary">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
-              <span className="text-base font-bold tabular-nums text-white">{kes(draftTotal)}</span>
+              <span className="text-base font-bold tabular-nums text-[#f9dcd5]">{kes(draftTotal)}</span>
             </div>
           </div>
         )}
@@ -452,7 +452,7 @@ export default function WaiterTabDetailScreen() {
         {bal > 0 && tab?.status !== 'CLOSED' && (
           <div className="space-y-3">
             <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Record Payment</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-4">
               {METHODS.map(m => (
                 <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
                   className={`py-2 rounded-xl text-sm font-semibold border transition-colors ${
@@ -470,7 +470,7 @@ export default function WaiterTabDetailScreen() {
               value={pay.amount}
               onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
               className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                text-base text-white focus:outline-none focus:border-[#fa5c29]"
+                text-base text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
             />
             <Button variant="primary" size="lg" className="w-full" loading={payMut.isPending}
               onClick={() => payMut.mutate()}>
@@ -547,7 +547,7 @@ export default function WaiterTabDetailScreen() {
           className="text-ink-tertiary hover:text-white text-sm transition-colors">
           ← Back
         </button>
-        <p className="flex-1 font-bold text-white truncate">{tab?.reference ?? 'Walk-in'}</p>
+        <p className="flex-1 font-bold text-[#f9dcd5] truncate">{tab?.reference ?? 'Walk-in'}</p>
         {draftCount > 0 && (
           <span className="text-xs font-bold text-primary-dark tabular-nums">
             {draftCount} item{draftCount !== 1 ? 's' : ''} · {kes(draftTotal)}
@@ -562,7 +562,7 @@ export default function WaiterTabDetailScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="p-6 flex flex-col items-center justify-center flex-1 gap-4"
         >
-          <p className="font-serif text-2xl font-bold text-white text-center">
+          <p className="font-serif text-2xl font-bold text-[#f9dcd5] text-center">
             {tab?.reference ?? 'New Table'}
           </p>
           <p className="text-sm text-ink-secondary text-center">How would you like to start?</p>
@@ -573,7 +573,7 @@ export default function WaiterTabDetailScreen() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mx-auto mb-1 text-ink-secondary">
                 <path d="M2 4h6a4 4 0 014 4v12a3 3 0 00-3-3H2V4zM22 4h-6a4 4 0 00-4 4v12a3 3 0 013-3h7V4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span className="text-sm font-semibold text-white">Show Menu</span>
+              <span className="text-sm font-semibold text-[#f9dcd5]">Show Menu</span>
               <span className="text-[10px] text-ink-tertiary block mt-0.5">Guest wants to browse</span>
             </motion.button>
             <motion.button whileTap={{ scale: 0.97 }}

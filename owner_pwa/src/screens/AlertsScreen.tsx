@@ -135,7 +135,7 @@ export default function AlertsScreen() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white font-serif">Judge Alerts</h1>
+          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Judge Alerts</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Silent anomaly detection — theft, waste, overbudget</p>
         </div>
         {!isLoading && (
@@ -202,7 +202,7 @@ export default function AlertsScreen() {
             <div
               key={alert.id}
               className={[
-                'border-l-4 rounded-r-2xl rounded-l-sm glass-card p-4',
+                'glass-card rounded-2xl p-4',
                 SEV_BORDER[alert.severity] ?? 'border-l-ink-tertiary',
                 alert.status === 'ACKNOWLEDGED' ? 'opacity-50' : '',
               ].join(' ')}
@@ -221,7 +221,7 @@ export default function AlertsScreen() {
                       <span className="text-[10px] text-ink-secondary truncate">· {alert.item_name}</span>
                     )}
                   </div>
-                  <p className="text-sm text-white leading-snug">{alert.description}</p>
+                  <p className="text-sm text-[#f9dcd5] leading-snug">{alert.description}</p>
                   <p className="text-[10px] text-ink-secondary mt-1.5">{timeAgo(alert.created_at)}</p>
                 </div>
                 {/* Acknowledge / done */}

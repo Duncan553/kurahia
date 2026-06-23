@@ -58,13 +58,13 @@ function StatsBar({ stats }: { stats: Stats | undefined }) {
     { label: 'Entry Revenue', value: stats ? kes(stats.total_entry_fees) : '—' },
   ]
   return (
-    <motion.div className="grid grid-cols-3 gap-2 mb-5"
+    <motion.div className="grid grid-cols-3 gap-4 mb-6"
       initial="hidden" animate="visible" variants={stagger}>
-      {items.map(({ label, value }) => (
+      {items.map(({ label, value }, i) => (
         <motion.div key={label} variants={fadeIn}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="glass-card rounded-2xl p-3 text-center">
-          <p className="text-lg font-bold tabular-nums text-ink-primary">{value}</p>
+          className={`glass-card rounded-2xl p-4 text-center ${i === 0 ? 'col-span-2 row-span-1' : ''}`}>
+          <p className={`font-bold tabular-nums text-ink-primary ${i === 0 ? 'text-3xl' : 'text-lg'}`}>{value}</p>
           <p className="text-[10px] text-ink-secondary uppercase tracking-wide mt-0.5">{label}</p>
         </motion.div>
       ))}
@@ -364,7 +364,7 @@ export default function GateHubScreen() {
 
       {/* Header */}
       <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="flex items-center justify-between mb-4">
+        className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-base font-bold tracking-widest uppercase text-ink-primary">Gate</h1>
           <p className="text-xs text-ink-tertiary">

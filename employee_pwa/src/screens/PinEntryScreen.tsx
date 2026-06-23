@@ -118,23 +118,23 @@ export default function PinEntryScreen() {
         >
           {/* Brand */}
           <div className="text-center mb-6">
-            <h1 className="font-serif text-3xl font-bold text-white tracking-tight
+            <h1 className="font-serif text-3xl font-bold text-[#f9dcd5] tracking-tight
               drop-shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
               Enter PIN
             </h1>
-            <p className="text-sm text-white/60 mt-1">Kurahia Staff</p>
+            <p className="text-sm text-[#f9dcd5]/60 mt-1">Kurahia Staff</p>
           </div>
 
           {/* Frosted glass card */}
           <div className="rounded-3xl p-6 border border-white/20 shadow-2xl
-            bg-cream-card/25 backdrop-blur-xl relative overflow-hidden">
+            glass-card backdrop-blur-xl relative overflow-hidden">
 
             <div className="relative space-y-5">
 
               {/* Username */}
               <div>
                 <label htmlFor="pin-username"
-                  className="block text-xs font-semibold text-white/80 mb-1.5 uppercase tracking-wider">
+                  className="block text-xs font-semibold text-[#f9dcd5]/80 mb-1.5 uppercase tracking-wider">
                   Username
                 </label>
                 <div className={`rounded-xl border transition-all ${
@@ -151,7 +151,7 @@ export default function PinEntryScreen() {
                     disabled={pinMutation.isPending}
                     placeholder="e.g. wachira"
                     className="w-full rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3
-                      text-sm text-white font-medium placeholder:text-white/40
+                      text-sm text-[#f9dcd5] font-medium placeholder:text-[#f9dcd5]/40
                       focus:outline-none disabled:opacity-50"
                   />
                 </div>
@@ -176,7 +176,7 @@ export default function PinEntryScreen() {
               {errorMsg && (
                 <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                   className="flex items-center justify-center gap-2 p-2 rounded-xl bg-status-failed/20 border border-status-failed/30">
-                  <p role="alert" className="text-xs text-white font-medium">{errorMsg}</p>
+                  <p role="alert" className="text-xs text-[#f9dcd5] font-medium">{errorMsg}</p>
                 </motion.div>
               )}
 
@@ -194,8 +194,8 @@ export default function PinEntryScreen() {
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40
                         disabled:opacity-40 ${
                           key === '⌫'
-                            ? 'bg-transparent text-white/60 active:text-white'
-                            : 'bg-white/12 backdrop-blur-sm border border-white/15 text-white hover:bg-white/20'
+                            ? 'bg-transparent text-[#f9dcd5]/60 active:text-[#f9dcd5]'
+                            : 'bg-white/12 backdrop-blur-sm border border-white/15 text-[#f9dcd5] hover:bg-white/20'
                         }`}
                     >
                       {key === '⌫' ? (
@@ -212,7 +212,7 @@ export default function PinEntryScreen() {
               {/* Switch to password */}
               <div className="text-center pt-1">
                 <button type="button" onClick={() => navigate('/login')}
-                  className="text-xs text-white/60 hover:text-white font-medium transition-colors
+                  className="text-xs text-[#f9dcd5]/60 hover:text-[#f9dcd5] font-medium transition-colors
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded">
                   Use password instead &rarr;
                 </button>

@@ -47,20 +47,20 @@ export default function VillaScreen() {
         initial="hidden" animate="visible" variants={stagger}>
 
       <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}>
-        <h1 className="text-2xl font-bold font-serif text-white">Villas</h1>
+        <h1 className="text-2xl font-bold font-serif text-[#f9dcd5]">Villas</h1>
         <p className="text-xs text-amber-200/40 mt-0.5">Waterfront Country Club · 8 adults/night</p>
       </motion.div>
 
       {/* Real villa cards */}
       <motion.div variants={fadeIn} transition={{ duration: 0.35, ease: 'easeOut' }}
-        className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {VILLAS.map(v => (
           <div key={v.name} className="glass-card rounded-2xl overflow-hidden">
             <div className="h-24 bg-amber-900/30 flex items-center justify-center text-amber-200/30 text-xs">
               {v.name}
             </div>
-            <div className="p-3">
-              <p className="font-semibold text-white text-sm">{v.name}</p>
+            <div className="p-4">
+              <p className="font-semibold text-[#f9dcd5] text-sm">{v.name}</p>
               <p className="text-xs text-amber-200/60 tabular-nums">KSh {v.price.toLocaleString()}/night</p>
               <p className="text-[10px] text-amber-200/40">{v.sqft} · 8 adults</p>
             </div>
@@ -69,7 +69,7 @@ export default function VillaScreen() {
       </motion.div>
 
       <motion.h2 variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="text-lg font-bold font-serif text-white">Current Guests</motion.h2>
+        className="text-lg font-bold font-serif text-[#f9dcd5]">Current Guests</motion.h2>
 
       <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}>
         <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search guests..." label="Search guests" />
@@ -112,7 +112,7 @@ export default function VillaScreen() {
               className="w-full flex items-center justify-between p-4 rounded-2xl glass-card
                 hover:bg-cream-alt transition-colors text-left">
               <div>
-                <p className="font-semibold text-white">{t.reference ?? 'Villa Guest'}</p>
+                <p className="font-semibold text-[#f9dcd5]">{t.reference ?? 'Villa Guest'}</p>
                 <p className="text-xs text-amber-200/40 mt-0.5">
                   Checked in {new Date(t.opened_at).toLocaleDateString('en-KE')}
                   {t.opened_by ? ` · by ${t.opened_by}` : ''}

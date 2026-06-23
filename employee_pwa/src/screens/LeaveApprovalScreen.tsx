@@ -103,7 +103,7 @@ export default function LeaveApprovalScreen() {
       >
 
         <div>
-          <h1 className="text-2xl font-bold text-white font-serif">Leave Requests</h1>
+          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Leave Requests</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Review staff leave requests</p>
         </div>
 
@@ -116,7 +116,7 @@ export default function LeaveApprovalScreen() {
               className={[
                 'flex-1 py-2 min-h-[44px] px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
                 filter === f
-                  ? 'bg-transparent shadow-sm text-white'
+                  ? 'bg-transparent shadow-sm text-[#f9dcd5]'
                   : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
@@ -177,7 +177,7 @@ export default function LeaveApprovalScreen() {
                   {/* Header row */}
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className={`font-semibold text-sm text-white ${isCancelled ? 'line-through opacity-60' : ''}`}>
+                      <p className={`font-semibold text-sm text-[#f9dcd5] ${isCancelled ? 'line-through opacity-60' : ''}`}>
                         {lr.employee ?? 'Unknown'}
                       </p>
                       <p className="text-xs text-ink-tertiary mt-0.5">
@@ -294,7 +294,7 @@ export default function LeaveApprovalScreen() {
                   placeholder="Explain why this leave cannot be approved… (min 10 chars)"
                   autoFocus
                   className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
-                    text-white focus:outline-none focus:border-[#fa5c29]
+                    text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                     focus:ring-2 focus:ring-primary-dark/20 resize-none"
                 />
                 {rejectNotes.length > 0 && !rejectNotesValid && (

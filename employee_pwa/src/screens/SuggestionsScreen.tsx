@@ -125,7 +125,7 @@ export default function SuggestionsScreen() {
 
         {/* Subject */}
         <motion.div variants={itemVariants}>
-          <label htmlFor="subject" className="block text-sm font-semibold text-white mb-1.5">
+          <label htmlFor="subject" className="block text-sm font-semibold text-[#f9dcd5] mb-1.5">
             Subject
           </label>
           <input
@@ -137,7 +137,7 @@ export default function SuggestionsScreen() {
             placeholder="Brief summary of your suggestion"
             aria-describedby={subjectError ? 'subject-error' : undefined}
             className={[
-              'w-full px-4 py-3 rounded-xl border bg-transparent text-sm text-white',
+              'w-full px-4 py-3 rounded-xl border bg-transparent text-sm text-[#f9dcd5]',
               'placeholder:text-ink-tertiary/60 transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-primary-dark focus:border-transparent',
               subjectError ? 'border-status-failed' : 'border-white/10',
@@ -153,7 +153,7 @@ export default function SuggestionsScreen() {
         {/* Body */}
         <motion.div variants={itemVariants}>
           <div className="flex items-baseline justify-between mb-1.5">
-            <label htmlFor="body" className="block text-sm font-semibold text-white">
+            <label htmlFor="body" className="block text-sm font-semibold text-[#f9dcd5]">
               Details
             </label>
             <span className={['text-xs tabular-nums', body.length > MAX_BODY * 0.9 ? 'text-status-failed' : 'text-ink-tertiary'].join(' ')}>
@@ -170,7 +170,7 @@ export default function SuggestionsScreen() {
             placeholder="Describe your suggestion in detail…"
             aria-describedby={bodyError ? 'body-error' : undefined}
             className={[
-              'w-full px-4 py-3 rounded-xl border bg-transparent text-sm text-white resize-none',
+              'w-full px-4 py-3 rounded-xl border bg-transparent text-sm text-[#f9dcd5] resize-none',
               'placeholder:text-ink-tertiary/60 transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-primary-dark focus:border-transparent',
               bodyError ? 'border-status-failed' : 'border-white/10',

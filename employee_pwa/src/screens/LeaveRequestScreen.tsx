@@ -95,7 +95,7 @@ export default function LeaveRequestScreen() {
     >
 
       <div>
-        <h1 className="text-xl font-bold text-white">Leave Request</h1>
+        <h1 className="text-xl font-bold text-[#f9dcd5]">Leave Request</h1>
         <p className="text-sm text-ink-tertiary">Submit a leave request — your manager will approve or reject it</p>
       </div>
 
@@ -105,7 +105,7 @@ export default function LeaveRequestScreen() {
         {/* Leave type */}
         <div>
           <label className="block text-sm font-medium text-ink-secondary mb-1.5">Leave type *</label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-4">
             {LEAVE_TYPES.map((lt) => (
               <motion.button
                 key={lt.value}

@@ -405,7 +405,7 @@ function ResortHealthSection() {
 
       {tab === 'overview' ? (
         /* 4 metric cards in a row */
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {metrics.map(m => (
             <div key={m.label} className="glass-card rounded-2xl p-4 border border-white/10">
               <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-tertiary mb-2">{m.label}</p>
@@ -418,7 +418,7 @@ function ResortHealthSection() {
         </div>
       ) : (
         /* Department scores */
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {deptScores.length === 0 ? (
             <p className="text-sm text-ink-tertiary col-span-full">No department data this period.</p>
           ) : (
@@ -860,13 +860,20 @@ export default function DashboardScreen() {
             <ResortHealthSection />
           </motion.div>
 
-          {/* ── Additional detail tiles — 3-column grid ──────────── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {tiles.map((tile, i) => (
-              <motion.div key={i} variants={tileVariants}>
-                {tile}
-              </motion.div>
-            ))}
+          {/* ── Additional detail tiles — bento grid (mixed sizes) ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {tiles.map((tile, i) => {
+              /* Bento sizing: first tile (Active Guests) spans 2 cols on lg,
+                 budget tile spans 2 cols on md+ for visual rhythm */
+              const span = i === 0 ? 'lg:col-span-2'
+                         : i === 6 ? 'md:col-span-2 lg:col-span-1'
+                         : ''
+              return (
+                <motion.div key={i} variants={tileVariants} className={span}>
+                  {tile}
+                </motion.div>
+              )
+            })}
           </div>
         </motion.div>
       </div>

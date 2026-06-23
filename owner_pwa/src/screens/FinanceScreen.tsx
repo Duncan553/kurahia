@@ -53,7 +53,7 @@ function KpiCard({ label, value, sub, danger = false }: {
   return (
     <div className="glass-card rounded-2xl p-4 space-y-1">
       <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">{label}</p>
-      <p className={`text-2xl font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-white'}`}>
+      <p className={`text-2xl font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-[#f9dcd5]'}`}>
         {value}
       </p>
       {sub && <p className="text-xs text-ink-tertiary">{sub}</p>}
@@ -208,9 +208,9 @@ function BudgetSection({ period }: { period: string }) {
             {active.map(r => (
               <div key={r.department} className="glass-card rounded-xl px-4 py-3">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <p className="text-sm font-medium text-white truncate">{r.department}</p>
+                  <p className="text-sm font-medium text-[#f9dcd5] truncate">{r.department}</p>
                   <div className="shrink-0 text-right">
-                    <span className={`text-xs font-bold tabular-nums ${r.over_budget ? 'text-status-failed' : 'text-white'}`}>
+                    <span className={`text-xs font-bold tabular-nums ${r.over_budget ? 'text-status-failed' : 'text-[#f9dcd5]'}`}>
                       {Math.round(r.pct_used)}%
                     </span>
                     {r.over_budget && <span className="ml-1 text-[10px] text-status-failed">OVER</span>}

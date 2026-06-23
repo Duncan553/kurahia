@@ -94,7 +94,7 @@ export default function FrontDeskScreen() {
         <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
           className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white font-serif">Front Desk</h1>
+            <h1 className="text-xl font-bold text-[#f9dcd5] font-serif">Front Desk</h1>
             <p className="text-sm text-ink-tertiary">
               {data?.date ?? 'Today'} · read-only
               {lastUpdated ? ` · updated ${lastUpdated}` : ''}
@@ -108,7 +108,7 @@ export default function FrontDeskScreen() {
             <motion.div
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="rounded-xl bg-status-failed/5 border border-status-failed/20 p-3">
+              className="rounded-xl bg-status-failed/5 border border-status-failed/20 p-4">
               <p className="text-sm font-semibold text-status-failed">
                 {data!.pending_waivers.length} water activity booking
                 {data!.pending_waivers.length !== 1 ? 's' : ''} missing waiver
@@ -134,14 +134,14 @@ export default function FrontDeskScreen() {
               whileTap={{ scale: 0.97 }}
               className={[
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
-                tab === t ? 'bg-cream-card shadow-sm text-white' : 'text-ink-tertiary hover:text-ink-secondary',
+                tab === t ? 'bg-white/8 shadow-sm text-[#f9dcd5]' : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               {t.charAt(0).toUpperCase() + t.slice(1)}
               {!isLoading && (
                 <span className={[
                   'ml-1 text-[10px] font-bold',
-                  tab === t ? 'text-white' : 'text-ink-tertiary',
+                  tab === t ? 'text-[#f9dcd5]' : 'text-ink-tertiary',
                 ].join(' ')}>
                   ({counts[t]})
                 </span>
@@ -189,7 +189,7 @@ export default function FrontDeskScreen() {
                       <div key={a.booking_id}
                         className="glass-card rounded-2xl px-4 py-3 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-white">{a.guest_name}</p>
+                          <p className="text-sm font-semibold text-[#f9dcd5]">{a.guest_name}</p>
                           <StatusBadge status={depStatus} />
                         </div>
                         {a.resource && (
@@ -199,7 +199,7 @@ export default function FrontDeskScreen() {
                           <span>Deposit paid: <span className={`font-medium ${depStatus === 'paid' ? 'text-status-paid' : 'text-status-pending'}`}>
                             {ksh(a.deposit_paid)}
                           </span></span>
-                          <span>Required: <span className="font-medium text-white">{ksh(a.deposit_required)}</span></span>
+                          <span>Required: <span className="font-medium text-[#f9dcd5]">{ksh(a.deposit_required)}</span></span>
                         </div>
                       </div>
                     )
@@ -238,7 +238,7 @@ export default function FrontDeskScreen() {
                             : 'glass-card',
                         ].join(' ')}>
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-white">{d.guest_name}</p>
+                          <p className="text-sm font-semibold text-[#f9dcd5]">{d.guest_name}</p>
                           {hasBalance && (
                             <span className="text-xs font-semibold text-status-pending">
                               Outstanding
@@ -296,7 +296,7 @@ export default function FrontDeskScreen() {
                         ].join(' ')}
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-white">{o.guest_name}</p>
+                          <p className="text-sm font-semibold text-[#f9dcd5]">{o.guest_name}</p>
                           {clickable && (
                             <span className="text-[10px] text-ink-tertiary">View tab →</span>
                           )}
@@ -306,7 +306,7 @@ export default function FrontDeskScreen() {
                         )}
                         <p className="text-xs text-ink-tertiary">
                           Running tab:{' '}
-                          <span className={`font-semibold ${hasBalance ? 'text-white' : 'text-ink-tertiary'}`}>
+                          <span className={`font-semibold ${hasBalance ? 'text-[#f9dcd5]' : 'text-ink-tertiary'}`}>
                             {ksh(o.tab_balance)}
                           </span>
                         </p>

@@ -76,7 +76,7 @@ export default function HeadChefScreen() {
   return (
     <RequireRole minLevel={5}>
       <div className="min-h-screen p-4 md:p-6">
-        <motion.div className="max-w-5xl mx-auto"
+        <motion.div className="max-w-6xl mx-auto"
           initial="hidden" animate="visible" variants={stagger}>
 
           {/* ── Page header: Service Status + stats ─────────────────── */}
@@ -113,7 +113,7 @@ export default function HeadChefScreen() {
 
           {/* ── Row 1: Low Stock Alerts + Station Performance ───────── */}
           <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-6">
 
             {/* Low Stock Alerts card */}
             <ErrorBoundary level="tile">
@@ -195,7 +195,7 @@ export default function HeadChefScreen() {
           </motion.div>
 
           {/* ── Row 2: Inventory Delivery Calendar ──────────────────── */}
-          <motion.div variants={fadeIn} transition={{ duration: 0.3 }} className="mb-4">
+          <motion.div variants={fadeIn} transition={{ duration: 0.3 }} className="mb-6">
             <Glass>
               <div className="p-5">
                 <div className="flex items-center justify-between mb-4">

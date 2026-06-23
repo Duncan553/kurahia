@@ -64,7 +64,7 @@ function downloadCSV(data: PayrollData) {
 
 const PERIOD_BADGE: Record<string, string> = {
   HOURLY:  'bg-sky-100 text-sky-700',
-  DAILY:   'bg-violet-100 text-violet-700',
+  DAILY:   'bg-[#fa5c29]/10 text-[#fa5c29]',
   MONTHLY: 'bg-teal-100 text-teal-700',
 }
 
