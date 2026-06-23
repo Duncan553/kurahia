@@ -102,7 +102,7 @@ export default function PurchaseRequestScreen() {
 
         <div>
           <h1 className="text-xl font-bold text-white">Purchase Request</h1>
-          <p className="text-sm text-slate-400/50">Request restocking — owner approves before purchase</p>
+          <p className="text-sm text-ink-tertiary">Request restocking — owner approves before purchase</p>
         </div>
 
         {/* ── Form ─────────────────────────────────────────────────── */}
@@ -111,7 +111,7 @@ export default function PurchaseRequestScreen() {
             <Skeleton variant="row" />
           ) : freeText ? (
             <div>
-              <label className="block text-sm font-medium text-slate-300/70 mb-1.5">Describe item *</label>
+              <label className="block text-sm font-medium text-ink-secondary mb-1.5">Describe item *</label>
               <input
                 value={itemDesc}
                 onChange={(e) => { setItemDesc(e.target.value); touch('item') }}
@@ -143,7 +143,7 @@ export default function PurchaseRequestScreen() {
           {itemErr && <p className="text-sm text-status-failed -mt-2">{itemErr}</p>}
 
           <div>
-            <label className="block text-sm font-medium text-slate-300/70 mb-1.5">Quantity *</label>
+            <label className="block text-sm font-medium text-ink-secondary mb-1.5">Quantity *</label>
             <input
               type="number"
               min="0.001"
@@ -162,7 +162,7 @@ export default function PurchaseRequestScreen() {
           {qtyErr && <p className="text-sm text-status-failed -mt-2">{qtyErr}</p>}
 
           <div>
-            <label className="block text-sm font-medium text-slate-300/70 mb-1.5">Notes (optional)</label>
+            <label className="block text-sm font-medium text-ink-secondary mb-1.5">Notes (optional)</label>
             <textarea
               rows={3}
               value={notes}
@@ -182,12 +182,12 @@ export default function PurchaseRequestScreen() {
 
         {/* ── History ──────────────────────────────────────────────── */}
         <div>
-          <p className="text-xs font-medium text-slate-400/50 uppercase tracking-widest mb-3">
+          <p className="text-xs font-medium text-ink-tertiary uppercase tracking-widest mb-3">
             Recent requests (30 days)
           </p>
 
           {historyError && (
-            <p className="text-sm text-slate-400/50 text-center py-4">
+            <p className="text-sm text-ink-tertiary text-center py-4">
               Couldn't load history — form still works above.
             </p>
           )}
@@ -207,12 +207,12 @@ export default function PurchaseRequestScreen() {
               {history.map((r) => (
                 <div key={r.id}
                   className="flex items-center justify-between rounded-xl
-                    border border-white/10 px-4 py-3 gap-2">
+                    glass-card px-4 py-3 gap-2">
                   <div className="min-w-0">
                     <p className="font-medium text-white text-sm truncate">
                       {r.item_name ?? 'Item'}
                     </p>
-                    <p className="text-xs text-slate-400/50 tabular-nums">
+                    <p className="text-xs text-ink-tertiary tabular-nums">
                       Qty: {parseFloat(r.quantity).toLocaleString()}
                     </p>
                   </div>

@@ -91,7 +91,7 @@ export default function PayrollDraftScreen() {
         <div>
           <h1 className="text-xl font-bold text-white font-serif">Payroll Draft</h1>
           {data && (
-            <p className="text-xs text-slate-400/50 mt-0.5">
+            <p className="text-xs text-ink-tertiary mt-0.5">
               {data.period_start} → {data.period_end}
             </p>
           )}
@@ -140,23 +140,23 @@ export default function PayrollDraftScreen() {
                     <p className="text-sm font-semibold text-white truncate">{e.employee_name}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {e.wage_period && (
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${PERIOD_BADGE[e.wage_period] ?? 'bg-white/5 text-slate-400/50'}`}>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${PERIOD_BADGE[e.wage_period] ?? 'bg-white/5 text-ink-tertiary'}`}>
                           {e.wage_period}
                         </span>
                       )}
                       {e.wage_rate && (
-                        <span className="text-xs text-slate-400/50 tabular-nums">
+                        <span className="text-xs text-ink-tertiary tabular-nums">
                           {kes(parseFloat(e.wage_rate))} / {e.wage_period?.toLowerCase() ?? 'unit'}
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs text-slate-400/50 tabular-nums">{e.hours_worked}h worked</p>
+                    <p className="text-xs text-ink-tertiary tabular-nums">{e.hours_worked}h worked</p>
                     {gross != null ? (
                       <p className="text-sm font-bold text-white tabular-nums mt-0.5">{kes(gross)}</p>
                     ) : (
-                      <p className="text-xs text-slate-400/50 mt-0.5">No wage set</p>
+                      <p className="text-xs text-ink-tertiary mt-0.5">No wage set</p>
                     )}
                   </div>
                 </div>

@@ -117,7 +117,7 @@ export default function LeaveApprovalScreen() {
                 'flex-1 py-2 min-h-[44px] px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
                 filter === f
                   ? 'bg-transparent shadow-sm text-white'
-                  : 'text-slate-400/50 hover:text-slate-300/70',
+                  : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               {f.charAt(0) + f.slice(1).toLowerCase()}
@@ -139,7 +139,7 @@ export default function LeaveApprovalScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
+          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
             Couldn't load leave requests. Check connection.
           </div>
         )}
@@ -180,7 +180,7 @@ export default function LeaveApprovalScreen() {
                       <p className={`font-semibold text-sm text-white ${isCancelled ? 'line-through opacity-60' : ''}`}>
                         {lr.employee ?? 'Unknown'}
                       </p>
-                      <p className="text-xs text-slate-400/50 mt-0.5">
+                      <p className="text-xs text-ink-tertiary mt-0.5">
                         {TYPE_LABELS[lr.leave_type] ?? lr.leave_type}
                         {' · '}{days} day{days !== 1 ? 's' : ''}
                       </p>
@@ -189,7 +189,7 @@ export default function LeaveApprovalScreen() {
                   </div>
 
                   {/* Date range */}
-                  <div className="flex gap-2 text-xs text-slate-400/50">
+                  <div className="flex gap-2 text-xs text-ink-tertiary">
                     <span>{lr.start_date}</span>
                     <span aria-hidden="true">{'→'}</span>
                     <span>{lr.end_date}</span>
@@ -197,7 +197,7 @@ export default function LeaveApprovalScreen() {
 
                   {/* Reason */}
                   {lr.reason && (
-                    <p className="text-xs text-slate-300/70 italic">"{lr.reason}"</p>
+                    <p className="text-xs text-ink-secondary italic">"{lr.reason}"</p>
                   )}
 
                   {/* Actions — only for PENDING */}
@@ -241,7 +241,7 @@ export default function LeaveApprovalScreen() {
           const lr = requests?.find((r) => r.id === approveId)
           return (
             <div className="space-y-4">
-              <p className="text-sm text-slate-300/70">
+              <p className="text-sm text-ink-secondary">
                 Approve <strong>{TYPE_LABELS[lr?.leave_type ?? ''] ?? lr?.leave_type}</strong> for{' '}
                 <strong>{lr?.employee}</strong>?
                 The employee will be notified.
@@ -250,7 +250,7 @@ export default function LeaveApprovalScreen() {
                 <button
                   onClick={() => setApproveId(null)}
                   className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
-                    text-slate-300/70 hover:bg-white/5/40 transition-colors"
+                    text-ink-secondary hover:bg-white/5/40 transition-colors"
                 >
                   Cancel
                 </button>
@@ -279,12 +279,12 @@ export default function LeaveApprovalScreen() {
           const lr = requests?.find((r) => r.id === rejectId)
           return (
             <div className="space-y-4">
-              <p className="text-sm text-slate-300/70">
+              <p className="text-sm text-ink-secondary">
                 Reject <strong>{TYPE_LABELS[lr?.leave_type ?? ''] ?? lr?.leave_type}</strong> for{' '}
                 <strong>{lr?.employee}</strong>? A reason is required — the employee will be notified.
               </p>
               <div>
-                <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+                <label className="block text-sm font-medium text-ink-secondary mb-1.5">
                   Reason for rejection *
                 </label>
                 <textarea
@@ -307,7 +307,7 @@ export default function LeaveApprovalScreen() {
                 <button
                   onClick={() => setRejectId(null)}
                   className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
-                    text-slate-300/70 hover:bg-white/5/40 transition-colors"
+                    text-ink-secondary hover:bg-white/5/40 transition-colors"
                 >
                   Cancel
                 </button>

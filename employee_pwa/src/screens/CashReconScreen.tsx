@@ -176,12 +176,12 @@ function ReconForm({
             </p>
           )}
           {result.status === 'OVER' && (
-            <p className="text-sm text-slate-300/70 mt-1">
+            <p className="text-sm text-ink-secondary mt-1">
               KSh {diff.toLocaleString('en-KE')} over — note any discrepancy.
             </p>
           )}
         </div>
-        <p className="text-xs text-slate-400/50 text-center">
+        <p className="text-xs text-ink-tertiary text-center">
           {result.payments_swept} payment{result.payments_swept !== 1 ? 's' : ''} swept into this reconciliation.
         </p>
         <motion.button
@@ -199,12 +199,12 @@ function ReconForm({
   return (
     <div className="space-y-5">
       {/* Staff summary */}
-      <div className="rounded-xl bg-white/5/40 px-4 py-3">
-        <p className="text-sm text-slate-400/50">Expected cash from {pending.staff_name}</p>
+      <div className="glass-card rounded-xl px-4 py-3">
+        <p className="text-sm text-ink-tertiary">Expected cash from {pending.staff_name}</p>
         <p className="text-3xl font-bold tabular-nums text-white mt-0.5">
           KSh {parseFloat(pending.expected_total).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
         </p>
-        <p className="text-xs text-slate-400/50 mt-1">
+        <p className="text-xs text-ink-tertiary mt-1">
           {pending.payment_count} payment{pending.payment_count !== 1 ? 's' : ''}
         </p>
       </div>
@@ -214,7 +214,7 @@ function ReconForm({
         <div>
           <button
             onClick={() => setExpanded((e) => !e)}
-            className="w-full min-h-[44px] flex items-center justify-between text-sm text-slate-300/70
+            className="w-full min-h-[44px] flex items-center justify-between text-sm text-ink-secondary
               hover:text-white transition-colors
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark rounded"
           >
@@ -238,7 +238,7 @@ function ReconForm({
                 {pending.payments.map((p) => (
                   <div key={p.payment_id}
                     className="flex justify-between text-sm px-3 py-2 rounded-lg bg-white/5/30">
-                    <span className="text-slate-400/50">{timeAgo(p.created_at)}</span>
+                    <span className="text-ink-tertiary">{timeAgo(p.created_at)}</span>
                     <span className="font-medium tabular-nums text-white">
                       KSh {parseFloat(p.amount).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
                     </span>
@@ -252,7 +252,7 @@ function ReconForm({
 
       {/* Actual amount input */}
       <div>
-        <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+        <label className="block text-sm font-medium text-ink-secondary mb-1.5">
           Actual cash received (KSh) *
         </label>
         <input
@@ -282,7 +282,7 @@ function ReconForm({
 
       {/* Notes */}
       <div>
-        <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+        <label className="block text-sm font-medium text-ink-secondary mb-1.5">
           Notes (optional)
         </label>
         <textarea
@@ -382,7 +382,7 @@ export default function CashReconScreen() {
 
         {/* Staff selector */}
         <div>
-          <label className="block text-sm font-medium text-slate-300/70 mb-2">
+          <label className="block text-sm font-medium text-ink-secondary mb-2">
             Select staff member
           </label>
           {profilesLoading ? (
@@ -395,7 +395,7 @@ export default function CashReconScreen() {
                   border border-white/10 bg-transparent text-left
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
               >
-                <span className={selectedProfile ? 'text-white font-medium' : 'text-slate-400/50'}>
+                <span className={selectedProfile ? 'text-white font-medium' : 'text-ink-tertiary'}>
                   {selectedProfile ? selectedProfile.full_name : 'Choose a staff member…'}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={`transition-transform ${pendingOpen ? 'rotate-180' : ''}`}>
@@ -409,10 +409,10 @@ export default function CashReconScreen() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="absolute z-10 mt-1 w-full rounded-xl bg-transparent border border-white/10 shadow-lg overflow-hidden"
+                    className="absolute z-10 mt-1 w-full rounded-xl glass-card shadow-lg overflow-hidden"
                   >
                     {(profiles ?? []).length === 0 ? (
-                      <p className="px-4 py-3 text-sm text-slate-400/50">No staff profiles found.</p>
+                      <p className="px-4 py-3 text-sm text-ink-tertiary">No staff profiles found.</p>
                     ) : (profiles ?? []).map((p) => (
                       <motion.button
                         whileTap={{ scale: 0.97 }}
@@ -442,7 +442,7 @@ export default function CashReconScreen() {
             )}
 
             {pendingError && (
-              <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center space-y-2">
+              <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center space-y-2">
                 <p>Couldn't load cash data for {selectedProfile.full_name}.</p>
                 <button
                   onClick={() => refetchPending()}
@@ -479,7 +479,7 @@ export default function CashReconScreen() {
         )}
 
         {!selectedProfile && !profilesLoading && (
-          <p className="text-sm text-slate-400/50 text-center py-6">
+          <p className="text-sm text-ink-tertiary text-center py-6">
             Select a staff member above to load their pending cash.
           </p>
         )}

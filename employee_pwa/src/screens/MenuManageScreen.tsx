@@ -39,7 +39,7 @@ function marginClass(pct: string | null): string {
   if (!pct) return ''
   const n = parseFloat(pct)
   if (n < 25)  return 'text-status-paid'
-  if (n < 34)  return 'text-slate-300/70'
+  if (n < 34)  return 'text-ink-secondary'
   if (n <= 40) return 'text-status-pending'
   return 'text-status-failed'
 }
@@ -329,13 +329,13 @@ export default function MenuManageScreen() {
 
       {/* ── Item list grouped by department ────────────────────────────── */}
       {searchQ && items.length === 0 && !isLoading && (
-        <p className="text-sm text-slate-400/50 text-center py-8">
+        <p className="text-sm text-ink-tertiary text-center py-8">
           No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu
         </p>
       )}
       {Object.entries(grouped).map(([dept, deptItems]) => (
         <div key={dept}>
-          <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400/50 mb-2">{dept}</p>
+          <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">{dept}</p>
           <div className="space-y-2">
             {deptItems.map(it => (
               <div
@@ -346,7 +346,7 @@ export default function MenuManageScreen() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{it.name}</p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-xs text-slate-400/50">
+                    <p className="text-xs text-ink-tertiary">
                       {it.prep_station === 'NONE' ? 'no queue' : it.prep_station.toLowerCase()}
                       {it.category ? ` · ${it.category}` : ''}
                     </p>
@@ -369,7 +369,7 @@ export default function MenuManageScreen() {
                   <button
                     onClick={() => openRecipe(it)}
                     aria-label={`Edit recipe for ${it.name}`}
-                    className="shrink-0 text-xs text-slate-400/50 hover:text-primary-dark
+                    className="shrink-0 text-xs text-ink-tertiary hover:text-primary-dark
                       underline decoration-dotted transition-colors whitespace-nowrap"
                   >
                     Recipe
@@ -423,7 +423,7 @@ export default function MenuManageScreen() {
             {/* Current draft lines */}
             {draftLines.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400/50">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">
                   Ingredients
                 </p>
                 {draftLines.map((line, i) => (
@@ -431,7 +431,7 @@ export default function MenuManageScreen() {
                     className="flex items-center gap-2 p-2 rounded-xl bg-white/5/50">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white">{line.invItemName}</p>
-                      <p className="text-xs text-slate-400/50">
+                      <p className="text-xs text-ink-tertiary">
                         {(() => {
                           const inv = invItems.find(x => x.id === line.invItemId)
                           return inv?.pack_unit ?? line.unit
@@ -458,14 +458,14 @@ export default function MenuManageScreen() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-400/50 text-center py-2">
+              <p className="text-sm text-ink-tertiary text-center py-2">
                 No ingredients yet. Add one below.
               </p>
             )}
 
             {/* Add ingredient */}
             <div className="space-y-2">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400/50">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">
                 Add Ingredient
               </p>
               <Combobox
@@ -493,7 +493,7 @@ export default function MenuManageScreen() {
                 {newIngName && (() => {
                   const inv = invItems.find(i => i.name === newIngName)
                   const displayUnit = inv?.pack_unit ?? inv?.unit ?? ''
-                  return <span className="text-xs text-slate-400/50 pb-2.5 shrink-0">{displayUnit}</span>
+                  return <span className="text-xs text-ink-tertiary pb-2.5 shrink-0">{displayUnit}</span>
                 })()}
                 <Button variant="ghost" size="sm"
                   onClick={addIngredient}
@@ -505,7 +505,7 @@ export default function MenuManageScreen() {
 
             {/* Copy from another dish */}
             <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400/50 mb-1.5">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1.5">
                 Copy from another dish
               </p>
               <select
@@ -513,7 +513,7 @@ export default function MenuManageScreen() {
                 onChange={e => setCopySource(e.target.value)}
                 aria-label="Copy recipe from another dish"
                 className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
-                  text-sm text-slate-300/70 focus:outline-none focus:border-primary-dark"
+                  text-sm text-ink-secondary focus:outline-none focus:border-primary-dark"
               >
                 <option value="">Choose a dish to copy its recipe…</option>
                 {copyItems.map(i => (
@@ -525,14 +525,14 @@ export default function MenuManageScreen() {
             {/* Recipe template starter */}
             {draftLines.length === 0 && (
               <div>
-                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400/50 mb-1.5">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1.5">
                   Start from a template
                 </p>
                 <div className="flex gap-2">
                   {['shot', 'cocktail', 'mocktail'].map(t => (
                     <button key={t} onClick={() => setTemplateType(t)}
                       className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-transparent
-                        text-sm text-slate-300/70 hover:bg-white/5/40 transition-colors capitalize">
+                        text-sm text-ink-secondary hover:bg-white/5/40 transition-colors capitalize">
                       {t}
                     </button>
                   ))}
@@ -543,26 +543,26 @@ export default function MenuManageScreen() {
             {/* Live cost preview */}
             {draftLines.length > 0 && (
               <div className="p-3 rounded-xl bg-white/5/50 space-y-2">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400/50">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">
                   Cost Preview
                 </p>
                 {draftCost ? (
                   <>
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-300/70">Food cost</span>
+                      <span className="text-ink-secondary">Food cost</span>
                       <span className="tabular-nums font-semibold text-white">
                         KSh {draftCost.food_cost.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-300/70">Gross margin</span>
+                      <span className="text-ink-secondary">Gross margin</span>
                       <span className="tabular-nums font-semibold text-white">
                         KSh {draftCost.gross_margin.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     {draftCost.pct !== null && (
                       <div className="flex justify-between text-sm items-center">
-                        <span className="text-slate-300/70">Food cost %</span>
+                        <span className="text-ink-secondary">Food cost %</span>
                         <span className={`tabular-nums font-bold ${marginClass(String(draftCost.pct))}`}>
                           {draftCost.pct.toFixed(1)}%
                         </span>
@@ -570,7 +570,7 @@ export default function MenuManageScreen() {
                     )}
                   </>
                 ) : (
-                  <p className="text-xs text-slate-400/50">
+                  <p className="text-xs text-ink-tertiary">
                     Add cost data to inventory items to see margin preview.
                   </p>
                 )}

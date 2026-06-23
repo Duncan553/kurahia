@@ -52,11 +52,11 @@ function KpiCard({ label, value, sub, danger = false }: {
 }) {
   return (
     <div className="glass-card rounded-2xl p-4 space-y-1">
-      <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70">{label}</p>
+      <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">{label}</p>
       <p className={`text-2xl font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-white'}`}>
         {value}
       </p>
-      {sub && <p className="text-xs text-slate-400/50">{sub}</p>}
+      {sub && <p className="text-xs text-ink-tertiary">{sub}</p>}
     </div>
   )
 }
@@ -109,7 +109,7 @@ function RevenueSection({ period }: { period: string }) {
 
       {/* 30-day bar chart */}
       <div className="glass-card rounded-2xl p-4">
-        <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70 mb-3">
+        <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary mb-3">
           Daily Revenue — last {days} days
         </p>
         {chartData.length > 0 ? (
@@ -131,7 +131,7 @@ function RevenueSection({ period }: { period: string }) {
           </div>
         ) : (
           <div className="h-32 flex items-center justify-center">
-            <p className="text-xs text-slate-300/70">No revenue data yet</p>
+            <p className="text-xs text-ink-secondary">No revenue data yet</p>
           </div>
         )}
       </div>
@@ -171,15 +171,15 @@ function BudgetSection({ period }: { period: string }) {
     <div className="space-y-3">
       {active.length === 0 ? (
         <div className="rounded-2xl border border-white/10 p-6 text-center">
-          <p className="text-sm text-slate-400/50">No budgets set for this period.</p>
-          <p className="text-xs text-slate-400/50 mt-1">Add budgets via Finance → Budgets to track department spend.</p>
+          <p className="text-sm text-ink-tertiary">No budgets set for this period.</p>
+          <p className="text-xs text-ink-tertiary mt-1">Add budgets via Finance → Budgets to track department spend.</p>
         </div>
       ) : (
         <>
           {/* Spend donut */}
           {donutData.length > 0 && (
             <div className="glass-card rounded-2xl p-4">
-              <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70 mb-2">
+              <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary mb-2">
                 Spend by Department
               </p>
               <div className="h-44">
@@ -222,7 +222,7 @@ function BudgetSection({ period }: { period: string }) {
                     style={{ width: `${Math.min(r.pct_used, 100)}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-[10px] text-slate-400/50 mt-1 tabular-nums">
+                <div className="flex justify-between text-[10px] text-ink-tertiary mt-1 tabular-nums">
                   <span>Spent: {formatKsh(r.spent, true)}</span>
                   <span>Budget: {formatKsh(r.budget, true)}</span>
                 </div>
@@ -262,7 +262,7 @@ function ReconStrip({ period }: { period: string }) {
             hover:shadow-sm hover:border-primary-light/40 transition-all
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
         >
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-300/70">{i.label}</p>
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">{i.label}</p>
           <p className={`text-2xl font-bold tabular-nums mt-1 ${i.danger ? 'text-status-failed' : 'text-status-paid'}`}>
             {i.value}
           </p>
@@ -295,7 +295,7 @@ export default function FinanceScreen() {
           onChange={e => setPeriod(e.target.value)}
           aria-label="Select period"
           className="text-xs border border-white/10 bg-transparent rounded-lg px-2 py-1.5
-            text-slate-300/70 focus:outline-none focus:ring-2 focus:ring-primary-main"
+            text-ink-secondary focus:outline-none focus:ring-2 focus:ring-primary-main"
         >
           {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
@@ -311,7 +311,7 @@ export default function FinanceScreen() {
             onClick={() => setSection(key)}
             className={[
               'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
-              section === key ? 'bg-transparent text-white shadow-sm' : 'text-slate-300/70 hover:text-white',
+              section === key ? 'bg-transparent text-white shadow-sm' : 'text-ink-secondary hover:text-white',
             ].join(' ')}
           >
             {label}

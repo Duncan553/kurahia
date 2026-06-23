@@ -84,10 +84,10 @@ export default function SuggestionsScreen() {
 
         {/* Category toggle */}
         <motion.div variants={itemVariants}>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400/50 mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-2">
             Send to
           </label>
-          <div className="flex rounded-xl border border-white/10 overflow-hidden text-sm font-medium">
+          <div className="flex rounded-xl glass-card overflow-hidden text-sm font-medium">
             {(['MANAGEMENT', 'OWNER_PRIVATE'] as Category[]).map((c) => (
               <button
                 key={c}
@@ -97,7 +97,7 @@ export default function SuggestionsScreen() {
                   'flex-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark',
                   category === c
                     ? 'bg-primary-dark text-white'
-                    : 'text-slate-300/70 hover:bg-white/5',
+                    : 'text-ink-secondary hover:bg-white/5',
                 ].join(' ')}
               >
                 {c === 'MANAGEMENT' ? 'Management' : 'Owner Only'}
@@ -111,7 +111,7 @@ export default function SuggestionsScreen() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="text-xs text-slate-400/50 mt-1.5 flex items-center gap-1.5"
+              className="text-xs text-ink-tertiary mt-1.5 flex items-center gap-1.5"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                 <rect x="2" y="5" width="8" height="6" rx="1" stroke="currentColor" strokeWidth="1.2" />
@@ -138,7 +138,7 @@ export default function SuggestionsScreen() {
             aria-describedby={subjectError ? 'subject-error' : undefined}
             className={[
               'w-full px-4 py-3 rounded-xl border bg-transparent text-sm text-white',
-              'placeholder:text-slate-400/50/60 transition-colors',
+              'placeholder:text-ink-tertiary/60 transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-primary-dark focus:border-transparent',
               subjectError ? 'border-status-failed' : 'border-white/10',
             ].join(' ')}
@@ -156,7 +156,7 @@ export default function SuggestionsScreen() {
             <label htmlFor="body" className="block text-sm font-semibold text-white">
               Details
             </label>
-            <span className={['text-xs tabular-nums', body.length > MAX_BODY * 0.9 ? 'text-status-failed' : 'text-slate-400/50'].join(' ')}>
+            <span className={['text-xs tabular-nums', body.length > MAX_BODY * 0.9 ? 'text-status-failed' : 'text-ink-tertiary'].join(' ')}>
               {body.length}/{MAX_BODY}
             </span>
           </div>
@@ -171,7 +171,7 @@ export default function SuggestionsScreen() {
             aria-describedby={bodyError ? 'body-error' : undefined}
             className={[
               'w-full px-4 py-3 rounded-xl border bg-transparent text-sm text-white resize-none',
-              'placeholder:text-slate-400/50/60 transition-colors',
+              'placeholder:text-ink-tertiary/60 transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-primary-dark focus:border-transparent',
               bodyError ? 'border-status-failed' : 'border-white/10',
             ].join(' ')}

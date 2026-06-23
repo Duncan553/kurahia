@@ -257,7 +257,7 @@ export default function InventoryCountScreen() {
         {/* ── Department picker (owner only) ──────────────────────── */}
         {isOwner && (
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-slate-400/50 font-medium mb-2">Department</p>
+            <p className="text-[10px] uppercase tracking-widest text-ink-tertiary font-medium mb-2">Department</p>
             <div className="flex flex-wrap gap-2">
               {departments?.map((d) => (
                 <button
@@ -267,7 +267,7 @@ export default function InventoryCountScreen() {
                     'px-3 py-1.5 min-h-[44px] rounded-lg text-xs font-semibold transition-all',
                     selectedDeptId === d.id
                       ? 'bg-primary-dark text-white'
-                      : 'bg-white/5 text-slate-300/70 hover:bg-cream-deep',
+                      : 'bg-white/5 text-ink-secondary hover:bg-cream-deep',
                   ].join(' ')}
                 >
                   {d.name}
@@ -275,7 +275,7 @@ export default function InventoryCountScreen() {
               ))}
             </div>
             {!selectedDeptId && (
-              <p className="mt-3 text-sm text-slate-400/50">Select a department to view its inventory.</p>
+              <p className="mt-3 text-sm text-ink-tertiary">Select a department to view its inventory.</p>
             )}
           </div>
         )}
@@ -283,7 +283,7 @@ export default function InventoryCountScreen() {
         {/* ── Manager dept label ───────────────────────────────────── */}
         {!isOwner && userDept && (
           <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-widest text-slate-400/50 font-medium">Dept</span>
+            <span className="text-[10px] uppercase tracking-widest text-ink-tertiary font-medium">Dept</span>
             <span className="px-3 py-1 rounded-lg bg-primary-dark/10 text-primary-dark text-xs font-semibold">
               {userDept}
             </span>
@@ -301,7 +301,7 @@ export default function InventoryCountScreen() {
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
                 tab === t
                   ? 'bg-transparent shadow-sm text-white'
-                  : 'text-slate-400/50 hover:text-slate-300/70',
+                  : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               {t === 'count' ? 'Count' : 'Variance Report'}
@@ -315,7 +315,7 @@ export default function InventoryCountScreen() {
             <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search inventory..." label="Search inventory" />
 
             {searchQ && countItems.length === 0 && !isLoading && (
-              <p className="text-sm text-slate-400/50 text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+              <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
             )}
 
             {isLoading && (
@@ -330,7 +330,7 @@ export default function InventoryCountScreen() {
             )}
 
             {isError && (
-              <div className="p-4 rounded-xl bg-white/5/40 text-sm text-slate-400/50 text-center">
+              <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
                 Couldn't load items. Check connection.
               </div>
             )}
@@ -366,7 +366,7 @@ export default function InventoryCountScreen() {
                     >
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-white">{item.name}</span>
-                        <span className="text-xs text-slate-400/50">{item.unit}</span>
+                        <span className="text-xs text-ink-tertiary">{item.unit}</span>
                         {item.below_reorder && (
                           <span className="text-[10px] font-semibold uppercase tracking-wide
                             bg-status-pending/10 text-status-pending rounded-full px-2 py-0.5">
@@ -390,7 +390,7 @@ export default function InventoryCountScreen() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400/50 tabular-nums shrink-0">
+                        <span className="text-xs text-ink-tertiary tabular-nums shrink-0">
                           System: {item.current_stock} {item.unit}
                         </span>
                         {adj !== null && <VarianceBadge adj={result!.adjustment} watchList={item.is_watch_list} />}
@@ -444,7 +444,7 @@ export default function InventoryCountScreen() {
           <div className="space-y-4">
             <div className="flex gap-2 items-end">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-slate-400/50 mb-1">From</label>
+                <label className="block text-xs font-medium text-ink-tertiary mb-1">From</label>
                 <input
                   type="date"
                   value={fromDate}
@@ -455,7 +455,7 @@ export default function InventoryCountScreen() {
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-medium text-slate-400/50 mb-1">To</label>
+                <label className="block text-xs font-medium text-ink-tertiary mb-1">To</label>
                 <input
                   type="date"
                   value={toDate}
@@ -506,10 +506,10 @@ export default function InventoryCountScreen() {
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-white text-sm">{v.item_name}</span>
                         {v.no_closing_count ? (
-                          <span className="text-xs text-slate-400/50 italic">Not yet counted</span>
+                          <span className="text-xs text-ink-tertiary italic">Not yet counted</span>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-xs tabular-nums text-slate-400/50">
+                            <span className="text-xs tabular-nums text-ink-tertiary">
                               {v.opening_stock} → {v.closing_stock}
                             </span>
                             {v.adjustment && (
@@ -519,7 +519,7 @@ export default function InventoryCountScreen() {
                         )}
                       </div>
                       {v.variance_pct && !v.no_closing_count && (
-                        <p className={`text-[11px] mt-0.5 ${v.flagged ? 'text-status-failed' : 'text-slate-400/50'}`}>
+                        <p className={`text-[11px] mt-0.5 ${v.flagged ? 'text-status-failed' : 'text-ink-tertiary'}`}>
                           {parseFloat(v.variance_pct) > 0 ? '+' : ''}{v.variance_pct}% variance
                         </p>
                       )}
@@ -530,7 +530,7 @@ export default function InventoryCountScreen() {
             )}
 
             {!varFetching && !variance && (
-              <p className="text-center text-sm text-slate-400/50 py-6">
+              <p className="text-center text-sm text-ink-tertiary py-6">
                 Select a date range and tap Run.
               </p>
             )}
@@ -568,7 +568,7 @@ export default function InventoryCountScreen() {
 
           {/* Department */}
           <div>
-            <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+            <label className="block text-sm font-medium text-ink-secondary mb-1.5">
               Department *
             </label>
             <select
@@ -589,8 +589,8 @@ export default function InventoryCountScreen() {
 
           {/* Reorder level */}
           <div>
-            <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
-              Reorder level <span className="font-normal text-slate-400/50">(optional)</span>
+            <label className="block text-sm font-medium text-ink-secondary mb-1.5">
+              Reorder level <span className="font-normal text-ink-tertiary">(optional)</span>
             </label>
             <input
               type="number"
@@ -614,7 +614,7 @@ export default function InventoryCountScreen() {
               'w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-sm',
               newWatch
                 ? 'border-status-failed/40 bg-status-failed/5 text-status-failed'
-                : 'border-white/10 bg-white/5/30 text-slate-300/70',
+                : 'border-white/10 bg-white/5/30 text-ink-secondary',
             ].join(' ')}
           >
             <span className="font-medium">Flag as watch-list item</span>
@@ -628,7 +628,7 @@ export default function InventoryCountScreen() {
               )}
             </span>
           </button>
-          <p className="text-xs text-slate-400/50 -mt-2 px-1">
+          <p className="text-xs text-ink-tertiary -mt-2 px-1">
             Watch-list items show a red alert when stock drops below reorder level.
           </p>
 

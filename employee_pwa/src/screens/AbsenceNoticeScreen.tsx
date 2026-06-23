@@ -59,14 +59,14 @@ export default function AbsenceNoticeScreen() {
 
       <div>
         <h1 className="text-xl font-bold text-white">Absence Notice</h1>
-        <p className="text-sm text-slate-400/50">Calling in? Record it so your manager knows immediately</p>
+        <p className="text-sm text-ink-tertiary">Calling in? Record it so your manager knows immediately</p>
       </div>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
         {/* Reason selector */}
         <div>
-          <label className="block text-sm font-medium text-slate-300/70 mb-2">
+          <label className="block text-sm font-medium text-ink-secondary mb-2">
             Reason *
           </label>
           <div className="space-y-2">
@@ -80,7 +80,7 @@ export default function AbsenceNoticeScreen() {
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                   reason === r
                     ? 'border-primary-dark bg-primary-dark/10 text-primary-dark'
-                    : 'border-white/10 bg-transparent text-slate-300/70 hover:border-primary-main',
+                    : 'border-white/10 bg-transparent text-ink-secondary hover:border-primary-main',
                 ].join(' ')}
               >
                 {r}
@@ -93,7 +93,7 @@ export default function AbsenceNoticeScreen() {
         {/* Custom reason if "Other" */}
         {reason === 'Other' && (
           <div>
-            <label className="block text-sm font-medium text-slate-300/70 mb-1.5">
+            <label className="block text-sm font-medium text-ink-secondary mb-1.5">
               Describe the reason *
             </label>
             <textarea
