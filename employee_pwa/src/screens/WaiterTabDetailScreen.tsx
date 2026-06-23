@@ -466,12 +466,18 @@ export default function WaiterTabDetailScreen() {
             </div>
             <input
               type="number" min="0" step="0.01" inputMode="decimal"
-              placeholder={`Amount (KSh) — due ${kes(bal)}`}
+              placeholder="Amount (KSh)"
               value={pay.amount}
               onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3
                 text-base text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
             />
+            <button
+              onClick={() => setPay(p => ({ ...p, amount: String(Math.abs(bal)) }))}
+              className="w-full py-2.5 rounded-xl glass-card text-sm text-ink-secondary
+                hover:bg-white/5 transition-colors">
+              Exact — {kes(Math.abs(bal))}
+            </button>
             <Button variant="primary" size="lg" className="w-full" loading={payMut.isPending}
               onClick={() => payMut.mutate()}>
               Record Payment
