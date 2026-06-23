@@ -224,7 +224,7 @@ export default function CheckInScreen() {
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                           waiverBlocked
                             ? 'bg-white/5 text-ink-tertiary cursor-not-allowed'
-                            : 'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.98]',
+                            : 'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.98]',
                           'disabled:opacity-60',
                         ].join(' ')}
                       >
@@ -245,9 +245,9 @@ export default function CheckInScreen() {
                             activateKiosk(user.username)
                             navigate(`/kiosk/waiver/${a.booking_id}`)
                           }}
-                          className="w-full min-h-[44px] rounded-xl border border-primary-dark
+                          className="w-full min-h-[44px] rounded-xl border border-[#fa5c29]
                             text-primary-dark text-sm font-semibold
-                            hover:bg-primary-dark/5 active:scale-[0.98] transition-all
+                            hover:bg-[#fa5c29]/5 active:scale-[0.98] transition-all
                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                         >
                           Waiver Kiosk →

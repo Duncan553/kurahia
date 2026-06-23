@@ -58,7 +58,7 @@ function StaffCard({
       {/* Avatar */}
       <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center
         text-sm font-bold leading-none
-        ${user.is_active ? 'bg-primary-dark text-white' : 'bg-ink-tertiary/20 text-ink-tertiary'}`}>
+        ${user.is_active ? 'bg-[#fa5c29] text-white' : 'bg-ink-tertiary/20 text-ink-tertiary'}`}>
         {initials}
       </div>
 
@@ -131,7 +131,7 @@ function UserDrawer({
       <div className="rounded-xl bg-white/5 p-4 space-y-2">
         <div className="flex items-center gap-3">
           <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-base
-            ${user.is_active ? 'bg-primary-dark text-white' : 'bg-ink-tertiary/20 text-ink-tertiary'}`}>
+            ${user.is_active ? 'bg-[#fa5c29] text-white' : 'bg-ink-tertiary/20 text-ink-tertiary'}`}>
             {(profile?.full_name ?? user.username).slice(0, 2).toUpperCase()}
           </div>
           <div>

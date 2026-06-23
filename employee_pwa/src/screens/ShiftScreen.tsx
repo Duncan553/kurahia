@@ -182,8 +182,8 @@ export default function ShiftScreen() {
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-dark text-white
-              text-sm font-semibold hover:bg-primary-dark/90 transition-colors
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#fa5c29] text-white
+              text-sm font-semibold hover:bg-[#af3000] transition-colors
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -291,7 +291,7 @@ export default function ShiftScreen() {
               value={empId}
               onChange={(e) => setEmpId(e.target.value)}
               className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
-                text-white focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
+                text-white focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
             >
               <option value="">Choose employee…</option>
               {(profiles ?? []).map((p) => (
@@ -308,7 +308,7 @@ export default function ShiftScreen() {
                 value={startDT}
                 onChange={(e) => setStartDT(e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5 text-sm
-                  text-white focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
+                  text-white focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
             <div>
@@ -318,7 +318,7 @@ export default function ShiftScreen() {
                 value={endDT}
                 onChange={(e) => setEndDT(e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5 text-sm
-                  text-white focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
+                  text-white focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
           </div>
@@ -333,7 +333,7 @@ export default function ShiftScreen() {
               onChange={(e) => setRole(e.target.value)}
               placeholder="e.g. Front gate, Kitchen…"
               className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
-                text-white focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
+                text-white focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
 
@@ -342,7 +342,7 @@ export default function ShiftScreen() {
             disabled={!createValid || createMutation.isPending}
             className={[
               'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-              'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]',
+              'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             ].join(' ')}

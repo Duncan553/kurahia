@@ -206,8 +206,8 @@ export default function LeaveApprovalScreen() {
                       <motion.button
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setApproveId(lr.id)}
-                        className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-primary-dark text-white text-sm font-semibold
-                          hover:bg-primary-dark/90 transition-colors
+                        className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-[#fa5c29] text-white text-sm font-semibold
+                          hover:bg-[#af3000] transition-colors
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                       >
                         Approve
@@ -257,8 +257,8 @@ export default function LeaveApprovalScreen() {
                 <button
                   onClick={() => approveMutation.mutate(approveId)}
                   disabled={approveMutation.isPending}
-                  className="flex-1 py-3 rounded-xl bg-primary-dark text-white text-sm font-semibold
-                    hover:bg-primary-dark/90 disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 rounded-xl bg-[#fa5c29] text-white text-sm font-semibold
+                    hover:bg-[#af3000] disabled:opacity-50 transition-colors"
                 >
                   {approveMutation.isPending ? 'Approving…' : 'Approve'}
                 </button>
@@ -294,7 +294,7 @@ export default function LeaveApprovalScreen() {
                   placeholder="Explain why this leave cannot be approved… (min 10 chars)"
                   autoFocus
                   className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
-                    text-white focus:outline-none focus:border-primary-dark
+                    text-white focus:outline-none focus:border-[#fa5c29]
                     focus:ring-2 focus:ring-primary-dark/20 resize-none"
                 />
                 {rejectNotes.length > 0 && !rejectNotesValid && (

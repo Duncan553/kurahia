@@ -240,7 +240,7 @@ export default function AppLayout() {
             >
               <Suspense fallback={
                 <div className="flex items-center justify-center py-24">
-                  <div className="w-7 h-7 rounded-full border-2 border-primary-dark border-t-transparent animate-spin" />
+                  <div className="w-7 h-7 rounded-full border-2 border-[#fa5c29] border-t-transparent animate-spin" />
                 </div>
               }>
                 <Outlet />

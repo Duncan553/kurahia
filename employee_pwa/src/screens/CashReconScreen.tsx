@@ -187,8 +187,8 @@ function ReconForm({
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={onClose}
-          className="w-full py-3 rounded-xl bg-primary-dark text-white font-semibold
-            hover:bg-primary-dark/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
+          className="w-full py-3 rounded-xl bg-[#fa5c29] text-white font-semibold
+            hover:bg-[#af3000] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
         >
           Done
         </motion.button>
@@ -266,7 +266,7 @@ function ReconForm({
           placeholder="0.00"
           className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
             text-2xl font-bold tabular-nums text-white
-            focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/20"
+            focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
         />
         {actualRaw && (
           <p className={`text-sm mt-1.5 tabular-nums font-medium ${
@@ -291,7 +291,7 @@ function ReconForm({
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Any discrepancy reason…"
           className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-            text-sm text-white focus:outline-none focus:border-primary-dark
+            text-sm text-white focus:outline-none focus:border-[#fa5c29]
             focus:ring-2 focus:ring-primary-dark/20 resize-none"
         />
       </div>
@@ -315,7 +315,7 @@ function ReconForm({
           disabled={!actualRaw || mutation.isPending}
           className={[
             'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-            'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]',
+            'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
             'disabled:opacity-50 disabled:cursor-not-allowed',
           ].join(' ')}

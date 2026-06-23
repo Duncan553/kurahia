@@ -145,7 +145,7 @@ export default function NotificationsScreen() {
             ].join(' ')}
           >
             {/* Unread dot */}
-            <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-primary-dark"
+            <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-[#fa5c29]"
               style={{ opacity: isUnread ? 1 : 0 }}
               aria-hidden="true"
             />

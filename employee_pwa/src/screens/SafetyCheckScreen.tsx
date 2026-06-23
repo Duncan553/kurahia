@@ -83,7 +83,7 @@ function ChecklistItem({
         <span className={[
           'flex-shrink-0 w-5 h-5 rounded flex items-center justify-center border-2 transition-colors',
           state.checked
-            ? 'border-primary-dark bg-primary-dark'
+            ? 'border-[#fa5c29] bg-[#fa5c29]'
             : hasError
               ? 'border-status-failed'
               : 'border-ink-tertiary/60',
@@ -117,7 +117,7 @@ function ChecklistItem({
             onChange={(e) => onNote(e.target.value)}
             placeholder="Optional note…"
             className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2
-              text-sm text-white focus:outline-none focus:border-primary-dark
+              text-sm text-white focus:outline-none focus:border-[#fa5c29]
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />
         </div>
@@ -377,7 +377,7 @@ export default function SafetyCheckScreen() {
           <div className="flex items-center gap-3">
             <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
               <div
-                className="h-full bg-primary-dark rounded-full transition-all duration-300"
+                className="h-full bg-[#fa5c29] rounded-full transition-all duration-300"
                 style={{ width: `${(checkedCount / template.items.length) * 100}%` }}
                 aria-hidden="true"
               />
@@ -392,7 +392,7 @@ export default function SafetyCheckScreen() {
             disabled={!allChecked || submitting}
             className={[
               'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-              'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]',
+              'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             ].join(' ')}

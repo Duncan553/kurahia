@@ -129,7 +129,7 @@ export default function ReconciliationScreen() {
           max={todayNairobi()}
           onChange={e => setView(v => ({ ...v, date: e.target.value }))}
           className="rounded-xl border border-white/10 bg-transparent px-3 py-2
-            text-sm text-white focus:outline-none focus:border-primary-dark"
+            text-sm text-white focus:outline-none focus:border-[#fa5c29]"
         />
       </div>
 
@@ -246,7 +246,7 @@ export default function ReconciliationScreen() {
               <div className="relative overflow-hidden rounded-2xl">
                 {/* Hold progress fill */}
                 <div
-                  className="absolute inset-y-0 left-0 bg-primary-dark/20 transition-none pointer-events-none"
+                  className="absolute inset-y-0 left-0 bg-[#fa5c29]/15 transition-none pointer-events-none"
                   style={{ width: `${view.holdProgress}%` }}
                 />
                 <button
@@ -258,7 +258,7 @@ export default function ReconciliationScreen() {
                   onKeyDown={(e) => { if (e.key === ' ' && !e.repeat) { e.preventDefault(); startHold() } }}
                   onKeyUp={(e) => { if (e.key === ' ') { e.preventDefault(); cancelHold() } }}
                   aria-label="Close Period. Hold Space for 2 seconds to confirm."
-                  className="relative w-full py-4 bg-primary-dark text-white rounded-2xl
+                  className="relative w-full py-4 bg-[#fa5c29] text-white rounded-2xl
                     text-base font-semibold select-none cursor-grab active:cursor-grabbing
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                 >
@@ -304,7 +304,7 @@ export default function ReconciliationScreen() {
               value={view.safeCount}
               onChange={e => setView(v => ({ ...v, safeCount: e.target.value }))}
               className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                text-base text-white focus:outline-none focus:border-primary-dark"
+                text-base text-white focus:outline-none focus:border-[#fa5c29]"
             />
           </div>
           <div className="flex gap-2 justify-end">
