@@ -260,8 +260,8 @@ export default function AppLayout() {
               end={path === '/dashboard'}
               className={({ isActive }) => [
                 'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px]',
-                'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-inset',
-                isActive ? 'text-primary-dark' : 'text-ink-secondary hover:text-ink-primary',
+                'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29] focus-visible:ring-inset',
+                isActive ? 'text-[#fa5c29]' : 'text-[#aa8980] hover:text-[#f9dcd5]',
               ].join(' ')}
             >
               <Icon />

@@ -136,7 +136,7 @@ export default function AlertsScreen() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white font-serif">Judge Alerts</h1>
-          <p className="text-xs text-white/30 mt-0.5">Silent anomaly detection — theft, waste, overbudget</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Silent anomaly detection — theft, waste, overbudget</p>
         </div>
         {!isLoading && (
           <span className="text-xs text-ink-secondary">

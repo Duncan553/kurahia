@@ -246,10 +246,12 @@ export default function WaiterTabDetailScreen() {
                       <img src={item.image_path} alt={item.name}
                         className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-3xl opacity-30">🍽</span>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="opacity-30 text-ink-tertiary">
+                        <path d="M3 6l3 6v8M8 6c0 3-1.5 5-3 6M12 3v18M16 6c0 3 1.5 5 3 6M21 6l-3 6v8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     )}
                     {soldOut && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-[rgba(30,16,12,0.6)] flex items-center justify-center">
                         <span className="text-xs font-bold text-white/80 uppercase tracking-wider">Sold Out</span>
                       </div>
                     )}
@@ -345,7 +347,7 @@ export default function WaiterTabDetailScreen() {
                       aria-label={`Note for ${e.name}`}
                       value={draftNotes[e.id] ?? ''}
                       onChange={ev => setDraftNotes(n => ({ ...n, [e.id]: ev.target.value }))}
-                      className="w-full text-xs rounded-lg border border-white/10 bg-transparent/50 px-2 py-1.5
+                      className="w-full text-xs rounded-lg border border-white/10 bg-transparent px-2 py-1.5
                         text-ink-secondary placeholder:text-ink-tertiary/50
                         focus:outline-none focus:border-[#fa5c29]"
                     />
@@ -441,7 +443,7 @@ export default function WaiterTabDetailScreen() {
         )}
 
         {/* Balance */}
-        <div className="flex justify-between items-center p-3 rounded-xl bg-ink-primary text-white">
+        <div className="flex justify-between items-center p-3 rounded-xl glass-card text-ink-primary">
           <span className="font-semibold text-sm">{bal < 0 ? 'Band credit left' : 'Balance due'}</span>
           <span className="text-lg font-bold tabular-nums">{bal < 0 ? kes(-bal) : kes(tab?.balance ?? '0')}</span>
         </div>
@@ -539,7 +541,7 @@ export default function WaiterTabDetailScreen() {
     <div className="h-full flex flex-col">
       {/* Back + header (always visible) */}
       <div className="shrink-0 px-4 py-3 flex items-center gap-3 border-b border-white/10"
-        style={{ background: 'rgba(22, 33, 62, 0.8)', backdropFilter: 'blur(12px)' }}>
+        style={{ background: 'rgba(30, 16, 12, 0.85)', backdropFilter: 'blur(12px)' }}>
         <button onClick={() => navigate('/pos/tabs')}
           aria-label="Back to tables"
           className="text-ink-tertiary hover:text-white text-sm transition-colors">
@@ -568,14 +570,18 @@ export default function WaiterTabDetailScreen() {
             <motion.button whileTap={{ scale: 0.97 }}
               onClick={() => { setEntryChoice('menu'); navigate(`/pos/menu/${tabId ?? ''}`) }}
               className="flex-1 py-4 rounded-2xl glass-card text-center">
-              <span className="text-2xl mb-1 block">📖</span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mx-auto mb-1 text-ink-secondary">
+                <path d="M2 4h6a4 4 0 014 4v12a3 3 0 00-3-3H2V4zM22 4h-6a4 4 0 00-4 4v12a3 3 0 013-3h7V4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
               <span className="text-sm font-semibold text-white">Show Menu</span>
               <span className="text-[10px] text-ink-tertiary block mt-0.5">Guest wants to browse</span>
             </motion.button>
             <motion.button whileTap={{ scale: 0.97 }}
               onClick={() => setEntryChoice('order')}
               className="flex-1 py-4 rounded-2xl gradient-hero text-center text-white">
-              <span className="text-2xl mb-1 block">⚡</span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mx-auto mb-1 text-white">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
               <span className="text-sm font-semibold">Straight to Order</span>
               <span className="text-[10px] text-white/70 block mt-0.5">Guest knows what they want</span>
             </motion.button>

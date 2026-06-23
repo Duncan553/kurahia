@@ -40,7 +40,7 @@ export default function CustomerMenuScreen() {
           <h1 className="font-serif text-4xl md:text-5xl font-bold text-white tracking-tight">
             Our Menu
           </h1>
-          <p className="text-white/40 mt-2">Waterfront Country Club</p>
+          <p className="text-ink-tertiary mt-2">Waterfront Country Club</p>
         </div>
 
         {/* Loading */}
@@ -72,10 +72,12 @@ export default function CustomerMenuScreen() {
                       {item.image_path ? (
                         <img src={item.image_path} alt={item.name} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-3xl opacity-20">🍽</span>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="opacity-20 text-ink-tertiary">
+                          <path d="M3 6l3 6v8M8 6c0 3-1.5 5-3 6M12 3v18M16 6c0 3 1.5 5 3 6M21 6l-3 6v8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
                       )}
                       {soldOut && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <div className="absolute inset-0 flex items-center justify-center bg-[rgba(30,16,12,0.6)]">
                           <span className="text-xs font-bold text-white/70 uppercase">Sold Out</span>
                         </div>
                       )}

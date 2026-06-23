@@ -65,7 +65,7 @@ function ItemQtyForm({
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {itemsLoading ? (
-        <div className="h-12 rounded-xl bg-white/5/60 animate-pulse" />
+        <div className="h-12 rounded-xl bg-white/8 animate-pulse" />
       ) : (
         <Select
           label={`${label} *`}
@@ -185,7 +185,7 @@ export default function QuickEntryScreen() {
       </div>
 
       {/* ── Tab bar — both tabs visible to managers ──────────────── */}
-      <div className="flex gap-1 bg-white/5/50 rounded-xl p-1">
+      <div className="flex gap-1 bg-white/6 rounded-xl p-1">
         {(['spoilage', 'staff-meal'] as Tab[]).map((t) => (
           <button
             key={t}

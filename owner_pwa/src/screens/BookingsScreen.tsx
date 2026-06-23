@@ -245,7 +245,7 @@ export default function BookingsScreen() {
     <div className="p-4 max-w-3xl mx-auto">
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-white font-serif">Bookings</h1>
-        <p className="text-xs text-white/30 mt-0.5">Villa & event bookings, deposits, check-in</p>
+        <p className="text-xs text-ink-tertiary mt-0.5">Villa & event bookings, deposits, check-in</p>
       </div>
 
       {/* Filters */}

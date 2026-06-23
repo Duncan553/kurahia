@@ -164,7 +164,7 @@ function ReconForm({
           'rounded-xl p-5 text-center space-y-1',
           result.status === 'BALANCED' ? 'bg-primary-light/20 border border-primary-main/30' :
           result.status === 'SHORT'    ? 'bg-status-failed/10 border border-status-failed/30' :
-                                         'bg-blue-50 border border-blue-200',
+                                         'bg-status-pending/10 border border-status-pending/30',
         ].join(' ')}>
           <p className="text-2xl font-bold tabular-nums text-white">
             KSh {Math.abs(diff).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
@@ -237,7 +237,7 @@ function ReconForm({
               >
                 {pending.payments.map((p) => (
                   <div key={p.payment_id}
-                    className="flex justify-between text-sm px-3 py-2 rounded-lg bg-white/5/30">
+                    className="flex justify-between text-sm px-3 py-2 rounded-lg bg-white/4">
                     <span className="text-ink-tertiary">{timeAgo(p.created_at)}</span>
                     <span className="font-medium tabular-nums text-white">
                       KSh {parseFloat(p.amount).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
@@ -271,7 +271,7 @@ function ReconForm({
         {actualRaw && (
           <p className={`text-sm mt-1.5 tabular-nums font-medium ${
             diff === 0 ? 'text-status-paid' :
-            diff < 0   ? 'text-status-failed' : 'text-blue-600'
+            diff < 0   ? 'text-status-failed' : 'text-status-pending'
           }`}>
             {diff === 0 ? 'Balanced'
               : diff < 0  ? `KSh ${Math.abs(diff).toFixed(2)} short`
@@ -377,7 +377,7 @@ export default function CashReconScreen() {
 
         <div>
           <h1 className="text-2xl font-bold text-white font-serif">Cash Reconciliation</h1>
-          <p className="text-xs text-white/30 mt-0.5">Reconcile cash handovers vs expected</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Reconcile cash handovers vs expected</p>
         </div>
 
         {/* Staff selector */}
@@ -419,7 +419,7 @@ export default function CashReconScreen() {
                         key={p.id}
                         onClick={() => { selectProfile(p); setPendingOpen(false) }}
                         className="w-full text-left px-4 py-3 text-sm text-white
-                          hover:bg-white/5/60 transition-colors border-b border-white/10 last:border-0"
+                          hover:bg-white/8 transition-colors border-b border-white/10 last:border-0"
                       >
                         {p.full_name}
                       </motion.button>
@@ -442,7 +442,7 @@ export default function CashReconScreen() {
             )}
 
             {pendingError && (
-              <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center space-y-2">
+              <div className="p-4 rounded-xl bg-white/5 text-sm text-ink-tertiary text-center space-y-2">
                 <p>Couldn't load cash data for {selectedProfile.full_name}.</p>
                 <button
                   onClick={() => refetchPending()}

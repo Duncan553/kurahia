@@ -285,7 +285,7 @@ export default function FinanceScreen() {
       <div className="flex items-center justify-between gap-3 mb-5">
         <div>
           <h1 className="text-2xl font-bold text-white font-serif">Finance</h1>
-          <p className="text-xs text-white/30 mt-0.5">Revenue, expenses, reconciliation summaries</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Revenue, expenses, reconciliation summaries</p>
         </div>
         {/* Period picker */}
         <label className="sr-only" htmlFor="finance-period">Period</label>

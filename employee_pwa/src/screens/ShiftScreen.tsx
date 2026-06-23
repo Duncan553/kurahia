@@ -138,7 +138,7 @@ export default function ShiftScreen() {
     return (
       <motion.div variants={itemVariants} whileHover={{ y: -2 }} className={[
         'rounded-xl border px-4 py-3 flex items-center gap-3',
-        cancelled ? 'glass-card bg-white/5/20 opacity-70' : 'glass-card bg-transparent',
+        cancelled ? 'glass-card bg-white/3 opacity-70' : 'glass-card bg-transparent',
       ].join(' ')}>
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-semibold text-white ${cancelled ? 'line-through' : ''}`}>
@@ -177,7 +177,7 @@ export default function ShiftScreen() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white font-serif">Shifts</h1>
-            <p className="text-xs text-white/30 mt-0.5">Create and manage shift schedules</p>
+            <p className="text-xs text-ink-tertiary mt-0.5">Create and manage shift schedules</p>
           </div>
           <motion.button
             whileTap={{ scale: 0.97 }}
@@ -194,7 +194,7 @@ export default function ShiftScreen() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-white/5/50 rounded-xl p-1">
+        <div className="flex gap-1 bg-white/6 rounded-xl p-1">
           {(['today', 'upcoming'] as Tab[]).map((t) => (
             <button
               key={t}
@@ -216,7 +216,7 @@ export default function ShiftScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
+          <div className="p-4 rounded-xl bg-white/5 text-sm text-ink-tertiary text-center">
             Couldn't load shifts. Check connection.
           </div>
         )}
@@ -367,7 +367,7 @@ export default function ShiftScreen() {
             <button
               onClick={() => setCancelId(null)}
               className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
-                text-ink-secondary hover:bg-white/5/40 transition-colors"
+                text-ink-secondary hover:bg-white/5 transition-colors"
             >
               Keep shift
             </button>

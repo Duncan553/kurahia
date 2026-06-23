@@ -104,11 +104,11 @@ export default function LeaveApprovalScreen() {
 
         <div>
           <h1 className="text-2xl font-bold text-white font-serif">Leave Requests</h1>
-          <p className="text-xs text-white/30 mt-0.5">Review staff leave requests</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Review staff leave requests</p>
         </div>
 
         {/* Status filter tabs */}
-        <div className="flex gap-1 bg-white/5/50 rounded-xl p-1 overflow-x-auto">
+        <div className="flex gap-1 bg-white/6 rounded-xl p-1 overflow-x-auto">
           {FILTERS.map((f) => (
             <button
               key={f}
@@ -139,7 +139,7 @@ export default function LeaveApprovalScreen() {
         )}
 
         {isError && (
-          <div className="p-4 rounded-xl bg-white/5/40 text-sm text-ink-tertiary text-center">
+          <div className="p-4 rounded-xl bg-white/5 text-sm text-ink-tertiary text-center">
             Couldn't load leave requests. Check connection.
           </div>
         )}
@@ -171,7 +171,7 @@ export default function LeaveApprovalScreen() {
                   whileHover={{ y: -2 }}
                   className={[
                     'rounded-2xl border p-4 space-y-3',
-                    isCancelled ? 'glass-card bg-white/5/20 opacity-80' : 'glass-card bg-transparent',
+                    isCancelled ? 'glass-card bg-white/3 opacity-80' : 'glass-card bg-transparent',
                   ].join(' ')}
                 >
                   {/* Header row */}
@@ -250,7 +250,7 @@ export default function LeaveApprovalScreen() {
                 <button
                   onClick={() => setApproveId(null)}
                   className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
-                    text-ink-secondary hover:bg-white/5/40 transition-colors"
+                    text-ink-secondary hover:bg-white/5 transition-colors"
                 >
                   Cancel
                 </button>
@@ -307,7 +307,7 @@ export default function LeaveApprovalScreen() {
                 <button
                   onClick={() => setRejectId(null)}
                   className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
-                    text-ink-secondary hover:bg-white/5/40 transition-colors"
+                    text-ink-secondary hover:bg-white/5 transition-colors"
                 >
                   Cancel
                 </button>

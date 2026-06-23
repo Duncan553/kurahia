@@ -156,7 +156,10 @@ function UserDrawer({
             {user.pin_set ? 'Set' : 'Not set'}
           </span></p>
           {!profile && (
-            <p className="text-status-pending font-medium">⚠ No employee profile linked</p>
+            <p className="text-status-pending font-medium flex items-center gap-1">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" className="shrink-0"><path d="M10 3l7.5 13.5H2.5L10 3z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M10 8.5v3M10 14h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              No employee profile linked
+            </p>
           )}
         </div>
       </div>
@@ -365,7 +368,7 @@ export default function StaffScreen() {
       <div className="flex items-center justify-between mb-5 gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white font-serif">Staff</h1>
-          <p className="text-xs text-white/30 mt-0.5">Employee accounts, roles, departments</p>
+          <p className="text-xs text-ink-tertiary mt-0.5">Employee accounts, roles, departments</p>
         </div>
         <Button
           variant="primary"

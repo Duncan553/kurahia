@@ -25,7 +25,7 @@ function NavCard({ label, description, path, icon, danger }: {
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
         danger
           ? 'border border-status-failed/20 bg-status-failed/5 hover:bg-status-failed/10'
-          : 'glass-card hover:bg-white/5/40 active:bg-white/5/60',
+          : 'glass-card hover:bg-white/5 active:bg-white/8',
       ].join(' ')}
     >
       <span className={danger ? 'text-status-failed shrink-0' : 'text-ink-secondary shrink-0'}>
@@ -73,7 +73,7 @@ export default function ProfileScreen() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="mb-6 p-4">
         <h1 className="font-serif text-2xl font-bold text-white">PROFILE.</h1>
-        <p className="text-xs text-white/30 mt-1">KURAHIA STAFF</p>
+        <p className="text-xs text-ink-tertiary mt-1">KURAHIA STAFF</p>
       </div>
 
       <div className="p-4 space-y-6">
