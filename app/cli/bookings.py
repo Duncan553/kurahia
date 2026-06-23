@@ -1,10 +1,11 @@
 """
 cli/bookings.py — Bookings seed and maintenance commands.
 
-flask bookings seed-resources  → villas + event field + water activities
-flask bookings seed-sample     → sample bookings spanning past/present/future
-flask bookings flag-no-shows   → sweep HELD/CONFIRMED past check-in → NO_SHOW
-flask bookings release-holds   → auto-cancel HELD bookings > 24h old
+flask bookings seed-resources         → villas + event field + water activities
+flask bookings seed-sample            → sample bookings spanning past/present/future
+flask bookings flag-no-shows          → sweep HELD/CONFIRMED past check-in → NO_SHOW
+flask bookings release-holds          → auto-cancel HELD bookings > 24h old
+flask bookings send-checkin-reminders → WhatsApp/SMS reminder to today's arrivals
 """
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -129,3 +130,42 @@ def cli_release_holds(hours):
     count = release_expired_holds(window_hours=hours)
     db.session.commit()
     click.echo(f"Released {count} expired hold(s).")
+
+
+@bookings_cli_bp.cli.command("send-checkin-reminders")
+def cli_send_checkin_reminders():
+    """Send CHECKIN_REMINDER to guests with confirmed bookings checking in today.
+
+    Run daily via cron (e.g. 7 AM EAT):
+      flask bookings send-checkin-reminders
+    """
+    from app.services.notifications.guest_notify import notify_guest, MessageType
+
+    now = datetime.now(timezone.utc)
+    today_start = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+    today_end = today_start + timedelta(days=1)
+
+    # Find CONFIRMED bookings with check-in planned today
+    bookings = db.session.query(Booking).filter(
+        Booking.status == BookingStatus.CONFIRMED.value,
+        Booking.check_in_planned_utc >= today_start,
+        Booking.check_in_planned_utc < today_end,
+    ).all()
+
+    sent = 0
+    for b in bookings:
+        if not b.guest_phone:
+            continue
+        resource_name = "your room"
+        if b.resource_id:
+            res = db.session.get(BookableResource, b.resource_id)
+            if res:
+                resource_name = res.name
+        channel, _ = notify_guest(b.guest_phone, MessageType.CHECKIN_REMINDER, {
+            "resource": resource_name,
+        })
+        sent += 1
+        click.echo(f"  {b.guest_name} ({b.guest_phone}) → {channel}")
+
+    db.session.commit()
+    click.echo(f"Sent {sent} check-in reminder(s) for {len(bookings)} booking(s).")

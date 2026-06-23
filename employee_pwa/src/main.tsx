@@ -81,6 +81,8 @@ const KioskFeedbackScreen = lazy(() => import('./screens/kiosk/KioskFeedbackScre
 const KitchenQueueScreen = lazy(() => import('./screens/StationQueues').then(m => ({ default: m.KitchenQueueScreen })))
 const BarQueueScreen = lazy(() => import('./screens/StationQueues').then(m => ({ default: m.BarQueueScreen })))
 const GateHubScreen = lazy(() => import('./screens/GateHubScreen'))
+const HousekeepingScreen = lazy(() => import('./screens/HousekeepingScreen'))
+const EventsScreen = lazy(() => import('./screens/EventsScreen'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -123,6 +125,9 @@ const router = createBrowserRouter([
         // ── Band lookup: all staff (level 1+) ────────────────────
         { path: '/gate/band-lookup', element: <BandLookupScreen /> },
 
+        // ── Events: gate staff + managers (level 3+) ────────────
+        { path: '/events', element: <EventsScreen /> },
+
         // ── Water activities: waiver + safety check + payment
         { path: '/gate/waiver',            element: <WaiverScreen />       },
         { path: '/equipment/safety-check', element: <SafetyCheckScreen />  },
@@ -142,6 +147,9 @@ const router = createBrowserRouter([
 
         // ── Villa: villa staff + front desk (level 3-4 or villa dept)
         { path: '/villa', element: <VillaScreen /> },
+
+        // ── Housekeeping: villa/housekeeping dept (L1+) + managers (L5+)
+        { path: '/housekeeping', element: <HousekeepingScreen /> },
 
         // ── Gate / Front Desk (level 3+) ─────────────────────────
         {

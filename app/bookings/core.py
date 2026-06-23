@@ -191,6 +191,19 @@ def confirm_booking(booking_id):
     booking.updated_at_utc = datetime.now(timezone.utc)
     db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.confirm", target=booking_id)
+
+    # Guest notification — WhatsApp > SMS > logged-only (never blocks the commit)
+    try:
+        from app.services.notifications.guest_notify import notify_guest, MessageType
+        notify_guest(booking.guest_phone, MessageType.BOOKING_CONFIRMED, {
+            "resource":   booking.resource.name if booking.resource else "your room",
+            "checkin":    booking.check_in_planned_utc.strftime("%Y-%m-%d") if booking.check_in_planned_utc else "TBD",
+            "checkout":   booking.check_out_planned_utc.strftime("%Y-%m-%d") if booking.check_out_planned_utc else "TBD",
+            "booking_id": booking_id[:8],
+        })
+    except Exception:
+        pass  # notification failure must never block a booking confirmation
+
     db.session.commit()
     return jsonify(_booking_dict(booking)), 200
 
@@ -269,8 +282,14 @@ def check_out(booking_id):
         if gr:
             gr.last_visit_utc = datetime.now(timezone.utc)
 
+    # Auto-create a DIRTY cleaning record so housekeeping sees it immediately
+    from app.housekeeping import create_dirty_record
+    dirty = create_dirty_record(booking.resource_id)
+
     db.session.flush()
     AuditLog.log(actor=actor.username, action="booking.check_out", target=booking_id)
+    AuditLog.log(actor="system", action="housekeeping.auto_dirty",
+                 target=dirty.id, details=f"checkout of {booking.guest_name}")
     db.session.commit()
     return jsonify(_booking_dict(booking)), 200
 
