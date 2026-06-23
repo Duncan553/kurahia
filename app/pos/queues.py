@@ -50,6 +50,7 @@ def _queue_for_station(station: str, actor: User):
             "tab_reference": oi.order.tab.reference if oi.order and oi.order.tab else None,
             "menu_item_id":  oi.menu_item_id,
             "menu_item":     oi.menu_item.name if oi.menu_item else None,
+            "category":      oi.menu_item.category if oi.menu_item else None,
             "quantity":      str(oi.quantity),
             "status":        oi.status,
             "created_at":    oi.created_at.isoformat(),

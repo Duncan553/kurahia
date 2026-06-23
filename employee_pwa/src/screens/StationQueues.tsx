@@ -1,14 +1,17 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useToastStore, SearchInput } from '@shared'
+import { useToastStore } from '@shared'
 import api from '../lib/axios'
 import { playOrderAlert, isMuted, setMuted as setAudioMuted } from '../lib/audio'
 import AudioEnableSplash from '../components/AudioEnableSplash'
 
+/* ── Types ──────────────────────────────────────────────────────────────────── */
+
 interface QueueItem {
   order_item_id: string; order_id: string; tab_reference: string | null
-  menu_item_id: string; menu_item: string | null; quantity: string; status: string
+  menu_item_id: string; menu_item: string | null; category: string | null
+  quantity: string; status: string
   age_seconds: number; ordered_by: string | null; notes: string | null
 }
 interface StockItem {
@@ -16,24 +19,56 @@ interface StockItem {
   current_stock: string; reorder_level: string; below_reorder: boolean
 }
 
+/* An order card groups all items that share the same order_id */
+interface OrderGroup {
+  order_id: string
+  tab_reference: string | null
+  ordered_by: string | null
+  age_seconds: number          // max age across items in this order
+  status: 'PENDING' | 'RECEIVED' | 'READY' | 'MIXED'  // highest-priority status
+  items: QueueItem[]
+}
+
+/* ── Helpers (unchanged business logic) ─────────────────────────────────────── */
+
 const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
 
-function ageCls(s: number) {
-  if (s < 480) return 'text-status-paid'
-  if (s < 900) return 'text-status-pending'
-  return 'text-status-failed'
-}
-const ageLabel = (s: number) => s >= 60 ? `${Math.floor(s / 60)}m` : `${s}s`
+const ageLabel = (s: number) => s >= 60 ? `${Math.floor(s / 60)}m ago` : `${s}s ago`
 
-function currentTime() {
-  return new Date().toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })
-}
-function currentDate() {
-  return new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })
+/* Short order display ID: #ORD-XXXX using last 4 chars of the UUID */
+const ordLabel = (id: string) => `#ORD-${id.slice(-4).toUpperCase()}`
+
+/* Group flat queue items into order cards */
+function groupByOrder(items: QueueItem[]): OrderGroup[] {
+  const map = new Map<string, QueueItem[]>()
+  for (const item of items) {
+    const arr = map.get(item.order_id) ?? []
+    arr.push(item)
+    map.set(item.order_id, arr)
+  }
+  // Priority: RECEIVED > PENDING (active items show first)
+  const statusPriority: Record<string, number> = { RECEIVED: 2, PENDING: 1, READY: 0 }
+  return Array.from(map.entries()).map(([order_id, orderItems]) => {
+    // Pick the "dominant" status: if ANY item is RECEIVED, show as active
+    let topStatus = 'PENDING'
+    let maxPri = 0
+    for (const it of orderItems) {
+      const p = statusPriority[it.status] ?? 0
+      if (p > maxPri) { maxPri = p; topStatus = it.status }
+    }
+    return {
+      order_id,
+      tab_reference: orderItems[0].tab_reference,
+      ordered_by: orderItems[0].ordered_by,
+      age_seconds: Math.max(...orderItems.map(i => i.age_seconds)),
+      status: topStatus as OrderGroup['status'],
+      items: orderItems,
+    }
+  })
 }
 
-// ── Stock view ────────────────────────────────────────────────────────────────
+/* ── Stock Board (unchanged) ────────────────────────────────────────────────── */
 
 function StockBoard() {
   const { data: items = [], isLoading } = useQuery<StockItem[]>({
@@ -90,15 +125,16 @@ function StockBoard() {
   )
 }
 
-// ── 3-column Kanban queue view ───────────────────────────────────────────────
+/* ── Glassmorphism Queue View (Stitch bar station design) ───────────────────── */
 
-function KanbanView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: (n: number) => void }) {
+function GlassQueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount: (n: number) => void }) {
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
-  const [searchQ, setSearchQ] = useState('')
+  const [activeFilter, setActiveFilter] = useState<string>('ALL')
   const endpoint = station === 'KITCHEN' ? '/kitchen/queue' : '/bar/queue'
   const prevIdsRef = useRef<Set<string>>(new Set())
 
+  /* ── Data fetch (identical query setup) ──────────────────────────────────── */
   const { data: items = [], isLoading, isError } = useQuery<QueueItem[]>({
     queryKey: ['queue', station],
     queryFn: () => api.get<QueueItem[]>(endpoint).then(r => r.data),
@@ -107,7 +143,7 @@ function KanbanView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount:
     select: (data) => { onCount(data.length); return data },
   })
 
-  // Stock data for low-stock warnings on queued items
+  /* ── Stock data for low-stock warnings ───────────────────────────────────── */
   const { data: stockItems = [] } = useQuery<StockItem[]>({
     queryKey: ['station-stock'],
     queryFn: () => api.get<StockItem[]>('/inventory/items').then(r => r.data),
@@ -115,6 +151,7 @@ function KanbanView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount:
   })
   const lowStockNames = new Set(stockItems.filter(i => i.below_reorder).map(i => i.name.toLowerCase()))
 
+  /* ── Audio alert on new items (unchanged) ────────────────────────────────── */
   useEffect(() => {
     if (!items.length) return
     const currentIds = new Set(items.map(i => i.order_item_id))
@@ -125,6 +162,7 @@ function KanbanView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount:
     prevIdsRef.current = currentIds
   }, [items, station])
 
+  /* ── Mutations (unchanged) ───────────────────────────────────────────────── */
   const actMut = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'receive' | 'ready' }) =>
       api.post(`/order-items/${id}/${action}`),
@@ -135,178 +173,272 @@ function KanbanView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCount:
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
 
-  const filteredItems = searchQ
-    ? items.filter(i => {
-        const q = searchQ.toLowerCase()
-        return (i.menu_item ?? '').toLowerCase().includes(q) ||
-               (i.tab_reference ?? '').toLowerCase().includes(q) ||
-               (i.ordered_by ?? '').toLowerCase().includes(q)
-      })
-    : items
+  /* ── Category pills: derive from live data ───────────────────────────────── */
+  const categories = useMemo(() => {
+    const catMap = new Map<string, number>()
+    for (const it of items) {
+      const cat = it.category ?? 'Other'
+      catMap.set(cat, (catMap.get(cat) ?? 0) + 1)
+    }
+    // Sort by count descending
+    return Array.from(catMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }))
+  }, [items])
 
+  /* ── Filter items by category, then group by order ───────────────────────── */
+  const filteredItems = activeFilter === 'ALL'
+    ? items
+    : items.filter(i => (i.category ?? 'Other') === activeFilter)
+
+  const orderGroups = useMemo(() => groupByOrder(filteredItems), [filteredItems])
+
+  // Sort: active (RECEIVED) orders first, then queued (PENDING), by age desc
+  const sortedGroups = useMemo(() => {
+    return [...orderGroups].sort((a, b) => {
+      const statusOrder: Record<string, number> = { RECEIVED: 0, PENDING: 1, READY: 2 }
+      const sa = statusOrder[a.status] ?? 9
+      const sb = statusOrder[b.status] ?? 9
+      if (sa !== sb) return sa - sb
+      return b.age_seconds - a.age_seconds  // older orders first within same status
+    })
+  }, [orderGroups])
+
+  /* ── Status label: "MIXING" for bar active, "COOKING" for kitchen active ─── */
+  const activeVerb = station === 'BAR' ? 'MIXING' : 'COOKING'
+  const startVerb  = station === 'BAR' ? 'Start Mixing' : 'Start Cooking'
+
+  /* ── Loading state ───────────────────────────────────────────────────────── */
   if (isLoading) return (
-    <div className="grid grid-cols-3 gap-4">
-      {[1,2,3].map(c => (
-        <div key={c} className="space-y-3">
-          <div className="h-8 rounded-lg bg-cream-alt animate-pulse" />
-          <div className="h-32 rounded-xl bg-cream-alt animate-pulse" />
-        </div>
-      ))}
+    <div className="p-6">
+      <div className="flex gap-3 mb-6">
+        {[1,2,3,4].map(i => <div key={i} className="h-9 w-32 rounded-full bg-cream-alt animate-pulse" />)}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {[1,2,3].map(i => <div key={i} className="h-56 rounded-xl bg-cream-alt animate-pulse" />)}
+      </div>
     </div>
   )
+
   if (isError) return (
     <p className="text-status-failed text-sm text-center py-8">Failed to load queue. Check your connection.</p>
   )
 
-  /* Split items into 3 kanban columns by status */
-  const sent    = filteredItems.filter(i => i.status === 'PENDING')
-  const cooking = filteredItems.filter(i => i.status === 'RECEIVED')
-  const ready   = filteredItems.filter(i => i.status === 'READY')
-
-  const columns = [
-    { key: 'sent',    title: 'Sent',    items: sent,    accent: 'border-primary-main' },
-    { key: 'cooking', title: 'Cooking', items: cooking, accent: 'border-status-pending' },
-    { key: 'ready',   title: 'Ready',   items: ready,   accent: 'border-status-paid' },
-  ]
-
   return (
-    <div className="space-y-3">
-      {/* Search bar */}
-      <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search orders..." label="Search orders" />
+    <div className="p-5">
+      {/* ── Filter pills row ──────────────────────────────────────────────── */}
+      <div className="flex flex-wrap gap-2 mb-5">
+        {/* ALL ORDERS pill */}
+        <button
+          onClick={() => setActiveFilter('ALL')}
+          className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors
+            ${activeFilter === 'ALL'
+              ? 'border-[#f9dcd5]/40 bg-white/10 text-[#f9dcd5]'
+              : 'border-white/10 text-[#aa8980] hover:text-[#f9dcd5] hover:bg-white/5'
+            }`}
+        >
+          ALL ORDERS ({items.length})
+        </button>
 
+        {/* Category pills */}
+        {categories.map(cat => (
+          <button
+            key={cat.name}
+            onClick={() => setActiveFilter(cat.name)}
+            className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors
+              ${activeFilter === cat.name
+                ? 'border-[#f9dcd5]/40 bg-white/10 text-[#f9dcd5]'
+                : 'border-white/10 text-[#aa8980] hover:text-[#f9dcd5] hover:bg-white/5'
+              }`}
+          >
+            {cat.name.toUpperCase()} ({cat.count})
+          </button>
+        ))}
+      </div>
+
+      {/* ── Empty state ───────────────────────────────────────────────────── */}
       {items.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <span className="text-5xl text-ink-tertiary/40">&#10003;</span>
-          <p className="text-ink-secondary text-lg font-medium">Queue clear</p>
+          <p className="text-[#aa8980] text-lg font-medium">Queue clear</p>
         </div>
       )}
 
-      {searchQ && filteredItems.length === 0 && items.length > 0 && (
-        <p className="text-sm text-ink-tertiary text-center py-8">
-          No results for '{searchQ}'
+      {/* ── No results for filter ─────────────────────────────────────────── */}
+      {activeFilter !== 'ALL' && filteredItems.length === 0 && items.length > 0 && (
+        <p className="text-sm text-[#aa8980] text-center py-8">
+          No items in {activeFilter.toLowerCase()}
         </p>
       )}
 
-      {/* 3-column kanban */}
-      {(items.length > 0 || searchQ) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {columns.map(col => (
-            <div key={col.key} className="min-h-[200px]">
-              {/* Column header */}
-              <div className={`flex items-center justify-between mb-3 pb-2 border-b-2 ${col.accent}`}>
-                <h3 className="text-sm font-bold text-ink-primary uppercase tracking-widest">{col.title}</h3>
-                <span className="text-xs font-bold tabular-nums text-ink-tertiary bg-cream-alt px-2 py-0.5 rounded-full">
-                  {col.items.length}
-                </span>
-              </div>
+      {/* ── Order cards grid ──────────────────────────────────────────────── */}
+      {sortedGroups.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <AnimatePresence mode="popLayout">
+            {sortedGroups.map(group => {
+              const isActive = group.status === 'RECEIVED'
+              const allPending = group.items.every(i => i.status === 'PENDING')
+              const allReady = group.items.every(i => i.status === 'READY')
 
-              {/* Cards in column */}
-              <div className="space-y-3">
-                <AnimatePresence mode="popLayout">
-                  {col.items.map(item => (
-                    <motion.div
-                      key={item.order_item_id}
-                      layout
-                      initial={{ opacity: 0, y: -12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: 'hidden' }}
-                      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                      className="glass-card rounded-xl p-4 border border-white/10"
+              return (
+                <motion.div
+                  key={group.order_id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  className={`glass-card rounded-xl p-4 flex flex-col
+                    ${isActive ? 'border-[#fa5c29]/30' : 'border-white/10'}`}
+                >
+                  {/* ── Card header: order ID + status badge ────────────── */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold text-[#f9dcd5]">
+                      {ordLabel(group.order_id)}
+                    </span>
+                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full
+                      ${isActive
+                        ? 'bg-[#fa5c29]/20 text-[#fa5c29]'
+                        : 'bg-white/5 text-[#aa8980]'
+                      }`}
                     >
-                      {/* Ticket header: order ID + age */}
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">
-                          {item.order_id.slice(0, 6)}
-                        </span>
-                        <span className={`text-xs font-bold tabular-nums ${ageCls(item.age_seconds)}`}>
-                          {ageLabel(item.age_seconds)}
-                        </span>
-                      </div>
+                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#fa5c29]" />}
+                      {isActive ? activeVerb : allReady ? 'READY' : 'QUEUED'}
+                    </span>
+                  </div>
 
-                      {/* Table reference — large */}
-                      <p className="text-xl font-bold text-ink-primary leading-tight mb-1">
-                        {item.tab_reference ?? 'Walk-in'}
-                      </p>
-                      {item.ordered_by && (
-                        <p className="text-[10px] text-ink-tertiary mb-2">by {item.ordered_by}</p>
-                      )}
+                  {/* ── Table + time ────────────────────────────────────── */}
+                  <p className="text-xs text-[#aa8980] mb-3">
+                    {group.tab_reference ?? 'Walk-in'}
+                    <span className="mx-1.5">&middot;</span>
+                    {ageLabel(group.age_seconds)}
+                  </p>
 
-                      {/* Item name + quantity */}
-                      <div className="flex items-baseline justify-between gap-2 mb-1">
-                        <span className="text-sm font-semibold text-ink-primary">{item.menu_item}</span>
-                        <span className="text-sm font-bold tabular-nums text-ink-tertiary shrink-0">x{item.quantity}</span>
-                      </div>
+                  {/* ── Items list ──────────────────────────────────────── */}
+                  <div className="flex-1 space-y-2.5 mb-4">
+                    {group.items.map(item => (
+                      <div key={item.order_item_id}>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm font-bold tabular-nums text-[#f9dcd5] shrink-0">
+                            {item.quantity}x
+                          </span>
+                          <span className="text-sm text-[#f9dcd5]">{item.menu_item}</span>
+                        </div>
 
-                      {/* Notes */}
-                      {item.notes && (
-                        <p className="text-xs italic text-status-pending mt-1 pl-2 border-l-2 border-status-pending/30">
-                          {item.notes}
-                        </p>
-                      )}
-
-                      {/* Stock warning */}
-                      {lowStockNames.has((item.menu_item ?? '').toLowerCase()) && (
-                        <p className="text-xs text-status-failed/80 mt-2">
-                          &#9888; Low stock — verify before prep
-                        </p>
-                      )}
-
-                      {/* Action buttons per column */}
-                      <div className="flex gap-2 mt-3">
-                        {item.status === 'PENDING' && (
-                          <motion.button whileTap={{ scale: 0.94 }}
-                            onClick={() => actMut.mutate({ id: item.order_item_id, action: 'receive' })}
-                            disabled={actMut.isPending}
-                            aria-label={`Start cooking ${item.menu_item ?? 'item'}`}
-                            className="flex-1 py-2.5 rounded-xl text-sm font-semibold
-                              bg-primary-main text-white
-                              hover:bg-primary-main/90 transition-colors disabled:opacity-50
-                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]">
-                            Start Cooking
-                          </motion.button>
+                        {/* Notes */}
+                        {item.notes && (
+                          <p className="text-xs italic text-[#aa8980] mt-0.5 ml-6">
+                            - {item.notes}
+                          </p>
                         )}
-                        {item.status === 'RECEIVED' && (
-                          <>
-                            <motion.button whileTap={{ scale: 0.94 }}
-                              onClick={() => actMut.mutate({ id: item.order_item_id, action: 'receive' })}
-                              disabled={actMut.isPending}
-                              aria-label={`Bump ${item.menu_item ?? 'item'}`}
-                              className="flex-1 py-2.5 rounded-xl text-sm font-semibold
-                                border border-white/10 text-ink-secondary
-                                hover:bg-white/5 transition-colors disabled:opacity-50
-                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]">
-                              Bump
-                            </motion.button>
-                            <motion.button whileTap={{ scale: 0.94 }}
-                              onClick={() => actMut.mutate({ id: item.order_item_id, action: 'ready' })}
-                              disabled={actMut.isPending}
-                              aria-label={`Mark ${item.menu_item ?? 'item'} ready`}
-                              className="flex-1 py-2.5 rounded-xl text-sm font-semibold
-                                bg-primary-main text-white
-                                hover:bg-primary-main/90 transition-colors disabled:opacity-50
-                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]">
-                              &#10003; Mark Ready
-                            </motion.button>
-                          </>
+
+                        {/* Low stock warning */}
+                        {lowStockNames.has((item.menu_item ?? '').toLowerCase()) && (
+                          <p className="text-xs text-status-failed/80 mt-1 ml-6">
+                            &#9888; Low stock
+                          </p>
                         )}
                       </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                    ))}
+                  </div>
 
-                {col.items.length === 0 && (
-                  <p className="text-xs text-ink-tertiary text-center py-6">Empty</p>
-                )}
-              </div>
-            </div>
-          ))}
+                  {/* ── Action buttons ─────────────────────────────────── */}
+                  <div className="flex gap-2 mt-auto">
+                    {/* All items PENDING: show "Start Mixing/Cooking" for the whole group */}
+                    {allPending && (
+                      <motion.button whileTap={{ scale: 0.94 }}
+                        onClick={() => {
+                          // Receive all pending items in this order
+                          for (const it of group.items) {
+                            if (it.status === 'PENDING') {
+                              actMut.mutate({ id: it.order_item_id, action: 'receive' })
+                            }
+                          }
+                        }}
+                        disabled={actMut.isPending}
+                        aria-label={`${startVerb} order ${ordLabel(group.order_id)}`}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold
+                          bg-[#fa5c29] text-white
+                          hover:bg-[#fa5c29]/90 transition-colors disabled:opacity-50
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+                      >
+                        {startVerb.toUpperCase()}
+                      </motion.button>
+                    )}
+
+                    {/* Active (RECEIVED): show DETAILS + SERVE/COMPLETE */}
+                    {isActive && (
+                      <>
+                        <motion.button whileTap={{ scale: 0.94 }}
+                          onClick={() => {
+                            // Bump / re-receive all items
+                            for (const it of group.items) {
+                              if (it.status === 'RECEIVED') {
+                                actMut.mutate({ id: it.order_item_id, action: 'receive' })
+                              }
+                            }
+                          }}
+                          disabled={actMut.isPending}
+                          aria-label={`Details for order ${ordLabel(group.order_id)}`}
+                          className="flex-1 py-2.5 rounded-xl text-sm font-semibold
+                            border border-white/10 text-[#aa8980]
+                            hover:bg-white/5 transition-colors disabled:opacity-50
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+                        >
+                          DETAILS
+                        </motion.button>
+                        <motion.button whileTap={{ scale: 0.94 }}
+                          onClick={() => {
+                            // Mark all received items ready
+                            for (const it of group.items) {
+                              if (it.status === 'RECEIVED') {
+                                actMut.mutate({ id: it.order_item_id, action: 'ready' })
+                              }
+                            }
+                          }}
+                          disabled={actMut.isPending}
+                          aria-label={`Serve order ${ordLabel(group.order_id)}`}
+                          className="flex-1 py-2.5 rounded-xl text-sm font-semibold
+                            bg-[#fa5c29] text-white
+                            hover:bg-[#fa5c29]/90 transition-colors disabled:opacity-50
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+                        >
+                          {station === 'BAR' ? 'SERVE' : 'COMPLETE'}
+                        </motion.button>
+                      </>
+                    )}
+
+                    {/* Mixed status: show per-item buttons (some pending, some received) */}
+                    {!allPending && !isActive && !allReady && group.items.some(i => i.status === 'PENDING') && (
+                      <motion.button whileTap={{ scale: 0.94 }}
+                        onClick={() => {
+                          for (const it of group.items) {
+                            if (it.status === 'PENDING') {
+                              actMut.mutate({ id: it.order_item_id, action: 'receive' })
+                            }
+                          }
+                        }}
+                        disabled={actMut.isPending}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold
+                          bg-[#fa5c29] text-white
+                          hover:bg-[#fa5c29]/90 transition-colors disabled:opacity-50
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+                      >
+                        {startVerb.toUpperCase()}
+                      </motion.button>
+                    )}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
         </div>
       )}
     </div>
   )
 }
 
-// ── Mute button ──────────────────────────────────────────────────────────────
+/* ── Mute Button (unchanged) ────────────────────────────────────────────────── */
 
 function MuteButton() {
   const [muted, setMutedState] = useState(isMuted)
@@ -324,7 +456,7 @@ function MuteButton() {
     <button onClick={toggle}
       aria-label={muted ? 'Unmute audio alerts' : 'Mute audio alerts'}
       className="w-9 h-9 rounded-xl border border-white/10 flex items-center justify-center
-        text-ink-secondary hover:bg-white/5 transition-colors">
+        text-[#aa8980] hover:text-[#f9dcd5] hover:bg-white/5 transition-colors">
       {muted ? (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -340,62 +472,78 @@ function MuteButton() {
   )
 }
 
-// ── Station shell ─────────────────────────────────────────────────────────────
+/* ── Station Shell (redesigned header + body) ───────────────────────────────── */
 
 function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
   const [view, setView] = useState<'queue' | 'stock'>('queue')
   const [count, setCount] = useState(0)
-  const [time, setTime] = useState(currentTime)
 
-  useEffect(() => {
-    const id = setInterval(() => setTime(currentTime()), 1_000)
-    return () => clearInterval(id)
-  }, [])
+  // Station display name
+  const stationName = station === 'KITCHEN' ? 'Kitchen Station' : 'Bar Station'
 
   return (
-    <div className="min-h-screen bg-cream-card text-ink-primary">
+    <div className="min-h-screen text-[#f9dcd5]">
       <AudioEnableSplash station={station} />
 
-      {/* Header — sticky top bar */}
-      <div className="sticky top-0 z-10 glass-card border-b border-white/10 px-4 py-3">
+      {/* ── Header bar (Stitch design: station name + badge + tabs) ─────── */}
+      <div className="sticky top-0 z-10 glass-card border-b border-white/10 px-5 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-base font-bold tracking-widest uppercase text-ink-primary">
-                {station === 'KITCHEN' ? 'Grill Station' : 'Bar'}
-              </h1>
-              <p className="text-[10px] text-ink-tertiary">{currentDate()}</p>
-            </div>
-            <div className="glass-card-sage rounded-xl px-3 py-1.5">
-              <span className="font-serif text-2xl font-bold tabular-nums text-ink-primary">{time}</span>
-            </div>
+          {/* Left: station name + active orders badge */}
+          <div className="flex items-center gap-3">
+            <h1 className="text-base font-bold text-[#f9dcd5]">
+              {stationName}
+            </h1>
+            {count > 0 && (
+              <span className="inline-flex items-center gap-1.5 bg-white/8 border border-white/10
+                rounded-full px-3 py-1 text-xs font-semibold text-[#aa8980]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#fa5c29]" />
+                {count} Active Order{count !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <MuteButton />
-            <div className="flex rounded-xl overflow-hidden border border-white/10">
-              {(['queue', 'stock'] as const).map(v => (
-                <button key={v} onClick={() => setView(v)}
-                  className={`px-4 py-2 text-sm font-semibold capitalize transition-colors ${
-                    view === v
-                      ? 'bg-ink-primary text-cream-card'
-                      : 'text-ink-secondary hover:bg-white/5'
-                  }`}>
-                  {v === 'queue' ? `Queue${count ? ` (${count})` : ''}` : 'Inventory'}
+          {/* Right: tab buttons + mute */}
+          <div className="flex items-center gap-3">
+            {/* OVERVIEW / SCHEDULE / LOGS tabs */}
+            <div className="hidden sm:flex items-center gap-1">
+              {(['OVERVIEW', 'SCHEDULE', 'LOGS'] as const).map(tab => (
+                <button key={tab}
+                  onClick={() => {
+                    if (tab === 'OVERVIEW') setView('queue')
+                  }}
+                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition-colors
+                    ${(tab === 'OVERVIEW' && view === 'queue')
+                      ? 'text-[#f9dcd5] border-b-2 border-[#f9dcd5]'
+                      : 'text-[#aa8980] hover:text-[#f9dcd5]'
+                    }`}
+                >
+                  {tab}
                 </button>
               ))}
             </div>
+
+            <MuteButton />
+
+            {/* Inventory toggle (functional) */}
+            <button
+              onClick={() => setView(view === 'queue' ? 'stock' : 'queue')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-colors
+                ${view === 'stock'
+                  ? 'bg-white/10 border-white/20 text-[#f9dcd5]'
+                  : 'border-white/10 text-[#aa8980] hover:text-[#f9dcd5] hover:bg-white/5'
+                }`}
+            >
+              Inventory
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4">
-        {view === 'queue'
-          ? <KanbanView station={station} onCount={setCount} />
-          : <StockBoard />
-        }
-      </div>
+      {/* ── Content ────────────────────────────────────────────────────────── */}
+      {view === 'queue'
+        ? <GlassQueueView station={station} onCount={setCount} />
+        : <div className="p-5"><StockBoard /></div>
+      }
     </div>
   )
 }
