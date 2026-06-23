@@ -46,14 +46,14 @@ function StatsBar({ stats }: { stats: Stats | undefined }) {
     { label: 'Entry Revenue', value: stats ? kes(stats.total_entry_fees) : '—' },
   ]
   return (
-    <motion.div className="grid grid-cols-3 gap-4 mb-6"
+    <motion.div className="grid grid-cols-3 gap-3 mb-4"
       initial="hidden" animate="visible" variants={stagger}>
-      {items.map(({ label, value }, i) => (
+      {items.map(({ label, value }) => (
         <motion.div key={label} variants={fadeIn}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          className={`glass-card rounded-2xl p-4 text-center ${i === 0 ? 'col-span-2 row-span-1' : ''}`}>
-          <p className={`font-bold tabular-nums text-ink-primary ${i === 0 ? 'text-3xl' : 'text-lg'}`}>{value}</p>
-          <p className="text-[10px] text-ink-secondary uppercase tracking-wide mt-0.5">{label}</p>
+          className="glass-card rounded-2xl p-3 text-center">
+          <p className="font-bold tabular-nums text-ink-secondary text-base">{value}</p>
+          <p className="text-[10px] text-ink-tertiary uppercase tracking-wide mt-0.5">{label}</p>
         </motion.div>
       ))}
     </motion.div>
@@ -88,14 +88,14 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
   })
 
   return (
-    <section className="glass-card rounded-2xl p-4 space-y-3 mb-4">
+    <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-ink-primary">Issue Band</p>
-        <p className="text-sm font-bold tabular-nums text-ink-primary">{kes(ENTRY_FEE)}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">Issue Band</p>
+        <p className="text-sm font-bold tabular-nums text-ink-secondary">{kes(ENTRY_FEE)}</p>
       </div>
 
       {/* Payment method toggle */}
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-4 gap-2">
         {METHODS.map(({ value, label }) => (
           <motion.button key={value} onClick={() => setMethod(value)}
             whileTap={{ scale: 0.97 }}
@@ -109,16 +109,18 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
         ))}
       </div>
 
+      {/* HERO CTA — the focal point of this screen */}
       <motion.button
         whileTap={{ scale: 0.98 }}
         onClick={() => setConfirmOpen(true)}
         disabled={mut.isPending}
         aria-label="Issue wristband"
-        className="w-full py-4 rounded-2xl bg-[#fa5c29] text-white text-base font-semibold
+        className="w-full py-5 rounded-2xl bg-[#fa5c29] text-white text-lg font-bold
           hover:bg-[#af3000] transition-colors disabled:opacity-50
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]
+          shadow-lg shadow-[#fa5c29]/20"
       >
-        {mut.isPending ? 'Issuing…' : 'Issue Band →'}
+        {mut.isPending ? 'Issuing…' : 'Issue Wristband'}
       </motion.button>
 
       <AnimatePresence>
@@ -183,10 +185,10 @@ export default function GateHubScreen() {
 
       {/* Header */}
       <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="flex items-center justify-between mb-6">
+        className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-base font-bold tracking-widest uppercase text-ink-primary">Gate</h1>
-          <p className="text-xs text-ink-tertiary">
+          <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">Gate</h1>
+          <p className="text-xs text-ink-tertiary mt-1">
             {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
@@ -201,12 +203,14 @@ export default function GateHubScreen() {
         </motion.button>
       </motion.div>
 
-      {!isLoading && <StatsBar stats={stats} />}
-
+      {/* HERO: Issue section first — the primary action */}
       <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="mt-4 space-y-4">
+        className="mb-8">
         <IssueSection onIssued={refresh} />
       </motion.div>
+
+      {/* Stats — secondary, below the action */}
+      {!isLoading && <StatsBar stats={stats} />}
       </motion.div>
     </div>
   )

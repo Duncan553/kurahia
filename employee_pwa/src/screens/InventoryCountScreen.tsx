@@ -340,7 +340,7 @@ export default function InventoryCountScreen() {
           {/* ══════════════════════════════════════════════════════════════
               HEADER: Title + subtitle + action buttons
               ══════════════════════════════════════════════════════════ */}
-          <motion.div variants={fadeIn} className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-6">
+          <motion.div variants={fadeIn} className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-8">
             <div>
               <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#f9dcd5] tracking-tight">
                 Inventory Overview
@@ -440,16 +440,18 @@ export default function InventoryCountScreen() {
               ══════════════════════════════════════════════════════════ */}
           {tab === 'overview' && (
             <>
-              {/* ── Top stat cards row: 3 cards ────────────────────── */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              {/* ── HERO ROW: Top stat cards — bigger numbers, more breathing room ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                 {/* Total Items */}
                 <ErrorBoundary level="tile">
                   <motion.div variants={fadeIn}>
                     <Glass>
-                      <div className="p-4">
-                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-1">Total Items</p>
-                        <p className="text-2xl font-bold tabular-nums text-[#f9dcd5]">{overviewItems.length}</p>
-                        <p className="text-[10px] text-[#aa8980] mt-0.5">
+                      <div className="p-5">
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">Total Items</p>
+                        <p className="text-4xl md:text-5xl font-bold tabular-nums text-[#f9dcd5] leading-none">
+                          {overviewItems.length}
+                        </p>
+                        <p className="text-[10px] text-[#aa8980] mt-2">
                           {overviewItems.length - lowStockItems.length} healthy
                         </p>
                       </div>
@@ -461,13 +463,13 @@ export default function InventoryCountScreen() {
                 <ErrorBoundary level="tile">
                   <motion.div variants={fadeIn}>
                     <Glass>
-                      <div className="p-4">
-                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-1">Low Stock Items</p>
-                        <p className={`text-2xl font-bold tabular-nums ${lowStockItems.length > 0 ? 'text-status-failed' : 'text-status-paid'}`}>
+                      <div className="p-5">
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">Low Stock</p>
+                        <p className={`text-4xl md:text-5xl font-bold tabular-nums leading-none ${lowStockItems.length > 0 ? 'text-status-failed' : 'text-status-paid'}`}>
                           {lowStockItems.length}
                         </p>
-                        <p className="text-[10px] text-[#aa8980] mt-0.5">
-                          {lowStockItems.length > 0 ? 'Requires immediate attention' : 'All above reorder level'}
+                        <p className="text-[10px] text-[#aa8980] mt-2">
+                          {lowStockItems.length > 0 ? 'Below reorder level' : 'All healthy'}
                         </p>
                       </div>
                     </Glass>
@@ -478,14 +480,14 @@ export default function InventoryCountScreen() {
                 <ErrorBoundary level="tile">
                   <motion.div variants={fadeIn}>
                     <Glass>
-                      <div className="p-4">
-                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-1">Pending Orders</p>
-                        <p className={`text-2xl font-bold tabular-nums ${pendingOrders.length > 0 ? 'text-status-pending' : 'text-[#f9dcd5]'}`}>
+                      <div className="p-5">
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">Pending Orders</p>
+                        <p className={`text-4xl md:text-5xl font-bold tabular-nums leading-none ${pendingOrders.length > 0 ? 'text-status-pending' : 'text-[#f9dcd5]'}`}>
                           {pendingOrders.length}
                         </p>
-                        <p className="text-[10px] text-[#aa8980] mt-0.5">
+                        <p className="text-[10px] text-[#aa8980] mt-2">
                           {pendingOrders.length > 0
-                            ? `${pendingOrders.length} arriving today`
+                            ? `${pendingOrders.length} awaiting approval`
                             : 'No pending requests'}
                         </p>
                       </div>
@@ -500,7 +502,7 @@ export default function InventoryCountScreen() {
                 {/* LEFT: Departmental Health */}
                 <ErrorBoundary level="tile">
                   <motion.div variants={fadeIn}>
-                    <p className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-3">
+                    <p className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-4">
                       Departmental Health
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -510,7 +512,7 @@ export default function InventoryCountScreen() {
                         return (
                           <motion.div key={dept} variants={fadeIn} whileHover={{ y: -2 }}>
                             <Glass>
-                              <div className="p-4">
+                              <div className="p-5">
                                 {/* Dept icon + name */}
                                 <div className="flex items-center gap-2 mb-3">
                                   <span className="text-[#fa5c29]">
@@ -560,11 +562,11 @@ export default function InventoryCountScreen() {
                 {/* RIGHT: Activity Log */}
                 <ErrorBoundary level="tile">
                   <motion.div variants={fadeIn}>
-                    <p className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-3">
+                    <p className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-4">
                       Activity Log
                     </p>
                     <Glass>
-                      <div className="p-4">
+                      <div className="p-5">
                         {activityLog.length === 0 ? (
                           <div className="py-6 text-center">
                             <p className="text-sm text-[#aa8980]">No recent activity</p>

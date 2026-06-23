@@ -144,8 +144,8 @@ export default function ManagerScreen() {
         <motion.div initial="hidden" animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.06 } } }}>
 
-          {/* ── Row 1: Greeting + Pending approvals ──────────────── */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 mb-6">
+          {/* ── Row 1: Greeting + Pending approvals (HERO if > 0) ── */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 mb-8">
             <motion.div variants={anim}>
               <p className="text-sm text-ink-tertiary">{greeting},</p>
               <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
@@ -157,18 +157,24 @@ export default function ManagerScreen() {
             </motion.div>
             <ErrorBoundary level="tile">
               <G onClick={() => navigate('/manager/purchases')}>
-                <div className="p-5 text-center">
-                  <p className={`text-4xl font-bold tabular-nums ${pending.length > 0 ? 'text-status-pending' : 'text-ink-tertiary/60'}`}>
+                <div className={`p-5 text-center ${pending.length > 0 ? 'py-6' : ''}`}>
+                  <p className={`font-bold tabular-nums ${
+                    pending.length > 0
+                      ? 'text-5xl md:text-6xl text-status-pending'
+                      : 'text-4xl text-ink-tertiary/60'
+                  }`}>
                     {pending.length}
                   </p>
-                  <p className="text-xs text-ink-tertiary mt-1">Pending Approvals</p>
+                  <p className={`text-xs mt-1 ${pending.length > 0 ? 'text-status-pending/80 font-semibold' : 'text-ink-tertiary'}`}>
+                    Pending Approvals
+                  </p>
                 </div>
               </G>
             </ErrorBoundary>
           </div>
 
           {/* ── Row 2: Stock chart (wide) + Department breakdown ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-8">
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
@@ -241,7 +247,7 @@ export default function ManagerScreen() {
           </div>
 
           {/* ── Row 3: Budget + Low stock ─────────────────────────── */}
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-8">
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
@@ -292,7 +298,7 @@ export default function ManagerScreen() {
 
           {/* ── Row 4: Action tiles — ALL features ────────────────── */}
           <motion.div variants={anim}>
-            <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-3">Manage</p>
+            <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-4">Manage</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {ACTIONS.map(a => (
                 <motion.button key={a.path}

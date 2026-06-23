@@ -122,7 +122,7 @@ export default function HeadChefScreen() {
 
           {/* ── Page header: Kitchen + Chef name + Service badge ──────── */}
           <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
-            className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+            className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-8">
             <div>
               <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#f9dcd5] tracking-tight">
                 Kitchen
@@ -144,7 +144,7 @@ export default function HeadChefScreen() {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
 
             {/* LEFT COLUMN — Stock Overview + Low Stock Alerts */}
-            <div className="space-y-4">
+            <div className="space-y-8">
 
               {/* ── Stock Overview card ─────────────────────────────────── */}
               <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
@@ -153,24 +153,28 @@ export default function HeadChefScreen() {
                     <div className="p-5">
                       <SectionLabel>Stock Overview</SectionLabel>
 
-                      {/* Hero numbers row */}
-                      <div className="grid grid-cols-3 gap-4 mb-5">
+                      {/* Hero numbers row — FOCAL POINT of this screen */}
+                      <div className="grid grid-cols-3 gap-4 mb-6">
                         {/* Total items */}
                         <div>
                           <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
                             Total
                           </p>
-                          <p className="text-4xl md:text-5xl font-bold tabular-nums text-[#f9dcd5] leading-none">
+                          <p className="text-5xl md:text-6xl font-bold tabular-nums text-[#f9dcd5] leading-none">
                             {items.length > 0 ? items.length.toLocaleString() : '—'}
                           </p>
                         </div>
 
-                        {/* Low stock — red accent */}
+                        {/* Low stock — red accent, biggest if > 0 (urgent) */}
                         <div>
                           <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
                             Low Stock
                           </p>
-                          <p className="text-4xl md:text-5xl font-bold tabular-nums text-[#fa5c29] leading-none">
+                          <p className={`font-bold tabular-nums leading-none ${
+                            low.length > 0
+                              ? 'text-5xl md:text-6xl text-[#fa5c29]'
+                              : 'text-5xl md:text-6xl text-[#f9dcd5]/40'
+                          }`}>
                             {low.length}
                           </p>
                         </div>
@@ -180,7 +184,7 @@ export default function HeadChefScreen() {
                           <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
                             Healthy
                           </p>
-                          <p className="text-4xl md:text-5xl font-bold tabular-nums text-status-paid leading-none">
+                          <p className="text-5xl md:text-6xl font-bold tabular-nums text-status-paid leading-none">
                             {healthy > 0 ? healthy.toLocaleString() : '—'}
                           </p>
                         </div>
@@ -221,14 +225,18 @@ export default function HeadChefScreen() {
                 </ErrorBoundary>
               </motion.div>
 
-              {/* ── Low Stock Alerts card ───────────────────────────────── */}
+              {/* ── Low Stock Alerts card — clear hierarchy per item ──── */}
               <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
                 <ErrorBoundary level="tile">
                   <Glass>
                     <div className="p-5">
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between mb-5">
                         <SectionLabel>Low Stock Alerts</SectionLabel>
-                        <span className="text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg ${
+                          low.length > 0
+                            ? 'bg-status-failed/15 text-status-failed'
+                            : 'text-ink-tertiary'
+                        }`}>
                           {low.length} item{low.length !== 1 ? 's' : ''}
                         </span>
                       </div>
@@ -255,9 +263,9 @@ export default function HeadChefScreen() {
                                     </svg>
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-sm font-semibold text-[#f9dcd5] truncate">{i.name}</p>
-                                    <p className="text-[10px] text-ink-tertiary">
-                                      Supplier: {i.unit}
+                                    <p className="text-sm font-bold text-[#f9dcd5] truncate">{i.name}</p>
+                                    <p className="text-[10px] text-ink-tertiary/60">
+                                      Unit: {i.unit}
                                     </p>
                                   </div>
                                 </div>
@@ -291,7 +299,7 @@ export default function HeadChefScreen() {
             </div>
 
             {/* RIGHT COLUMN — Recipes, Menu, Variance, Kitchen tiles */}
-            <div className="space-y-4">
+            <div className="space-y-3">
 
               {/* Recipes tile — navigate to menu/recipe editor */}
               <motion.div variants={fadeIn} transition={{ duration: 0.3 }}

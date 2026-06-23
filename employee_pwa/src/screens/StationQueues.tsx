@@ -252,7 +252,7 @@ function GlassQueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCo
   return (
     <div className="p-5">
       {/* ── Filter pills row ──────────────────────────────────────────────── */}
-      <div className="flex flex-wrap gap-2 mb-5">
+      <div className="flex flex-wrap gap-2 mb-6">
         {/* ALL ORDERS pill */}
         <button
           onClick={() => setActiveFilter('ALL')}
@@ -313,11 +313,11 @@ function GlassQueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCo
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
                   transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                  className={`glass-card rounded-xl p-4 flex flex-col
+                  className={`glass-card rounded-xl p-5 flex flex-col
                     ${isActive ? 'border-[#fa5c29]/30' : 'border-white/10'}`}
                 >
                   {/* ── Card header: order ID + status badge ────────────── */}
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-bold text-[#f9dcd5]">
                       {ordLabel(group.order_id)}
                     </span>
@@ -513,15 +513,15 @@ function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
       {/* ── Header bar (Stitch design: station name + badge + tabs) ─────── */}
       <div className="sticky top-0 z-10 glass-card border-b border-white/10 px-5 py-3">
         <div className="flex items-center justify-between">
-          {/* Left: station name + active orders badge */}
+          {/* Left: station name + active orders badge (HERO element) */}
           <div className="flex items-center gap-3">
             <h1 className="text-base font-bold text-[#f9dcd5]">
               {stationName}
             </h1>
             {count > 0 && (
-              <span className="inline-flex items-center gap-1.5 bg-white/8 glass-card
-                rounded-full px-3 py-1 text-xs font-semibold text-[#aa8980]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#fa5c29]" />
+              <span className="inline-flex items-center gap-2 bg-[#fa5c29]/15
+                rounded-full px-4 py-1.5 text-sm font-bold text-[#fa5c29]">
+                <span className="w-2 h-2 rounded-full bg-[#fa5c29] animate-pulse" />
                 {count} Active Order{count !== 1 ? 's' : ''}
               </span>
             )}

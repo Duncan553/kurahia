@@ -95,9 +95,9 @@ export default function WaiterTabsScreen() {
   })
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto">
       {/* ── Header: "My Tables" + New Table button ─────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Current Service</p>
           <h1 className="text-3xl md:text-4xl font-bold font-serif text-ink-primary">My Tables</h1>
@@ -105,8 +105,27 @@ export default function WaiterTabsScreen() {
         <Button variant="primary" size="sm" onClick={() => setOpen(true)}>+ New Table</Button>
       </div>
 
+      {/* ── HERO: Ready-for-pickup pings — BIGGEST element when present ── */}
+      {pings.length > 0 && (
+        <div className="mb-8 space-y-3">
+          {pings.map(n => (
+            <button key={n.id}
+              onClick={() => dismissPing.mutate(n.id)}
+              className="w-full text-left p-5 rounded-2xl border-2 border-status-paid/50 bg-status-paid/10
+                flex items-center gap-4 animate-pulse
+                hover:bg-status-paid/15 transition-colors">
+              <span className="text-3xl shrink-0" aria-hidden="true">&#128276;</span>
+              <span className="flex-1 text-base font-bold text-ink-primary leading-snug">{n.body}</span>
+              <span className="text-[10px] uppercase tracking-widest text-status-paid font-bold shrink-0">
+                tap when picked up
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Wristband redemption — order against the guest's KSh 3,000 gate credit */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 mb-6">
         <input
           type="number" min="1" inputMode="numeric"
           aria-label="Wristband number"
@@ -124,19 +143,7 @@ export default function WaiterTabsScreen() {
         </Button>
       </div>
 
-      {/* Ready-for-pickup pings from kitchen/bar — tap to dismiss */}
-      {pings.map(n => (
-        <button key={n.id}
-          onClick={() => dismissPing.mutate(n.id)}
-          className="w-full text-left p-3 rounded-2xl border border-status-paid/40 bg-status-paid/10
-            flex items-center gap-3 animate-pulse">
-          <span className="text-lg" aria-hidden="true">&#128276;</span>
-          <span className="flex-1 text-sm font-semibold text-ink-primary">{n.body}</span>
-          <span className="text-[10px] uppercase tracking-widest text-status-paid font-bold">tap when picked up</span>
-        </button>
-      ))}
-
-      {isLoading && <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} variant="row" />)}</div>}
+      {isLoading && <div className="space-y-2 mb-6">{[1,2,3].map(i => <Skeleton key={i} variant="row" />)}</div>}
 
       {!isLoading && tabs.length === 0 && (
         <EmptyState
@@ -149,14 +156,14 @@ export default function WaiterTabsScreen() {
         />
       )}
 
-      {/* ── TABLE CARDS — Stitch card grid ──────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {/* ── TABLE CARDS — consistent grid ─────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
         {tabs.map(t => {
           const bal = parseFloat(t.balance)
           return (
             <button key={t.id} onClick={() => navigate(`/pos/tabs/${t.id}`)}
               aria-label={`Open tab ${t.reference ?? 'Walk-in'}`}
-              className="glass-card rounded-2xl glass-card p-4 text-left
+              className="glass-card rounded-2xl p-4 text-left
                 hover:border-white/20 hover:shadow-xl transition-all active:scale-[0.98]
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]
                 flex flex-col justify-between min-h-[160px]">
