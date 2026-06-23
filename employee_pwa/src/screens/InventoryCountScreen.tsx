@@ -385,13 +385,13 @@ export default function InventoryCountScreen() {
           {isOwner && tab !== 'overview' && (
             <motion.div variants={fadeIn} className="mb-4">
               <p className="text-[10px] uppercase tracking-widest text-[#aa8980] font-medium mb-2">Department</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
                 {departments?.map((d) => (
                   <button
                     key={d.id}
                     onClick={() => setSelectedDeptId(d.id)}
                     className={[
-                      'px-3 py-1.5 min-h-[44px] rounded-lg text-xs font-semibold transition-all',
+                      'px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0',
                       selectedDeptId === d.id
                         ? 'bg-[#fa5c29] text-white'
                         : 'bg-white/5 text-[#aa8980] hover:bg-white/10',
