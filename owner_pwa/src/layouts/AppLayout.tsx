@@ -2,12 +2,10 @@ import { Suspense, useEffect } from 'react'
 import type { ReactElement } from 'react'
 import { useLocation, useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
 import { OfflineBanner, InstallPrompt } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import { kvGet, kvSet } from '../lib/idb'
 import { loadFontSizePref } from '../lib/fontSizePref'
-import api from '../lib/axios'
 
 // ── Sidebar + bottom nav icons ──────────────────────────────────────────────
 
@@ -118,10 +116,10 @@ function SideLink({ path, label, Icon }: NavItem) {
       aria-label={label}
       className={({ isActive }) => [
         'flex items-center gap-3 px-4 py-3 rounded-lg mx-2 transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]',
         isActive
-          ? 'bg-emerald-500/15 text-emerald-300 border-l-2 border-[#fa5c29]'
-          : 'text-white/50 hover:bg-white/5 hover:text-white',
+          ? 'bg-[#fa5c29]/10 text-[#ffb59f] border-l-2 border-[#fa5c29]'
+          : 'text-[#aa8980] hover:bg-white/5 hover:text-[#f9dcd5]',
       ].join(' ')}
     >
       <span className="shrink-0"><Icon /></span>
@@ -132,14 +130,6 @@ function SideLink({ path, label, Icon }: NavItem) {
 
 // ── AppLayout ───────────────────────────────────────────────────────────────
 
-function formatKsh(v: string | undefined): string {
-  if (!v) return '—'
-  const n = parseFloat(v)
-  if (isNaN(n)) return '—'
-  if (n >= 1_000_000) return `KSh ${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000)     return `KSh ${(n / 1_000).toFixed(0)}k`
-  return `KSh ${n.toFixed(0)}`
-}
 
 export default function AppLayout() {
   const location = useLocation()
@@ -147,17 +137,6 @@ export default function AppLayout() {
   const user = useAuthStore((s) => s.user)
   const clearAuth = useAuthStore((s) => s.clearAuth)
 
-  // Read from the same cache the dashboard tiles use — no extra requests
-  const { data: overview } = useQuery({
-    queryKey: ['dash-overview'],
-    queryFn: () => api.get<{ revenue: { total: string }; bookings: { active: number } }>('/dashboard/overview').then(r => r.data),
-    staleTime: 5 * 60_000,
-  })
-  const { data: alerts } = useQuery({
-    queryKey: ['dash-alerts'],
-    queryFn: () => api.get<{ id: string }[]>('/dashboard/alerts').then(r => r.data),
-    staleTime: 5 * 60_000,
-  })
 
   function signOut() { clearAuth(); navigate('/pin') }
 
@@ -168,35 +147,45 @@ export default function AppLayout() {
     <div className="h-screen flex bg-cream-card">
 
       {/* ── Sidebar — hidden on mobile, icons-only on tablet, full on desktop ── */}
-      <aside className="hidden sm:flex flex-col w-14 lg:w-60 shrink-0 border-r border-white/5"
-        style={{ background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(20px)' }}>
+      <aside className="hidden sm:flex flex-col w-16 lg:w-56 shrink-0 border-r border-white/5"
+        style={{ background: 'rgba(30, 16, 12, 0.95)', backdropFilter: 'blur(20px)' }}>
 
-        {/* Logo */}
-        <div className="h-14 flex items-center px-4 border-b border-white/5">
-          <span className="text-white font-bold font-serif text-lg leading-none">
-            <span className="hidden lg:block">Kurahia</span>
-            <span className="lg:hidden">K</span>
-          </span>
+        {/* Logo — matches Stitch: circle icon + "Kurahia" + "WATERFRONT CLUB" */}
+        <div className="p-4 lg:p-5 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#fa5c29]/15 border border-[#fa5c29]/20 flex items-center justify-center shrink-0">
+              <span className="text-[#ffb59f] text-sm font-serif font-bold">K</span>
+            </div>
+            <div className="hidden lg:block">
+              <p className="text-sm font-serif font-bold text-[#f9dcd5]">Kurahia</p>
+              <p className="text-[8px] tracking-[0.2em] uppercase text-[#ffb59f]/60">Waterfront Club</p>
+            </div>
+          </div>
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 py-3 space-y-1" aria-label="Owner navigation">
+        <nav className="flex-1 py-4 space-y-0.5" aria-label="Owner navigation">
           {SIDEBAR_ITEMS.map((item) => <SideLink key={item.path} {...item} />)}
         </nav>
 
-        {/* User + sign out */}
-        <div className="border-t border-cream-card/10 p-3 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary-dark flex items-center justify-center
-            text-white text-sm font-bold shrink-0">
-            {user?.username?.[0]?.toUpperCase() ?? '?'}
-          </div>
-          <div className="hidden lg:block flex-1 min-w-0">
-            <p className="text-xs font-medium text-white truncate">{user?.username}</p>
-            <p className="text-[10px] text-white/50">Owner</p>
-          </div>
-          <button onClick={signOut} aria-label="Sign out"
-            className="text-white/50 hover:text-white transition-colors shrink-0">
+        {/* Member Portal button — per Stitch design */}
+        <div className="px-3 pb-3 hidden lg:block">
+          <button className="w-full py-2.5 rounded-lg bg-[#fa5c29] text-white text-xs font-bold tracking-wider
+            hover:bg-[#ffb59f] transition-colors">
+            Member Portal
+          </button>
+        </div>
+
+        {/* Support + Log Out */}
+        <div className="border-t border-white/5 p-3 space-y-1">
+          <button className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-[#aa8980] hover:text-[#f9dcd5] transition-colors text-sm">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M10 7v3M10 13h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            <span className="hidden lg:block text-xs">Support</span>
+          </button>
+          <button onClick={signOut}
+            className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-[#aa8980] hover:text-[#f9dcd5] transition-colors text-sm">
             <SignOutIcon />
+            <span className="hidden lg:block text-xs">Log Out</span>
           </button>
         </div>
       </aside>
@@ -205,33 +194,32 @@ export default function AppLayout() {
       <div className="flex flex-col flex-1 min-w-0">
 
         {/* Top bar */}
-        <header className="h-14 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
-          style={{ background: 'rgba(11, 17, 32, 0.9)', backdropFilter: 'blur(16px)' }}>
-          <span className="sm:hidden text-lg font-bold font-serif text-ink-primary">Kurahia</span>
-          <div className="hidden sm:flex items-center gap-5 text-xs text-ink-secondary">
-            <span>
-              <span className="font-semibold text-ink-primary">
-                {formatKsh(overview?.revenue.total)}
-              </span>{' '}revenue today
-            </span>
-            <span>
-              <span className={`font-semibold ${(alerts?.length ?? 0) > 0 ? 'text-status-failed' : 'text-ink-primary'}`}>
-                {alerts !== undefined ? alerts.length : '—'}
-              </span>{' '}alerts open
-            </span>
-            <span>
-              <span className="font-semibold text-ink-primary">
-                {overview?.bookings.active ?? '—'}
-              </span>{' '}active bookings
-            </span>
+        <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
+          style={{ background: 'rgba(30, 16, 12, 0.9)', backdropFilter: 'blur(16px)' }}>
+          <div className="flex items-center gap-1">
+            <span className="sm:hidden text-base font-bold font-serif text-[#f9dcd5]">Kurahia</span>
+            <span className="hidden sm:block text-sm font-medium text-[#f9dcd5]">Kurahia Dashboard</span>
           </div>
-          {/* Mobile sign-out */}
-          <button onClick={signOut}
-            className="sm:hidden w-8 h-8 rounded-full bg-primary-dark flex items-center justify-center
-              text-white text-sm font-bold"
-            aria-label="Sign out">
-            {user?.username?.[0]?.toUpperCase() ?? '?'}
-          </button>
+          <div className="hidden sm:flex items-center gap-1">
+            <NavLink to="/" end className={({ isActive }) =>
+              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-[#fa5c29] text-white' : 'text-[#aa8980] hover:text-[#f9dcd5]'}`
+            }>Revenue Today</NavLink>
+            <NavLink to="/alerts" className={({ isActive }) =>
+              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-[#fa5c29] text-white' : 'text-[#aa8980] hover:text-[#f9dcd5]'}`
+            }>Alerts Count</NavLink>
+            <NavLink to="/bookings" className={({ isActive }) =>
+              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-[#fa5c29] text-white' : 'text-[#aa8980] hover:text-[#f9dcd5]'}`
+            }>Bookings</NavLink>
+          </div>
+          <div className="flex items-center gap-3">
+            <button aria-label="Search" className="text-[#aa8980] hover:text-[#f9dcd5] transition-colors">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.5"/><path d="M13 13l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </button>
+            <button onClick={signOut} aria-label="Sign out"
+              className="sm:hidden w-7 h-7 rounded-full bg-[#fa5c29]/20 flex items-center justify-center text-[#ffb59f] text-xs font-bold">
+              {user?.username?.[0]?.toUpperCase() ?? '?'}
+            </button>
+          </div>
         </header>
 
         {/* Page content */}
@@ -263,7 +251,7 @@ export default function AppLayout() {
 
         {/* Mobile bottom nav — hidden on sm+ */}
         <nav className="sm:hidden shrink-0 flex border-t border-white/5"
-          style={{ background: 'rgba(11, 17, 32, 0.95)' }}
+          style={{ background: 'rgba(30, 16, 12, 0.95)' }}
           aria-label="Owner navigation">
           {SIDEBAR_ITEMS.map(({ path, label, Icon }) => (
             <NavLink
