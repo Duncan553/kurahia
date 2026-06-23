@@ -115,7 +115,7 @@ export default function ServicePayScreen() {
             value={band}
             onChange={e => setBand(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && band && bandMut.mutate(band)}
-            className="flex-1 rounded-xl border border-white/10 bg-transparent px-4 py-2.5
+            className="flex-1 rounded-xl glass-card bg-transparent px-4 py-2.5
               text-sm text-[#f9dcd5] placeholder:text-ink-tertiary
               focus:outline-none focus:border-[#fa5c29] focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
           />
@@ -126,7 +126,7 @@ export default function ServicePayScreen() {
         </div>
 
         {/* Tab switcher */}
-        <div className="flex rounded-xl overflow-hidden border border-white/10 mb-6">
+        <div className="flex rounded-xl overflow-hidden glass-card mb-6">
           {([['pos', 'Sell'], ['stock', 'Stock'], ['request', 'Request']] as const).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
               className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
@@ -213,9 +213,9 @@ export default function ServicePayScreen() {
                 <input type="number" min="0" step="0.01" inputMode="decimal"
                   placeholder="Amount received (KSh)"
                   value={pay.amount} onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
-                  className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]" />
+                  className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]" />
                 <button onClick={() => setPay(p => ({ ...p, amount: String(total) }))}
-                  className="w-full py-2 rounded-xl text-sm border border-white/10 text-ink-secondary hover:bg-white/5">
+                  className="w-full py-2 rounded-xl text-sm glass-card text-ink-secondary hover:bg-white/5">
                   Exact — {kes(total)}
                 </button>
                 <div className="flex gap-2">
@@ -274,7 +274,7 @@ export default function ServicePayScreen() {
               <textarea
                 rows={4} value={requestText} onChange={e => setRequestText(e.target.value)}
                 placeholder="e.g. Need more massage oil, running low on towels..."
-                className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+                className="w-full rounded-xl glass-card bg-transparent px-4 py-3
                   text-sm text-[#f9dcd5] placeholder:text-ink-tertiary resize-none
                   focus:outline-none focus:border-[#fa5c29]"
               />

@@ -283,7 +283,7 @@ export default function WristbandScreen() {
         <div className="flex gap-3">
           <button
             onClick={() => setConfirmOpen(false)}
-            className="flex-1 py-3 rounded-xl border border-white/10 text-[#aa8980]
+            className="flex-1 py-3 rounded-xl glass-card text-[#aa8980]
               font-medium hover:bg-white/5 transition-colors"
           >
             Cancel
@@ -305,7 +305,7 @@ export default function WristbandScreen() {
         <div className="flex gap-3">
           <button
             onClick={() => setErrorOpen(false)}
-            className="flex-1 py-3 rounded-xl border border-white/10 text-[#aa8980]
+            className="flex-1 py-3 rounded-xl glass-card text-[#aa8980]
               font-medium hover:bg-white/5 transition-colors"
           >
             Close

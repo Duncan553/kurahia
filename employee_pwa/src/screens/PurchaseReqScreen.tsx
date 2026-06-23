@@ -271,7 +271,7 @@ export default function PurchaseReqScreen() {
                 onChange={(e) => setCost(e.target.value)}
                 placeholder="0.00"
                 autoFocus
-                className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-base
+                className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-base
                   text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
@@ -285,7 +285,7 @@ export default function PurchaseReqScreen() {
                 value={propNotes}
                 onChange={(e) => setPropNotes(e.target.value)}
                 placeholder="Supplier name, urgency, any caveats…"
-                className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+                className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
                   text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                   focus:ring-2 focus:ring-primary-dark/20 resize-none"
               />
@@ -329,7 +329,7 @@ export default function PurchaseReqScreen() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setConfirmId(null)}
-                  className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
+                  className="flex-1 py-3 rounded-xl glass-card text-sm font-medium
                     text-ink-secondary hover:bg-white/5 transition-colors"
                 >
                   Cancel

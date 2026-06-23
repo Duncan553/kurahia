@@ -250,7 +250,7 @@ export default function MaintenanceLogScreen() {
                   type="datetime-local"
                   value={performedAt}
                   onChange={(e) => setPerformedAt(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+                  className="w-full rounded-xl glass-card bg-transparent px-4 py-3
                     text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                     focus:ring-2 focus:ring-primary-dark/20"
                 />
@@ -290,7 +290,7 @@ export default function MaintenanceLogScreen() {
                   value={cost}
                   onChange={(e) => setCost(e.target.value)}
                   placeholder="0.00"
-                  className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+                  className="w-full rounded-xl glass-card bg-transparent px-4 py-3
                     text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                     focus:ring-2 focus:ring-primary-dark/20"
                 />

@@ -135,7 +135,7 @@ export default function LeaveRequestScreen() {
               value={startDate}
               min={today}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
+              className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
                 text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-primary-dark/20"
             />
@@ -147,7 +147,7 @@ export default function LeaveRequestScreen() {
               value={endDate}
               min={startDate}
               onChange={(e) => { setEndDate(e.target.value); setTouched(true) }}
-              className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
+              className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
                 text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-primary-dark/20"
             />
@@ -165,7 +165,7 @@ export default function LeaveRequestScreen() {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Family event, medical appointment..."
-            className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+            className="w-full rounded-xl glass-card bg-transparent px-4 py-3
               text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />

@@ -232,7 +232,7 @@ export default function ScheduleScreen() {
             <Link
               to="/absence"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold
-                border border-white/10 bg-white/5 text-[#f9dcd5] hover:bg-white/10 transition-colors"
+                glass-card bg-white/5 text-[#f9dcd5] hover:bg-white/10 transition-colors"
             >
               Absence Notice
             </Link>

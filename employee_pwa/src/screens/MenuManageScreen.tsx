@@ -290,14 +290,14 @@ export default function MenuManageScreen() {
       {adding && (
         <form
           onSubmit={e => { e.preventDefault(); createMut.mutate() }}
-          className="p-4 rounded-2xl border border-white/10 space-y-3"
+          className="p-4 rounded-2xl glass-card space-y-3"
         >
           <label htmlFor="menu-item-name" className="sr-only">Item name</label>
           <input
             id="menu-item-name" required
             placeholder="Name — e.g. Grilled Tilapia, 60-min Massage"
             value={f.name} onChange={e => setF({ ...f, name: e.target.value })}
-            className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+            className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
               focus:outline-none focus:border-[#fa5c29]"
           />
           <div className="grid grid-cols-2 gap-2">
@@ -306,14 +306,14 @@ export default function MenuManageScreen() {
               id="menu-item-price" required type="number" min="0" step="0.01"
               inputMode="decimal" placeholder="Price (KSh)"
               value={f.price} onChange={e => setF({ ...f, price: e.target.value })}
-              className="rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+              className="rounded-xl glass-card bg-transparent px-4 py-3 text-sm
                 focus:outline-none focus:border-[#fa5c29]"
             />
             <label htmlFor="menu-item-category" className="sr-only">Category (optional)</label>
             <input
               id="menu-item-category" placeholder="Category (optional)"
               value={f.category} onChange={e => setF({ ...f, category: e.target.value })}
-              className="rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+              className="rounded-xl glass-card bg-transparent px-4 py-3 text-sm
                 focus:outline-none focus:border-[#fa5c29]"
             />
           </div>
@@ -361,7 +361,7 @@ export default function MenuManageScreen() {
                 <label className="shrink-0 cursor-pointer group relative">
                   {it.image_path ? (
                     <img src={it.image_path} alt={it.name}
-                      className="w-10 h-10 rounded-lg object-cover border border-white/10" />
+                      className="w-10 h-10 rounded-lg object-cover glass-card" />
                   ) : (
                     <div className="w-10 h-10 rounded-lg border border-dashed border-white/20
                       flex items-center justify-center text-ink-tertiary group-hover:border-[#fa5c29]
@@ -482,7 +482,7 @@ export default function MenuManageScreen() {
                       value={line.quantity}
                       onChange={e => setDraftLines(prev =>
                         prev.map((l, j) => j === i ? { ...l, quantity: e.target.value } : l))}
-                      className="w-20 rounded-lg border border-white/10 bg-transparent px-2 py-1.5
+                      className="w-20 rounded-lg glass-card bg-transparent px-2 py-1.5
                         text-sm tabular-nums focus:outline-none focus:border-[#fa5c29]"
                     />
                     <button
@@ -524,7 +524,7 @@ export default function MenuManageScreen() {
                     value={newQty}
                     onChange={e => setNewQty(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && addIngredient()}
-                    className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
+                    className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
                       text-sm focus:outline-none focus:border-[#fa5c29]"
                   />
                 </div>
@@ -550,7 +550,7 @@ export default function MenuManageScreen() {
                 value={copySource}
                 onChange={e => setCopySource(e.target.value)}
                 aria-label="Copy recipe from another dish"
-                className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
+                className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
                   text-sm text-ink-secondary focus:outline-none focus:border-[#fa5c29]"
               >
                 <option value="">Choose a dish to copy its recipe…</option>
@@ -569,7 +569,7 @@ export default function MenuManageScreen() {
                 <div className="flex gap-2">
                   {['shot', 'cocktail', 'mocktail'].map(t => (
                     <button key={t} onClick={() => setTemplateType(t)}
-                      className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-transparent
+                      className="flex-1 px-3 py-2 rounded-xl glass-card bg-transparent
                         text-sm text-ink-secondary hover:bg-white/5 transition-colors capitalize">
                       {t}
                     </button>
