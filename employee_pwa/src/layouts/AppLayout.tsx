@@ -169,6 +169,15 @@ function WaterIcon() {
       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
+// Events: calendar + star
+function EventsIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="3" y="3.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M7 1.5v4M13 1.5v4M3 9h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10 11.5l1.2 2.4 2.6.4-1.9 1.8.5 2.6L10 17.2l-2.4 1.5.5-2.6-1.9-1.8 2.6-.4L10 11.5z"
+      stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+}
 // Villa: house
 function VillaIcon() {
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -308,6 +317,15 @@ const NAV_ITEMS: NavItem[] = [
     Icon: VillaIcon,
     visible: (level, dept) =>
       deptIs(dept, 'villa', 'housekeep') || (level >= 3 && level <= 4),
+  },
+
+  // ── Events: gate staff + managers (level 3+) ─────────────────────────────────
+  {
+    id: 'events',
+    path: '/events',
+    label: 'Events',
+    Icon: EventsIcon,
+    visible: (level) => level >= 3,
   },
 
   // ── Gate / Front Desk tablet (level 3–4) ────────────────────────────────────

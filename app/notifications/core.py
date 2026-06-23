@@ -11,6 +11,7 @@ from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.notification import Notification, NotificationStatus
+from app.models.audit_log import AuditLog
 
 notifications_bp = Blueprint("notifications_core", __name__, url_prefix="/notifications")
 
@@ -160,3 +161,60 @@ def push_unsubscribe():
     AuditLog.log(actor=actor.username, action="push.unsubscribe", target=sub.id)
     db.session.commit()
     return jsonify({"id": sub.id, "is_active": False}), 200
+
+
+# ── Guest receipt via WhatsApp/SMS ───────────────────────────────────────────
+
+@notifications_bp.post("/send-receipt")
+@require_active_user
+def send_receipt():
+    """Send a receipt summary to a guest via WhatsApp (or SMS fallback).
+
+    POST body: { "tab_id": "...", "guest_phone": "+254..." }
+    The tab must be CLOSED. Builds a short text receipt and dispatches it.
+    """
+    from app.models.tab import Tab
+    from app.services.tab import get_tab_balance
+    from app.services.notifications.guest_notify import notify_guest, MessageType
+
+    actor = db.session.get(User, get_jwt_identity())
+    FRONT_DESK_LEVEL = 3
+    if actor.role.level < FRONT_DESK_LEVEL:
+        return jsonify({"error": "Staff or above required to send receipts."}), 403
+
+    data = request.get_json(silent=True) or {}
+    tab_id      = (data.get("tab_id") or "").strip()
+    guest_phone = (data.get("guest_phone") or "").strip()
+
+    if not tab_id or not guest_phone:
+        return jsonify({"error": "tab_id and guest_phone are required."}), 400
+
+    tab = db.session.get(Tab, tab_id)
+    if not tab:
+        return jsonify({"error": "Tab not found."}), 404
+    if tab.status != "CLOSED":
+        return jsonify({"error": "Only closed tabs can have receipts sent."}), 400
+
+    # Compute total from charges (derived, never stored)
+    from app.models.charge import Charge
+    total = sum(c.amount for c in db.session.query(Charge).filter_by(tab_id=tab_id).all())
+
+    channel, detail = notify_guest(guest_phone, MessageType.RECEIPT, {
+        "total":   f"{total:,.0f}",
+        "tab_ref": tab.reference or tab_id[:8],
+    })
+
+    AuditLog.log(
+        actor=actor.username,
+        action="guest.receipt.send",
+        target=tab_id,
+        details=f"phone={guest_phone} channel={channel}",
+    )
+    db.session.commit()
+
+    return jsonify({
+        "channel": channel,
+        "detail":  detail,
+        "tab_id":  tab_id,
+        "phone":   guest_phone,
+    }), 200
