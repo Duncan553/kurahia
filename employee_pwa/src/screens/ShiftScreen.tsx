@@ -290,7 +290,7 @@ export default function ShiftScreen() {
             <select
               value={empId}
               onChange={(e) => setEmpId(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+              className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
                 text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
             >
               <option value="">Choose employee…</option>
@@ -307,7 +307,7 @@ export default function ShiftScreen() {
                 type="datetime-local"
                 value={startDT}
                 onChange={(e) => setStartDT(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5 text-sm
+                className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5 text-sm
                 text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
@@ -317,7 +317,7 @@ export default function ShiftScreen() {
                 type="datetime-local"
                 value={endDT}
                 onChange={(e) => setEndDT(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5 text-sm
+                className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5 text-sm
                   text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
@@ -332,7 +332,7 @@ export default function ShiftScreen() {
               value={role}
               onChange={(e) => setRole(e.target.value)}
               placeholder="e.g. Front gate, Kitchen…"
-              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+              className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
                 text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
@@ -366,7 +366,7 @@ export default function ShiftScreen() {
           <div className="flex gap-2">
             <button
               onClick={() => setCancelId(null)}
-              className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-medium
+              className="flex-1 py-3 rounded-xl glass-card text-sm font-medium
                 text-ink-secondary hover:bg-white/5 transition-colors"
             >
               Keep shift

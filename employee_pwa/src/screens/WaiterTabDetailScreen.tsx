@@ -347,7 +347,7 @@ export default function WaiterTabDetailScreen() {
                       aria-label={`Note for ${e.name}`}
                       value={draftNotes[e.id] ?? ''}
                       onChange={ev => setDraftNotes(n => ({ ...n, [e.id]: ev.target.value }))}
-                      className="w-full text-xs rounded-lg border border-white/10 bg-transparent px-2 py-1.5
+                      className="w-full text-xs rounded-lg glass-card bg-transparent px-2 py-1.5
                         text-ink-secondary placeholder:text-ink-tertiary/50
                         focus:outline-none focus:border-[#fa5c29]"
                     />
@@ -469,7 +469,7 @@ export default function WaiterTabDetailScreen() {
               placeholder={`Amount (KSh) — due ${kes(bal)}`}
               value={pay.amount}
               onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
-              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+              className="w-full rounded-xl glass-card bg-transparent px-4 py-3
                 text-base text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
             />
             <Button variant="primary" size="lg" className="w-full" loading={payMut.isPending}

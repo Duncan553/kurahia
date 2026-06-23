@@ -406,7 +406,7 @@ function GlassQueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCo
                           disabled={actMut.isPending}
                           aria-label={`Details for order ${ordLabel(group.order_id)}`}
                           className="flex-1 py-2.5 rounded-xl text-sm font-semibold
-                            border border-white/10 text-[#aa8980]
+                            glass-card text-[#aa8980]
                             hover:bg-white/5 transition-colors disabled:opacity-50
                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
                         >
@@ -480,7 +480,7 @@ function MuteButton() {
   return (
     <button onClick={toggle}
       aria-label={muted ? 'Unmute audio alerts' : 'Mute audio alerts'}
-      className="w-9 h-9 rounded-xl border border-white/10 flex items-center justify-center
+      className="w-9 h-9 rounded-xl glass-card flex items-center justify-center
         text-[#aa8980] hover:text-[#f9dcd5] hover:bg-white/5 transition-colors">
       {muted ? (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -519,7 +519,7 @@ function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
               {stationName}
             </h1>
             {count > 0 && (
-              <span className="inline-flex items-center gap-1.5 bg-white/8 border border-white/10
+              <span className="inline-flex items-center gap-1.5 bg-white/8 glass-card
                 rounded-full px-3 py-1 text-xs font-semibold text-[#aa8980]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#fa5c29]" />
                 {count} Active Order{count !== 1 ? 's' : ''}

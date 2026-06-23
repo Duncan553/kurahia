@@ -90,7 +90,7 @@ function ItemQtyForm({
           onChange={(e) => setQty(e.target.value)}
           onBlur={() => touch('qty')}
           disabled={isPending}
-          className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+          className="w-full rounded-xl glass-card bg-transparent px-4 py-3
             text-base text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
             focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
         />
@@ -109,7 +109,7 @@ function ItemQtyForm({
             onBlur={() => touch('reason')}
             disabled={isPending}
             placeholder="e.g. Fridge failure overnight, chicken spoiled"
-            className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+            className="w-full rounded-xl glass-card bg-transparent px-4 py-3
               text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
               focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50 resize-none"
           />

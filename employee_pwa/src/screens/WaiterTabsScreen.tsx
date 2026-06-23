@@ -114,7 +114,7 @@ export default function WaiterTabsScreen() {
           value={band}
           onChange={e => setBand(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && band && bandMut.mutate(band)}
-          className="flex-1 rounded-xl border border-white/10 bg-transparent px-4 py-2.5
+          className="flex-1 rounded-xl glass-card bg-transparent px-4 py-2.5
             text-sm text-ink-primary placeholder:text-ink-tertiary
             focus:outline-none focus:border-primary-main focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
         />
@@ -156,7 +156,7 @@ export default function WaiterTabsScreen() {
           return (
             <button key={t.id} onClick={() => navigate(`/pos/tabs/${t.id}`)}
               aria-label={`Open tab ${t.reference ?? 'Walk-in'}`}
-              className="glass-card rounded-2xl border border-white/10 p-4 text-left
+              className="glass-card rounded-2xl glass-card p-4 text-left
                 hover:border-white/20 hover:shadow-xl transition-all active:scale-[0.98]
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]
                 flex flex-col justify-between min-h-[160px]">
@@ -228,7 +228,7 @@ export default function WaiterTabsScreen() {
               onChange={e => setRef(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && openMut.mutate(ref)}
               placeholder="e.g. Table 7, Beach Bar 3"
-              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+              className="w-full rounded-xl glass-card bg-transparent px-4 py-3
                 text-base text-ink-primary placeholder:text-ink-tertiary
                 focus:outline-none focus:border-primary-main"
             />

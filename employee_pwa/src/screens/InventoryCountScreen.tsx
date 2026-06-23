@@ -751,7 +751,7 @@ export default function InventoryCountScreen() {
                                 value={inputs[item.id] ?? ''}
                                 onChange={(e) => setInputs((prev) => ({ ...prev, [item.id]: e.target.value }))}
                                 disabled={pending.has(item.id)}
-                                className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2
+                                className="flex-1 rounded-xl glass-card bg-transparent px-3 py-2
                                   text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                                   focus:ring-2 focus:ring-[#fa5c29]/20 disabled:opacity-50"
                               />
@@ -818,7 +818,7 @@ export default function InventoryCountScreen() {
                         type="date"
                         value={fromDate}
                         onChange={(e) => setFromDate(e.target.value)}
-                        className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
+                        className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
                           text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                           focus:ring-2 focus:ring-[#fa5c29]/20"
                       />
@@ -829,7 +829,7 @@ export default function InventoryCountScreen() {
                         type="date"
                         value={toDate}
                         onChange={(e) => setToDate(e.target.value)}
-                        className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
+                        className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
                           text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                           focus:ring-2 focus:ring-[#fa5c29]/20"
                       />
@@ -945,7 +945,7 @@ export default function InventoryCountScreen() {
             <select
               value={newDeptId}
               onChange={(e) => setNewDeptId(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+              className="w-full rounded-xl glass-card bg-transparent px-4 py-3
                 text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-[#fa5c29]/20"
             >
@@ -971,7 +971,7 @@ export default function InventoryCountScreen() {
               value={newReorder}
               onChange={(e) => setNewReorder(e.target.value)}
               placeholder="Alert threshold quantity"
-              className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+              className="w-full rounded-xl glass-card bg-transparent px-4 py-3
                 text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-[#fa5c29]/20"
             />

@@ -264,7 +264,7 @@ function ReconForm({
           value={actualRaw}
           onChange={(e) => setActualRaw(e.target.value)}
           placeholder="0.00"
-          className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+          className="w-full rounded-xl glass-card bg-transparent px-4 py-3
             text-2xl font-bold tabular-nums text-[#f9dcd5]
             focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
         />
@@ -290,7 +290,7 @@ function ReconForm({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Any discrepancy reason…"
-          className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
+          className="w-full rounded-xl glass-card bg-transparent px-4 py-3
             text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
             focus:ring-2 focus:ring-primary-dark/20 resize-none"
         />
@@ -392,7 +392,7 @@ export default function CashReconScreen() {
               <button
                 onClick={() => setPendingOpen((o) => !o)}
                 className="w-full flex items-center justify-between px-4 py-3 rounded-xl
-                  border border-white/10 bg-transparent text-left
+                  glass-card bg-transparent text-left
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
               >
                 <span className={selectedProfile ? 'text-[#f9dcd5] font-medium' : 'text-ink-tertiary'}>

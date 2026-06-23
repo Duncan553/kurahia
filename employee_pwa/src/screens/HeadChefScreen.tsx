@@ -67,18 +67,18 @@ function RestockRequestForm({ onClose }: { onClose: () => void }) {
       <input
         placeholder="Subject (e.g. Need more cooking oil)"
         value={subject} onChange={e => setSubject(e.target.value)}
-        className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+        className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
           text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
       />
       <textarea
         required placeholder="What do you need? Include items and estimated quantities."
         value={body} onChange={e => setBody(e.target.value)} rows={3}
-        className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
+        className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
           text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] resize-none"
       />
       <div className="flex gap-2">
         <button type="button" onClick={onClose}
-          className="flex-1 py-2.5 rounded-xl border border-white/10 text-[#aa8980] text-sm font-semibold
+          className="flex-1 py-2.5 rounded-xl glass-card text-[#aa8980] text-sm font-semibold
             hover:bg-white/5 transition-colors">
           Cancel
         </button>
@@ -244,7 +244,7 @@ export default function HeadChefScreen() {
                                 {/* Item icon + name + supplier */}
                                 <div className="flex items-center gap-3 min-w-0 flex-1">
                                   {/* Small circle icon placeholder */}
-                                  <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10
+                                  <div className="w-8 h-8 rounded-full bg-white/5 glass-card
                                     flex items-center justify-center shrink-0">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                       className="text-ink-tertiary" aria-hidden="true">

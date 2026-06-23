@@ -131,7 +131,7 @@ export default function FrontDeskScreen() {
             value={band}
             onChange={e => setBand(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && band && bandMut.mutate(band)}
-            className="flex-1 rounded-xl border border-white/10 bg-transparent px-4 py-2.5
+            className="flex-1 rounded-xl glass-card bg-transparent px-4 py-2.5
               text-sm text-[#f9dcd5] placeholder:text-ink-tertiary
               focus:outline-none focus:border-[#fa5c29] focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
           />

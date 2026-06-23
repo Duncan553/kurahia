@@ -9,7 +9,7 @@ interface StaffUser { id: string; username: string; role: string; department: st
 interface Meta { roles: { id: string; name: string; level: number }[]; departments: { id: string; name: string }[] }
 
 const BLANK = { username:'', password:'', roleId:'', deptId:'', fullName:'', phone:'', wageRate:'', wagePeriod:'', hireDate:'', nationalId:'', emgName:'', emgPhone:'' }
-const inp = 'w-full rounded-xl px-3 py-2.5 border border-white/10 bg-transparent text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]'
+const inp = 'w-full rounded-xl px-3 py-2.5 glass-card bg-transparent text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]'
 const toE164 = (p: string) => { const s = p.replace(/\s+/g,''); return s.startsWith('+254')?s : s.startsWith('254')?'+'+s : s.startsWith('0')?'+254'+s.slice(1):s }
 const extractErr = (e: unknown) => (e as {response?:{data?:{error?:string}}})?.response?.data?.error ?? 'Something went wrong.'
 const LBL = ({ children }: { children: React.ReactNode }) => (

@@ -159,29 +159,29 @@ export default function VillaScreen() {
                     <div className="p-4 space-y-2">
                       <input placeholder="Guest name" value={form.guest_name}
                         onChange={e => setForm(f => ({ ...f, guest_name: e.target.value }))}
-                        className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2
+                        className="w-full rounded-lg glass-card bg-transparent px-3 py-2
                           text-xs text-[#f9dcd5] placeholder:text-ink-tertiary focus:outline-none focus:border-[#fa5c29]" />
                       <input placeholder="Phone (e.g. 0712...)" value={form.guest_phone}
                         onChange={e => setForm(f => ({ ...f, guest_phone: e.target.value }))}
-                        className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2
+                        className="w-full rounded-lg glass-card bg-transparent px-3 py-2
                           text-xs text-[#f9dcd5] placeholder:text-ink-tertiary focus:outline-none focus:border-[#fa5c29]" />
                       <input type="number" min="1" placeholder="Guests" value={form.guests}
                         onChange={e => setForm(f => ({ ...f, guests: e.target.value }))}
-                        className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2
+                        className="w-full rounded-lg glass-card bg-transparent px-3 py-2
                           text-xs text-[#f9dcd5] placeholder:text-ink-tertiary focus:outline-none focus:border-[#fa5c29]" />
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-[10px] text-ink-tertiary">Check-in</label>
                           <input type="date" value={form.checkin}
                             onChange={e => setForm(f => ({ ...f, checkin: e.target.value }))}
-                            className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2
+                            className="w-full rounded-lg glass-card bg-transparent px-3 py-2
                               text-xs text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]" />
                         </div>
                         <div>
                           <label className="text-[10px] text-ink-tertiary">Check-out</label>
                           <input type="date" value={form.checkout}
                             onChange={e => setForm(f => ({ ...f, checkout: e.target.value }))}
-                            className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2
+                            className="w-full rounded-lg glass-card bg-transparent px-3 py-2
                               text-xs text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]" />
                         </div>
                       </div>
@@ -190,7 +190,7 @@ export default function VillaScreen() {
                       </p>
                       <div className="flex gap-2">
                         <button onClick={() => setBooking(null)}
-                          className="flex-1 py-2 rounded-lg text-xs font-semibold border border-white/10
+                          className="flex-1 py-2 rounded-lg text-xs font-semibold glass-card
                             text-ink-secondary hover:bg-white/5 transition-colors">
                           Cancel
                         </button>
