@@ -87,7 +87,7 @@ export default function WristbandScreen() {
   return (
     <RequireRole minLevel={3}>
       <div className="min-h-screen p-4 md:p-6">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
 
           {/* ── Left column: Issue form (spans 2 cols on desktop) ───── */}
           <div className="md:col-span-2 space-y-5">
@@ -110,7 +110,7 @@ export default function WristbandScreen() {
                 <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#aa8980] mb-3">
                   Select Payment Method
                 </p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-4">
                   {METHOD_OPTS.map(({ value, label }) => (
                     <button key={value} onClick={() => setMethod(value as PaymentMethod)}
                       className={`min-h-[44px] rounded-xl text-sm font-semibold border transition-colors ${

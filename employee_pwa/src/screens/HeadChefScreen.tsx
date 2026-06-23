@@ -93,7 +93,7 @@ export default function HeadChefScreen() {
             </div>
 
             {/* Top-right stat badges */}
-            <div className="flex gap-3 shrink-0">
+            <div className="flex gap-4 shrink-0">
               <div className="glass-card rounded-xl px-4 py-2 text-center">
                 <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980]">
                   Covers Tonight
@@ -206,7 +206,7 @@ export default function HeadChefScreen() {
                 </div>
 
                 {/* Weekly grid */}
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-3">
                   {calendarDays.map(day => (
                     <div key={day.label} className="text-center">
                       <p className="text-[10px] font-bold tracking-wider uppercase text-[#aa8980] mb-1">
@@ -237,7 +237,7 @@ export default function HeadChefScreen() {
                 </div>
 
                 {/* Table header */}
-                <div className="grid grid-cols-5 gap-2 pb-2 border-b border-white/10 mb-2">
+                <div className="grid grid-cols-5 gap-3 pb-2 border-b border-white/10 mb-2">
                   {['TICKET #', 'TABLE', 'KEY ITEMS', 'TIME OPEN', 'STATUS'].map(h => (
                     <p key={h} className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980]">
                       {h}
@@ -252,7 +252,7 @@ export default function HeadChefScreen() {
                   { ticket: '#T-8944', table: 'Bar Seat 4', items: '1x Oysters (Half Dozen), 1x Tuna Tart...', time: '04:18', status: 'Fired', statusColor: 'text-status-paid bg-status-paid/10' },
                 ].map(row => (
                   <div key={row.ticket}
-                    className="grid grid-cols-5 gap-2 py-3 border-b border-white/5 items-center last:border-0">
+                    className="grid grid-cols-5 gap-3 py-3 border-b border-white/5 items-center last:border-0">
                     <p className="text-sm font-semibold tabular-nums text-[#f9dcd5]">{row.ticket}</p>
                     <p className="text-sm text-[#f9dcd5]">{row.table}</p>
                     <p className="text-xs text-[#aa8980] truncate">{row.items}</p>

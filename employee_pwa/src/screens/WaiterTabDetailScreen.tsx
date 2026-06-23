@@ -252,7 +252,7 @@ export default function WaiterTabDetailScreen() {
                     )}
                     {soldOut && (
                       <div className="absolute inset-0 bg-[rgba(30,16,12,0.6)] flex items-center justify-center">
-                        <span className="text-xs font-bold text-white/80 uppercase tracking-wider">Sold Out</span>
+                        <span className="text-xs font-bold text-[#f9dcd5]/80 uppercase tracking-wider">Sold Out</span>
                       </div>
                     )}
                   </div>
@@ -544,7 +544,7 @@ export default function WaiterTabDetailScreen() {
         style={{ background: 'rgba(30, 16, 12, 0.85)', backdropFilter: 'blur(12px)' }}>
         <button onClick={() => navigate('/pos/tabs')}
           aria-label="Back to tables"
-          className="text-ink-tertiary hover:text-white text-sm transition-colors">
+          className="text-ink-tertiary hover:text-[#f9dcd5] text-sm transition-colors">
           ← Back
         </button>
         <p className="flex-1 font-bold text-[#f9dcd5] truncate">{tab?.reference ?? 'Walk-in'}</p>
@@ -579,11 +579,11 @@ export default function WaiterTabDetailScreen() {
             <motion.button whileTap={{ scale: 0.97 }}
               onClick={() => setEntryChoice('order')}
               className="flex-1 py-4 rounded-2xl gradient-hero text-center text-white">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mx-auto mb-1 text-white">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mx-auto mb-1 text-[#f9dcd5]">
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span className="text-sm font-semibold">Straight to Order</span>
-              <span className="text-[10px] text-white/70 block mt-0.5">Guest knows what they want</span>
+              <span className="text-[10px] text-[#f9dcd5]/70 block mt-0.5">Guest knows what they want</span>
             </motion.button>
           </div>
         </motion.div>

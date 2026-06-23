@@ -281,10 +281,10 @@ export default function FinanceScreen() {
   const [section, setSection] = useState<Section>('revenue')
 
   return (
-    <div className="p-4 max-w-3xl mx-auto">
+    <div className="p-4 max-w-6xl mx-auto">
       <div className="flex items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-white font-serif">Finance</h1>
+          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Finance</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Revenue, expenses, reconciliation summaries</p>
         </div>
         {/* Period picker */}
@@ -302,7 +302,7 @@ export default function FinanceScreen() {
       </div>
 
       {/* Section tabs */}
-      <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-4" role="tablist">
+      <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-6" role="tablist">
         {([['revenue', 'Revenue'], ['budget', 'Budget Burn']] as [Section, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -311,7 +311,7 @@ export default function FinanceScreen() {
             onClick={() => setSection(key)}
             className={[
               'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
-              section === key ? 'bg-transparent text-white shadow-sm' : 'text-ink-secondary hover:text-white',
+              section === key ? 'bg-white/10 text-[#f9dcd5]' : 'text-ink-secondary hover:text-[#f9dcd5]',
             ].join(' ')}
           >
             {label}

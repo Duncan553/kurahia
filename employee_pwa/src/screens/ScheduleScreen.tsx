@@ -210,7 +210,7 @@ export default function ScheduleScreen() {
                       ].join(' ')}
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-white">
+                        <p className="text-sm font-semibold text-[#f9dcd5]">
                           {formatTime(shift.start)} – {formatTime(shift.end)}
                         </p>
                         <p className="text-xs text-ink-tertiary mt-0.5 truncate">{shift.role}</p>

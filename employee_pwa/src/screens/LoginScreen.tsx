@@ -62,7 +62,7 @@ export default function LoginScreen() {
 
   return (
     /* Warm dark background with resort photo overlay */
-    <div className="relative min-h-screen bg-cream-card flex items-center justify-center px-6">
+    <div className="relative min-h-screen bg-[#1e100c] flex items-center justify-center px-6">
 
       {/* Resort background photo with warm dark overlay */}
       <div className="absolute inset-0">
@@ -186,9 +186,7 @@ export default function LoginScreen() {
               className="w-full py-3.5 rounded-xl
                 bg-[#fa5c29] hover:bg-[#ffb59f] active:bg-[#af3000]
                 text-white text-sm font-semibold tracking-wider uppercase
-                shadow-[0_4px_16px_rgba(250,92,41,0.3)]
-                hover:shadow-[0_6px_20px_rgba(250,92,41,0.4)]
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-card
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1e100c]
                 disabled:opacity-35 disabled:cursor-not-allowed disabled:shadow-none
                 transition-all duration-200"
             >

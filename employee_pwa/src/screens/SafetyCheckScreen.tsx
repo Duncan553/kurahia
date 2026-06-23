@@ -96,7 +96,7 @@ function ChecklistItem({
           )}
         </span>
 
-        <span className={`flex-1 text-sm font-medium ${hasError ? 'text-status-failed' : 'text-white'}`}>
+        <span className={`flex-1 text-sm font-medium ${hasError ? 'text-status-failed' : 'text-[#f9dcd5]'}`}>
           {formatKey(itemKey)}
         </span>
 
@@ -117,7 +117,7 @@ function ChecklistItem({
             onChange={(e) => onNote(e.target.value)}
             placeholder="Optional note…"
             className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2
-              text-sm text-white focus:outline-none focus:border-[#fa5c29]
+              text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />
         </div>
@@ -247,7 +247,7 @@ export default function SafetyCheckScreen() {
     return (
       <div className="p-4 max-w-3xl mx-auto space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-white font-serif">Safety Check</h1>
+          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Safety Check</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Equipment safety inspections</p>
         </div>
 
@@ -290,7 +290,7 @@ export default function SafetyCheckScreen() {
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-white">{eq.name}</span>
+                <span className="font-semibold text-[#f9dcd5]">{eq.name}</span>
                 {eq.is_due_service && <ServiceDueBadge />}
               </div>
               <p className="text-xs text-ink-tertiary capitalize mt-0.5">
@@ -327,7 +327,7 @@ export default function SafetyCheckScreen() {
           </svg>
         </button>
         <div>
-          <h1 className="text-xl font-bold text-white">{selectedEq.name}</h1>
+          <h1 className="text-xl font-bold text-[#f9dcd5]">{selectedEq.name}</h1>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-sm text-ink-tertiary capitalize">
               {selectedEq.equipment_type.replace(/_/g, ' ')}

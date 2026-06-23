@@ -161,11 +161,11 @@ export default function CheckInScreen() {
 
   return (
     <RequireRole minLevel={3}>
-      <div className="p-4 max-w-3xl mx-auto space-y-4">
+      <div className="p-4 max-w-6xl mx-auto space-y-6">
 
         {/* ── Header ───────────────────────────────────────────────── */}
         <div>
-          <h1 className="text-2xl font-bold text-white font-serif">Front Desk</h1>
+          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Front Desk</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Booking check-in and admission</p>
         </div>
 
@@ -182,7 +182,7 @@ export default function CheckInScreen() {
                 className={[
                   'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
                   tab === t
-                    ? 'bg-transparent shadow-sm text-white'
+                    ? 'bg-transparent shadow-sm text-[#f9dcd5]'
                     : 'text-ink-tertiary hover:text-ink-secondary',
                 ].join(' ')}
               >
@@ -213,7 +213,7 @@ export default function CheckInScreen() {
                     className="rounded-2xl bg-white/4 glass-card p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-semibold text-white truncate">{a.guest_name}</p>
+                        <p className="font-semibold text-[#f9dcd5] truncate">{a.guest_name}</p>
                         <p className="text-xs text-ink-tertiary">{a.resource ?? 'No resource'}</p>
                       </div>
                       <button
@@ -282,7 +282,7 @@ export default function CheckInScreen() {
                     className="rounded-2xl bg-white/4 glass-card p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-semibold text-white truncate">{d.guest_name}</p>
+                        <p className="font-semibold text-[#f9dcd5] truncate">{d.guest_name}</p>
                         <p className="text-xs text-ink-tertiary">{d.resource ?? 'No resource'}</p>
                         {hasBalance && (
                           <p className="text-xs text-status-pending font-medium mt-0.5 tabular-nums">
@@ -298,7 +298,7 @@ export default function CheckInScreen() {
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-tertiary',
                           hasBalance
                             ? 'bg-status-pending/10 text-status-pending border border-status-pending/30'
-                            : 'bg-ink-tertiary/10 text-white border border-ink-tertiary/20',
+                            : 'bg-ink-tertiary/10 text-[#f9dcd5] border border-ink-tertiary/20',
                           'hover:opacity-80 active:scale-[0.98] disabled:opacity-50',
                         ].join(' ')}
                       >
@@ -323,13 +323,13 @@ export default function CheckInScreen() {
               title="No guests currently checked in."
             />
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-4">
               {occupancy.map((o) => (
                 <div key={o.booking_id}
                   className="flex items-center justify-between
                     rounded-xl bg-white/4 glass-card px-4 py-3">
                   <div>
-                    <p className="font-medium text-white">{o.guest_name}</p>
+                    <p className="font-medium text-[#f9dcd5]">{o.guest_name}</p>
                     <p className="text-xs text-ink-tertiary">{o.resource ?? '—'}</p>
                   </div>
                   <span className="text-sm tabular-nums text-ink-secondary font-medium">
@@ -348,7 +348,7 @@ export default function CheckInScreen() {
         <p className="text-base text-ink-secondary mb-6">{errorMsg}</p>
         <button
           onClick={() => setErrorOpen(false)}
-          className="w-full py-3 rounded-xl bg-white/5 text-white font-medium
+          className="w-full py-3 rounded-xl bg-white/5 text-[#f9dcd5] font-medium
             hover:bg-white/10 transition-colors"
         >
           OK

@@ -64,7 +64,7 @@ function StaffCard({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold truncate ${user.is_active ? 'text-white' : 'text-ink-tertiary'}`}>
+        <p className={`text-sm font-semibold truncate ${user.is_active ? 'text-[#f9dcd5]' : 'text-ink-tertiary'}`}>
           {profile?.full_name ?? user.username}
         </p>
         <p className="text-xs text-ink-secondary truncate">
@@ -135,17 +135,17 @@ function UserDrawer({
             {(profile?.full_name ?? user.username).slice(0, 2).toUpperCase()}
           </div>
           <div>
-            <p className="font-semibold text-white">{profile?.full_name ?? user.username}</p>
+            <p className="font-semibold text-[#f9dcd5]">{profile?.full_name ?? user.username}</p>
             <p className="text-xs text-ink-secondary">@{user.username}</p>
           </div>
         </div>
         <div className="text-xs text-ink-secondary space-y-1 pt-2 border-t border-cream-deep">
-          <p>Role: <span className="font-medium text-white">{user.role}</span></p>
-          {user.department && <p>Dept: <span className="font-medium text-white">{user.department}</span></p>}
-          {profile?.phone && <p>Phone: <span className="font-medium text-white">{profile.phone}</span></p>}
-          {profile?.hire_date && <p>Hired: <span className="font-medium text-white">{profile.hire_date}</span></p>}
+          <p>Role: <span className="font-medium text-[#f9dcd5]">{user.role}</span></p>
+          {user.department && <p>Dept: <span className="font-medium text-[#f9dcd5]">{user.department}</span></p>}
+          {profile?.phone && <p>Phone: <span className="font-medium text-[#f9dcd5]">{profile.phone}</span></p>}
+          {profile?.hire_date && <p>Hired: <span className="font-medium text-[#f9dcd5]">{profile.hire_date}</span></p>}
           {profile?.wage_rate && (
-            <p>Wage: <span className="font-medium text-white">
+            <p>Wage: <span className="font-medium text-[#f9dcd5]">
               KSh {parseFloat(profile.wage_rate).toLocaleString('en-KE')} / {profile.wage_period?.toLowerCase()}
             </span></p>
           )}
@@ -249,7 +249,7 @@ function CreateUserFlow({
   }
 
   const inp = `w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
-    text-white placeholder:text-ink-tertiary
+    text-[#f9dcd5] placeholder:text-ink-tertiary
     focus:outline-none focus:ring-2 focus:ring-primary-main`
 
   return (
@@ -367,7 +367,7 @@ export default function StaffScreen() {
     <div className="p-4 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-5 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white font-serif">Staff</h1>
+          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Staff</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Employee accounts, roles, departments</p>
         </div>
         <Button
@@ -380,7 +380,7 @@ export default function StaffScreen() {
       </div>
 
       {/* Filter toggle */}
-      <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-4" role="tablist">
+      <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-6" role="tablist">
         {(['active', 'all'] as const).map(f => (
           <button
             key={f}
@@ -389,7 +389,7 @@ export default function StaffScreen() {
             onClick={() => setFilter(f)}
             className={[
               'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
-              filter === f ? 'bg-transparent text-white shadow-sm' : 'text-ink-secondary hover:text-white',
+              filter === f ? 'bg-white/10 text-[#f9dcd5]' : 'text-ink-secondary hover:text-[#f9dcd5]',
             ].join(' ')}
           >
             {f === 'active' ? 'Active' : 'All'}
@@ -401,7 +401,7 @@ export default function StaffScreen() {
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex gap-3 rounded-xl border border-white/10 bg-transparent p-3">
+            <div key={i} className="flex gap-3 rounded-xl border border-white/10 bg-transparent p-4">
               <Skeleton variant="avatar" className="w-10 h-10 rounded-full" />
               <div className="flex-1 space-y-2">
                 <Skeleton variant="text" className="w-32 h-4" />

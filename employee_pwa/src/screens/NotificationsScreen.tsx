@@ -150,7 +150,7 @@ export default function NotificationsScreen() {
               aria-hidden="true"
             />
             <div className="flex-1 min-w-0">
-              <p className={['text-sm truncate', isUnread ? 'font-semibold text-white' : 'text-ink-secondary'].join(' ')}>
+              <p className={['text-sm truncate', isUnread ? 'font-semibold text-[#f9dcd5]' : 'text-ink-secondary'].join(' ')}>
                 {notif.subject}
               </p>
               <p className="text-xs text-ink-tertiary mt-0.5 line-clamp-2">{notif.body}</p>
