@@ -120,7 +120,7 @@ function SideLink({ path, label, Icon }: NavItem) {
         'flex items-center gap-3 px-4 py-3 rounded-lg mx-2 transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
         isActive
-          ? 'bg-emerald-500/15 text-emerald-300 border-l-2 border-[#F25623]'
+          ? 'bg-emerald-500/15 text-emerald-300 border-l-2 border-[#fa5c29]'
           : 'text-white/50 hover:bg-white/5 hover:text-white',
       ].join(' ')}
     >
