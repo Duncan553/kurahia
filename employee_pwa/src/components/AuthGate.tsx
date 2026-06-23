@@ -6,7 +6,7 @@ import { EmptyState } from '@shared'
 
 const chunkFallback = (
   <div className="min-h-screen flex items-center justify-center bg-cream-card">
-    <div className="w-8 h-8 rounded-full border-2 border-primary-dark border-t-transparent animate-spin" />
+    <div className="w-8 h-8 rounded-full border-2 border-[#fa5c29] border-t-transparent animate-spin" />
   </div>
 )
 

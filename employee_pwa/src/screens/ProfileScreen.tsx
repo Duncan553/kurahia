@@ -80,7 +80,7 @@ export default function ProfileScreen() {
 
       {/* ── Identity card ─────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="flex items-center gap-4 -mt-2">
-        <div className="w-14 h-14 rounded-full bg-primary-dark flex items-center justify-center
+        <div className="w-14 h-14 rounded-full bg-[#fa5c29] flex items-center justify-center
           text-white text-xl font-bold shrink-0 ring-4 ring-cream-card">
           {user?.username?.[0]?.toUpperCase() ?? '?'}
         </div>

@@ -222,7 +222,7 @@ export default function PinSetupScreen() {
                   disabled={!ready || setupMutation.isPending}
                   className="
                     w-full mt-2 py-3.5 rounded-xl
-                    bg-primary-dark text-white
+                    bg-[#fa5c29] text-white
                     text-sm font-semibold tracking-widest uppercase
                     hover:bg-primary-main active:scale-[0.99]
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2

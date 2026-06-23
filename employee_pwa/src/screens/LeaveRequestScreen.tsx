@@ -116,7 +116,7 @@ export default function LeaveRequestScreen() {
                   'py-2.5 min-h-[44px] px-3 rounded-xl border text-sm font-medium transition-all text-left',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                   leaveType === lt.value
-                    ? 'border-primary-dark bg-primary-dark/10 text-primary-dark'
+                    ? 'border-[#fa5c29] bg-[#fa5c29]/10 text-primary-dark'
                     : 'border-white/10 bg-transparent text-ink-secondary hover:border-primary-main',
                 ].join(' ')}
               >
@@ -136,7 +136,7 @@ export default function LeaveRequestScreen() {
               min={today}
               onChange={(e) => setStartDate(e.target.value)}
               className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
-                text-sm text-white focus:outline-none focus:border-primary-dark
+                text-sm text-white focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
@@ -148,7 +148,7 @@ export default function LeaveRequestScreen() {
               min={startDate}
               onChange={(e) => { setEndDate(e.target.value); setTouched(true) }}
               className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
-                text-sm text-white focus:outline-none focus:border-primary-dark
+                text-sm text-white focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
@@ -166,7 +166,7 @@ export default function LeaveRequestScreen() {
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Family event, medical appointment..."
             className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-              text-sm text-white focus:outline-none focus:border-primary-dark
+              text-sm text-white focus:outline-none focus:border-[#fa5c29]
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />
         </div>
@@ -177,7 +177,7 @@ export default function LeaveRequestScreen() {
           disabled={mutation.isPending}
           className={[
             'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-            'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]',
+            'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
             'disabled:opacity-50 disabled:cursor-not-allowed',
           ].join(' ')}

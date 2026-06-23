@@ -119,7 +119,7 @@ export default function PurchaseRequestScreen() {
                 placeholder="e.g. 2kg Omo washing powder"
                 disabled={mutation.isPending}
                 className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                  text-sm text-white focus:outline-none focus:border-primary-dark
+                  text-sm text-white focus:outline-none focus:border-[#fa5c29]
                   focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
               />
             </div>
@@ -155,7 +155,7 @@ export default function PurchaseRequestScreen() {
               onBlur={() => touch('qty')}
               disabled={mutation.isPending}
               className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                text-base text-white focus:outline-none focus:border-primary-dark
+                text-base text-white focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
             />
           </div>
@@ -170,7 +170,7 @@ export default function PurchaseRequestScreen() {
               disabled={mutation.isPending}
               placeholder="Reason, urgency, preferred supplier…"
               className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                text-sm text-white focus:outline-none focus:border-primary-dark
+                text-sm text-white focus:outline-none focus:border-[#fa5c29]
                 focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50 resize-none"
             />
           </div>

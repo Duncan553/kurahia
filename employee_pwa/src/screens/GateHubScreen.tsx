@@ -126,8 +126,8 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
         onClick={() => setConfirmOpen(true)}
         disabled={mut.isPending}
         aria-label="Issue wristband"
-        className="w-full py-4 rounded-2xl bg-primary-dark text-white text-base font-semibold
-          hover:bg-primary-dark/90 transition-colors disabled:opacity-50
+        className="w-full py-4 rounded-2xl bg-[#fa5c29] text-white text-base font-semibold
+          hover:bg-[#af3000] transition-colors disabled:opacity-50
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
       >
         {mut.isPending ? 'Issuing…' : 'Issue Band →'}
@@ -158,8 +158,8 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
             Cancel
           </button>
           <button onClick={() => mut.mutate()} disabled={mut.isPending}
-            className="flex-1 py-3 rounded-xl bg-primary-dark text-white font-semibold
-              hover:bg-primary-dark/90 transition-colors disabled:opacity-50">
+            className="flex-1 py-3 rounded-xl bg-[#fa5c29] text-white font-semibold
+              hover:bg-[#af3000] transition-colors disabled:opacity-50">
             {mut.isPending ? 'Issuing…' : 'Confirm'}
           </button>
         </div>
@@ -204,7 +204,7 @@ function LookupSection() {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && lookup()}
           className="flex-1 rounded-xl border border-cream-alt bg-cream-card px-4 py-2.5
-            text-base text-ink-primary focus:outline-none focus:border-primary-dark
+            text-base text-ink-primary focus:outline-none focus:border-[#fa5c29]
             focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
         />
         <motion.button onClick={lookup} disabled={isFetching}

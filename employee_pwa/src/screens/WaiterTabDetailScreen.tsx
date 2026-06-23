@@ -332,7 +332,7 @@ export default function WaiterTabDetailScreen() {
                     <motion.button whileTap={{ scale: 0.85 }}
                       aria-label={`Increase ${e.name} quantity`}
                       onClick={() => addItem(e.id)}
-                      className="w-7 h-7 rounded-full bg-primary-dark text-white font-bold text-sm
+                      className="w-7 h-7 rounded-full bg-[#fa5c29] text-white font-bold text-sm
                         flex items-center justify-center">+</motion.button>
                   </div>
                   <span className="text-sm font-bold tabular-nums text-white w-16 text-right shrink-0">
@@ -347,7 +347,7 @@ export default function WaiterTabDetailScreen() {
                       onChange={ev => setDraftNotes(n => ({ ...n, [e.id]: ev.target.value }))}
                       className="w-full text-xs rounded-lg border border-white/10 bg-transparent/50 px-2 py-1.5
                         text-ink-secondary placeholder:text-ink-tertiary/50
-                        focus:outline-none focus:border-primary-dark"
+                        focus:outline-none focus:border-[#fa5c29]"
                     />
                   </div>
                 </motion.div>
@@ -394,7 +394,7 @@ export default function WaiterTabDetailScreen() {
                       onClick={() => itemMut.mutate({ id: oi.id, action: 'serve' })}
                       disabled={itemMut.isPending}
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold
-                        bg-primary-dark text-white disabled:opacity-50">
+                        bg-[#fa5c29] text-white disabled:opacity-50">
                       Served ✓
                     </motion.button>
                   )}
@@ -455,8 +455,8 @@ export default function WaiterTabDetailScreen() {
                 <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
                   className={`py-2 rounded-xl text-sm font-semibold border transition-colors ${
                     pay.method === m
-                      ? 'bg-primary-dark text-white border-primary-dark'
-                      : 'bg-transparent text-ink-secondary border-white/10 hover:border-primary-dark/50'
+                      ? 'bg-[#fa5c29] text-white border-[#fa5c29]'
+                      : 'bg-transparent text-ink-secondary border-white/10 hover:border-[#fa5c29]/50'
                   }`}>
                   {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}
                 </button>
@@ -468,7 +468,7 @@ export default function WaiterTabDetailScreen() {
               value={pay.amount}
               onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
               className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                text-base text-white focus:outline-none focus:border-primary-dark"
+                text-base text-white focus:outline-none focus:border-[#fa5c29]"
             />
             <Button variant="primary" size="lg" className="w-full" loading={payMut.isPending}
               onClick={() => payMut.mutate()}>
@@ -589,7 +589,7 @@ export default function WaiterTabDetailScreen() {
           <button key={v} onClick={() => setMobilePane(v)}
             className={`flex-1 py-3 text-sm font-semibold capitalize transition-colors ${
               mobilePane === v
-                ? 'text-primary-dark border-b-2 border-primary-dark'
+                ? 'text-primary-dark border-b-2 border-[#fa5c29]'
                 : 'text-ink-tertiary hover:text-ink-secondary'
             }`}>
             {v === 'menu' ? `Menu${draftCount > 0 ? ` (${draftCount})` : ''}` : 'Order'}

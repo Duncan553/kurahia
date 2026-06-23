@@ -96,7 +96,7 @@ export default function SuggestionsScreen() {
                 className={[
                   'flex-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark',
                   category === c
-                    ? 'bg-primary-dark text-white'
+                    ? 'bg-[#fa5c29] text-white'
                     : 'text-ink-secondary hover:bg-white/5',
                 ].join(' ')}
               >
@@ -193,7 +193,7 @@ export default function SuggestionsScreen() {
             'w-full py-3.5 rounded-xl text-sm font-semibold transition-all',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
             'disabled:opacity-50 disabled:cursor-not-allowed',
-            'bg-primary-dark text-white hover:bg-primary-dark/90 active:scale-[0.99]',
+            'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
           ].join(' ')}
         >
           {mutation.isPending ? (

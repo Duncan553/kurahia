@@ -9,7 +9,7 @@ interface StaffUser { id: string; username: string; role: string; department: st
 interface Meta { roles: { id: string; name: string; level: number }[]; departments: { id: string; name: string }[] }
 
 const BLANK = { username:'', password:'', roleId:'', deptId:'', fullName:'', phone:'', wageRate:'', wagePeriod:'', hireDate:'', nationalId:'', emgName:'', emgPhone:'' }
-const inp = 'w-full rounded-xl px-3 py-2.5 border border-white/10 bg-transparent text-sm text-white focus:outline-none focus:border-primary-dark'
+const inp = 'w-full rounded-xl px-3 py-2.5 border border-white/10 bg-transparent text-sm text-white focus:outline-none focus:border-[#fa5c29]'
 const toE164 = (p: string) => { const s = p.replace(/\s+/g,''); return s.startsWith('+254')?s : s.startsWith('254')?'+'+s : s.startsWith('0')?'+254'+s.slice(1):s }
 const extractErr = (e: unknown) => (e as {response?:{data?:{error?:string}}})?.response?.data?.error ?? 'Something went wrong.'
 const LBL = ({ children }: { children: React.ReactNode }) => (
@@ -98,7 +98,7 @@ export default function StaffAccountsScreen() {
           <AnimatePresence>
             {credentials && (
               <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0}}
-                className="rounded-2xl border-2 border-primary-dark bg-primary-dark/5 p-4 space-y-2">
+                className="rounded-2xl border-2 border-[#fa5c29] bg-[#fa5c29]/5 p-4 space-y-2">
                 <p className="text-xs font-semibold tracking-widest text-primary-dark uppercase">Account ready — give these to the staff member</p>
                 <div className="space-y-1 font-mono text-sm text-white">
                   <p><span className="text-ink-tertiary">Username:</span> {credentials.u}</p>
@@ -192,7 +192,7 @@ export default function StaffAccountsScreen() {
           {!showForm && (
             <button onClick={() => setShowForm(true)}
               className="w-full rounded-2xl border-2 border-dashed border-white/10 py-4
-                text-sm font-semibold text-ink-tertiary hover:border-primary-dark hover:text-primary-dark
+                text-sm font-semibold text-ink-tertiary hover:border-[#fa5c29] hover:text-primary-dark
                 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark">
               + Create new account
             </button>

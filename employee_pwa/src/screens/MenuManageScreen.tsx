@@ -284,7 +284,7 @@ export default function MenuManageScreen() {
             placeholder="Name — e.g. Grilled Tilapia, 60-min Massage"
             value={f.name} onChange={e => setF({ ...f, name: e.target.value })}
             className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
-              focus:outline-none focus:border-primary-dark"
+              focus:outline-none focus:border-[#fa5c29]"
           />
           <div className="grid grid-cols-2 gap-2">
             <label htmlFor="menu-item-price" className="sr-only">Price (KSh)</label>
@@ -293,14 +293,14 @@ export default function MenuManageScreen() {
               inputMode="decimal" placeholder="Price (KSh)"
               value={f.price} onChange={e => setF({ ...f, price: e.target.value })}
               className="rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
-                focus:outline-none focus:border-primary-dark"
+                focus:outline-none focus:border-[#fa5c29]"
             />
             <label htmlFor="menu-item-category" className="sr-only">Category (optional)</label>
             <input
               id="menu-item-category" placeholder="Category (optional)"
               value={f.category} onChange={e => setF({ ...f, category: e.target.value })}
               className="rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm
-                focus:outline-none focus:border-primary-dark"
+                focus:outline-none focus:border-[#fa5c29]"
             />
           </div>
           <Select
@@ -384,7 +384,7 @@ export default function MenuManageScreen() {
                       value={priceEdit.price}
                       onChange={e => setPriceEdit({ id: it.id, price: e.target.value })}
                       onKeyDown={e => e.key === 'Enter' && priceMut.mutate(priceEdit)}
-                      className="w-20 rounded-lg border border-primary-dark px-2 py-1.5 text-sm tabular-nums"
+                      className="w-20 rounded-lg border border-[#fa5c29] px-2 py-1.5 text-sm tabular-nums"
                     />
                     <Button variant="primary" size="sm" loading={priceMut.isPending}
                       onClick={() => priceMut.mutate(priceEdit)}>Save</Button>
@@ -445,7 +445,7 @@ export default function MenuManageScreen() {
                       onChange={e => setDraftLines(prev =>
                         prev.map((l, j) => j === i ? { ...l, quantity: e.target.value } : l))}
                       className="w-20 rounded-lg border border-white/10 bg-transparent px-2 py-1.5
-                        text-sm tabular-nums focus:outline-none focus:border-primary-dark"
+                        text-sm tabular-nums focus:outline-none focus:border-[#fa5c29]"
                     />
                     <button
                       onClick={() => setDraftLines(prev => prev.filter((_, j) => j !== i))}
@@ -487,7 +487,7 @@ export default function MenuManageScreen() {
                     onChange={e => setNewQty(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && addIngredient()}
                     className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
-                      text-sm focus:outline-none focus:border-primary-dark"
+                      text-sm focus:outline-none focus:border-[#fa5c29]"
                   />
                 </div>
                 {newIngName && (() => {
@@ -513,7 +513,7 @@ export default function MenuManageScreen() {
                 onChange={e => setCopySource(e.target.value)}
                 aria-label="Copy recipe from another dish"
                 className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2.5
-                  text-sm text-ink-secondary focus:outline-none focus:border-primary-dark"
+                  text-sm text-ink-secondary focus:outline-none focus:border-[#fa5c29]"
               >
                 <option value="">Choose a dish to copy its recipe…</option>
                 {copyItems.map(i => (

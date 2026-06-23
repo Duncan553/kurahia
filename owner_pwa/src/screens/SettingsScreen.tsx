@@ -359,7 +359,7 @@ function PersonalTab() {
                 'flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                 size === s.key
-                  ? 'bg-primary-dark border-primary-dark text-white'
+                  ? 'bg-[#fa5c29] border-[#fa5c29] text-white'
                   : 'border-white/10 text-ink-secondary hover:bg-white/5',
               ].join(' ')}
             >
@@ -406,7 +406,7 @@ export default function SettingsScreen() {
             className={[
               'shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap',
               tab === t.key
-                ? 'bg-primary-dark text-white'
+                ? 'bg-[#fa5c29] text-white'
                 : 'bg-white/5 text-ink-secondary hover:text-white',
             ].join(' ')}
           >

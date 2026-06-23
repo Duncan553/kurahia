@@ -192,7 +192,7 @@ export default function ScheduleScreen() {
                 <div className={[
                   'rounded-xl px-4 py-3',
                   isToday
-                    ? 'border bg-primary-light/20 border-primary-dark/20'
+                    ? 'border bg-primary-light/20 border-[#fa5c29]/20'
                     : 'glass-card',
                 ].join(' ')}>
                   <p className="text-sm text-ink-tertiary">No shift</p>
@@ -205,7 +205,7 @@ export default function ScheduleScreen() {
                       className={[
                         'rounded-xl px-4 py-3 flex items-center justify-between gap-3',
                         isToday
-                          ? 'border bg-primary-light/20 border-primary-dark/20'
+                          ? 'border bg-primary-light/20 border-[#fa5c29]/20'
                           : 'glass-card',
                       ].join(' ')}
                     >

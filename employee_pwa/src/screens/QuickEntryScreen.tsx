@@ -91,7 +91,7 @@ function ItemQtyForm({
           onBlur={() => touch('qty')}
           disabled={isPending}
           className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-            text-base text-white focus:outline-none focus:border-primary-dark
+            text-base text-white focus:outline-none focus:border-[#fa5c29]
             focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
         />
       </div>
@@ -110,7 +110,7 @@ function ItemQtyForm({
             disabled={isPending}
             placeholder="e.g. Fridge failure overnight, chicken spoiled"
             className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-              text-sm text-white focus:outline-none focus:border-primary-dark
+              text-sm text-white focus:outline-none focus:border-[#fa5c29]
               focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50 resize-none"
           />
           {reasonErr && <p className="text-sm text-status-failed mt-1">{reasonErr}</p>}
