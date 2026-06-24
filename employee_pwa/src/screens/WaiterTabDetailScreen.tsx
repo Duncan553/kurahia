@@ -76,6 +76,7 @@ export default function WaiterTabDetailScreen() {
   const [mobilePane, setMobilePane] = useState<'menu' | 'order'>('menu')
   const [entryChoice, setEntryChoice] = useState<'pending' | 'menu' | 'order'>('pending')
   const [searchQ, setSearchQ] = useState('')
+  const [activeStation, setActiveStation] = useState<'ALL' | 'KITCHEN' | 'BAR'>('ALL')
   const [activeCat, setActiveCat] = useState('All')
   const [pay, setPay] = useState({ method: 'CASH' as string, amount: '' })
   const [idem, setIdem] = useState(() => crypto.randomUUID())
@@ -101,17 +102,22 @@ export default function WaiterTabDetailScreen() {
 
   // ── Derived ─────────────────────────────────────────────────────────────
 
+  const stationItems = useMemo(() => {
+    if (activeStation === 'ALL') return items
+    return items.filter(i => i.prep_station === activeStation)
+  }, [items, activeStation])
+
   const categories = useMemo(() => {
-    const cats = [...new Set(items.map(i => i.category ?? 'Other'))]
+    const cats = [...new Set(stationItems.map(i => i.category ?? 'Other'))]
     return ['All', ...cats.sort()]
-  }, [items])
+  }, [stationItems])
 
   const filteredItems = useMemo(() => {
-    let list = items
+    let list = stationItems
     if (activeCat !== 'All') list = list.filter(i => (i.category ?? 'Other') === activeCat)
     if (searchQ) list = list.filter(i => i.name.toLowerCase().includes(searchQ.toLowerCase()))
     return list
-  }, [items, activeCat, searchQ])
+  }, [stationItems, activeCat, searchQ])
 
   const draftEntries = useMemo(() =>
     Object.entries(draft).filter(([, q]) => q > 0).map(([id, qty]) => {
@@ -214,8 +220,21 @@ export default function WaiterTabDetailScreen() {
 
   const menuPane = (
     <div className="flex flex-col h-full">
+      {/* Kitchen / Bar station toggle */}
+      <div className="shrink-0 px-3 pt-3 pb-1 flex gap-1">
+        {([['ALL', 'All'], ['KITCHEN', 'Food'], ['BAR', 'Drinks']] as const).map(([key, label]) => (
+          <button key={key} onClick={() => { setActiveStation(key); setActiveCat('All') }}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
+              activeStation === key
+                ? 'bg-[#fa5c29] text-white'
+                : 'bg-white/5 text-ink-secondary hover:bg-white/8'
+            }`}>
+            {label}
+          </button>
+        ))}
+      </div>
       {/* Category tabs */}
-      <div className="shrink-0 px-3 pt-3 pb-2 overflow-x-auto flex gap-2 scrollbar-hide">
+      <div className="shrink-0 px-3 pt-1 pb-2 overflow-x-auto flex gap-2 scrollbar-hide">
         {categories.map(cat => (
           <button key={cat} onClick={() => setActiveCat(cat)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
