@@ -326,7 +326,7 @@ export default function WaiterTabDetailScreen() {
       <div className="shrink-0 px-4 pt-4 pb-3 border-b border-white/10">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-bold text-[#f9dcd5] text-lg">{tab?.reference ?? 'Walk-in'}</p>
+            <p className="font-bold text-[#f9dcd5] text-lg truncate max-w-xs">{tab?.reference ?? 'Walk-in'}</p>
             <p className="text-xs text-ink-tertiary">Tab #{tabId?.slice(0, 8)}</p>
           </div>
           <span className={`text-sm font-bold tabular-nums px-2 py-1 rounded-lg ${
