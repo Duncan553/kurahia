@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, EmptyState, Button, useToastStore } from '@shared'
+import { Skeleton, EmptyState, Button, useToastStore, ErrorBoundary } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 
@@ -84,6 +84,7 @@ export default function HousekeepingScreen() {
     queryFn: () => api.get<CleaningRecord[]>('/housekeeping/status').then(r => r.data),
     staleTime: 15_000,
     refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
   })
 
   // Fetch staff list for assignment dropdown (manager only)
@@ -267,6 +268,7 @@ export default function HousekeepingScreen() {
 
   return (
     <div className="min-h-screen p-4 md:p-6">
+      <ErrorBoundary level="tile">
       <motion.div className="max-w-4xl mx-auto space-y-6"
         initial="hidden" animate="visible" variants={stagger}>
 
@@ -385,6 +387,7 @@ export default function HousekeepingScreen() {
         )}
 
       </motion.div>
+      </ErrorBoundary>
     </div>
   )
 }

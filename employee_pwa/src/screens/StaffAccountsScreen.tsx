@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RequireRole } from '../components/AuthGate'
-import { Button, SearchInput } from '@shared'
+import { Button, SearchInput, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 
 interface StaffUser { id: string; username: string; role: string; department: string | null; is_active: boolean; pin_set: boolean }
@@ -32,6 +32,7 @@ export default function StaffAccountsScreen() {
   const { data: staff = [], isLoading: staffLoading } = useQuery<StaffUser[]>({
     queryKey: ['staff-accounts', searchQ],
     queryFn: () => api.get<StaffUser[]>(`/auth/users${searchQ ? `?q=${encodeURIComponent(searchQ)}` : ''}`).then(r => r.data),
+    refetchInterval: 60_000,
   })
   const { data: meta } = useQuery<Meta>({
     queryKey: ['auth-meta'],
@@ -88,6 +89,7 @@ export default function StaffAccountsScreen() {
 
   return (
     <RequireRole minLevel={5}>
+      <ErrorBoundary level="tile">
       <div className="max-w-3xl mx-auto p-4 md:p-6 pb-8 space-y-4">
         <div className="mb-6">
           <h1 className="font-serif text-2xl font-bold text-[#f9dcd5]">Staff Accounts</h1>
@@ -233,6 +235,7 @@ export default function StaffAccountsScreen() {
           </div>
 
       </div>
+      </ErrorBoundary>
     </RequireRole>
   )
 }

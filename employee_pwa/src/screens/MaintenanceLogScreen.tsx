@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Drawer, EmptyState, useToastStore } from '@shared'
+import { Drawer, EmptyState, useToastStore, ErrorBoundary } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 
@@ -57,6 +57,7 @@ export default function MaintenanceLogScreen() {
     queryKey: ['equipment-list'],
     queryFn: () => api.get<Equipment[]>('/equipment').then((r) => r.data),
     staleTime: 5 * 60_000,
+    refetchInterval: 60_000,
   })
 
   const notesErr = touched && notes.trim().length < 5
@@ -106,6 +107,7 @@ export default function MaintenanceLogScreen() {
 
   return (
     <RequireRole minLevel={5}>
+      <ErrorBoundary level="tile">
       <div className="p-4 max-w-3xl mx-auto space-y-4">
 
         <div>
@@ -319,6 +321,7 @@ export default function MaintenanceLogScreen() {
           </div>
         )}
       </Drawer>
+      </ErrorBoundary>
     </RequireRole>
   )
 }

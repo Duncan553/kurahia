@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { StatusBadge, Skeleton, EmptyState, useToastStore } from '@shared'
+import { StatusBadge, Skeleton, EmptyState, useToastStore, ErrorBoundary } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
 import { todayKey } from '../lib/format'
@@ -52,6 +52,7 @@ export default function LeaveRequestScreen() {
   const { data: history, isLoading } = useQuery<LeaveRequest[]>({
     queryKey: ['leave-requests'],
     queryFn: () => api.get<LeaveRequest[]>('/hr/leave-requests').then((r) => r.data),
+    refetchInterval: 60_000,
   })
 
   const mutation = useMutation({
@@ -93,6 +94,7 @@ export default function LeaveRequestScreen() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: 'easeOut' }}
     >
+      <ErrorBoundary level="tile">
 
       <div>
         <h1 className="text-xl font-bold text-[#f9dcd5]">Leave Request</h1>
@@ -252,6 +254,7 @@ export default function LeaveRequestScreen() {
           </motion.div>
         )}
       </div>
+      </ErrorBoundary>
     </motion.div>
   )
 }

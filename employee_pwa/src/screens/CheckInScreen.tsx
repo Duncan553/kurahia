@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Skeleton, EmptyState, Modal, useToastStore } from '@shared'
+import { Skeleton, EmptyState, Modal, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
 import { useKioskStore } from '../stores/kioskStore'
@@ -82,6 +82,7 @@ export default function CheckInScreen() {
   const { data, isLoading, isError, refetch } = useQuery<FrontDeskData>({
     queryKey: ['front-desk-today'],
     queryFn: () => api.get<FrontDeskData>('/front-desk/today').then((r) => r.data),
+    refetchInterval: 60_000,
   })
 
   const pendingIds = new Set((data?.pending_waivers ?? []).map((w) => w.booking_id))
@@ -161,6 +162,7 @@ export default function CheckInScreen() {
 
   return (
     <RequireRole minLevel={3}>
+      <ErrorBoundary level="tile">
       <div className="p-4 max-w-6xl mx-auto space-y-6">
 
         {/* ── Header ───────────────────────────────────────────────── */}
@@ -354,6 +356,7 @@ export default function CheckInScreen() {
           OK
         </button>
       </Modal>
+      </ErrorBoundary>
     </RequireRole>
   )
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Modal, Skeleton, useToastStore } from '@shared'
+import { Modal, Skeleton, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
 
@@ -47,6 +47,7 @@ export default function WristbandScreen() {
   const { data: bands, isLoading, isError } = useQuery<Band[]>({
     queryKey: ['gate-active-bands'],
     queryFn: () => api.get<Band[]>('/gate/active-bands').then((r) => r.data),
+    refetchInterval: 60_000,
   })
 
   const headcount  = bands?.length ?? null
@@ -86,6 +87,7 @@ export default function WristbandScreen() {
 
   return (
     <RequireRole minLevel={3}>
+      <ErrorBoundary level="tile">
       <div className="min-h-screen p-4 md:p-6">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
 
@@ -319,6 +321,7 @@ export default function WristbandScreen() {
           </button>
         </div>
       </Modal>
+      </ErrorBoundary>
     </RequireRole>
   )
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Drawer, Skeleton, EmptyState } from '@shared'
+import { Drawer, Skeleton, EmptyState, ErrorBoundary } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 import { formatTime, formatDateTime, todayKey } from '../lib/format'
@@ -115,6 +115,7 @@ export default function AttendanceScreen() {
 
   return (
     <RequireRole minLevel={5}>
+      <ErrorBoundary level="tile">
       <motion.div
         className="p-4 max-w-6xl mx-auto space-y-6"
         initial={{ opacity: 0, y: 12 }}
@@ -349,6 +350,7 @@ export default function AttendanceScreen() {
           </div>
         )}
       </Drawer>
+      </ErrorBoundary>
     </RequireRole>
   )
 }

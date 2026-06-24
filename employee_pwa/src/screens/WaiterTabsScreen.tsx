@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Skeleton, EmptyState, Modal, Button, useToastStore } from '@shared'
+import { Skeleton, EmptyState, Modal, Button, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 
 interface Tab {
@@ -96,6 +96,7 @@ export default function WaiterTabsScreen() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
+      <ErrorBoundary level="tile">
       {/* ── Header: "My Tables" + New Table button ─────────────── */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -249,6 +250,7 @@ export default function WaiterTabsScreen() {
           </div>
         </div>
       </Modal>
+      </ErrorBoundary>
     </div>
   )
 }

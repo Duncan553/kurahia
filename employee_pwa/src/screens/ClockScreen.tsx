@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, EmptyState, Modal, Button, useToastStore } from '@shared'
+import { Skeleton, EmptyState, Modal, Button, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 import { formatTime, dutyTime } from '../lib/format'
 import { enqueueClockEvent, drainClockQueue } from '../lib/clockQueue'
@@ -209,6 +209,7 @@ export default function ClockScreen() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
+      <ErrorBoundary level="tile">
       <motion.div
         className="flex-1 flex flex-col items-center justify-center p-6"
         initial="hidden"
@@ -347,6 +348,7 @@ export default function ClockScreen() {
           </div>
         </div>
       </Modal>
+      </ErrorBoundary>
     </div>
   )
 }

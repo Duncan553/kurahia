@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Drawer, Modal, Skeleton, EmptyState, useToastStore } from '@shared'
+import { Drawer, Modal, Skeleton, EmptyState, useToastStore, ErrorBoundary } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 import { formatTime, formatDayLabel, todayKey, toDateKey } from '../lib/format'
@@ -73,6 +73,7 @@ export default function ShiftScreen() {
     queryKey: ['shifts'],
     queryFn: () => api.get<Shift[]>('/hr/shifts').then((r) => r.data),
     staleTime: 60_000,
+    refetchInterval: 60_000,
   })
 
   const { data: profiles } = useQuery<Profile[]>({
@@ -138,7 +139,7 @@ export default function ShiftScreen() {
     return (
       <motion.div variants={itemVariants} whileHover={{ y: -2 }} className={[
         'rounded-xl border px-4 py-3 flex items-center gap-3',
-        cancelled ? 'glass-card bg-white/3 opacity-70' : 'glass-card bg-transparent',
+        cancelled ? 'glass-card opacity-80' : 'glass-card',
       ].join(' ')}>
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-semibold text-[#f9dcd5] ${cancelled ? 'line-through' : ''}`}>
@@ -167,6 +168,7 @@ export default function ShiftScreen() {
 
   return (
     <RequireRole minLevel={5}>
+      <ErrorBoundary level="tile">
       <motion.div
         className="p-4 max-w-3xl mx-auto space-y-4"
         initial={{ opacity: 0, y: 12 }}
@@ -382,6 +384,7 @@ export default function ShiftScreen() {
           </div>
         </div>
       </Modal>
+      </ErrorBoundary>
     </RequireRole>
   )
 }

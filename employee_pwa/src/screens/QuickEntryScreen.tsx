@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { Select, useToastStore, Button } from '@shared'
+import { Select, useToastStore, Button, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 
 interface InventoryItem {
@@ -178,6 +178,7 @@ export default function QuickEntryScreen() {
 
   return (
     <div className="p-4 max-w-3xl mx-auto space-y-5">
+      <ErrorBoundary level="tile">
 
       <div>
         <h1 className="text-xl font-bold text-[#f9dcd5]">Quick Entry</h1>
@@ -235,6 +236,7 @@ export default function QuickEntryScreen() {
           />
         )
       )}
+      </ErrorBoundary>
     </div>
   )
 }

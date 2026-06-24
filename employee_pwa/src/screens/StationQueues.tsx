@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useToastStore, Button } from '@shared'
+import { useToastStore, Button, ErrorBoundary } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 import { playOrderAlert, isMuted, setMuted as setAudioMuted } from '../lib/audio'
@@ -508,6 +508,7 @@ function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
 
   return (
     <div className="min-h-screen text-[#f9dcd5]">
+      <ErrorBoundary level="tile">
       <AudioEnableSplash station={station} />
 
       {/* ── Header bar (Stitch design: station name + badge + tabs) ─────── */}
@@ -568,6 +569,7 @@ function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
         ? <GlassQueueView station={station} onCount={setCount} />
         : <div className="p-5"><StockBoard /></div>
       }
+      </ErrorBoundary>
     </div>
   )
 }

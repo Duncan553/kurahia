@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Select, Skeleton, EmptyState, StatusBadge, useToastStore, Button } from '@shared'
+import { Select, Skeleton, EmptyState, StatusBadge, useToastStore, Button, ErrorBoundary } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
@@ -61,6 +61,7 @@ export default function PurchaseRequestScreen() {
   const { data: history, isError: historyError } = useQuery<PurchaseRequest[]>({
     queryKey: ['purchase-requests'],
     queryFn: () => api.get<PurchaseRequest[]>('/inventory/purchase-requests').then((r) => r.data),
+    refetchInterval: 60_000,
   })
 
   const itemOpts = (items ?? []).map((i) => ({ value: i.id, label: `${i.name} (${i.unit})` }))
@@ -98,6 +99,7 @@ export default function PurchaseRequestScreen() {
 
   return (
     <RequireRole minLevel={5}>
+      <ErrorBoundary level="tile">
       <div className="p-4 max-w-3xl mx-auto space-y-6">
 
         <div>
@@ -224,6 +226,7 @@ export default function PurchaseRequestScreen() {
         </div>
 
       </div>
+      </ErrorBoundary>
     </RequireRole>
   )
 }

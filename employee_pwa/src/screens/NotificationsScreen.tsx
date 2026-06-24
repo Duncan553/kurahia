@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Skeleton, EmptyState, useToastStore } from '@shared'
+import { Skeleton, EmptyState, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 import { timeAgo } from '../lib/format'
 import { routeFor } from '../lib/notificationRoutes'
@@ -121,46 +121,48 @@ export default function NotificationsScreen() {
 
   // ── SUCCESS ──────────────────────────────────────────────────────────────────
   return (
-    <motion.div
-      className="divide-y divide-white/10"
-      initial="hidden"
-      animate="visible"
-      variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-    >
-      {notifications.map((notif) => {
-        const isUnread = !notif.read_at
-        const isGrayed = grayedIds.has(notif.id)
-        return (
-          <motion.button
-            key={notif.id}
-            variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
-            onClick={() => handleTap(notif)}
-            disabled={isGrayed}
-            className={[
-              'w-full text-left px-4 py-4 flex gap-3 items-start transition-colors',
-              'hover:bg-white/5 active:bg-white/8',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark',
-              'disabled:opacity-50 disabled:cursor-wait',
-            ].join(' ')}
-          >
-            {/* Unread dot */}
-            <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-[#fa5c29]"
-              style={{ opacity: isUnread ? 1 : 0 }}
-              aria-hidden="true"
-            />
-            <div className="flex-1 min-w-0">
-              <p className={['text-sm truncate', isUnread ? 'font-semibold text-[#f9dcd5]' : 'text-ink-secondary'].join(' ')}>
-                {notif.subject}
-              </p>
-              <p className="text-xs text-ink-tertiary mt-0.5 line-clamp-2">{notif.body}</p>
-              {notif.sent_at && (
-                <p className="text-[10px] text-ink-tertiary/60 mt-1">{timeAgo(notif.sent_at)}</p>
-              )}
-            </div>
-          </motion.button>
-        )
-      })}
-    </motion.div>
+    <ErrorBoundary level="tile">
+      <motion.div
+        className="divide-y divide-white/10"
+        initial="hidden"
+        animate="visible"
+        variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+      >
+        {notifications.map((notif) => {
+          const isUnread = !notif.read_at
+          const isGrayed = grayedIds.has(notif.id)
+          return (
+            <motion.button
+              key={notif.id}
+              variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              onClick={() => handleTap(notif)}
+              disabled={isGrayed}
+              className={[
+                'w-full text-left px-4 py-4 flex gap-3 items-start transition-colors',
+                'hover:bg-white/5 active:bg-white/8',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark',
+                'disabled:opacity-50 disabled:cursor-wait',
+              ].join(' ')}
+            >
+              {/* Unread dot */}
+              <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-[#fa5c29]"
+                style={{ opacity: isUnread ? 1 : 0 }}
+                aria-hidden="true"
+              />
+              <div className="flex-1 min-w-0">
+                <p className={['text-sm truncate', isUnread ? 'font-semibold text-[#f9dcd5]' : 'text-ink-secondary'].join(' ')}>
+                  {notif.subject}
+                </p>
+                <p className="text-xs text-ink-tertiary mt-0.5 line-clamp-2">{notif.body}</p>
+                {notif.sent_at && (
+                  <p className="text-[10px] text-ink-tertiary/60 mt-1">{timeAgo(notif.sent_at)}</p>
+                )}
+              </div>
+            </motion.button>
+          )
+        })}
+      </motion.div>
+    </ErrorBoundary>
   )
 }

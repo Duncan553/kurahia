@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Skeleton, EmptyState, StatusBadge } from '@shared'
+import { Skeleton, EmptyState, StatusBadge, ErrorBoundary } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
 import { formatTime, toDateKey, todayKey } from '../lib/format'
@@ -75,6 +75,7 @@ export default function ScheduleScreen() {
   const { data: shifts, isLoading, isError, refetch, dataUpdatedAt } = useQuery<Shift[]>({
     queryKey: ['shifts'],
     queryFn: () => api.get<Shift[]>('/hr/shifts').then((r) => r.data),
+    refetchInterval: 60_000,
   })
 
   // Group shifts by Nairobi date key
@@ -179,6 +180,7 @@ export default function ScheduleScreen() {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
+      <ErrorBoundary level="tile">
       {/* Pull-to-refresh indicator */}
       {pullProgress > 0 && (
         <div
@@ -324,6 +326,7 @@ export default function ScheduleScreen() {
           </div>
         </motion.div>
       </motion.div>
+      </ErrorBoundary>
     </div>
   )
 }
