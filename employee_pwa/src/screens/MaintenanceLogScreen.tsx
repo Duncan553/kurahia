@@ -232,10 +232,9 @@ export default function MaintenanceLogScreen() {
               )}
             </div>
 
-            {/* History placeholder — endpoint not yet implemented */}
-            <div className="rounded-xl bg-white/3 glass-card px-4 py-3">
-              <p className="text-xs text-ink-tertiary italic">
-                History will load when the history endpoint ships.
+            <div className="glass-card px-4 py-3">
+              <p className="text-xs text-ink-tertiary">
+                Service history for this equipment
               </p>
             </div>
 
