@@ -452,6 +452,7 @@ function PendingApprovalsTile() {
 
   return (
     <TileCard title="Purchase Approvals" href="/purchase-approvals">
+      <p className="text-[10px] text-ink-tertiary">Restock requests waiting for your approval</p>
       <p className={`text-3xl font-bold tabular-nums ${pending.length === 0 ? 'text-ink-tertiary' : 'text-status-pending'}`}>
         {pending.length}
       </p>
@@ -490,6 +491,7 @@ function BudgetBurnTile() {
 
   return (
     <TileCard title="Budget Burn" href="/finance">
+      <p className="text-[10px] text-ink-tertiary">How much of the monthly budget each department has spent</p>
       {rows.length === 0 ? (
         <p className="text-xs text-ink-tertiary">No budgets set — go to Finance to configure.</p>
       ) : (
@@ -642,6 +644,7 @@ function AlertsTile() {
   const count = data!.length
   return (
     <TileCard title="Judge Alerts" href="/alerts">
+      <p className="text-[10px] text-ink-tertiary">Suspicious activity the system detected automatically</p>
       <p className={`text-3xl font-bold tabular-nums ${alertCountColor(count)}`}>{count}</p>
       {count === 0 ? (
         <p className="text-xs text-ink-tertiary">No open alerts</p>
@@ -672,6 +675,7 @@ function LowStockTile() {
   const lowItems = data!.items.filter(i => i.is_low).slice(0, 3).map(i => i.name)
   return (
     <TileCard title="Low Stock">
+      <p className="text-[10px] text-ink-tertiary">Items running low that may need reordering</p>
       <p className={`text-3xl font-bold tabular-nums ${low === 0 ? 'text-status-paid' : 'text-status-failed'}`}>{low}</p>
       {low === 0 ? (
         <p className="text-xs text-ink-tertiary">All {data!.total_skus} SKUs stocked</p>
@@ -693,6 +697,7 @@ function FinanceTile() {
   const { reconciliation_status, open_shortfalls, unmatched_mpesa } = data!
   return (
     <TileCard title="Financial Health" href="/finance">
+      <p className="text-[10px] text-ink-tertiary">Whether cash, M-Pesa, and card payments all match up</p>
       <StatusBadge status={reconBadge(reconciliation_status)} />
       <div className="text-xs text-ink-tertiary space-y-0.5 mt-1">
         <p>Shortfalls: <span className={open_shortfalls > 0 ? 'text-status-failed font-semibold' : ''}>{open_shortfalls}</span></p>
@@ -714,6 +719,7 @@ function FeedbackTile() {
   const commentCount = data!.recent_comments.length
   return (
     <TileCard title="Feedback Score">
+      <p className="text-[10px] text-ink-tertiary">Average guest rating from feedback forms</p>
       <p className={`text-3xl font-bold tabular-nums ${avg ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
         {formatAvg(avg)}
       </p>
@@ -737,6 +743,7 @@ function SuggestionsTile() {
   const total      = newMgmt + newPrivate
   return (
     <TileCard title="Suggestions">
+      <p className="text-[10px] text-ink-tertiary">Ideas and requests from staff</p>
       <p className={`text-3xl font-bold tabular-nums ${total === 0 ? 'text-ink-tertiary' : 'text-ink-primary'}`}>
         {total}
       </p>
@@ -757,6 +764,7 @@ function EquipmentTile() {
   const inMx = data!.in_maintenance.length
   return (
     <TileCard title="Equipment">
+      <p className="text-[10px] text-ink-tertiary">Machines and tools that need servicing or repair</p>
       <p className={`text-3xl font-bold tabular-nums ${due.length > 0 ? 'text-status-pending' : 'text-status-paid'}`}>
         {due.length}
       </p>

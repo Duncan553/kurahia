@@ -187,6 +187,16 @@ function VillaIcon() {
   </svg>
 }
 
+// Housekeeping: sparkle
+function HousekeepingIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 2l1.2 2.4L14 5l-2 2 .5 3L10 8.5 7.5 10l.5-3-2-2 2.8-.6L10 2z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 11v7M7 14h6" stroke="currentColor" strokeWidth="1.5"
+      strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+}
+
 // ── Department helper ──────────────────────────────────────────────────────────
 
 function deptIs(dept: string | null, ...keywords: string[]): boolean {
@@ -317,6 +327,15 @@ const NAV_ITEMS: NavItem[] = [
     Icon: VillaIcon,
     visible: (level, dept) =>
       deptIs(dept, 'villa', 'housekeep') || (level >= 3 && level <= 4),
+  },
+
+  // ── Housekeeping: villa/housekeeping dept (L1+) + managers (L5+) ──────────────
+  {
+    id: 'housekeeping',
+    path: '/housekeeping',
+    label: 'Cleaning',
+    Icon: HousekeepingIcon,
+    visible: (level, dept) => level >= 5 || deptIs(dept, 'villa', 'housekeep'),
   },
 
   // ── Events: gate staff + managers (level 3+) ─────────────────────────────────

@@ -515,9 +515,12 @@ function StationBoard({ station }: { station: 'KITCHEN' | 'BAR' }) {
         <div className="flex items-center justify-between">
           {/* Left: station name + active orders badge (HERO element) */}
           <div className="flex items-center gap-3">
-            <h1 className="text-base font-bold text-[#f9dcd5]">
-              {stationName}
-            </h1>
+            <div>
+              <h1 className="text-base font-bold text-[#f9dcd5]">
+                {stationName}
+              </h1>
+              <p className="text-[10px] text-ink-tertiary">Orders waiting to be prepared</p>
+            </div>
             {count > 0 && (
               <span className="inline-flex items-center gap-2 bg-[#fa5c29]/15
                 rounded-full px-4 py-1.5 text-sm font-bold text-[#fa5c29]">

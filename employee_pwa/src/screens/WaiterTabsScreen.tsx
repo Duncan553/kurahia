@@ -125,6 +125,7 @@ export default function WaiterTabsScreen() {
       )}
 
       {/* Wristband redemption — order against the guest's KSh 3,000 gate credit */}
+      <p className="text-[10px] text-ink-tertiary mb-1">Type the guest's wristband number to charge their tab</p>
       <div className="flex gap-2 mb-6">
         <input
           type="number" min="1" inputMode="numeric"

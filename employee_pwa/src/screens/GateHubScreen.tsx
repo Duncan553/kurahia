@@ -46,17 +46,20 @@ function StatsBar({ stats }: { stats: Stats | undefined }) {
     { label: 'Entry Revenue', value: stats ? kes(stats.total_entry_fees) : '—' },
   ]
   return (
-    <motion.div className="grid grid-cols-3 gap-3 mb-4"
-      initial="hidden" animate="visible" variants={stagger}>
-      {items.map(({ label, value }) => (
-        <motion.div key={label} variants={fadeIn}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="glass-card rounded-2xl p-3 text-center">
-          <p className="font-bold tabular-nums text-ink-secondary text-base">{value}</p>
-          <p className="text-[10px] text-ink-tertiary uppercase tracking-wide mt-0.5">{label}</p>
-        </motion.div>
-      ))}
-    </motion.div>
+    <>
+      <p className="text-[10px] text-ink-tertiary mb-2">How many guests entered today</p>
+      <motion.div className="grid grid-cols-3 gap-3 mb-4"
+        initial="hidden" animate="visible" variants={stagger}>
+        {items.map(({ label, value }) => (
+          <motion.div key={label} variants={fadeIn}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="glass-card rounded-2xl p-3 text-center">
+            <p className="font-bold tabular-nums text-ink-secondary text-base">{value}</p>
+            <p className="text-[10px] text-ink-tertiary uppercase tracking-wide mt-0.5">{label}</p>
+          </motion.div>
+        ))}
+      </motion.div>
+    </>
   )
 }
 
@@ -91,6 +94,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">Issue Band</p>
+        <p className="text-[10px] text-ink-tertiary mt-0.5">Give the guest a wristband — KSh 3,000 entry fee goes on as credit</p>
         <p className="text-sm font-bold tabular-nums text-ink-secondary">{kes(ENTRY_FEE)}</p>
       </div>
 

@@ -348,6 +348,7 @@ export default function InventoryCountScreen() {
               <p className="text-sm text-[#aa8980] mt-1">
                 Live stock metrics and recent movements
               </p>
+              <p className="text-[10px] text-ink-tertiary mt-0.5">Quick look at stock health across all departments</p>
             </div>
             {/* Right: Stock Count button + Add item button */}
             <div className="flex items-center gap-2 shrink-0">
@@ -418,7 +419,7 @@ export default function InventoryCountScreen() {
             {([
               { key: 'overview' as Tab, label: 'Overview' },
               { key: 'count' as Tab, label: 'Count' },
-              { key: 'variance' as Tab, label: 'Variance Report' },
+              { key: 'variance' as Tab, label: 'Variance' },
             ]).map((t) => (
               <button
                 key={t.key}
@@ -639,6 +640,7 @@ export default function InventoryCountScreen() {
               ══════════════════════════════════════════════════════════ */}
           {tab === 'count' && (
             <>
+              <p className="text-[10px] text-ink-tertiary mb-4">Enter what you physically counted — the system calculates the difference</p>
               {/* Owner must select dept first */}
               {isOwner && !selectedDeptId ? (
                 <motion.div variants={fadeIn} className="mb-4">
@@ -793,6 +795,7 @@ export default function InventoryCountScreen() {
               ══════════════════════════════════════════════════════════ */}
           {tab === 'variance' && (
             <div className="space-y-4">
+              <p className="text-[10px] text-ink-tertiary">Compare what should be there vs what's actually there — flags waste or theft</p>
               {isOwner && !selectedDeptId && (
                 <motion.div variants={fadeIn} className="mb-4">
                   <p className="text-[10px] uppercase tracking-widest text-[#aa8980] font-medium mb-2">Department</p>

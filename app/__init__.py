@@ -192,6 +192,9 @@ def create_app(config_name: str = None) -> Flask:
     from app.housekeeping import housekeeping_bp
     app.register_blueprint(housekeeping_bp)
 
+    from app.reports import pdf_reports_bp
+    app.register_blueprint(pdf_reports_bp)
+
     # Health check — useful for load balancers and deploy scripts
     @app.get("/health")
     def health():

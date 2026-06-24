@@ -243,9 +243,145 @@ def run_weekly(period_start: datetime, period_end: datetime) -> int:
     return alerts_fired
 
 
+def _check_portion_variance(period_start: datetime, period_end: datetime) -> int:
+    """
+    Compare EXPECTED ingredient usage (from recipes × orders served) against
+    ACTUAL stock movements (SALE/CONSUMPTION reasons) for the same period.
+    Flags ingredients where actual usage exceeds expected by >15%.
+
+    Why it matters: consistent over-portioning, unrecorded waste, or theft all
+    show up as actual > expected. The kitchen thinks they're using the right
+    amount, but stock disappears faster than recipes predict.
+    """
+    from app.models.recipe_line import RecipeLine
+    from app.models.order_item import OrderItem, OrderItemStatus
+    from app.models.menu_item import MenuItem
+
+    # Default thresholds — configurable via JudgeBaseline in the future
+    MEDIUM_THRESHOLD = Decimal("15")  # percent over expected
+    HIGH_THRESHOLD   = Decimal("25")
+
+    # All active ingredients that appear in at least one recipe
+    ingredients = db.session.query(InventoryItem).filter_by(
+        is_active=True, is_staff_food=False
+    ).all()
+
+    alerts_fired = 0
+    for ing in ingredients:
+        # Get all active recipe lines for this ingredient
+        recipe_lines = db.session.query(RecipeLine).filter_by(
+            inventory_item_id=ing.id, is_active=True
+        ).all()
+        if not recipe_lines:
+            continue
+
+        # EXPECTED: sum of (order_item.quantity × recipe_line.quantity) for served orders
+        expected_qty = Decimal("0")
+        for rl in recipe_lines:
+            served_qty = db.session.query(func.sum(OrderItem.quantity)).filter(
+                OrderItem.menu_item_id == rl.menu_item_id,
+                OrderItem.status == OrderItemStatus.SERVED.value,
+                OrderItem.served_at >= period_start,
+                OrderItem.served_at <= period_end,
+            ).scalar()
+            if served_qty:
+                expected_qty += Decimal(str(served_qty)) * rl.quantity
+
+        if expected_qty == Decimal("0"):
+            continue
+
+        # ACTUAL: sum of consumption movements (SALE, SPOILAGE, STAFF_MEAL, etc.)
+        actual_qty = _get_period_consumption(ing.id, period_start, period_end)
+        if actual_qty == Decimal("0"):
+            continue
+
+        # Variance: how much MORE was actually used vs what recipes predicted
+        variance_pct = (actual_qty - expected_qty) / expected_qty * 100
+
+        # Only flag OVER-usage (actual > expected). Under-usage is a different signal.
+        if variance_pct <= MEDIUM_THRESHOLD:
+            continue
+
+        severity = AlertSeverity.HIGH if variance_pct > HIGH_THRESHOLD else AlertSeverity.MEDIUM
+        desc = (
+            f"{ing.name}: expected {expected_qty:.2f}{ing.unit}, "
+            f"actually used {actual_qty:.2f}{ing.unit} "
+            f"({variance_pct:.0f}% over). "
+            f"Possible over-portioning, waste, or theft."
+        )
+        _fire_alert(ing.id, "PORTION_VARIANCE", severity, desc, period_start, period_end)
+        alerts_fired += 1
+
+    return alerts_fired
+
+
+def _check_ghost_tickets(period_start: datetime, period_end: datetime) -> int:
+    """
+    Ghost ticket: food was MADE (reached READY) then CANCELLED — someone ate
+    without paying. Grouped by the staff member who cancelled; fires if same
+    person cancels ready items more than 2 times in the period.
+
+    The cancel actor is tracked via the audit log (action='order_item.cancel')
+    because OrderItem doesn't store cancelled_by_id directly.
+
+    Why it matters: a waiter who repeatedly cancels items after the kitchen
+    already prepared them is either stealing food or covering for someone who is.
+    """
+    from app.models.order_item import OrderItem, OrderItemStatus
+
+    # Step 1: find all order items that were READY then CANCELLED in this period
+    ghost_items = db.session.query(OrderItem).filter(
+        OrderItem.status == OrderItemStatus.CANCELLED.value,
+        OrderItem.ready_at.isnot(None),           # food was prepared
+        OrderItem.cancelled_at >= period_start,
+        OrderItem.cancelled_at <= period_end,
+    ).all()
+
+    if not ghost_items:
+        return 0
+
+    # Step 2: look up who cancelled each item from the audit log
+    # Audit log entry: action='order_item.cancel', target=order_item.id, actor=username
+    staff_counts = {}   # username → count
+    staff_item_ids = {}  # username → list of order_item IDs (for the alert description)
+    for oi in ghost_items:
+        audit_entry = db.session.query(AuditLog).filter(
+            AuditLog.action == "order_item.cancel",
+            AuditLog.target == oi.id,
+        ).first()
+        if not audit_entry:
+            continue
+        username = audit_entry.actor
+        staff_counts[username] = staff_counts.get(username, 0) + 1
+        staff_item_ids.setdefault(username, []).append(oi.id)
+
+    # Step 3: fire alert for any staff member who cancelled >2 ready items
+    GHOST_THRESHOLD = 2
+    alerts_fired = 0
+    for username, count in staff_counts.items():
+        if count <= GHOST_THRESHOLD:
+            continue
+
+        desc = (
+            f"{username} cancelled {count} items AFTER kitchen marked them ready. "
+            f"Food was made but never paid for."
+        )
+        _fire_alert(
+            item_id=None,
+            alert_type="GHOST_TICKET",
+            severity=AlertSeverity.HIGH,
+            description=desc,
+            period_start=period_start,
+            period_end=period_end,
+        )
+        alerts_fired += 1
+
+    return alerts_fired
+
+
 def run_daily(date: datetime) -> int:
     """
-    Daily job: watch-list items + spoilage spike detection.
+    Daily job: watch-list items + spoilage spike + portion variance + ghost tickets.
     Watch-list items flagged if spoilage exceeds their tighter tolerance.
     """
     from datetime import timedelta
@@ -269,6 +405,12 @@ def run_daily(date: datetime) -> int:
             desc = f"{item.name}: spoilage of {spoilage}{item.unit} today exceeds spike threshold"
             _fire_alert(item.id, "SPOILAGE_SPIKE", AlertSeverity.MEDIUM, desc, period_start, period_end)
             alerts_fired += 1
+
+    # Portion variance: expected vs actual ingredient usage
+    alerts_fired += _check_portion_variance(period_start, period_end)
+
+    # Ghost tickets: food made then cancelled — possible theft
+    alerts_fired += _check_ghost_tickets(period_start, period_end)
 
     if alerts_fired:
         db.session.flush()
