@@ -273,6 +273,7 @@ export default function HousekeepingScreen() {
         <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}>
           <h1 className="text-2xl font-bold font-serif text-[#f9dcd5]">Housekeeping</h1>
           <p className="text-xs text-amber-200/40 mt-0.5">Villa cleaning status &amp; assignments</p>
+          <p className="text-[10px] text-ink-tertiary mt-0.5">Track which villas need cleaning, who's cleaning them, and inspection status</p>
         </motion.div>
 
         {/* Loading skeleton */}

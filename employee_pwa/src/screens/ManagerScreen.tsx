@@ -180,6 +180,7 @@ export default function ManagerScreen() {
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary">Stock Behavior</p>
+                    <p className="text-[10px] text-ink-tertiary">How fast your supplies are being used up</p>
                     <button onClick={() => navigate('/inventory/count')} className="text-[10px] text-[#fa5c29] hover:text-[#ffb59f]">View All →</button>
                   </div>
                   <div className="grid grid-cols-3 gap-4 mb-4">
@@ -251,7 +252,8 @@ export default function ManagerScreen() {
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
-                  <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-3">Budget Burn</p>
+                  <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-1">Budget Burn</p>
+                  <p className="text-[10px] text-ink-tertiary mb-3">How much of the monthly budget each department has spent</p>
                   {budgets.length === 0 ? <p className="text-sm text-ink-tertiary/60">No budgets set</p> : (
                     <div className="space-y-3">
                       {budgets.slice(0, 5).map(r => (
@@ -278,7 +280,8 @@ export default function ManagerScreen() {
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
-                  <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-3">Low Stock</p>
+                  <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-1">Low Stock</p>
+                  <p className="text-[10px] text-ink-tertiary mb-3">Items you need to reorder soon</p>
                   {low.length === 0 ? <p className="text-sm text-status-paid/60">All healthy</p> : (
                     <div className="space-y-2">
                       {low.slice(0, 6).map(i => (

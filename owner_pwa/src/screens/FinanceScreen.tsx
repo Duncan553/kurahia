@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -44,6 +44,26 @@ const PERIODS = Array.from({ length: 3 }, (_, i) => {
   const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
   return d.toISOString().slice(0, 7)
 })
+
+/** Fetch a PDF from the backend using the JWT token, then trigger a browser download. */
+const downloadPdf = async (url: string, filename: string) => {
+  const { useAuthStore } = await import('../stores/authStore')
+  const token = useAuthStore.getState().accessToken
+  const baseURL = import.meta.env.VITE_API_URL as string
+  const res = await fetch(`${baseURL}${url}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: 'Download failed.' }))
+    throw new Error(body.error || 'Download failed.')
+  }
+  const blob = await res.blob()
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
 
 // ── KPI strip ─────────────────────────────────────────────────────────────────
 
@@ -279,6 +299,20 @@ type Section = 'revenue' | 'budget'
 export default function FinanceScreen() {
   const [period, setPeriod] = useState(PERIODS[0])
   const [section, setSection] = useState<Section>('revenue')
+  const [downloading, setDownloading] = useState(false)
+
+  // Download today's daily summary PDF
+  const handleDownloadSummary = useCallback(async () => {
+    const today = new Date().toISOString().slice(0, 10)
+    setDownloading(true)
+    try {
+      await downloadPdf(`/reports/daily-summary?date=${today}`, `daily_summary_${today}.pdf`)
+    } catch (e) {
+      alert((e as Error).message || 'Failed to download summary.')
+    } finally {
+      setDownloading(false)
+    }
+  }, [])
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
@@ -287,18 +321,30 @@ export default function FinanceScreen() {
           <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Finance</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Revenue, expenses, reconciliation summaries</p>
         </div>
-        {/* Period picker */}
-        <label className="sr-only" htmlFor="finance-period">Period</label>
-        <select
-          id="finance-period"
-          value={period}
-          onChange={e => setPeriod(e.target.value)}
-          aria-label="Select period"
-          className="text-xs border border-white/10 bg-transparent rounded-lg px-2 py-1.5
-            text-ink-secondary focus:outline-none focus:ring-2 focus:ring-primary-main"
-        >
-          {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
+        <div className="flex items-center gap-2">
+          {/* Download daily summary PDF */}
+          <button
+            onClick={handleDownloadSummary}
+            disabled={downloading}
+            className="text-xs border border-white/10 bg-transparent rounded-lg px-3 py-1.5
+              text-ink-secondary hover:bg-white/5 transition-colors
+              focus:outline-none focus:ring-2 focus:ring-primary-main disabled:opacity-50"
+          >
+            {downloading ? 'Downloading...' : 'Download Daily Summary'}
+          </button>
+          {/* Period picker */}
+          <label className="sr-only" htmlFor="finance-period">Period</label>
+          <select
+            id="finance-period"
+            value={period}
+            onChange={e => setPeriod(e.target.value)}
+            aria-label="Select period"
+            className="text-xs border border-white/10 bg-transparent rounded-lg px-2 py-1.5
+              text-ink-secondary focus:outline-none focus:ring-2 focus:ring-primary-main"
+          >
+            {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* Section tabs */}

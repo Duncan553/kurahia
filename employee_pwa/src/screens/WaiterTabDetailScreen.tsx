@@ -31,6 +31,26 @@ const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
 const METHODS = ['CASH', 'MPESA', 'CARD', 'BANK_TRANSFER'] as const
 
+/** Fetch a PDF from the backend using the JWT token, then trigger a browser download. */
+const downloadPdf = async (url: string, filename: string) => {
+  const { useAuthStore } = await import('../stores/authStore')
+  const token = useAuthStore.getState().accessToken
+  const baseURL = import.meta.env.VITE_API_URL as string
+  const res = await fetch(`${baseURL}${url}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: 'Download failed.' }))
+    throw new Error(body.error || 'Download failed.')
+  }
+  const blob = await res.blob()
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
 function StationBadge({ station }: { station: string }) {
   const label = station === 'KITCHEN' ? 'Kitchen' : station === 'BAR' ? 'Bar' : 'Self-serve'
   const cls   = station === 'KITCHEN'
@@ -60,6 +80,8 @@ export default function WaiterTabDetailScreen() {
   const [pay, setPay] = useState({ method: 'CASH' as string, amount: '' })
   const [idem, setIdem] = useState(() => crypto.randomUUID())
   const [cancelId, setCancelId] = useState<string | null>(null)
+  const [receiptPhone, setReceiptPhone] = useState('')
+  const [showReceiptModal, setShowReceiptModal] = useState(false)
 
   // ── Data ────────────────────────────────────────────────────────────────
 
@@ -155,6 +177,18 @@ export default function WaiterTabDetailScreen() {
       qc.invalidateQueries({ queryKey: ['my-tabs'] })
       addToast({ type: 'success', message: 'Table closed.' })
       navigate('/pos/tabs')
+    },
+    onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
+  })
+
+  const receiptMut = useMutation({
+    mutationFn: () =>
+      api.post('/notifications/send-receipt', { tab_id: tabId, guest_phone: receiptPhone }),
+    onSuccess: (res) => {
+      const ch = res.data?.channel ?? 'unknown'
+      addToast({ type: 'success', message: `Receipt sent via ${ch}.` })
+      setShowReceiptModal(false)
+      setReceiptPhone('')
     },
     onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
@@ -494,7 +528,24 @@ export default function WaiterTabDetailScreen() {
         )}
 
         {tab?.status === 'CLOSED' && (
-          <p className="text-center text-sm text-status-paid font-semibold py-2">✓ Table closed</p>
+          <div className="space-y-3">
+            <p className="text-center text-sm text-status-paid font-semibold py-2">✓ Table closed</p>
+            <button
+              onClick={() => {
+                const ref = tab.reference || `tab_${tabId?.slice(0, 8)}`
+                downloadPdf(`/reports/receipt/${tabId}`, `receipt_${ref.replace(/ /g, '_')}.pdf`)
+                  .catch(e => addToast({ type: 'error', message: (e as Error).message }))
+              }}
+              className="w-full py-2.5 rounded-xl glass-card text-sm font-semibold text-[#f9dcd5]
+                hover:bg-white/5 transition-colors border border-white/10"
+            >
+              Print Receipt (PDF)
+            </button>
+            <Button variant="ghost" size="md" className="w-full"
+              onClick={() => setShowReceiptModal(true)}>
+              Send Receipt via WhatsApp
+            </Button>
+          </div>
         )}
       </div>
 
@@ -533,6 +584,38 @@ export default function WaiterTabDetailScreen() {
           </div>
         </div>
       )}
+    </Modal>
+  )
+
+  // ── Receipt modal ─────────────────────────────────────────────────────
+
+  const receiptModal = (
+    <Modal open={showReceiptModal} onClose={() => setShowReceiptModal(false)} title="Send Receipt">
+      <div className="space-y-4">
+        <p className="text-sm text-ink-secondary">
+          Enter the guest&apos;s phone number to send the receipt via WhatsApp (or SMS).
+        </p>
+        <input
+          type="tel" inputMode="tel"
+          placeholder="e.g. 0712345678"
+          value={receiptPhone}
+          onChange={e => setReceiptPhone(e.target.value)}
+          className="w-full rounded-xl glass-card bg-transparent px-4 py-3
+            text-base text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
+        />
+        <div className="flex gap-2">
+          <Button variant="ghost" size="md" className="flex-1"
+            onClick={() => { setShowReceiptModal(false); setReceiptPhone('') }}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="md" className="flex-1"
+            loading={receiptMut.isPending}
+            onClick={() => receiptMut.mutate()}
+            disabled={!receiptPhone.trim()}>
+            Send Receipt
+          </Button>
+        </div>
+      </div>
     </Modal>
   )
 
@@ -621,6 +704,7 @@ export default function WaiterTabDetailScreen() {
       </div>
 
       {cancelModal}
+      {receiptModal}
     </div>
   )
 }

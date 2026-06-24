@@ -152,6 +152,7 @@ export default function HeadChefScreen() {
                   <Glass>
                     <div className="p-5">
                       <SectionLabel>Stock Overview</SectionLabel>
+                      <p className="text-[10px] text-ink-tertiary mb-2">What ingredients you have right now</p>
 
                       {/* Hero numbers row — FOCAL POINT of this screen */}
                       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -232,6 +233,7 @@ export default function HeadChefScreen() {
                     <div className="p-5">
                       <div className="flex items-center justify-between mb-5">
                         <SectionLabel>Low Stock Alerts</SectionLabel>
+                        <p className="text-[10px] text-ink-tertiary -mt-1 mb-1">These items are running out — tell the manager</p>
                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg ${
                           low.length > 0
                             ? 'bg-status-failed/15 text-status-failed'
@@ -309,6 +311,7 @@ export default function HeadChefScreen() {
                     <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
                       Recipes
                     </p>
+                    <p className="text-[10px] text-ink-tertiary mb-1">What goes into each dish and how much</p>
                     <p className="text-sm text-[#f9dcd5] mb-1">
                       Enter &amp; edit recipes per dish
                     </p>
@@ -341,6 +344,7 @@ export default function HeadChefScreen() {
                     <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
                       Variance
                     </p>
+                    <p className="text-[10px] text-ink-tertiary mb-1">How much more (or less) ingredients are being used vs what recipes say</p>
                     <p className="text-sm text-[#f9dcd5] mb-1">
                       Expected vs actual use
                     </p>
