@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Skeleton, EmptyState, StatusBadge, useToastStore } from '@shared'
+import { Skeleton, EmptyState, StatusBadge, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 import { useAuthStore } from '../stores/authStore'
 import { formatDateTime } from '../lib/format'
@@ -44,6 +44,7 @@ export default function ConductScreen() {
   const rulesQ = useQuery<ConductRule[]>({
     queryKey: ['conduct', 'rules'],
     queryFn: () => api.get<ConductRule[]>('/conduct/rules').then((r) => r.data),
+    refetchInterval: 60_000,
   })
   const sigsQ = useQuery<ConductSignature[]>({
     queryKey: ['conduct', 'signatures', userId],
@@ -149,6 +150,7 @@ export default function ConductScreen() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
     >
+      <ErrorBoundary level="tile">
 
       {/* Scroll hint banner — disappears once scrollReady */}
       {!scrollReady && !allSigned && (
@@ -223,6 +225,7 @@ export default function ConductScreen() {
         <div className="h-8" aria-hidden="true" />
         </motion.div>
       </div>
+      </ErrorBoundary>
     </motion.div>
   )
 }

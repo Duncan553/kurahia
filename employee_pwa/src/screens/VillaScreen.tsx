@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, EmptyState, SearchInput, Button, useToastStore } from '@shared'
+import { Skeleton, EmptyState, SearchInput, Button, useToastStore, ErrorBoundary } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 
@@ -44,6 +44,7 @@ export default function VillaScreen() {
     queryKey: ['villa-tabs'],
     queryFn: () => api.get<VillaTab[]>('/tabs?tab_type=VILLA&status=OPEN').then(r => r.data),
     staleTime: 15_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   })
 
@@ -90,6 +91,7 @@ export default function VillaScreen() {
 
   return (
     <div className="min-h-screen p-4 md:p-6">
+      <ErrorBoundary level="tile">
       <motion.div className="max-w-3xl mx-auto space-y-6"
         initial="hidden" animate="visible" variants={stagger}>
 
@@ -279,6 +281,7 @@ export default function VillaScreen() {
         })}
       </div>
       </motion.div>
+      </ErrorBoundary>
     </div>
   )
 }

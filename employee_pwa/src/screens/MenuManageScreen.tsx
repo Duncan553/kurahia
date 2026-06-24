@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Select, Skeleton, useToastStore, Drawer, Combobox, SearchInput } from '@shared'
+import { Button, Select, Skeleton, useToastStore, Drawer, Combobox, SearchInput, ErrorBoundary } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 
@@ -78,6 +78,7 @@ export default function MenuManageScreen() {
     queryFn: () => api.get<MenuItem[]>('/menu/items', {
       params: { include_disabled: 'true', ...(searchQ ? { q: searchQ } : {}) },
     }).then(r => r.data),
+    refetchInterval: 60_000,
   })
   const { data: meta } = useQuery<Meta>({
     queryKey: ['users-meta'],
@@ -274,6 +275,7 @@ export default function MenuManageScreen() {
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
+      <ErrorBoundary level="tile">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-serif text-[#f9dcd5]">Menu &amp; Services</h1>
@@ -626,6 +628,7 @@ export default function MenuManageScreen() {
           </div>
         )}
       </Drawer>
+      </ErrorBoundary>
     </div>
   )
 }

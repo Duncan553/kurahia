@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, Button, useToastStore, SearchInput, Modal } from '@shared'
+import { Skeleton, Button, useToastStore, SearchInput, Modal, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 
 interface MenuItem {
@@ -628,6 +628,7 @@ export default function WaiterTabDetailScreen() {
 
   return (
     <div className="h-full flex flex-col">
+      <ErrorBoundary level="tile">
       {/* Back + header (always visible) */}
       <div className="shrink-0 px-4 py-3 flex items-center gap-3 border-b border-white/10"
         style={{ background: 'rgba(30, 16, 12, 0.85)', backdropFilter: 'blur(12px)' }}>
@@ -705,6 +706,7 @@ export default function WaiterTabDetailScreen() {
 
       {cancelModal}
       {receiptModal}
+      </ErrorBoundary>
     </div>
   )
 }

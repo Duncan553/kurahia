@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { EmptyState, useToastStore } from '@shared'
+import { EmptyState, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 
 // Equipment types that belong to the water activities station
@@ -141,6 +141,7 @@ export default function SafetyCheckScreen() {
     queryKey: ['equipment-list'],
     queryFn: () => api.get<Equipment[]>('/equipment').then((r) => r.data),
     staleTime: 5 * 60_000,
+    refetchInterval: 60_000,
   })
 
   // Filter to water activity types client-side
@@ -246,6 +247,7 @@ export default function SafetyCheckScreen() {
   if (!selectedEq) {
     return (
       <div className="p-4 max-w-3xl mx-auto space-y-5">
+        <ErrorBoundary level="tile">
         <div>
           <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Safety Check</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Equipment safety inspections</p>
@@ -304,6 +306,7 @@ export default function SafetyCheckScreen() {
             </svg>
           </button>
         ))}
+        </ErrorBoundary>
       </div>
     )
   }
@@ -311,6 +314,7 @@ export default function SafetyCheckScreen() {
   // ── Checklist view (equipment selected) ───────────────────────────────────
   return (
     <div className="p-4 max-w-3xl mx-auto space-y-5">
+      <ErrorBoundary level="tile">
 
       {/* Header + back button */}
       <div className="flex items-start gap-3">
@@ -408,6 +412,7 @@ export default function SafetyCheckScreen() {
           </button>
         </>
       )}
+      </ErrorBoundary>
     </div>
   )
 }

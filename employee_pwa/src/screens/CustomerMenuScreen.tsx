@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 
 interface MenuItem {
@@ -33,6 +34,7 @@ export default function CustomerMenuScreen() {
 
   return (
     <div className="min-h-screen p-6 md:p-10">
+      <ErrorBoundary level="tile">
       <div className="max-w-4xl mx-auto">
 
         {/* Header */}
@@ -108,6 +110,7 @@ export default function CustomerMenuScreen() {
           </motion.button>
         </div>
       </div>
+      </ErrorBoundary>
     </div>
   )
 }

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Skeleton, EmptyState, Button, useToastStore } from '@shared'
+import { Skeleton, EmptyState, Button, useToastStore, ErrorBoundary } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 
@@ -98,6 +98,7 @@ export default function ServicePayScreen() {
 
   return (
     <div className="min-h-screen p-4 md:p-6">
+      <ErrorBoundary level="tile">
       <div className="max-w-3xl mx-auto">
 
         {/* Header */}
@@ -292,6 +293,7 @@ export default function ServicePayScreen() {
         )}
 
       </div>
+      </ErrorBoundary>
     </div>
   )
 }

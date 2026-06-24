@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Drawer, Modal, Skeleton, EmptyState, StatusBadge, useToastStore } from '@shared'
+import { Drawer, Modal, Skeleton, EmptyState, StatusBadge, useToastStore, ErrorBoundary } from '@shared'
 import type { StatusValue } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
@@ -48,6 +48,7 @@ export default function PurchaseReqScreen() {
     queryKey: ['purchase-requests-manager'],
     queryFn: () => api.get<PurchaseRequest[]>('/inventory/purchase-requests').then((r) => r.data),
     staleTime: 30_000,
+    refetchInterval: 60_000,
   })
 
   const filtered = (requests ?? []).filter((r) => r.status === filter)
@@ -94,6 +95,7 @@ export default function PurchaseReqScreen() {
 
   return (
     <RequireRole minLevel={5}>
+      <ErrorBoundary level="tile">
       <div className="p-4 max-w-3xl mx-auto space-y-4">
 
         <div>
@@ -172,7 +174,7 @@ export default function PurchaseReqScreen() {
                   key={req.id}
                   className={[
                     'rounded-2xl border p-4 space-y-2',
-                    dim ? 'glass-card bg-white/3' : 'glass-card bg-transparent',
+                    dim ? 'glass-card opacity-80' : 'glass-card',
                   ].join(' ')}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -350,6 +352,7 @@ export default function PurchaseReqScreen() {
           )
         })()}
       </Modal>
+      </ErrorBoundary>
     </RequireRole>
   )
 }

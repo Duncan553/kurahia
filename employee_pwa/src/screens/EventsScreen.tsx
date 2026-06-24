@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Skeleton, EmptyState, StatusBadge } from '@shared'
+import { Skeleton, EmptyState, StatusBadge, ErrorBoundary } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
 import { toDateKey, todayKey, formatTime } from '../lib/format'
@@ -77,6 +77,7 @@ export default function EventsScreen() {
   const { data: events, isLoading, isError, refetch } = useQuery<EventItem[]>({
     queryKey: ['events', 'upcoming'],
     queryFn: () => api.get<EventItem[]>('/events/upcoming').then((r) => r.data),
+    refetchInterval: 60_000,
   })
 
   // ── LOADING ──────────────────────────────────────────────────────────────
@@ -158,6 +159,7 @@ export default function EventsScreen() {
       animate="visible"
       variants={stagger}
     >
+      <ErrorBoundary level="tile">
       {/* ── Page header ──────────────────────────────────────────────── */}
       <motion.div variants={fadeIn} transition={{ duration: 0.3 }} className="mb-6">
         <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#f9dcd5] tracking-tight">
@@ -214,6 +216,7 @@ export default function EventsScreen() {
           </div>
         </motion.div>
       )}
+      </ErrorBoundary>
     </motion.div>
   )
 }

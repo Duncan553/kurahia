@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, EmptyState, StatusBadge, useToastStore } from '@shared'
+import { Skeleton, EmptyState, StatusBadge, useToastStore, ErrorBoundary } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 import { timeAgo } from '../lib/format'
@@ -359,6 +359,7 @@ export default function CashReconScreen() {
         .then((r) => r.data),
     enabled: !!selectedProfile,
     staleTime: 0,   // always fresh — money data
+    refetchInterval: 60_000,
   })
 
   function selectProfile(p: Profile) {
@@ -368,6 +369,7 @@ export default function CashReconScreen() {
 
   return (
     <RequireRole minLevel={5}>
+      <ErrorBoundary level="tile">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -485,6 +487,7 @@ export default function CashReconScreen() {
           </p>
         )}
       </motion.div>
+      </ErrorBoundary>
     </RequireRole>
   )
 }

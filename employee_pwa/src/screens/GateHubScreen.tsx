@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Modal, useToastStore } from '@shared'
+import { Modal, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 
 // Gate station hub: issue wristbands + today's stats (bands issued, total fees).
@@ -184,6 +184,7 @@ export default function GateHubScreen() {
 
   return (
     <div className="min-h-screen p-4 md:p-6">
+      <ErrorBoundary level="tile">
       <motion.div className="max-w-3xl mx-auto"
         initial="hidden" animate="visible" variants={stagger}>
 
@@ -216,6 +217,7 @@ export default function GateHubScreen() {
       {/* Stats — secondary, below the action */}
       {!isLoading && <StatsBar stats={stats} />}
       </motion.div>
+      </ErrorBoundary>
     </div>
   )
 }

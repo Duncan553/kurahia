@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Modal, Skeleton, EmptyState, StatusBadge, useToastStore } from '@shared'
+import { Modal, Skeleton, EmptyState, StatusBadge, useToastStore, ErrorBoundary } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 
@@ -54,6 +54,7 @@ export default function LeaveApprovalScreen() {
     queryKey: ['leave-requests'],
     queryFn: () => api.get<LeaveRequest[]>('/hr/leave-requests').then((r) => r.data),
     staleTime: 30_000,
+    refetchInterval: 60_000,
   })
 
   const filtered = (requests ?? []).filter((r) => r.status === filter)
@@ -95,6 +96,7 @@ export default function LeaveApprovalScreen() {
 
   return (
     <RequireRole minLevel={5}>
+      <ErrorBoundary level="tile">
       <motion.div
         className="p-4 max-w-3xl mx-auto space-y-4"
         initial={{ opacity: 0, y: 12 }}
@@ -172,7 +174,7 @@ export default function LeaveApprovalScreen() {
                   whileHover={{ y: -2 }}
                   className={[
                     'rounded-2xl border p-4 space-y-3',
-                    isCancelled ? 'glass-card bg-white/3 opacity-80' : 'glass-card bg-transparent',
+                    isCancelled ? 'glass-card opacity-80' : 'glass-card',
                   ].join(' ')}
                 >
                   {/* Header row */}
@@ -325,6 +327,7 @@ export default function LeaveApprovalScreen() {
           )
         })()}
       </Modal>
+      </ErrorBoundary>
     </RequireRole>
   )
 }

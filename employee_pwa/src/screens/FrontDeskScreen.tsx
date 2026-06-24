@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, EmptyState, StatusBadge, Button, useToastStore } from '@shared'
+import { Skeleton, EmptyState, StatusBadge, Button, useToastStore, ErrorBoundary } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 import { formatTime } from '../lib/format'
@@ -106,6 +106,7 @@ export default function FrontDeskScreen() {
 
   return (
     <RequireRole minLevel={5}>
+      <ErrorBoundary level="tile">
       <div className="min-h-screen p-4 md:p-6">
         <motion.div className="max-w-6xl mx-auto"
           initial="hidden" animate="visible" variants={stagger}>
@@ -374,6 +375,7 @@ export default function FrontDeskScreen() {
         </AnimatePresence>
       </motion.div>
       </div>
+      </ErrorBoundary>
     </RequireRole>
   )
 }
