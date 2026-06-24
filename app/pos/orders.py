@@ -91,7 +91,12 @@ def create_order():
 
         for line in items:
             mi_id = line.get("menu_item_id")
-            qty   = Decimal(str(line.get("quantity", 1)))
+            try:
+                qty = Decimal(str(line.get("quantity", 1)))
+            except Exception:
+                return jsonify({"error": "Quantity must be a valid number."}), 400
+            if qty <= 0 or not qty.is_finite():
+                return jsonify({"error": "Quantity must be a positive number."}), 400
             mi    = db.session.get(MenuItem, mi_id)
             if not mi:
                 return jsonify({"error": f"Menu item '{mi_id}' not found."}), 404

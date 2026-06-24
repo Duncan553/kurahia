@@ -63,7 +63,7 @@ def open_tab():
     actor = db.session.get(User, get_jwt_identity())
     data      = request.get_json(silent=True) or {}
     tab_type  = (data.get("tab_type") or TabType.WALK_IN.value).upper()
-    reference = (data.get("reference") or "").strip() or None
+    reference = (data.get("reference") or "").strip()[:200] or None
 
     if tab_type not in TabType.__members__:
         return jsonify({"error": f"tab_type must be one of {list(TabType.__members__)}."}), 400

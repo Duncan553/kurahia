@@ -115,7 +115,10 @@ def edit_menu_item(item_id):
         if "name" in data:
             item.name = data["name"].strip()
         if "price" in data:
-            item.price = Decimal(str(data["price"]))
+            new_price = Decimal(str(data["price"]))
+            if new_price < 0:
+                return jsonify({"error": "Price cannot be negative."}), 400
+            item.price = new_price
         if "category" in data:
             item.category = data["category"]
         if "prep_station" in data:
