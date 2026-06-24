@@ -52,8 +52,8 @@ def submit_suggestion():
     data  = request.get_json(silent=True) or {}
 
     category = (data.get("category") or "").upper()
-    subject  = (data.get("subject") or "").strip()
-    body     = (data.get("body") or "").strip()
+    subject  = (data.get("subject") or "").strip()[:200]
+    body     = (data.get("body") or "").strip()[:5000]
     idem     = data.get("idempotency_key") or str(uuid.uuid4())
 
     if category not in SuggestionCategory.__members__:

@@ -38,10 +38,10 @@ def record_payment(tab_id):
         return jsonify({"error": "amount is required."}), 400
     try:
         amount = Decimal(str(raw_amt))
-    except InvalidOperation:
-        return jsonify({"error": "amount must be a number."}), 400
-    if amount <= 0:
-        return jsonify({"error": "Payment amount must be greater than zero."}), 400
+    except (InvalidOperation, ValueError):
+        return jsonify({"error": "amount must be a valid number."}), 400
+    if not amount.is_finite() or amount <= 0:
+        return jsonify({"error": "Payment amount must be a positive number."}), 400
 
     # M-Pesa: capture code but do NOT verify (reconciliation is Chunk 5)
     mpesa_code = data.get("mpesa_code") if method == PaymentMethod.MPESA.value else None

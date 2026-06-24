@@ -75,7 +75,10 @@ def create_item():
     name        = (data.get("name") or "").strip()
     unit        = (data.get("unit") or "").strip()
     dept_id     = data.get("department_id")
-    reorder     = data.get("reorder_level", "0")
+    try:
+        reorder = max(0, float(data.get("reorder_level", "0")))
+    except (ValueError, TypeError):
+        return jsonify({"error": "reorder_level must be a non-negative number."}), 400
     watch_list  = bool(data.get("is_watch_list", False))
     staff_food  = bool(data.get("is_staff_food", False))
     tolerance   = data.get("tolerance_percent")
