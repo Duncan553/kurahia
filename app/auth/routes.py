@@ -116,6 +116,11 @@ def login():
 # ── PIN login (tablet / staff) ────────────────────────────────────────────────
 
 @auth_bp.post("/pin-login")
+@limiter.limit(
+    "5 per minute",
+    # Exempt in testing by default — tests opt-in via app.config["TEST_RATELIMIT"] = True
+    exempt_when=lambda: current_app.testing and not current_app.config.get("TEST_RATELIMIT"),
+)
 def pin_login():
     data = request.get_json(silent=True) or {}
     username = data.get("username", "").strip().lower()
@@ -257,6 +262,37 @@ def change_pin():
     db.session.commit()
 
     return jsonify({"message": "PIN updated."}), 200
+
+
+# ── Self-service password change ─────────────────────────────────────────────
+
+@auth_bp.post("/change-password")
+@jwt_required()
+def change_password():
+    """Staff change their own password. Requires current password to confirm identity."""
+    data = request.get_json(silent=True) or {}
+    current_password = data.get("current_password", "")
+    new_password     = data.get("new_password", "")
+
+    if not current_password:
+        return jsonify({"error": "current_password is required."}), 400
+    if len(new_password) < 8:
+        return jsonify({"error": "New password must be at least 8 characters."}), 400
+
+    user = db.session.get(User, get_jwt_identity())
+    ok, msg = check_active_and_unlocked(user)
+    if not ok:
+        return jsonify({"error": msg}), 403
+
+    if not user.check_password(current_password):
+        return jsonify({"error": "Current password is incorrect."}), 401
+
+    with db.session.begin_nested():
+        user.set_password(new_password)
+
+    AuditLog.log(actor=user.username, action="password.changed")
+    db.session.commit()
+    return jsonify({"message": "Password updated."}), 200
 
 
 # ── Kill-switch (deactivate account) ─────────────────────────────────────────

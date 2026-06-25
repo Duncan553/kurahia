@@ -64,11 +64,15 @@ def create_menu_item():
     data = request.get_json(silent=True) or {}
     name         = (data.get("name") or "").strip()
     raw_price    = data.get("price")
-    category     = (data.get("category") or "").strip() or None
+    # Normalize category: strip whitespace + title-case so "mains", "MAINS", "Mains" are identical
+    _raw_cat     = (data.get("category") or "").strip()
+    category     = _raw_cat.title() if _raw_cat else None
     station      = (data.get("prep_station") or PrepStation.NONE.value).upper()
     dept_id      = data.get("department_id")
     description  = data.get("description")
     image_path   = (data.get("image_path") or "").strip() or None
+    allergens    = data.get("allergens")       # optional, comma-separated string
+    dietary_flags = data.get("dietary_flags")  # optional, comma-separated string
 
     if not name or raw_price is None or not dept_id:
         return jsonify({"error": "name, price, and department_id are required."}), 400
@@ -91,7 +95,8 @@ def create_menu_item():
     with db.session.begin_nested():
         item = MenuItem(name=name, price=price, category=category,
                         prep_station=station, department_id=dept_id,
-                        description=description, image_path=image_path)
+                        description=description, image_path=image_path,
+                        allergens=allergens, dietary_flags=dietary_flags)
         db.session.add(item)
 
     AuditLog.log(actor=actor.username, action="menu.item.create", target=name)
@@ -120,13 +125,19 @@ def edit_menu_item(item_id):
                 return jsonify({"error": "Price cannot be negative."}), 400
             item.price = new_price
         if "category" in data:
-            item.category = data["category"]
+            # Same normalization as create: strip + title-case
+            _raw_cat = (data.get("category") or "").strip()
+            item.category = _raw_cat.title() if _raw_cat else None
         if "prep_station" in data:
             item.prep_station = data["prep_station"].upper()
         if "description" in data:
             item.description = data["description"]
         if "image_path" in data:
             item.image_path = data["image_path"]
+        if "allergens" in data:
+            item.allergens = data["allergens"]
+        if "dietary_flags" in data:
+            item.dietary_flags = data["dietary_flags"]
 
     AuditLog.log(actor=actor.username, action="menu.item.edit", target=item.name)
     db.session.commit()
@@ -198,11 +209,27 @@ def list_menu_items():
             "category":      i.category,
             "prep_station":  i.prep_station,
             "department_id": i.department_id,
-            "is_active":     i.is_active,
-            "image_path":    i.image_path,
+            "is_active":      i.is_active,
+            "image_path":     i.image_path,
+            "allergens":      i.allergens,
+            "dietary_flags":  i.dietary_flags,
             **_compute_menu_item_cost_fields(i),
         })
     return jsonify(result), 200
+
+
+@menu_bp.get("/categories")
+@require_active_user
+def list_categories():
+    """Return distinct active menu item categories, sorted, for autocomplete."""
+    from sqlalchemy import distinct
+    rows = (
+        db.session.query(distinct(MenuItem.category))
+        .filter(MenuItem.is_active == True, MenuItem.category.isnot(None))
+        .order_by(MenuItem.category)
+        .all()
+    )
+    return jsonify({"categories": [r[0] for r in rows]}), 200
 
 
 def _compute_menu_item_cost_fields(item: MenuItem) -> dict:

@@ -340,7 +340,7 @@ export default function KioskMenuScreen() {
 
         {!isLoading && !isError && items.length === 0 && (
           <div className="p-8 text-center">
-            <p className="font-serif text-xl text-tea-brown/60 tracking-wide">Menu coming soon</p>
+            <p className="font-serif text-xl text-tea-brown/60 tracking-wide">Menu unavailable — please ask a staff member for assistance.</p>
           </div>
         )}
 

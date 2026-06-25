@@ -26,15 +26,19 @@ class OrderItemStatus(str, enum.Enum):
     READY     = "READY"
     SERVED    = "SERVED"
     CANCELLED = "CANCELLED"
+    REFUNDED  = "REFUNDED"   # manager-only override: reverses charge on a SERVED item
 
 
-# Allowed forward transitions for routed items
+# Allowed forward transitions for routed items.
+# REFUNDED is intentionally absent — it bypasses the normal state machine
+# and is applied directly by the manager refund endpoint.
 VALID_TRANSITIONS = {
     OrderItemStatus.PENDING:  {OrderItemStatus.RECEIVED, OrderItemStatus.CANCELLED},
     OrderItemStatus.RECEIVED: {OrderItemStatus.READY,    OrderItemStatus.CANCELLED},
     OrderItemStatus.READY:    {OrderItemStatus.SERVED, OrderItemStatus.CANCELLED},
-    OrderItemStatus.SERVED:   set(),   # terminal
+    OrderItemStatus.SERVED:   set(),   # terminal (refund via POST /order-items/:id/refund)
     OrderItemStatus.CANCELLED: set(),  # terminal
+    OrderItemStatus.REFUNDED:  set(),  # terminal
 }
 
 

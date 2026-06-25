@@ -187,6 +187,34 @@ function VillaIcon() {
   </svg>
 }
 
+// Calendar: monthly calendar
+function CalendarIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="3" y="4" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M7 2v4M13 2v4M3 9h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="7.5" cy="12.5" r="1" fill="currentColor" />
+    <circle cx="10" cy="12.5" r="1" fill="currentColor" />
+    <circle cx="12.5" cy="12.5" r="1" fill="currentColor" />
+    <circle cx="7.5" cy="15.5" r="1" fill="currentColor" />
+  </svg>
+}
+// Disputes: shield + exclamation
+function DisputesIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 2.5L3.5 5.5v4.5c0 4 2.5 7.5 6.5 8.5 4-1 6.5-4.5 6.5-8.5V5.5L10 2.5z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 8v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="10" cy="13.5" r="0.75" fill="currentColor" />
+  </svg>
+}
+// Performance: bar chart
+function PerformanceIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="3" y="11" width="3" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="8.5" y="7" width="3" height="10" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="14" y="3" width="3" height="14" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+}
 // Housekeeping: sparkle
 function HousekeepingIcon() {
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -194,6 +222,15 @@ function HousekeepingIcon() {
       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M10 11v7M7 14h6" stroke="currentColor" strokeWidth="1.5"
       strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+}
+
+function IncidentIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 3L2 17h16L10 3z" stroke="currentColor" strokeWidth="1.5"
+      strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 9v4M10 14.5v.5" stroke="currentColor" strokeWidth="1.5"
+      strokeLinecap="round"/>
   </svg>
 }
 
@@ -319,14 +356,15 @@ const NAV_ITEMS: NavItem[] = [
     visible: (_level, dept) => deptIs(dept, 'water', 'activit', 'aqua'),
   },
 
-  // ── Villa: villa staff + front desk (level 3-4) ──────────────────────────────
+  // ── Villa: villa staff + front desk/gate only (NOT kitchen/bar dept heads) ───
   {
     id: 'villa',
     path: '/villa',
     label: 'Villa',
     Icon: VillaIcon,
     visible: (level, dept) =>
-      deptIs(dept, 'villa', 'housekeep') || (level >= 3 && level <= 4),
+      deptIs(dept, 'villa', 'housekeep') ||
+      (level >= 3 && level <= 4 && !deptIs(dept, 'kitchen', 'bar')),
   },
 
   // ── Housekeeping: villa/housekeeping dept (L1+) + managers (L5+) ──────────────
@@ -347,28 +385,46 @@ const NAV_ITEMS: NavItem[] = [
     visible: (level) => level >= 3,
   },
 
-  // ── Gate / Front Desk tablet (level 3–4) ────────────────────────────────────
+  // ── Calendar: all staff (personal devices + manager tablets) ─────────────────
+  {
+    id: 'calendar',
+    path: '/calendar',
+    label: 'Calendar',
+    Icon: CalendarIcon,
+    visible: personal,
+  },
+
+  // ── Incidents: all staff can log; manager sees history too ────────────────────
+  {
+    id: 'incidents',
+    path: '/incidents',
+    label: 'Incident',
+    Icon: IncidentIcon,
+    visible: personal,
+  },
+
+  // ── Gate / Front Desk tablet (level 3–4, NOT kitchen/bar dept heads) ────────
   {
     id: 'gate-hub',
     path: '/gate/hub',
     label: 'Gate',
     Icon: GateIcon,
-    visible: (level) => level >= 3 && level <= 4,
+    visible: (level, dept) => level >= 3 && level <= 4 && !deptIs(dept, 'kitchen', 'bar'),
   },
   {
     id: 'checkin',
     path: '/front-desk/checkin',
     label: 'Check-In',
     Icon: CheckInIcon,
-    visible: (level) => level >= 3 && level <= 4,
+    visible: (level, dept) => level >= 3 && level <= 4 && !deptIs(dept, 'kitchen', 'bar'),
   },
-  // Band Lookup — gate tablets only (level 3–4): staff on personal phones don't need this
+  // Band Lookup — gate/front-desk tablets only (level 3–4, NOT kitchen/bar dept heads)
   {
     id: 'band-lookup',
     path: '/gate/band-lookup',
     label: 'Band',
     Icon: BandIcon,
-    visible: (level) => level >= 3 && level < 5,
+    visible: (level, dept) => level >= 3 && level < 5 && !deptIs(dept, 'kitchen', 'bar'),
   },
 
   // ── Manager / Department Head tablet (level 5+) ──────────────────────────────
@@ -399,6 +455,20 @@ const NAV_ITEMS: NavItem[] = [
     path: '/equipment/maintenance',
     label: 'Service',
     Icon: MaintenanceIcon,
+    visible: (level) => level >= 5,
+  },
+  {
+    id: 'disputes',
+    path: '/disputes',
+    label: 'Disputes',
+    Icon: DisputesIcon,
+    visible: (level) => level >= 5,
+  },
+  {
+    id: 'performance',
+    path: '/performance',
+    label: 'Performance',
+    Icon: PerformanceIcon,
     visible: (level) => level >= 5,
   },
   {

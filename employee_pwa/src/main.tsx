@@ -83,6 +83,10 @@ const BarQueueScreen = lazy(() => import('./screens/StationQueues').then(m => ({
 const GateHubScreen = lazy(() => import('./screens/GateHubScreen'))
 const HousekeepingScreen = lazy(() => import('./screens/HousekeepingScreen'))
 const EventsScreen = lazy(() => import('./screens/EventsScreen'))
+const CalendarScreen = lazy(() => import('./screens/CalendarScreen'))
+const DisputesScreen = lazy(() => import('./screens/DisputesScreen'))
+const PerformanceScreen = lazy(() => import('./screens/PerformanceScreen'))
+const IncidentScreen = lazy(() => import('./screens/IncidentScreen'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -121,6 +125,10 @@ const router = createBrowserRouter([
         { path: '/suggestions/new', element: <SuggestionsScreen />   },
         { path: '/leave',           element: <LeaveRequestScreen />  },
         { path: '/absence',         element: <AbsenceNoticeScreen /> },
+        { path: '/calendar',        element: <CalendarScreen />      },
+        { path: '/disputes',        element: <DisputesScreen />      },
+        { path: '/performance',     element: <PerformanceScreen />   },
+        { path: '/incidents',       element: <IncidentScreen />      },
 
         // ── Band lookup: all staff (level 1+) ────────────────────
         { path: '/gate/band-lookup', element: <BandLookupScreen /> },

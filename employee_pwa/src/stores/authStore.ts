@@ -13,9 +13,10 @@ export interface AuthUser {
 interface AuthState {
   user: AuthUser | null
   accessToken: string | null
+  refreshToken: string | null  // long-lived token sent to /auth/refresh
   isAuthenticated: boolean
   setupToken: string | null  // short-lived token from requires_pin_setup flow
-  setAuth: (user: AuthUser, accessToken: string) => void
+  setAuth: (user: AuthUser, accessToken: string, refreshToken: string) => void
   setSetupToken: (token: string) => void
   clearAuth: () => void
 }
@@ -25,17 +26,18 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
       setupToken: null,
 
-      setAuth: (user, accessToken) =>
-        set({ user, accessToken, isAuthenticated: true, setupToken: null }),
+      setAuth: (user, accessToken, refreshToken) =>
+        set({ user, accessToken, refreshToken, isAuthenticated: true, setupToken: null }),
 
       setSetupToken: (setupToken) =>
         set({ setupToken }),
 
       clearAuth: () =>
-        set({ user: null, accessToken: null, isAuthenticated: false, setupToken: null }),
+        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, setupToken: null }),
     }),
     { name: 'kurahia-auth', storage: createJSONStorage(() => sessionStorage) },
   ),

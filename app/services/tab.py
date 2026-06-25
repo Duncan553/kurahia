@@ -33,6 +33,40 @@ def get_tab_balance(tab_id: str) -> Decimal:
     return charges - payments
 
 
+BAND_CREDIT_CEILING_MULTIPLIER = Decimal("2")  # allow up to 2x the entry fee (KSh 6,000)
+
+
+def check_band_credit(tab_id: str, new_charge: Decimal) -> tuple[bool, str]:
+    """
+    For band tabs: block charges that would put the running balance more than
+    2× the entry fee above zero (i.e. the guest would owe more than KSh 6,000).
+    Normal tabs (villa, walk-in) have no ceiling — returns (True, "").
+    Returns (ok, plain-English error message).
+    """
+    from app.models.tab import Tab
+    from app.models.wristband import Wristband
+    from app.services.gate import ENTRY_FEE
+
+    tab = db.session.get(Tab, tab_id)
+    if not tab:
+        return True, ""  # let the main path handle missing tab
+
+    # Only enforce ceiling on band tabs (wristbands), not villa/booking tabs
+    band = db.session.query(Wristband).filter_by(tab_id=tab_id).first()
+    if not band:
+        return True, ""  # not a band tab
+
+    ceiling = ENTRY_FEE * BAND_CREDIT_CEILING_MULTIPLIER  # KSh 6,000
+    current_balance = get_tab_balance(tab_id)
+    if current_balance + new_charge > ceiling:
+        return False, (
+            f"This wristband has reached its spending limit. "
+            f"Current balance: KSh {current_balance}. "
+            f"Ask the guest to add more credit at the gate."
+        )
+    return True, ""
+
+
 def is_tab_closable(tab_id: str) -> tuple[bool, str]:
     """Returns (True, "") or (False, plain-English reason)."""
     balance = get_tab_balance(tab_id)

@@ -393,3 +393,37 @@ def finance_dashboard():
         "no_receipt_purchases": no_receipt_purchases,
         "judge_alerts_open":    open_alerts,
     }), 200
+
+
+# ── Payroll ──────────────────────────────────────────────────────────────────
+
+@reports_bp.get("/payroll")
+@require_active_user
+def payroll():
+    """
+    GET /finance/payroll?period=YYYY-MM
+    Manager+ access. Returns calculated wages for all active employees:
+    hours worked, gross pay, staff-meal deductions, and net pay.
+    """
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    period_str = request.args.get("period")
+    if not period_str:
+        return jsonify({"error": "period query parameter required (YYYY-MM)."}), 400
+
+    try:
+        period_start, period_end = parse_month_bounds(period_str)
+    except (ValueError, AttributeError):
+        return jsonify({"error": "Invalid period. Use YYYY-MM."}), 400
+
+    from app.services.payroll import calculate_payroll
+    rows = calculate_payroll(period_start, period_end)
+
+    return jsonify({
+        "period":       period_str,
+        "period_start": period_start.strftime("%Y-%m-%d"),
+        "period_end":   (period_end - timedelta(days=1)).strftime("%Y-%m-%d"),
+        "employees":    rows,
+    }), 200

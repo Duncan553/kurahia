@@ -192,6 +192,15 @@ def create_app(config_name: str = None) -> Flask:
     from app.housekeeping import housekeeping_bp
     app.register_blueprint(housekeeping_bp)
 
+    from app.lost_found import lost_found_bp
+    app.register_blueprint(lost_found_bp)
+
+    from app.suppliers import suppliers_bp
+    app.register_blueprint(suppliers_bp)
+
+    from app.incidents import incidents_bp
+    app.register_blueprint(incidents_bp)
+
     from app.reports import pdf_reports_bp
     app.register_blueprint(pdf_reports_bp)
 

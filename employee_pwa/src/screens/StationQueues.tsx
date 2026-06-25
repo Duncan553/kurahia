@@ -35,7 +35,53 @@ interface OrderGroup {
 const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
 
-const ageLabel = (s: number) => s >= 60 ? `${Math.floor(s / 60)}m ago` : `${s}s ago`
+/* Live timer: formats seconds into "Xm Ys" for kitchen display */
+const liveAgeLabel = (s: number): string => {
+  const m = Math.floor(s / 60)
+  const sec = s % 60
+  if (m === 0) return `${sec}s`
+  return `${m}m ${sec}s`
+}
+
+/* Color thresholds: green <5m, amber 5-10m, red >10m */
+const ageColorClass = (s: number): string => {
+  if (s >= 600) return 'text-status-failed'      // 10+ minutes — urgent
+  if (s >= 300) return 'text-status-pending'      // 5-10 minutes — warning
+  return 'text-status-paid'                        // under 5 minutes — fine
+}
+
+/* Hook: ticks every second, adds elapsed time since last query fetch to the
+   server-provided age_seconds. Resets when the query data changes. */
+function useLiveAge(serverAge: number, queryDataUpdatedAt: number): number {
+  const [elapsed, setElapsed] = useState(0)
+  const baseRef = useRef(queryDataUpdatedAt)
+
+  // Reset elapsed when fresh data arrives from the server
+  useEffect(() => {
+    if (queryDataUpdatedAt !== baseRef.current) {
+      baseRef.current = queryDataUpdatedAt
+      setElapsed(0)
+    }
+  }, [queryDataUpdatedAt])
+
+  // Tick every second
+  useEffect(() => {
+    const id = setInterval(() => setElapsed(e => e + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  return serverAge + elapsed
+}
+
+/* Standalone component so the hook can be called per-card (hooks can't go in .map) */
+function LiveAgeDisplay({ serverAge, dataUpdatedAt }: { serverAge: number; dataUpdatedAt: number }) {
+  const live = useLiveAge(serverAge, dataUpdatedAt)
+  return (
+    <span className={`font-bold tabular-nums ${ageColorClass(live)}`}>
+      {liveAgeLabel(live)}
+    </span>
+  )
+}
 
 /* Short order display ID: #ORD-XXXX using last 4 chars of the UUID */
 const ordLabel = (id: string) => `#ORD-${id.slice(-4).toUpperCase()}`
@@ -160,7 +206,7 @@ function GlassQueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCo
   const prevIdsRef = useRef<Set<string>>(new Set())
 
   /* ── Data fetch (identical query setup) ──────────────────────────────────── */
-  const { data: items = [], isLoading, isError } = useQuery<QueueItem[]>({
+  const { data: items = [], isLoading, isError, dataUpdatedAt } = useQuery<QueueItem[]>({
     queryKey: ['queue', station],
     queryFn: () => api.get<QueueItem[]>(endpoint).then(r => r.data),
     refetchInterval: 15_000,
@@ -332,11 +378,11 @@ function GlassQueueView({ station, onCount }: { station: 'KITCHEN' | 'BAR'; onCo
                     </span>
                   </div>
 
-                  {/* ── Table + time ────────────────────────────────────── */}
+                  {/* ── Table + live wait timer ───────────────────────── */}
                   <p className="text-xs text-[#aa8980] mb-3">
                     {group.tab_reference ?? 'Walk-in'}
                     <span className="mx-1.5">&middot;</span>
-                    {ageLabel(group.age_seconds)}
+                    <LiveAgeDisplay serverAge={group.age_seconds} dataUpdatedAt={dataUpdatedAt} />
                   </p>
 
                   {/* ── Items list ──────────────────────────────────────── */}

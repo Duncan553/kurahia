@@ -75,6 +75,13 @@ function FinanceIcon() {
       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 }
+function FeedbackIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M3 4a2 2 0 012-2h10a2 2 0 012 2v9a2 2 0 01-2 2H8l-4 3v-3a2 2 0 01-1-1.7V4z"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M7 7h6M7 10h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+}
 function SignOutIcon() {
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
     <path d="M8 10h9M14 7l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -94,6 +101,7 @@ const SIDEBAR_ITEMS: NavItem[] = [
   { path: '/reconciliation',      label: 'Recon',     Icon: ReconIcon      },
   { path: '/payroll',             label: 'Payroll',   Icon: PayrollIcon    },
   { path: '/staff',               label: 'Staff',     Icon: StaffIcon      },
+  { path: '/feedback',            label: 'Feedback',  Icon: FeedbackIcon   },
   { path: '/bookings',            label: 'Bookings',  Icon: BookingsIcon   },
   { path: '/settings',            label: 'Settings',  Icon: SettingsIcon   },
 ]
