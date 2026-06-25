@@ -1,9 +1,10 @@
 import { chromium } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 
+const SEED_PASSWORD = process.env.SEED_PASSWORD ?? SEED_PASSWORD;
 const jwt = await fetch('http://localhost:5000/auth/login', {
   method: 'POST', headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username: 'wachira', password: 'Kurahia1!' }),
+  body: JSON.stringify({ username: 'wachira', password: SEED_PASSWORD }),
 }).then(r => r.json()).then(d => d.access_token);
 
 const b = await chromium.launch({
@@ -20,7 +21,7 @@ await page.goto('http://localhost:5176/login');
 await page.waitForLoadState('domcontentloaded');
 await page.waitForTimeout(400);
 await page.locator('input[autocomplete="username"]').fill('wachira');
-await page.locator('input[type="password"]').first().fill('Kurahia1!');
+await page.locator('input[type="password"]').first().fill(SEED_PASSWORD);
 await page.locator('button[type="submit"]').click();
 await page.waitForTimeout(2000);
 

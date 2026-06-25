@@ -13,7 +13,7 @@ import path from 'path'
 const EMPLOYEE_URL = 'http://localhost:5173'
 const OWNER_URL    = 'http://localhost:5174'
 const SCREENSHOT_DIR = path.resolve(__dirname, 'screenshots')
-const PASSWORD = 'Kurahia1!'
+const PASSWORD = process.env.SEED_PASSWORD ?? 'Kurahia1!'
 
 // All seeded users
 const USERS = [

@@ -2,6 +2,7 @@
 """
 Chaos Test Round 2 -- deep-dive on crashes, vulns, and skipped tests from Round 1.
 """
+import os
 import requests
 import json
 import uuid
@@ -9,12 +10,13 @@ import time
 from decimal import Decimal
 
 BASE = "http://localhost:5000"
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD", "Kurahia1!")
 RESULTS = []
 
 
-def login(username, password="Kurahia1!"):
+def login(username, password=None):
     r = requests.post(f"{BASE}/auth/login",
-                      json={"username": username, "password": password})
+                      json={"username": username, "password": password or SEED_PASSWORD})
     data = r.json()
     token = data.get("access_token", "FAIL")
     if token == "FAIL":

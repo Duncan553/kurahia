@@ -4,6 +4,7 @@
 
 set -euo pipefail
 BASE="http://localhost:5000"
+SEED_PASSWORD="${SEED_PASSWORD:-$SEED_PASSWORD}"
 RESULTS=""
 TEST_NUM=0
 
@@ -31,13 +32,13 @@ body() {
 }
 
 echo "=== ACQUIRING TOKENS ==="
-OWNER=$(curl -s ${BASE}/auth/login -X POST -H 'Content-Type: application/json' -d '{"username":"wachira","password":"Kurahia1!"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+OWNER=$(curl -s ${BASE}/auth/login -X POST -H 'Content-Type: application/json' -d '{"username":"wachira","password":"$SEED_PASSWORD"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 echo "  Owner token acquired"
-MGR=$(curl -s ${BASE}/auth/login -X POST -H 'Content-Type: application/json' -d '{"username":"manager2","password":"Kurahia1!"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+MGR=$(curl -s ${BASE}/auth/login -X POST -H 'Content-Type: application/json' -d '{"username":"manager2","password":"$SEED_PASSWORD"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 echo "  Manager token acquired"
-WAITER=$(curl -s ${BASE}/auth/login -X POST -H 'Content-Type: application/json' -d '{"username":"waiter1","password":"Kurahia1!"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+WAITER=$(curl -s ${BASE}/auth/login -X POST -H 'Content-Type: application/json' -d '{"username":"waiter1","password":"$SEED_PASSWORD"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 echo "  Waiter token acquired"
-GATE=$(curl -s ${BASE}/auth/login -X POST -H 'Content-Type: application/json' -d '{"username":"gate1","password":"Kurahia1!"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+GATE=$(curl -s ${BASE}/auth/login -X POST -H 'Content-Type: application/json' -d '{"username":"gate1","password":"$SEED_PASSWORD"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 echo "  Gate token acquired"
 
 OH="Authorization: Bearer ${OWNER}"

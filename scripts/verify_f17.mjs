@@ -7,6 +7,7 @@
 // the offline app-shell reload test runs LAST.
 import { chromium } from 'playwright'
 
+const SEED_PASSWORD = process.env.SEED_PASSWORD ?? SEED_PASSWORD;
 const BASE = 'http://localhost:4173'
 const results = []
 const step = (name, ok, detail = '') => {
@@ -47,7 +48,7 @@ step('service worker controls page', controlled)
 const prime = await page.evaluate(async () => {
   const login = await fetch('/auth/login', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'teststaff', password: 'Kurahia1!' }),
+    body: JSON.stringify({ username: 'teststaff', password: SEED_PASSWORD }),
   }).then((r) => r.json())
   const h = { Authorization: `Bearer ${login.access_token}` }
   const push = await fetch('/notifications/push-config', { headers: h }).then((r) => r.json())
@@ -62,7 +63,7 @@ step('caches primed online', prime.menu === 200 && prime.inbox === 200,
 
 // ── 4. Login through the real UI → lands on /clock ──────────────────────────
 await page.fill('input[type="text"]', 'teststaff')
-await page.fill('input[type="password"]', 'Kurahia1!')
+await page.fill('input[type="password"]', SEED_PASSWORD)
 await page.click('button[type="submit"]')
 await page.waitForURL(/\/clock/, { timeout: 10_000 })
 step('login lands on /clock', page.url().endsWith('/clock'), page.url())

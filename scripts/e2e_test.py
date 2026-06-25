@@ -3,12 +3,14 @@
 E2E test runner for Kurahia resort backend.
 Hits real endpoints on localhost:5000, reports PASS/FAIL for each test.
 """
+import os
 import time
 import json
 import uuid
 import requests
 
 BASE = "http://localhost:5000"
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD", SEED_PASSWORD)
 RESULTS = []  # (num, test_name, endpoint, expected, actual_status, actual_body_snippet, verdict)
 
 
@@ -65,28 +67,28 @@ def main():
             return {"raw": resp.text[:200]}
 
     # 1.1 Owner login
-    r = login_with_retry("wachira", "Kurahia1!")
+    r = login_with_retry("wachira", SEED_PASSWORD)
     body = safe_json_early(r)
     owner_token = body.get("access_token", "") if r.status_code == 200 else ""
     add("1.1", "Owner login (wachira)", "POST /auth/login",
         "200 + token", r.status_code, body, r.status_code == 200 and bool(owner_token))
 
     # 1.2 Manager login
-    r = login_with_retry("manager2", "Kurahia1!")
+    r = login_with_retry("manager2", SEED_PASSWORD)
     body = safe_json_early(r)
     manager_token = body.get("access_token", "") if r.status_code == 200 else ""
     add("1.2", "Manager login (manager2)", "POST /auth/login",
         "200 + token", r.status_code, body, r.status_code == 200 and bool(manager_token))
 
     # 1.3 Waiter login
-    r = login_with_retry("waiter1", "Kurahia1!")
+    r = login_with_retry("waiter1", SEED_PASSWORD)
     body = safe_json_early(r)
     waiter_token = body.get("access_token", "") if r.status_code == 200 else ""
     add("1.3", "Waiter login (waiter1)", "POST /auth/login",
         "200 + token", r.status_code, body, r.status_code == 200 and bool(waiter_token))
 
     # 1.4 Gate staff login
-    r = login_with_retry("gate1", "Kurahia1!")
+    r = login_with_retry("gate1", SEED_PASSWORD)
     body = safe_json_early(r)
     gate_token = body.get("access_token", "") if r.status_code == 200 else ""
     add("1.4", "Gate staff login (gate1)", "POST /auth/login",
@@ -106,7 +108,7 @@ def main():
         "401", r.status_code, body, r.status_code == 401)
 
     # 1.7 Deactivated user (nonexistent user triggers same 401 path)
-    r = login_with_retry("deactivated_user", "Kurahia1!")
+    r = login_with_retry("deactivated_user", SEED_PASSWORD)
     body = safe_json_early(r)
     add("1.7", "Deactivated/nonexistent user", "POST /auth/login",
         "401", r.status_code, body, r.status_code == 401)

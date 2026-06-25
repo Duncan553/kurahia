@@ -3,6 +3,7 @@
 Chaos Test Final -- comprehensive run with all 7 categories.
 Re-authenticates fresh, avoids rate-limit triggers from repeated logins.
 """
+import os
 import requests
 import json
 import uuid
@@ -12,12 +13,13 @@ from decimal import Decimal
 from collections import defaultdict
 
 BASE = "http://localhost:5000"
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD", "Kurahia1!")
 RESULTS = []
 
 
-def login(username, password="Kurahia1!"):
+def login(username, password=None):
     r = requests.post(f"{BASE}/auth/login",
-                      json={"username": username, "password": password})
+                      json={"username": username, "password": password or SEED_PASSWORD})
     data = r.json()
     token = data.get("access_token")
     if not token:
