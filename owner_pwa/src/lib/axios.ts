@@ -47,10 +47,17 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const res = await api.post<{ access_token: string }>('/auth/refresh')
+        // Explicitly send the refresh token — the request interceptor would send
+        // the expired access token instead, which the backend rejects.
+        const refreshToken = useAuthStore.getState().refreshToken
+        if (!refreshToken) throw new Error('No refresh token')
+        const res = await api.post<{ access_token: string }>('/auth/refresh', {}, {
+          headers: { Authorization: `Bearer ${refreshToken}` },
+        })
         const newToken = res.data.access_token
         const { user } = useAuthStore.getState()
-        if (user) useAuthStore.getState().setAuth(user, newToken)
+        // Keep the same refresh token — the endpoint only issues a new access token
+        if (user) useAuthStore.getState().setAuth(user, newToken, refreshToken)
         drainQueue(null, newToken)
         original.headers.Authorization = `Bearer ${newToken}`
         return api(original)
@@ -64,14 +71,22 @@ api.interceptors.response.use(
       }
     }
 
-    // ── 403: account deactivated or permission violation → force logout ─────
+    // ── 403: two cases — session kill (deactivated/locked) vs permission denial ─
     if (status === 403) {
-      useAuthStore.getState().clearAuth()
-      useToastStore.getState().addToast({
-        type: 'error',
-        message: 'Your session was ended. Please log in again.',
-      })
-      window.location.href = '/login'
+      const msg: string = (error.response?.data as { error?: string })?.error ?? ''
+      const isKillSwitch =
+        msg.toLowerCase().includes('deactivat') ||
+        msg.toLowerCase().includes('not found') ||
+        msg.toLowerCase().includes('locked')
+      if (isKillSwitch) {
+        useAuthStore.getState().clearAuth()
+        useToastStore.getState().addToast({
+          type: 'error',
+          message: 'Your session was ended. Please log in again.',
+        })
+        window.location.href = '/login'
+      }
+      // Permission violation — just reject; the calling screen shows its own error
     }
 
     return Promise.reject(error)

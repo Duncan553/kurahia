@@ -56,7 +56,7 @@ export default function PinSetupScreen() {
     onSuccess: (data) => {
       setErrorMsg('')
       const claims = decodeJWT<JWTClaims>(data.access_token)
-      setAuth({ id: claims.sub, username, role_level: claims.role_level }, data.access_token)
+      setAuth({ id: claims.sub, username, role_level: claims.role_level }, data.access_token, data.refresh_token)
       navigate('/')
     },
 

@@ -27,9 +27,11 @@ class MenuItem(db.Model):
     category      = db.Column(db.String(80), nullable=True)    # e.g. "Main", "Cocktail", "Spa"
     prep_station  = db.Column(db.String(10), nullable=False, default=PrepStation.NONE.value)
     department_id = db.Column(db.String(36), db.ForeignKey("departments.id"), nullable=False)
-    description   = db.Column(db.Text, nullable=True)
-    image_path    = db.Column(db.String(500), nullable=True)
-    is_active     = db.Column(db.Boolean, nullable=False, default=True)
+    description    = db.Column(db.Text, nullable=True)
+    image_path     = db.Column(db.String(500), nullable=True)
+    allergens      = db.Column(db.String(500), nullable=True)   # comma-separated: "dairy, nuts, gluten"
+    dietary_flags  = db.Column(db.String(200), nullable=True)   # comma-separated: "vegetarian, halal, vegan"
+    is_active      = db.Column(db.Boolean, nullable=False, default=True)
 
     department = db.relationship("Department", lazy="select")
 

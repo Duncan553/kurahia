@@ -32,6 +32,9 @@ class PurchaseRequest(db.Model):
     status = db.Column(db.String(20), nullable=False, default=RequestStatus.PENDING)
     system_generated = db.Column(db.Boolean, nullable=False, default=False)
 
+    # Optional link to a supplier
+    supplier_id = db.Column(db.String(36), db.ForeignKey("suppliers.id"), nullable=True)
+
     # Set at propose step
     manager_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
     manager_notes = db.Column(db.Text, nullable=True)
@@ -51,6 +54,7 @@ class PurchaseRequest(db.Model):
     )
 
     item         = db.relationship("InventoryItem", lazy="select")
+    supplier     = db.relationship("Supplier", lazy="select")
     requested_by = db.relationship("User", foreign_keys=[requested_by_id], lazy="select")
     manager      = db.relationship("User", foreign_keys=[manager_id], lazy="select")
     owner        = db.relationship("User", foreign_keys=[owner_id], lazy="select")

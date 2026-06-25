@@ -30,6 +30,7 @@ from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.models.inventory_item import InventoryItem
 from app.services.consumption import consume_order_item, reverse_consumption
+from app.services.tab import check_band_credit
 
 orders_bp = Blueprint("orders", __name__)
 
@@ -145,6 +146,15 @@ def send_order(order_id):
         return jsonify({"error": "Order not found."}), 404
     if order.status != OrderStatus.DRAFT.value:
         return jsonify({"error": f"This order is already {order.status} and cannot be sent again."}), 400
+
+    # Band-tab credit ceiling: sum all charges for this send and check before committing
+    total_new_charge = sum(
+        Decimal(str(oi.quantity)) * Decimal(str(oi.unit_price_snapshot))
+        for oi in order.items
+    )
+    ok, credit_err = check_band_credit(order.tab_id, total_new_charge)
+    if not ok:
+        return jsonify({"error": credit_err}), 400
 
     with db.session.begin_nested():
         order.status  = OrderStatus.SENT.value
@@ -425,7 +435,84 @@ def staff_cash_report():
 
 def _maybe_complete_order(order: Order):
     """Auto-set order to FULLY_SERVED if all items are in terminal states."""
-    terminal = {OrderItemStatus.SERVED.value, OrderItemStatus.CANCELLED.value}
+    # REFUNDED is terminal: a served item reversed by a manager still counts as resolved
+    terminal = {OrderItemStatus.SERVED.value, OrderItemStatus.CANCELLED.value,
+                OrderItemStatus.REFUNDED.value}
     if all(oi.status in terminal for oi in order.items):
         order.status       = OrderStatus.FULLY_SERVED.value
         order.completed_at = datetime.now(timezone.utc)
+
+
+# ── Refund endpoint ───────────────────────────────────────────────────────────
+
+@orders_bp.post("/order-items/<oi_id>/refund")
+@require_active_user
+def refund_item(oi_id):
+    """
+    Manager-only: reverse the charge on a SERVED order item.
+    This bypasses the normal state machine — SERVED is otherwise terminal.
+    The ledger stays append-only: _reverse_charge() writes a negative Charge row;
+    the original positive Charge row is never touched.
+    """
+    actor = db.session.get(User, get_jwt_identity())
+
+    # Only managers (level >= 5) can issue refunds
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Only a manager or above can process a refund."}), 403
+
+    data = request.get_json(silent=True) or {}
+
+    # idempotency_key is required — enforces the caller to think about retries
+    idem_key = data.get("idempotency_key")
+    if not idem_key:
+        return jsonify({"error": "idempotency_key is required."}), 400
+
+    reason = (data.get("reason") or "").strip()
+    if not reason:
+        return jsonify({"error": "A reason is required to process a refund."}), 400
+
+    oi = db.session.get(OrderItem, oi_id)
+    if not oi:
+        return jsonify({"error": "Order item not found."}), 404
+
+    # Idempotency: already refunded → return success without re-applying
+    if oi.status == OrderItemStatus.REFUNDED.value:
+        return jsonify({
+            "order_item_id": oi_id,
+            "status":        "REFUNDED",
+            "message":       "Refund processed. Charge reversed on tab.",
+            "duplicate":     True,
+        }), 200
+
+    # Only SERVED items can be refunded — all other statuses are wrong state
+    if oi.status != OrderItemStatus.SERVED.value:
+        return jsonify({
+            "error": (
+                f"Only served items can be refunded. "
+                f"This item is currently {oi.status}. "
+                f"Use the cancel endpoint for items that have not yet been served."
+            )
+        }), 409
+
+    with db.session.begin_nested():
+        # Append a negative Charge — append-only ledger stays intact
+        _reverse_charge(oi, actor)
+        # Move item to terminal REFUNDED state
+        oi.status        = OrderItemStatus.REFUNDED.value
+        oi.cancel_reason = reason   # reuse this field for the refund reason
+        # If all remaining items on the order are terminal, auto-complete the order
+        _maybe_complete_order(oi.order)
+
+    AuditLog.log(
+        actor=actor.username,
+        action="order_item.refund",
+        target=oi_id,
+        details=f"reason={reason} amount reversed",
+    )
+    db.session.commit()
+
+    return jsonify({
+        "order_item_id": oi_id,
+        "status":        "REFUNDED",
+        "message":       "Refund processed. Charge reversed on tab.",
+    }), 200

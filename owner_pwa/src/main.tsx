@@ -27,6 +27,7 @@ const StaffScreen              = lazy(() => import('./screens/StaffScreen'))
 const BookingsScreen           = lazy(() => import('./screens/BookingsScreen'))
 const SettingsScreen           = lazy(() => import('./screens/SettingsScreen'))
 const PurchaseApprovalsScreen  = lazy(() => import('./screens/PurchaseApprovalsScreen'))
+const FeedbackScreen           = lazy(() => import('./screens/FeedbackScreen'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -54,6 +55,7 @@ const router = createBrowserRouter([
         { path: '/bookings',              element: <BookingsScreen />            },
         { path: '/settings',              element: <SettingsScreen />            },
         { path: '/purchase-approvals',    element: <PurchaseApprovalsScreen />  },
+        { path: '/feedback',               element: <FeedbackScreen />           },
       ],
     }],
   },

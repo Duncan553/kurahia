@@ -10,9 +10,14 @@ interface PayrollEmployee {
   wage_rate: string | null
   wage_period: string | null
   hours_worked: string
+  gross_pay: string | null
+  meal_deduction: string
+  deductions: string
+  net_pay: string | null
 }
 
 interface PayrollData {
+  period: string
   period_start: string
   period_end: string
   employees: PayrollEmployee[]
@@ -20,43 +25,28 @@ interface PayrollData {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-// Current-month bounds in Africa/Nairobi timezone
-const _tz = 'Africa/Nairobi'
-const _fmt = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: _tz }).format(d)
+// Current month as YYYY-MM in Africa/Nairobi timezone
 const _now = new Date()
-const MONTH_START = _fmt(new Date(_now.getFullYear(), _now.getMonth(), 1))
-const MONTH_END   = _fmt(new Date(_now.getFullYear(), _now.getMonth() + 1, 0))
+const CURRENT_PERIOD = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`
 
 const kes = (n: number) =>
   `KSh ${n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-function computeGross(e: PayrollEmployee): number | null {
-  if (!e.wage_rate || !e.wage_period) return null
-  const rate  = parseFloat(e.wage_rate)
-  const hours = parseFloat(e.hours_worked)
-  if (isNaN(rate) || isNaN(hours)) return null
-  if (e.wage_period === 'HOURLY')  return hours * rate
-  if (e.wage_period === 'DAILY')   return (hours / 8) * rate
-  if (e.wage_period === 'MONTHLY') return rate
-  return null
-}
-
 function downloadCSV(data: PayrollData) {
-  const header = ['Name', 'Wage Period', 'Rate (KSh)', 'Hours Worked', 'Gross Pay (KSh)']
-  const rows = data.employees.map(e => {
-    const g = computeGross(e)
-    return [
-      e.employee_name,
-      e.wage_period ?? '—',
-      e.wage_rate ?? '—',
-      e.hours_worked,
-      g != null ? g.toFixed(2) : '—',
-    ]
-  })
+  const header = ['Name', 'Wage Period', 'Rate (KSh)', 'Hours Worked', 'Gross Pay (KSh)', 'Meal Deduction (KSh)', 'Net Pay (KSh)']
+  const rows = data.employees.map(e => [
+    e.employee_name,
+    e.wage_period ?? '—',
+    e.wage_rate ?? '—',
+    e.hours_worked,
+    e.gross_pay ?? '—',
+    e.meal_deduction,
+    e.net_pay ?? '—',
+  ])
   const csv = [header, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n')
   const a = Object.assign(document.createElement('a'), {
     href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
-    download: `payroll_${data.period_start}_${data.period_end}.csv`,
+    download: `payroll_${data.period}.csv`,
   })
   a.click()
   URL.revokeObjectURL(a.href)
@@ -72,17 +62,22 @@ const PERIOD_BADGE: Record<string, string> = {
 
 export default function PayrollDraftScreen() {
   const { data, isLoading, isError } = useQuery<PayrollData>({
-    queryKey: ['payroll-draft', MONTH_START, MONTH_END],
+    queryKey: ['payroll', CURRENT_PERIOD],
     queryFn: () =>
-      api.get<PayrollData>(`/hr/payroll-draft?start_date=${MONTH_START}&end_date=${MONTH_END}`)
+      api.get<PayrollData>(`/finance/payroll?period=${CURRENT_PERIOD}`)
         .then(r => r.data),
     staleTime: 5 * 60_000,
   })
 
-  const totalGross = data?.employees.reduce((sum, e) => {
-    const g = computeGross(e)
-    return g != null ? sum + g : sum
-  }, 0) ?? 0
+  // Totals derived from backend-calculated values
+  const totalGross = data?.employees.reduce((sum, e) =>
+    e.gross_pay != null ? sum + parseFloat(e.gross_pay) : sum, 0) ?? 0
+
+  const totalDeductions = data?.employees.reduce((sum, e) =>
+    sum + parseFloat(e.deductions || '0'), 0) ?? 0
+
+  const totalNet = data?.employees.reduce((sum, e) =>
+    e.net_pay != null ? sum + parseFloat(e.net_pay) : sum, 0) ?? 0
 
   return (
     <div className="p-4 max-w-3xl mx-auto space-y-4">
@@ -92,7 +87,7 @@ export default function PayrollDraftScreen() {
           <h1 className="text-xl font-bold text-[#f9dcd5] font-serif">Payroll Draft</h1>
           {data && (
             <p className="text-xs text-ink-tertiary mt-0.5">
-              {data.period_start} → {data.period_end}
+              {data.period_start} &rarr; {data.period_end}
             </p>
           )}
         </div>
@@ -131,7 +126,9 @@ export default function PayrollDraftScreen() {
         <>
           <div className="space-y-2">
             {data.employees.map(e => {
-              const gross = computeGross(e)
+              const gross = e.gross_pay != null ? parseFloat(e.gross_pay) : null
+              const meals = parseFloat(e.meal_deduction || '0')
+              const net   = e.net_pay != null ? parseFloat(e.net_pay) : null
               return (
                 <div key={e.employee_id}
                   className="flex items-center justify-between gap-4 px-4 py-3
@@ -150,11 +147,24 @@ export default function PayrollDraftScreen() {
                         </span>
                       )}
                     </div>
+                    {/* Staff meal deduction line (only if > 0) */}
+                    {meals > 0 && (
+                      <p className="text-[10px] text-amber-400 mt-1">
+                        Meals: &minus;{kes(meals)}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs text-ink-tertiary tabular-nums">{e.hours_worked}h worked</p>
                     {gross != null ? (
-                      <p className="text-sm font-bold text-[#f9dcd5] tabular-nums mt-0.5">{kes(gross)}</p>
+                      <>
+                        <p className="text-xs text-ink-tertiary tabular-nums mt-0.5">
+                          Gross: {kes(gross)}
+                        </p>
+                        <p className="text-sm font-bold text-[#f9dcd5] tabular-nums mt-0.5">
+                          {kes(net ?? gross)}
+                        </p>
+                      </>
                     ) : (
                       <p className="text-xs text-ink-tertiary mt-0.5">No wage set</p>
                     )}
@@ -165,10 +175,24 @@ export default function PayrollDraftScreen() {
           </div>
 
           {/* Summary footer */}
-          <div className="flex items-center justify-between px-4 py-3 rounded-2xl
-            bg-ink-primary text-[#f9dcd5]">
-            <p className="text-sm font-semibold">Total gross payroll</p>
-            <p className="text-base font-bold tabular-nums">{kes(totalGross)}</p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-4 py-2 rounded-xl
+              bg-white/5 text-ink-secondary text-xs">
+              <span>Total gross</span>
+              <span className="tabular-nums">{kes(totalGross)}</span>
+            </div>
+            {totalDeductions > 0 && (
+              <div className="flex items-center justify-between px-4 py-2 rounded-xl
+                bg-white/5 text-amber-400 text-xs">
+                <span>Total deductions (meals)</span>
+                <span className="tabular-nums">&minus;{kes(totalDeductions)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between px-4 py-3 rounded-2xl
+              bg-ink-primary text-[#f9dcd5]">
+              <p className="text-sm font-semibold">Total net payroll</p>
+              <p className="text-base font-bold tabular-nums">{kes(totalNet)}</p>
+            </div>
           </div>
         </>
       )}

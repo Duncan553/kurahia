@@ -18,7 +18,7 @@ from app.services.booking import (
     transition_booking, get_or_create_guest_record, get_deposit_total,
     open_villa_tab,
 )
-from app.services.tab import get_tab_balance, is_tab_closable
+from app.services.tab import get_tab_balance, is_tab_closable, check_band_credit
 from app.models.tab import TabStatus
 
 bookings_bp = Blueprint("bookings_core", __name__, url_prefix="/bookings")
@@ -477,6 +477,11 @@ def book_water_session(booking_id):
         amount = Decimal(str(amount))
     except Exception:
         return jsonify({"error": "amount must be a number."}), 400
+
+    # Band-tab credit ceiling: block if this charge would exceed 2× the entry fee
+    ok, credit_err = check_band_credit(booking.tab_id, amount)
+    if not ok:
+        return jsonify({"error": credit_err}), 400
 
     charge = Charge(
         tab_id=booking.tab_id,

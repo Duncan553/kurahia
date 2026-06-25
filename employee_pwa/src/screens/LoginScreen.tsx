@@ -9,7 +9,7 @@ import { useAuthStore } from '../stores/authStore'
 
 interface LoginResponse {
   access_token: string
-  refresh_token?: true
+  refresh_token?: string   // present on normal login, absent when requires_pin_setup
   requires_pin_setup?: true
 }
 interface JWTClaims extends Record<string, unknown> {
@@ -42,6 +42,7 @@ export default function LoginScreen() {
       setAuth(
         { id: claims.sub, username, role_level: claims.role_level, department: claims.department ?? null },
         data.access_token,
+        data.refresh_token ?? '',
       )
       navigate('/clock')
     },

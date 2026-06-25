@@ -175,3 +175,43 @@ def test_reset_lockout_hierarchy(app, client, owner_token):
     # manager1 can log in again
     rv2 = client.post("/auth/login", json={"username": "manager1", "password": "ManagerPass1!"})
     assert rv2.status_code == 200
+
+
+# ── /auth/change-password ─────────────────────────────────────────────────────
+
+def test_change_password_success(app, client, manager_token):
+    rv = client.post("/auth/change-password",
+        json={"current_password": "ManagerPass1!", "new_password": "NewPass9999!"},
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 200
+    # Old password no longer works
+    assert client.post("/auth/login",
+        json={"username": "manager1", "password": "ManagerPass1!"}).status_code == 401
+    # New password works
+    assert client.post("/auth/login",
+        json={"username": "manager1", "password": "NewPass9999!"}).status_code == 200
+
+
+def test_change_password_wrong_current(client, manager_token):
+    rv = client.post("/auth/change-password",
+        json={"current_password": "wrongpassword", "new_password": "NewPass9999!"},
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 401
+
+
+def test_change_password_too_short(client, manager_token):
+    rv = client.post("/auth/change-password",
+        json={"current_password": "ManagerPass1!", "new_password": "short"},
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 400
+    assert "8 characters" in rv.get_json()["error"]
+
+
+def test_change_password_unauthenticated(client):
+    rv = client.post("/auth/change-password",
+        json={"current_password": "ManagerPass1!", "new_password": "NewPass9999!"},
+    )
+    assert rv.status_code == 401

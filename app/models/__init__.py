@@ -59,6 +59,9 @@ from .equipment import Equipment, MaintenanceLog, SafetyCheck, EquipmentStatus
 from .push_subscription import PushSubscription
 from .system_setting import SystemSetting
 from .cleaning_status import CleaningStatus, CleaningStatusEnum, VALID_CLEANING_TRANSITIONS
+from .lost_found import LostFound, LostFoundStatus
+from .supplier import Supplier
+from .incident import Incident, IncidentSeverity
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",
@@ -112,4 +115,7 @@ __all__ = [
     "Equipment", "MaintenanceLog", "SafetyCheck", "EquipmentStatus",
     "PushSubscription",
     "CleaningStatus", "CleaningStatusEnum", "VALID_CLEANING_TRANSITIONS",
+    "LostFound", "LostFoundStatus",
+    "Supplier",
+    "Incident", "IncidentSeverity",
 ]
