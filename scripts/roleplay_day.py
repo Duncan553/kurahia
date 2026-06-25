@@ -35,8 +35,11 @@ def hdr(token):
 def ikey():
     return str(uuid.uuid4())
 
-def login(c, username, password="Kurahia1!"):
-    rv = c.post("/auth/login", json={"username": username, "password": password})
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD", "Kurahia1!")
+
+
+def login(c, username, password=None):
+    rv = c.post("/auth/login", json={"username": username, "password": password or SEED_PASSWORD})
     if rv.status_code == 200:
         return rv.get_json().get("access_token")
     return None

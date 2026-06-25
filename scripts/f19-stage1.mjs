@@ -8,6 +8,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+const SEED_PASSWORD = process.env.SEED_PASSWORD ?? SEED_PASSWORD;
+
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 const REPO   = path.join(__dir, '..');
 const SNAPS  = path.join(REPO, 'tests/visual/__screenshots__');
@@ -22,13 +24,13 @@ const EXE    = '/home/wachira/.cache/ms-playwright/chromium-1223/chrome-linux64/
 async function getJWT() {
   const r = await fetch(`${API}/auth/login`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'wachira', password: 'Kurahia1!' }),
+    body: JSON.stringify({ username: 'wachira', password: SEED_PASSWORD }),
   });
   if (!r.ok) throw new Error(`Auth failed: ${r.status}`);
   return (await r.json()).access_token;
 }
 
-async function loginSPA(page, base, creds = { username: 'wachira', password: 'Kurahia1!' }) {
+async function loginSPA(page, base, creds = { username: 'wachira', password: SEED_PASSWORD }) {
   await page.goto(`${base}/login`);
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(600);
@@ -117,7 +119,7 @@ async function smokeBrowser(browserType, browserName, jwt, results) {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(600);
     await page.locator('input[autocomplete="username"]').first().fill('wachira');
-    await page.locator('input[type="password"]').first().fill('Kurahia1!');
+    await page.locator('input[type="password"]').first().fill(SEED_PASSWORD);
     // button is disabled until both fields are filled
     await page.locator('button[type="submit"]:not([disabled])').click();
     await page.waitForTimeout(2500);
@@ -168,7 +170,7 @@ async function smokeBrowser(browserType, browserName, jwt, results) {
     await opage.waitForLoadState('domcontentloaded');
     await opage.waitForTimeout(600);
     await opage.locator('input[autocomplete="username"]').first().fill('wachira');
-    await opage.locator('input[type="password"]').first().fill('Kurahia1!');
+    await opage.locator('input[type="password"]').first().fill(SEED_PASSWORD);
     await opage.locator('button[type="submit"]:not([disabled])').click();
     await opage.waitForTimeout(2500);
     await spaNav(opage, '/dashboard');

@@ -5,15 +5,16 @@
 import { chromium } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 
-const EMP_BASE   = 'http://localhost:5176';
-const OWN_BASE   = 'http://localhost:5175';
-const APIURL     = 'http://localhost:5000';
+const EMP_BASE      = 'http://localhost:5176';
+const OWN_BASE      = 'http://localhost:5175';
+const APIURL        = 'http://localhost:5000';
+const SEED_PASSWORD = process.env.SEED_PASSWORD ?? SEED_PASSWORD;
 
 async function getJWT() {
   const r = await fetch(`${APIURL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'wachira', password: 'Kurahia1!' }),
+    body: JSON.stringify({ username: 'wachira', password: SEED_PASSWORD }),
   });
   return (await r.json()).access_token;
 }
@@ -113,8 +114,8 @@ async function main() {
     ['ReconciliationScreen', '/finance',    true],
   ];
 
-  const empRes = await auditPWA('Employee', EMP_BASE, empScreens, jwt, { username: 'wachira', password: 'Kurahia1!' });
-  const ownRes = await auditPWA('Owner',    OWN_BASE, ownScreens, jwt, { username: 'wachira', password: 'Kurahia1!' });
+  const empRes = await auditPWA('Employee', EMP_BASE, empScreens, jwt, { username: 'wachira', password: SEED_PASSWORD });
+  const ownRes = await auditPWA('Owner',    OWN_BASE, ownScreens, jwt, { username: 'wachira', password: SEED_PASSWORD });
 
   console.log('\n╔══════════════════════════════════════════╗');
   console.log('║  POST-FIX axe RECHECK (Part A verify)   ║');

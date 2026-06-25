@@ -128,7 +128,7 @@ def seed_users(roles: dict, depts: dict):
     from app.models.audit_log import AuditLog
     print("  Seeding users...")
 
-    PASSWORD = "Kurahia1!"
+    PASSWORD = os.environ.get("SEED_PASSWORD", "Kurahia1!")
 
     users_data = [
         # username, full_name, role_key, dept_key, pin, phone
@@ -910,7 +910,7 @@ def run():
         db.session.commit()
 
         print("\n=== Seed complete ===")
-        print("Users created (all password: Kurahia1!):")
+        print(f"Users created (all password: {PASSWORD}):")
         print("  amara.wanjiku   (owner, PIN 1001)")
         print("  brian.mwangi    (manager, PIN 2001)")
         print("  cynthia.achieng (head chef, PIN 3001)")

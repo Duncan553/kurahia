@@ -7,6 +7,7 @@ import requests, json, subprocess, os, sys
 from datetime import datetime
 
 BASE = "http://localhost:5000"
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD", SEED_PASSWORD)
 OUTFILE = "/home/wachira/kurahia/docs/FULL_FUNCTION_TEST.md"
 os.makedirs(os.path.dirname(OUTFILE), exist_ok=True)
 
@@ -22,7 +23,7 @@ def log_result(num, name, verdict, detail):
 
 def get_token(username):
     try:
-        r = requests.post(f"{BASE}/auth/login", json={"username": username, "password": "Kurahia1!"}, timeout=5)
+        r = requests.post(f"{BASE}/auth/login", json={"username": username, "password": SEED_PASSWORD}, timeout=5)
         return r.json().get("access_token", "FAIL")
     except:
         return "FAIL"
@@ -275,7 +276,7 @@ print("="*60)
 print("\n--- Test 5: Staff lifecycle ---")
 TS_USER = f"teststaff_{ts}"
 r = requests.post(f"{BASE}/auth/users", headers=auth(W),
-                   json={"username": TS_USER, "password": "Kurahia1!",
+                   json={"username": TS_USER, "password": SEED_PASSWORD,
                          "role_id": STAFF_ROLE_ID, "department_id": FOH_DEPT_ID})
 staff_code = r.status_code
 STAFF_UID = safe_json(r).get("id", "")
@@ -468,7 +469,7 @@ if STAFF_UID:
     print(f"  POST deactivate: HTTP {dis2_code}")
 
     # Try login
-    r = requests.post(f"{BASE}/auth/login", json={"username": TS_USER, "password": "Kurahia1!"})
+    r = requests.post(f"{BASE}/auth/login", json={"username": TS_USER, "password": SEED_PASSWORD})
     login_code = r.status_code
     print(f"  Login attempt: HTTP {login_code}")
 

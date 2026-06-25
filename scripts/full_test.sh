@@ -3,6 +3,7 @@
 # Outputs results to docs/FULL_FUNCTION_TEST.md
 set -euo pipefail
 BASE="http://localhost:5000"
+SEED_PASSWORD="${SEED_PASSWORD:-$SEED_PASSWORD}"
 OUTFILE="/home/wachira/kurahia/docs/FULL_FUNCTION_TEST.md"
 mkdir -p /home/wachira/kurahia/docs
 
@@ -17,7 +18,7 @@ log_result() {
 
 get_token() {
   curl -s "$BASE/auth/login" -X POST -H 'Content-Type: application/json' \
-    -d "{\"username\":\"$1\",\"password\":\"Kurahia1!\"}" \
+    -d "{\"username\":\"$1\",\"password\":\"$SEED_PASSWORD\"}" \
     | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token','FAIL'))" 2>/dev/null
 }
 A() { echo "Authorization: Bearer $1"; }
@@ -296,7 +297,7 @@ echo "--- Test 5: Staff lifecycle ---"
 TS_USER="teststaff_$(date +%s)"
 STAFF_RESP=$(curl -s -w "\n%{http_code}" "$BASE/auth/users" -X POST \
   -H "$(A $WACHIRA)" -H 'Content-Type: application/json' \
-  -d "{\"username\":\"$TS_USER\",\"password\":\"Kurahia1!\",\"role_id\":\"$STAFF_ROLE_ID\",\"department_id\":\"$FOH_DEPT_ID\"}")
+  -d "{\"username\":\"$TS_USER\",\"password\":\"$SEED_PASSWORD\",\"role_id\":\"$STAFF_ROLE_ID\",\"department_id\":\"$FOH_DEPT_ID\"}")
 STAFF_CODE=$(echo "$STAFF_RESP" | tail -1)
 STAFF_BODY=$(echo "$STAFF_RESP" | sed '$d')
 STAFF_UID=$(echo "$STAFF_BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "")
@@ -515,7 +516,7 @@ if [ -n "$STAFF_UID" ]; then
   # Try login
   LOGIN_RESP=$(curl -s -w "\n%{http_code}" "$BASE/auth/login" -X POST \
     -H 'Content-Type: application/json' \
-    -d "{\"username\":\"$TS_USER\",\"password\":\"Kurahia1!\"}")
+    -d "{\"username\":\"$TS_USER\",\"password\":\"$SEED_PASSWORD\"}")
   LOGIN_CODE=$(echo "$LOGIN_RESP" | tail -1)
   echo "  Login attempt after disable: HTTP $LOGIN_CODE"
 fi

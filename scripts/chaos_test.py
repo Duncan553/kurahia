@@ -3,6 +3,7 @@
 Chaos Test Suite for Kurahia Resort API
 Fires real HTTP requests at localhost:5000 and logs every result.
 """
+import os
 import requests
 import json
 import uuid
@@ -11,12 +12,13 @@ import concurrent.futures
 from decimal import Decimal
 
 BASE = "http://localhost:5000"
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD", "Kurahia1!")
 RESULTS = []  # (category, test_name, curl_equiv, status, key_response, verdict)
 
 
-def login(username, password="Kurahia1!"):
+def login(username, password=None):
     r = requests.post(f"{BASE}/auth/login",
-                      json={"username": username, "password": password})
+                      json={"username": username, "password": password or SEED_PASSWORD})
     return r.json().get("access_token", "FAIL")
 
 
