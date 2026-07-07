@@ -1,53 +1,42 @@
-# Kurahia Resort — Backend API
+# Kurahia Resort Management Suite
 
-Flask/SQLAlchemy REST API for a boutique resort. 10 chunks, production-ready.
+A high-integrity, full-stack operational ecosystem designed to manage the end-to-end lifecycle of a boutique resort. 
 
-## Quick start (dev)
+### Why this project?
+Kurahia addresses specific operational frictions in hospitality: data fragmentation, inventory leakage, and financial reconciliation errors. Built for scale and auditability, it provides management with real-time visibility from the front desk to the kitchen.
 
+---
+
+## Architecture & Modules
+| Chunk | Focus | Functionality |
+|-------|-------|-------------|
+| 1 | Foundation | Auth, RBAC, Departments, User Roles |
+| 2 | Inventory | Lifecycle Tracking, Stock Counts, Purchases |
+| 3 | POS | Menu, Tab Management, Order Processing |
+| 4 | Finance | M-Pesa Integration, Cash Recon, Analytics |
+| 5 | HR | Profiles, Shifts, Clock-in/out, Performance |
+| 6 | Bookings | Villa Management, Deposits, Check-in/out |
+| 7 | Gate | Wristbands, Entry Credit, BAND Tabs |
+| 8 | Events | Alert Cascade, Notifications, Suggestions |
+| 9 | Conduct | Dispute Resolution, Feedback, Calendar |
+| 10 | Dashboard | Owner Aggregations, Equipment Hardening |
+
+---
+
+## Technical Rigor & Design Principles
+* **Data Integrity:** Append-only model (no hard deletes; corrections = new rows).
+* **Financial Precision:** Strict `Decimal` usage (no floats in money or stock domains).
+* **Security:** Adversarial-tested backend with structural authorization (Owner-private data is isolated from manager queries).
+* **Auditability:** Hash-chained audit logs; verify integrity via `flask audit verify-chain`.
+* **Scalability:** Modular architecture with dormant service hooks for M-Pesa Daraja, WhatsApp, and SMS gateways.
+
+---
+
+## Getting Started (Dev)
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # edit SECRET_KEY + JWT_SECRET_KEY
+cp .env.example .env         # Edit your secrets
 flask db upgrade
 flask seed
 flask run
-```
-
-Tests:
-```bash
-pytest                        # 264 tests, ~7 min
-pytest tests/test_pos.py -v   # run a specific chunk
-```
-
-## Architecture
-
-| Chunk | What it does |
-|-------|-------------|
-| 1 | Foundation: users, roles, departments, auth |
-| 2 | Inventory: items, movements, stock counts, purchases |
-| 3 | POS: menu, tabs, orders, charges, payments |
-| 4 | Finance: cash recon, M-Pesa, budgets, analytics |
-| 5 | HR: profiles, shifts, clock-in, leave, performance |
-| 6 | Bookings: villas, deposits, waivers, check-in/out |
-| 7 | Gate: wristbands, entry credit, BAND tabs |
-| 8 | Events: alert cascade, notifications, suggestions |
-| 9 | Conduct: signing, disputes, feedback, calendar |
-| 10 | Dashboard: owner aggregations, equipment, hardening |
-
-## Dormant sockets (ready to activate)
-
-- **M-Pesa Daraja**: `app/finance/mpesa.py` — replace one function body
-- **WhatsApp gateway**: `app/services/notifications/whatsapp.py` — replace one function body
-- **SMS gateway**: `app/services/notifications/sms.py` — replace one function body
-
-## Key design principles
-
-- Append-only: no deletes; corrections = new rows
-- Decimal everywhere: no floats in money or stock domains
-- State machines enforced at the data layer on every lifecycle model
-- Structural authorization: OWNER_PRIVATE rows don't exist in manager queries
-- Audit log is hash-chained; verify with `flask audit verify-chain`
-
-## Production checklist
-
-See `DEPLOY.md`.
