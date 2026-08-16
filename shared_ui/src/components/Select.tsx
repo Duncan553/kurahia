@@ -1,98 +1,35 @@
-import { useId } from 'react'
 import type { ComponentPropsWithoutRef } from 'react'
 
-export interface SelectOption {
-  value: string
-  label: string
+export interface SelectProps extends ComponentPropsWithoutRef<'select'> {
+  error?: boolean
 }
 
-export interface SelectProps extends Omit<ComponentPropsWithoutRef<'select'>, 'children'> {
-  label: string
-  options: SelectOption[]
-  placeholder?: string
-  error?: string
-}
-
-// Chevron icon — inline so Select has no SVG file dependency
-function ChevronDown() {
+export function Select({ className = '', error, children, ...props }: SelectProps) {
   return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M4 6l4 4 4-4"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-export function Select({
-  label,
-  options,
-  placeholder = 'Select...',
-  error,
-  id,
-  disabled = false,
-  ...rest
-}: SelectProps) {
-  const generatedId = useId()
-  const selectId = id ?? generatedId
-  const errorId = `${selectId}-err`
-
-  return (
-    <div className="flex flex-col gap-1">
-      <label
-        htmlFor={selectId}
-        className="text-sm font-medium text-ink-primary"
+    <div className="relative">
+      <select
+        className={[
+          'w-full px-4 py-3.5 min-h-[52px] rounded-xl appearance-none',
+          'bg-white/[0.06] border text-ink-primary',
+          'text-base font-medium',
+          'transition-all duration-200',
+          'focus:outline-none focus:ring-2 focus:ring-primary-main/30 focus:border-primary-main',
+          'disabled:opacity-50 disabled:cursor-not-allowed',
+          error
+            ? 'border-status-failed/50 focus:border-status-failed focus:ring-status-failed/20'
+            : 'border-white/15 hover:border-white/25',
+          className,
+        ].join(' ')}
+        {...props}
       >
-        {label}
-      </label>
-
-      <div className="relative">
-        {/* Native <select> — uses system picker on iOS/Android */}
-        <select
-          id={selectId}
-          disabled={disabled}
-          aria-invalid={error !== undefined ? true : undefined}
-          aria-describedby={error !== undefined ? errorId : undefined}
-          className={[
-            'w-full appearance-none rounded border bg-cream-card text-ink-primary text-base',
-            'px-3 pr-10 py-2 min-h-[44px]',
-            'focus:outline-none focus:border-primary-dark focus:ring-0',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-            error ? 'border-status-failed' : 'border-ink-tertiary',
-          ].join(' ')}
-          {...rest}
-        >
-          <option value="" disabled>
-            {placeholder}
-          </option>
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Custom arrow — pointer-events-none so native select still receives clicks */}
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-tertiary pointer-events-none">
-          <ChevronDown />
-        </span>
+        {children}
+      </select>
+      {/* Dropdown arrow */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-ink-tertiary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </div>
-
-      {error !== undefined && (
-        <p id={errorId} className="text-sm text-status-failed">
-          {error}
-        </p>
-      )}
     </div>
   )
 }

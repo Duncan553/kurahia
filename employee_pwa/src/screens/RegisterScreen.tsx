@@ -1,13 +1,41 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Button, Input } from '@shared'
+import { Button, Input, Select, FormField, FormSection, HelpTooltip } from '@shared'
 import api from '../lib/axios'
+
+type FormErrors = Partial<Record<keyof FormData, string>>
+
+interface FormData {
+  username: string
+  password: string
+  confirmPassword: string
+  fullName: string
+  phone: string
+  departmentId: string
+  pin: string
+  confirmPin: string
+}
+
+const DEPARTMENTS = [
+  { id: 'kitchen', name: 'Kitchen' },
+  { id: 'bar', name: 'Bar' },
+  { id: 'front-of-house', name: 'Front of House' },
+  { id: 'gate', name: 'Gate / Security' },
+  { id: 'villa', name: 'Villa / Housekeeping' },
+  { id: 'water', name: 'Water Activities' },
+  { id: 'spa', name: 'Spa & Wellness' },
+  { id: 'maintenance', name: 'Maintenance' },
+  { id: 'general', name: 'General' },
+]
 
 export default function RegisterScreen() {
   const navigate = useNavigate()
-  const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [form, setForm] = useState({
+  const [step, setStep] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<FormErrors>({})
+  
+  const [form, setForm] = useState<FormData>({
     username: '',
     password: '',
     confirmPassword: '',
@@ -17,37 +45,41 @@ export default function RegisterScreen() {
     pin: '',
     confirmPin: '',
   })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
 
-  const departments = [
-    { id: 'kitchen', name: 'Kitchen' },
-    { id: 'bar', name: 'Bar' },
-    { id: 'front-of-house', name: 'Front of House' },
-    { id: 'gate', name: 'Gate / Security' },
-    { id: 'villa', name: 'Villa / Housekeeping' },
-    { id: 'water', name: 'Water Activities' },
-    { id: 'spa', name: 'Spa & Wellness' },
-    { id: 'maintenance', name: 'Maintenance' },
-    { id: 'general', name: 'General' },
-  ]
+  function updateField<K extends keyof FormData>(field: K, value: string) {
+    setForm(f => ({ ...f, [field]: value }))
+    // Clear error when user types
+    if (errors[field]) {
+      setErrors(e => { const n = { ...e }; delete n[field]; return n })
+    }
+  }
+
+  function validateStep1(): boolean {
+    const e: FormErrors = {}
+    if (!form.username.trim()) e.username = 'Username is required'
+    else if (form.username.length < 3) e.username = 'At least 3 characters'
+    if (!form.fullName.trim()) e.fullName = 'Full name is required'
+    if (!form.phone.trim()) e.phone = 'Phone number is required'
+    if (!form.departmentId) e.departmentId = 'Select your department'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  function validateStep2(): boolean {
+    const e: FormErrors = {}
+    if (!form.password) e.password = 'Password is required'
+    else if (form.password.length < 6) e.password = 'At least 6 characters'
+    if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match'
+    if (!form.pin) e.pin = 'PIN is required'
+    else if (!/^\d{4}$/.test(form.pin)) e.pin = 'Exactly 4 digits'
+    if (form.pin !== form.confirmPin) e.confirmPin = 'PINs do not match'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
 
   async function handleSubmit() {
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-    if (form.pin !== form.confirmPin) {
-      setError('PINs do not match')
-      return
-    }
-    if (form.pin.length !== 4) {
-      setError('PIN must be exactly 4 digits')
-      return
-    }
-
+    if (!validateStep2()) return
     setLoading(true)
-    setError('')
     try {
       await api.post('/auth/register', {
         username: form.username.trim().toLowerCase(),
@@ -58,12 +90,15 @@ export default function RegisterScreen() {
         pin: form.pin,
       })
       setStep(3)
-    } catch (e: any) {
-      setError(e?.response?.data?.error || 'Registration failed. Try a different username.')
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Registration failed'
+      setErrors({ username: msg })
     } finally {
       setLoading(false)
     }
   }
+
+  const stepLabels = ['About You', 'Security', 'Done']
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4"
@@ -80,154 +115,258 @@ export default function RegisterScreen() {
           <p className="text-sm text-ink-tertiary mt-1">Create your staff account</p>
         </div>
 
-        {/* Step indicator */}
-        <div className="flex items-center justify-center gap-2 mb-6">
+        {/* Stepper */}
+        <div className="flex items-center justify-center gap-2 mb-8">
           {[1, 2, 3].map(s => (
-            <div key={s} className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-              ${s === step ? 'bg-primary-main text-white' : s < step ? 'bg-primary-main/30 text-primary-light' : 'bg-white/10 text-ink-tertiary'}`}>
-              {s < step ? '✓' : s}
+            <div key={s} className="flex items-center gap-2">
+              <div className={[
+                'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors',
+                s === step ? 'bg-primary-main text-white' 
+                  : s < step ? 'bg-primary-main/30 text-primary-light'
+                  : 'bg-white/10 text-ink-tertiary'
+              ].join(' ')}>
+                {s < step ? '✓' : s}
+              </div>
+              <span className={[
+                'text-xs hidden sm:block',
+                s === step ? 'text-ink-primary font-medium' : 'text-ink-tertiary'
+              ].join(' ')}>
+                {stepLabels[s-1]}
+              </span>
+              {s < 3 && <div className="w-6 h-px bg-white/15" />}
             </div>
           ))}
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 rounded-lg bg-status-failed/15 border border-status-failed/25 text-status-failed text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* STEP 1: Account basics */}
+        {/* STEP 1: About You */}
         {step === 1 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-ink-secondary mb-1">Username</label>
-              <Input
-                value={form.username}
-                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-                placeholder="e.g. mwangi_kitchen"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-ink-secondary mb-1">Full Name</label>
-              <Input
-                value={form.fullName}
-                onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
-                placeholder="Your full name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-ink-secondary mb-1">Phone Number</label>
-              <Input
-                value={form.phone}
-                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                placeholder="e.g. +254 712 345 678"
-                type="tel"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-ink-secondary mb-1">Department</label>
-              <select
-                value={form.departmentId}
-                onChange={e => setForm(f => ({ ...f, departmentId: e.target.value }))}
-                className="w-full px-4 py-3 rounded-xl bg-white/[0.06] border border-white/15 text-ink-primary
-                  focus:border-primary-main focus:outline-none"
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-5"
+          >
+            <FormSection title="About You" description="Tell us who you are and where you work">
+
+              <FormField
+                label="Username"
+                htmlFor="username"
+                required
+                error={errors.username}
+                help="This is what you'll use to log in"
               >
-                <option value="" disabled>Select your department</option>
-                {departments.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-            <Button onClick={() => {
-              if (!form.username || !form.fullName || !form.phone || !form.departmentId) {
-                setError('Please fill in all fields')
-                return
-              }
-              setError(''); setStep(2)
-            }} className="w-full">
-              Next: Set Password
+                <Input
+                  id="username"
+                  value={form.username}
+                  onChange={e => updateField('username', e.target.value)}
+                  placeholder="e.g. mwangi_kitchen"
+                  autoComplete="username"
+                  autoFocus
+                />
+              </FormField>
+
+              <FormField
+                label="Full Name"
+                htmlFor="fullName"
+                required
+                error={errors.fullName}
+              >
+                <Input
+                  id="fullName"
+                  value={form.fullName}
+                  onChange={e => updateField('fullName', e.target.value)}
+                  placeholder="Your full name"
+                  autoComplete="name"
+                />
+              </FormField>
+
+              <FormField
+                label="Phone Number"
+                htmlFor="phone"
+                required
+                error={errors.phone}
+                help="For shift alerts and emergency contact"
+              >
+                <Input
+                  id="phone"
+                  type="tel"
+                  inputMode="tel"
+                  value={form.phone}
+                  onChange={e => updateField('phone', e.target.value)}
+                  placeholder="+254 712 345 678"
+                  autoComplete="tel"
+                />
+              </FormField>
+
+              <FormField
+                label="Department"
+                htmlFor="department"
+                required
+                error={errors.departmentId}
+              >
+                <Select
+                  id="department"
+                  value={form.departmentId}
+                  onChange={e => updateField('departmentId', e.target.value)}
+                >
+                  <option value="" disabled>Select your department</option>
+                  {DEPARTMENTS.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </Select>
+              </FormField>
+
+            </FormSection>
+
+            <Button
+              onClick={() => validateStep1() && setStep(2)}
+              className="w-full py-4 text-base font-bold"
+            >
+              Continue to Security
             </Button>
-          </div>
+          </motion.div>
         )}
 
-        {/* STEP 2: Password + PIN */}
+        {/* STEP 2: Security */}
         {step === 2 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-ink-secondary mb-1">Password</label>
-              <Input
-                type="password"
-                value={form.password}
-                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                placeholder="Min 6 characters"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-ink-secondary mb-1">Confirm Password</label>
-              <Input
-                type="password"
-                value={form.confirmPassword}
-                onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))}
-                placeholder="Repeat password"
-              />
-            </div>
-            
-            <div className="border-t border-white/10 pt-4">
-              <label className="block text-sm font-medium text-ink-secondary mb-1">4-Digit PIN (for quick login)</label>
-              <Input
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                value={form.pin}
-                onChange={e => setForm(f => ({ ...f, pin: e.target.value.replace(/\\D/g, '') }))}
-                placeholder="1234"
-              />
-              <p className="text-xs text-ink-tertiary mt-1">You'll use this PIN to log in quickly on your phone</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-ink-secondary mb-1">Confirm PIN</label>
-              <Input
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                value={form.confirmPin}
-                onChange={e => setForm(f => ({ ...f, confirmPin: e.target.value.replace(/\\D/g, '') }))}
-                placeholder="1234"
-              />
-            </div>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-5"
+          >
+            <FormSection title="Create Password" description="Choose a strong password">
+
+              <FormField
+                label="Password"
+                htmlFor="password"
+                required
+                error={errors.password}
+                help="At least 6 characters"
+              >
+                <Input
+                  id="password"
+                  type="password"
+                  value={form.password}
+                  onChange={e => updateField('password', e.target.value)}
+                  placeholder="••••••"
+                  autoComplete="new-password"
+                />
+              </FormField>
+
+              <FormField
+                label="Confirm Password"
+                htmlFor="confirmPassword"
+                required
+                error={errors.confirmPassword}
+              >
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={form.confirmPassword}
+                  onChange={e => updateField('confirmPassword', e.target.value)}
+                  placeholder="••••••"
+                  autoComplete="new-password"
+                />
+              </FormField>
+
+            </FormSection>
+
+            <FormSection title="Create PIN" description="For quick daily login">
+
+              <FormField
+                label="4-Digit PIN"
+                htmlFor="pin"
+                required
+                error={errors.pin}
+                help="You'll enter this every day to clock in"
+              >
+                <Input
+                  id="pin"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={form.pin}
+                  onChange={e => updateField('pin', e.target.value.replace(/\D/g, ''))}
+                  placeholder="1234"
+                  autoComplete="off"
+                />
+              </FormField>
+
+              <FormField
+                label="Confirm PIN"
+                htmlFor="confirmPin"
+                required
+                error={errors.confirmPin}
+              >
+                <Input
+                  id="confirmPin"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={form.confirmPin}
+                  onChange={e => updateField('confirmPin', e.target.value.replace(/\D/g, ''))}
+                  placeholder="1234"
+                  autoComplete="off"
+                />
+              </FormField>
+
+            </FormSection>
 
             <div className="flex gap-3">
-              <Button variant="ghost" onClick={() => setStep(1)} className="flex-1">Back</Button>
-              <Button onClick={handleSubmit} loading={loading} className="flex-1">Create Account</Button>
+              <Button
+                variant="ghost"
+                onClick={() => setStep(1)}
+                className="flex-1 py-4"
+              >
+                Back
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                loading={loading}
+                className="flex-1 py-4 text-base font-bold"
+              >
+                Create Account
+              </Button>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* STEP 3: Success */}
         {step === 3 && (
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-status-paid/15 border border-status-paid/25
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center space-y-5 py-4"
+          >
+            <div className="w-20 h-20 rounded-full bg-status-paid/15 border border-status-paid/25
               flex items-center justify-center mx-auto">
-              <span className="text-3xl">🎉</span>
+              <span className="text-4xl">🎉</span>
             </div>
-            <h2 className="text-xl font-bold text-ink-primary">Account Created!</h2>
-            <p className="text-sm text-ink-secondary">
-              Your manager will review and activate your account. You'll receive a notification when approved.
-            </p>
-            <Button onClick={() => navigate('/login')} className="w-full">Go to Login</Button>
-          </div>
+            <div>
+              <h2 className="text-xl font-bold text-ink-primary">Account Created!</h2>
+              <p className="text-sm text-ink-secondary mt-2 leading-relaxed">
+                Your manager will review and activate your account.
+                You'll receive a notification when approved.
+              </p>
+            </div>
+            <Button onClick={() => navigate('/login')} className="w-full py-4 text-base font-bold">
+              Go to Login
+            </Button>
+          </motion.div>
         )}
 
         {/* Footer */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-ink-tertiary">
+        {step !== 3 && (
+          <p className="mt-6 text-center text-sm text-ink-tertiary">
             Already have an account?{' '}
-            <button onClick={() => navigate('/login')} className="text-primary-main hover:underline">
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="text-primary-main hover:underline font-medium"
+            >
               Log in
             </button>
           </p>
-        </div>
+        )}
       </motion.div>
     </div>
   )

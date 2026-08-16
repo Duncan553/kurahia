@@ -25,6 +25,7 @@ from flask_jwt_extended import (
 )
 from app.extensions import db, limiter
 from app.models.user import User, _ph
+from app.models.employee_profile import EmployeeProfile
 from app.models.audit_log import AuditLog
 from app.utils.auth import record_failed_attempt, check_active_and_unlocked
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
@@ -355,3 +356,65 @@ def reset_lockout(target_user_id):
     db.session.commit()
 
     return jsonify({"message": f"Lockout cleared for {target.username}."}), 200
+
+# ── Self-registration for new staff ─────────────────────────────────
+@auth_bp.post("/register")
+def register():
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip().lower()
+    password = data.get("password")
+    pin = data.get("pin")
+    full_name = (data.get("full_name") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    department_id = data.get("department_id")
+
+    if not all([username, password, pin, full_name, phone, department_id]):
+        return jsonify({"error": "All fields are required."}), 400
+    if len(pin) != 4 or not pin.isdigit():
+        return jsonify({"error": "PIN must be exactly 4 digits."}), 400
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters."}), 400
+
+    if User.query.filter_by(username=username).first():
+        return jsonify({"error": "Username already taken."}), 409
+
+    dept = Department.query.get(department_id)
+    if not dept:
+        return jsonify({"error": "Department not found."}), 404
+
+    staff_role = Role.query.filter_by(level=1).first()
+    if not staff_role:
+        return jsonify({"error": "Default staff role not found."}), 500
+
+    with db.session.begin_nested():
+        user = User(
+            username=username,
+            role_id=staff_role.id,
+            department_id=dept.id,
+            is_active=False,
+        )
+        user.set_password(password)
+        user.set_pin(pin)
+        db.session.add(user)
+
+        profile = EmployeeProfile(
+            user_id=user.id,
+            full_name=full_name,
+            phone=phone,
+        )
+        db.session.add(profile)
+
+        AuditLog.log(
+            actor=username,
+            action="user.self_register",
+            target=username,
+            details=f"dept={dept.name}, pending_approval"
+        )
+        db.session.commit()
+
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "status": "pending_approval",
+        "message": "Account created. Awaiting manager approval."
+    }), 201
