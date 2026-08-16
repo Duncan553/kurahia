@@ -83,7 +83,7 @@ function ChecklistItem({
         <span className={[
           'flex-shrink-0 w-5 h-5 rounded flex items-center justify-center border-2 transition-colors',
           state.checked
-            ? 'border-[#fa5c29] bg-[#fa5c29]'
+            ? 'border-primary-main bg-primary-main'
             : hasError
               ? 'border-status-failed'
               : 'border-ink-tertiary/60',
@@ -96,7 +96,7 @@ function ChecklistItem({
           )}
         </span>
 
-        <span className={`flex-1 text-sm font-medium ${hasError ? 'text-status-failed' : 'text-[#f9dcd5]'}`}>
+        <span className={`flex-1 text-sm font-medium ${hasError ? 'text-status-failed' : 'text-ink-primary'}`}>
           {formatKey(itemKey)}
         </span>
 
@@ -117,7 +117,7 @@ function ChecklistItem({
             onChange={(e) => onNote(e.target.value)}
             placeholder="Optional note…"
             className="w-full rounded-lg glass-card bg-transparent px-3 py-2
-              text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+              text-sm text-ink-primary focus:outline-none focus:border-primary-main
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />
         </div>
@@ -249,7 +249,7 @@ export default function SafetyCheckScreen() {
       <div className="p-4 max-w-3xl mx-auto space-y-5">
         <ErrorBoundary level="tile">
         <div>
-          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Safety Check</h1>
+          <h1 className="text-2xl font-bold text-ink-primary font-serif">Safety Check</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Equipment safety inspections</p>
         </div>
 
@@ -292,7 +292,7 @@ export default function SafetyCheckScreen() {
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-[#f9dcd5]">{eq.name}</span>
+                <span className="font-semibold text-ink-primary">{eq.name}</span>
                 {eq.is_due_service && <ServiceDueBadge />}
               </div>
               <p className="text-xs text-ink-tertiary capitalize mt-0.5">
@@ -331,7 +331,7 @@ export default function SafetyCheckScreen() {
           </svg>
         </button>
         <div>
-          <h1 className="text-xl font-bold text-[#f9dcd5]">{selectedEq.name}</h1>
+          <h1 className="text-xl font-bold text-ink-primary">{selectedEq.name}</h1>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-sm text-ink-tertiary capitalize">
               {selectedEq.equipment_type.replace(/_/g, ' ')}
@@ -381,7 +381,7 @@ export default function SafetyCheckScreen() {
           <div className="flex items-center gap-3">
             <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
               <div
-                className="h-full bg-[#fa5c29] rounded-full transition-all duration-300"
+                className="h-full bg-primary-main rounded-full transition-all duration-300"
                 style={{ width: `${(checkedCount / template.items.length) * 100}%` }}
                 aria-hidden="true"
               />
@@ -396,7 +396,7 @@ export default function SafetyCheckScreen() {
             disabled={!allChecked || submitting}
             className={[
               'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-              'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
+              'bg-primary-main text-white hover:bg-primary-dark active:scale-[0.99]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             ].join(' ')}

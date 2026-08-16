@@ -28,7 +28,7 @@ function Glass({ children, className = '', onClick }: {
 /* Section heading label */
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-3">{children}</h2>
+    <h2 className="text-sm font-bold tracking-widest uppercase text-ink-tertiary mb-3">{children}</h2>
   )
 }
 
@@ -61,30 +61,30 @@ function RestockRequestForm({ onClose }: { onClose: () => void }) {
   return (
     <form onSubmit={e => { e.preventDefault(); if (body.trim()) mut.mutate() }}
       className="p-5 space-y-3">
-      <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+      <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
         Request Restock
       </p>
       <input
         placeholder="Subject (e.g. Need more cooking oil)"
         value={subject} onChange={e => setSubject(e.target.value)}
         className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
-          text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
+          text-ink-primary focus:outline-none focus:border-primary-main"
       />
       <textarea
         required placeholder="What do you need? Include items and estimated quantities."
         value={body} onChange={e => setBody(e.target.value)} rows={3}
         className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
-          text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] resize-none"
+          text-ink-primary focus:outline-none focus:border-primary-main resize-none"
       />
       <div className="flex gap-2">
         <button type="button" onClick={onClose}
-          className="flex-1 py-2.5 rounded-xl glass-card text-[#aa8980] text-sm font-semibold
+          className="flex-1 py-2.5 rounded-xl glass-card text-ink-tertiary text-sm font-semibold
             hover:bg-white/5 transition-colors">
           Cancel
         </button>
         <button type="submit" disabled={!body.trim() || mut.isPending}
-          className="flex-1 py-2.5 rounded-xl bg-[#fa5c29] text-white text-sm font-semibold
-            hover:bg-[#fa5c29]/90 transition-colors disabled:opacity-50">
+          className="flex-1 py-2.5 rounded-xl bg-primary-main text-white text-sm font-semibold
+            hover:bg-primary-main/90 transition-colors disabled:opacity-50">
           {mut.isPending ? 'Sending…' : 'Send Request'}
         </button>
       </div>
@@ -124,10 +124,10 @@ export default function HeadChefScreen() {
           <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
             className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-8">
             <div>
-              <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#f9dcd5] tracking-tight">
+              <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
                 Kitchen
               </h1>
-              <p className="text-sm text-[#aa8980] mt-1">Chef Dashboard</p>
+              <p className="text-sm text-ink-tertiary mt-1">Chef Dashboard</p>
             </div>
 
             {/* Service badge + time */}
@@ -161,7 +161,7 @@ export default function HeadChefScreen() {
                           <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
                             Total
                           </p>
-                          <p className="text-5xl md:text-6xl font-bold tabular-nums text-[#f9dcd5] leading-none">
+                          <p className="text-5xl md:text-6xl font-bold tabular-nums text-ink-primary leading-none">
                             {items.length > 0 ? items.length.toLocaleString() : '—'}
                           </p>
                         </div>
@@ -174,7 +174,7 @@ export default function HeadChefScreen() {
                           <p className={`font-bold tabular-nums leading-none ${
                             low.length > 0
                               ? 'text-5xl md:text-6xl text-[#fa5c29]'
-                              : 'text-5xl md:text-6xl text-[#f9dcd5]/40'
+                              : 'text-5xl md:text-6xl text-ink-primary/40'
                           }`}>
                             {low.length}
                           </p>
@@ -217,7 +217,7 @@ export default function HeadChefScreen() {
                           Purchased
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#fa5c29]" />
+                          <span className="w-2 h-2 rounded-full bg-primary-main" />
                           Reordered
                         </span>
                       </div>
@@ -265,7 +265,7 @@ export default function HeadChefScreen() {
                                     </svg>
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-sm font-bold text-[#f9dcd5] truncate">{i.name}</p>
+                                    <p className="text-sm font-bold text-ink-primary truncate">{i.name}</p>
                                     <p className="text-[10px] text-ink-tertiary/60">
                                       Unit: {i.unit}
                                     </p>
@@ -308,11 +308,11 @@ export default function HeadChefScreen() {
                 whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Glass className="cursor-pointer" onClick={() => navigate('/manager/menu')}>
                   <div className="p-5">
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
                       Recipes
                     </p>
                     <p className="text-[10px] text-ink-tertiary mb-1">What goes into each dish and how much</p>
-                    <p className="text-sm text-[#f9dcd5] mb-1">
+                    <p className="text-sm text-ink-primary mb-1">
                       Enter &amp; edit recipes per dish
                     </p>
                     <p className="text-[10px] text-[#fa5c29]">Open →</p>
@@ -325,10 +325,10 @@ export default function HeadChefScreen() {
                 whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Glass className="cursor-pointer" onClick={() => navigate('/manager/menu')}>
                   <div className="p-5">
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
                       Menu
                     </p>
-                    <p className="text-sm text-[#f9dcd5] mb-1">
+                    <p className="text-sm text-ink-primary mb-1">
                       Add dishes, set prices
                     </p>
                     <p className="text-[10px] text-[#fa5c29]">Open →</p>
@@ -341,11 +341,11 @@ export default function HeadChefScreen() {
                 whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Glass className="cursor-pointer" onClick={() => navigate('/inventory/count')}>
                   <div className="p-5">
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
                       Variance
                     </p>
                     <p className="text-[10px] text-ink-tertiary mb-1">How much more (or less) ingredients are being used vs what recipes say</p>
-                    <p className="text-sm text-[#f9dcd5] mb-1">
+                    <p className="text-sm text-ink-primary mb-1">
                       Expected vs actual use
                     </p>
                     <p className="text-[10px] text-[#fa5c29]">Open →</p>
@@ -358,10 +358,10 @@ export default function HeadChefScreen() {
                 whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Glass className="cursor-pointer" onClick={() => navigate('/pos/kitchen')}>
                   <div className="p-5">
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
                       Kitchen Queue
                     </p>
-                    <p className="text-sm text-[#f9dcd5] mb-1">
+                    <p className="text-sm text-ink-primary mb-1">
                       Live order queue
                     </p>
                     <p className="text-[10px] text-[#fa5c29]">Open →</p>
@@ -379,10 +379,10 @@ export default function HeadChefScreen() {
                   <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                     <Glass className="cursor-pointer" onClick={() => setShowRestock(true)}>
                       <div className="p-5">
-                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
                           Request Restock
                         </p>
-                        <p className="text-sm text-[#f9dcd5] mb-1">
+                        <p className="text-sm text-ink-primary mb-1">
                           Send restock request to manager
                         </p>
                         <p className="text-[10px] text-[#fa5c29]">Open →</p>

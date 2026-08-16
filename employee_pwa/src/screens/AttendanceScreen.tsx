@@ -124,7 +124,7 @@ export default function AttendanceScreen() {
       >
 
         <div>
-          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Attendance</h1>
+          <h1 className="text-2xl font-bold text-ink-primary font-serif">Attendance</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Today's clock-in roster</p>
         </div>
 
@@ -152,7 +152,7 @@ export default function AttendanceScreen() {
               onClick={() => setTab(t)}
               className={[
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
-                tab === t ? 'bg-transparent shadow-sm text-[#f9dcd5]' : 'text-ink-tertiary hover:text-ink-secondary',
+                tab === t ? 'bg-transparent shadow-sm text-ink-primary' : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               {t === 'today' ? 'Today' : 'Month summary'}
@@ -214,7 +214,7 @@ export default function AttendanceScreen() {
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-[#f9dcd5]">
+                            <span className="text-sm font-semibold text-ink-primary">
                               {row.employee_name ?? 'Unknown'}
                             </span>
                             {row.late && (
@@ -271,7 +271,7 @@ export default function AttendanceScreen() {
                     whileHover={{ y: -2 }}
                     className="rounded-xl glass-card bg-transparent px-4 py-4"
                   >
-                    <p className="text-sm font-semibold text-[#f9dcd5]">{row.employee_name}</p>
+                    <p className="text-sm font-semibold text-ink-primary">{row.employee_name}</p>
                     <div className="grid grid-cols-3 gap-4 mt-2">
                       {[
                         { label: 'Hours', value: parseFloat(row.hours_worked).toFixed(1) },
@@ -279,7 +279,7 @@ export default function AttendanceScreen() {
                         { label: 'Absences', value: row.absent_no_notice, danger: row.absent_no_notice > 0 },
                       ].map(({ label, value, danger }) => (
                         <div key={label} className="text-center">
-                          <p className={`text-lg font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-[#f9dcd5]'}`}>
+                          <p className={`text-lg font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-ink-primary'}`}>
                             {value}
                           </p>
                           <p className="text-[10px] text-ink-tertiary">{label}</p>
@@ -304,7 +304,7 @@ export default function AttendanceScreen() {
           <div className="space-y-4">
             <div className="rounded-xl bg-white/5 px-4 py-3 text-sm space-y-0.5">
               <p className="text-ink-tertiary">
-                Shift: <span className="text-[#f9dcd5] font-medium">
+                Shift: <span className="text-ink-primary font-medium">
                   {formatTime(selectedEmp.shift_start)} – {formatTime(selectedEmp.shift_end)}
                 </span>
               </p>
@@ -313,7 +313,7 @@ export default function AttendanceScreen() {
               </p>
               {empDetail && (
                 <p className="text-ink-tertiary">
-                  Hours worked: <span className="text-[#f9dcd5] font-medium">
+                  Hours worked: <span className="text-ink-primary font-medium">
                     {parseFloat(empDetail.hours_worked).toFixed(1)}h
                   </span>
                 </p>
@@ -329,7 +329,7 @@ export default function AttendanceScreen() {
                   <div key={ev.id}
                     className="flex items-center justify-between rounded-xl glass-card px-4 py-2.5">
                     <div>
-                      <p className="text-sm font-medium text-[#f9dcd5] capitalize">
+                      <p className="text-sm font-medium text-ink-primary capitalize">
                         {ev.event_type.replace('_', ' ').toLowerCase()}
                       </p>
                       {ev.is_manual_override && (

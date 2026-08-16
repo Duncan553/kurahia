@@ -97,7 +97,7 @@ export default function LeaveRequestScreen() {
       <ErrorBoundary level="tile">
 
       <div>
-        <h1 className="text-xl font-bold text-[#f9dcd5]">Leave Request</h1>
+        <h1 className="text-xl font-bold text-ink-primary">Leave Request</h1>
         <p className="text-sm text-ink-tertiary">Submit a leave request — your manager will approve or reject it</p>
       </div>
 
@@ -118,7 +118,7 @@ export default function LeaveRequestScreen() {
                   'py-2.5 min-h-[44px] px-3 rounded-xl border text-sm font-medium transition-all text-left',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                   leaveType === lt.value
-                    ? 'border-[#fa5c29] bg-[#fa5c29]/10 text-primary-dark'
+                    ? 'border-primary-main bg-primary-main/10 text-primary-dark'
                     : 'border-white/10 bg-transparent text-ink-secondary hover:border-primary-main',
                 ].join(' ')}
               >
@@ -138,7 +138,7 @@ export default function LeaveRequestScreen() {
               min={today}
               onChange={(e) => setStartDate(e.target.value)}
               className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
-                text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                text-sm text-ink-primary focus:outline-none focus:border-primary-main
                 focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
@@ -150,7 +150,7 @@ export default function LeaveRequestScreen() {
               min={startDate}
               onChange={(e) => { setEndDate(e.target.value); setTouched(true) }}
               className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
-                text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                text-sm text-ink-primary focus:outline-none focus:border-primary-main
                 focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
@@ -168,7 +168,7 @@ export default function LeaveRequestScreen() {
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Family event, medical appointment..."
             className="w-full rounded-xl glass-card bg-transparent px-4 py-3
-              text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+              text-sm text-ink-primary focus:outline-none focus:border-primary-main
               focus:ring-2 focus:ring-primary-dark/20 resize-none"
           />
         </div>
@@ -179,7 +179,7 @@ export default function LeaveRequestScreen() {
           disabled={mutation.isPending}
           className={[
             'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-            'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
+            'bg-primary-main text-white hover:bg-primary-dark active:scale-[0.99]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
             'disabled:opacity-50 disabled:cursor-not-allowed',
           ].join(' ')}
@@ -238,7 +238,7 @@ export default function LeaveRequestScreen() {
                   glass-card px-4 py-3"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#f9dcd5] capitalize">
+                  <p className="text-sm font-medium text-ink-primary capitalize">
                     {r.leave_type.charAt(0) + r.leave_type.slice(1).toLowerCase()} Leave
                   </p>
                   <p className="text-xs text-ink-tertiary tabular-nums mt-0.5">

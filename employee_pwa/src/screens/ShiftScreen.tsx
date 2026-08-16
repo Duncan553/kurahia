@@ -142,7 +142,7 @@ export default function ShiftScreen() {
         cancelled ? 'glass-card opacity-80' : 'glass-card',
       ].join(' ')}>
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold text-[#f9dcd5] ${cancelled ? 'line-through' : ''}`}>
+          <p className={`text-sm font-semibold text-ink-primary ${cancelled ? 'line-through' : ''}`}>
             {shift.employee_name ?? 'Unknown'}
           </p>
           <p className="text-xs text-ink-tertiary mt-0.5 flex items-center">
@@ -178,14 +178,14 @@ export default function ShiftScreen() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Shifts</h1>
+            <h1 className="text-2xl font-bold text-ink-primary font-serif">Shifts</h1>
             <p className="text-xs text-ink-tertiary mt-0.5">Create and manage shift schedules</p>
           </div>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#fa5c29] text-white
-              text-sm font-semibold hover:bg-[#af3000] transition-colors
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-main text-white
+              text-sm font-semibold hover:bg-primary-dark transition-colors
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -203,7 +203,7 @@ export default function ShiftScreen() {
               onClick={() => setTab(t)}
               className={[
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
-                tab === t ? 'bg-transparent shadow-sm text-[#f9dcd5]' : 'text-ink-tertiary hover:text-ink-secondary',
+                tab === t ? 'bg-transparent shadow-sm text-ink-primary' : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               {t === 'today' ? `Today (${todayShifts.length})` : `Upcoming (${upcomingShifts.length})`}
@@ -293,7 +293,7 @@ export default function ShiftScreen() {
               value={empId}
               onChange={(e) => setEmpId(e.target.value)}
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
-                text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
+                text-ink-primary focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-dark/20"
             >
               <option value="">Choose employee…</option>
               {(profiles ?? []).map((p) => (
@@ -310,7 +310,7 @@ export default function ShiftScreen() {
                 value={startDT}
                 onChange={(e) => setStartDT(e.target.value)}
                 className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5 text-sm
-                text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
+                text-ink-primary focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
             <div>
@@ -320,7 +320,7 @@ export default function ShiftScreen() {
                 value={endDT}
                 onChange={(e) => setEndDT(e.target.value)}
                 className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5 text-sm
-                  text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
+                  text-ink-primary focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
           </div>
@@ -335,7 +335,7 @@ export default function ShiftScreen() {
               onChange={(e) => setRole(e.target.value)}
               placeholder="e.g. Front gate, Kitchen…"
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
-                text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
+                text-ink-primary focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-dark/20"
             />
           </div>
 
@@ -344,7 +344,7 @@ export default function ShiftScreen() {
             disabled={!createValid || createMutation.isPending}
             className={[
               'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-              'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
+              'bg-primary-main text-white hover:bg-primary-dark active:scale-[0.99]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             ].join(' ')}

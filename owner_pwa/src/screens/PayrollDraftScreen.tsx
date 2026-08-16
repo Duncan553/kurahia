@@ -54,7 +54,7 @@ function downloadCSV(data: PayrollData) {
 
 const PERIOD_BADGE: Record<string, string> = {
   HOURLY:  'bg-sky-100 text-sky-700',
-  DAILY:   'bg-[#fa5c29]/10 text-[#fa5c29]',
+  DAILY:   'bg-primary-main/10 text-[#fa5c29]',
   MONTHLY: 'bg-teal-100 text-teal-700',
 }
 
@@ -84,7 +84,7 @@ export default function PayrollDraftScreen() {
 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-xl font-bold text-[#f9dcd5] font-serif">Payroll Draft</h1>
+          <h1 className="text-xl font-bold text-ink-primary font-serif">Payroll Draft</h1>
           {data && (
             <p className="text-xs text-ink-tertiary mt-0.5">
               {data.period_start} &rarr; {data.period_end}
@@ -134,7 +134,7 @@ export default function PayrollDraftScreen() {
                   className="flex items-center justify-between gap-4 px-4 py-3
                     rounded-2xl border border-white/10">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#f9dcd5] truncate">{e.employee_name}</p>
+                    <p className="text-sm font-semibold text-ink-primary truncate">{e.employee_name}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {e.wage_period && (
                         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${PERIOD_BADGE[e.wage_period] ?? 'bg-white/5 text-ink-tertiary'}`}>
@@ -161,7 +161,7 @@ export default function PayrollDraftScreen() {
                         <p className="text-xs text-ink-tertiary tabular-nums mt-0.5">
                           Gross: {kes(gross)}
                         </p>
-                        <p className="text-sm font-bold text-[#f9dcd5] tabular-nums mt-0.5">
+                        <p className="text-sm font-bold text-ink-primary tabular-nums mt-0.5">
                           {kes(net ?? gross)}
                         </p>
                       </>
@@ -189,7 +189,7 @@ export default function PayrollDraftScreen() {
               </div>
             )}
             <div className="flex items-center justify-between px-4 py-3 rounded-2xl
-              bg-ink-primary text-[#f9dcd5]">
+              bg-ink-primary text-ink-primary">
               <p className="text-sm font-semibold">Total net payroll</p>
               <p className="text-base font-bold tabular-nums">{kes(totalNet)}</p>
             </div>

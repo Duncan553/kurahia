@@ -96,7 +96,7 @@ export default function VillaScreen() {
         initial="hidden" animate="visible" variants={stagger}>
 
       <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}>
-        <h1 className="text-2xl font-bold font-serif text-[#f9dcd5]">Villas</h1>
+        <h1 className="text-2xl font-bold font-serif text-ink-primary">Villas</h1>
         <p className="text-xs text-amber-200/40 mt-0.5">Waterfront Country Club</p>
       </motion.div>
 
@@ -121,7 +121,7 @@ export default function VillaScreen() {
               </div>
               <div className="p-4">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="font-semibold text-[#f9dcd5] text-sm">{v.name}</p>
+                  <p className="font-semibold text-ink-primary text-sm">{v.name}</p>
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                     v.available
                       ? 'bg-emerald-500/20 text-emerald-400'
@@ -138,7 +138,7 @@ export default function VillaScreen() {
                   <button
                     onClick={() => setBooking(booking === v.id ? null : v.id)}
                     className="mt-2 w-full py-2 rounded-xl text-xs font-semibold
-                      bg-[#fa5c29] text-white hover:bg-[#fa5c29]/90 transition-colors"
+                      bg-primary-main text-white hover:bg-primary-main/90 transition-colors"
                   >
                     Book Villa
                   </button>
@@ -162,29 +162,29 @@ export default function VillaScreen() {
                       <input placeholder="Guest name" value={form.guest_name}
                         onChange={e => setForm(f => ({ ...f, guest_name: e.target.value }))}
                         className="w-full rounded-lg glass-card bg-transparent px-3 py-2
-                          text-xs text-[#f9dcd5] placeholder:text-ink-tertiary focus:outline-none focus:border-[#fa5c29]" />
+                          text-xs text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-primary-main" />
                       <input placeholder="Phone (e.g. 0712...)" value={form.guest_phone}
                         onChange={e => setForm(f => ({ ...f, guest_phone: e.target.value }))}
                         className="w-full rounded-lg glass-card bg-transparent px-3 py-2
-                          text-xs text-[#f9dcd5] placeholder:text-ink-tertiary focus:outline-none focus:border-[#fa5c29]" />
+                          text-xs text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-primary-main" />
                       <input type="number" min="1" placeholder="Guests" value={form.guests}
                         onChange={e => setForm(f => ({ ...f, guests: e.target.value }))}
                         className="w-full rounded-lg glass-card bg-transparent px-3 py-2
-                          text-xs text-[#f9dcd5] placeholder:text-ink-tertiary focus:outline-none focus:border-[#fa5c29]" />
+                          text-xs text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-primary-main" />
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-[10px] text-ink-tertiary">Check-in</label>
                           <input type="date" value={form.checkin}
                             onChange={e => setForm(f => ({ ...f, checkin: e.target.value }))}
                             className="w-full rounded-lg glass-card bg-transparent px-3 py-2
-                              text-xs text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]" />
+                              text-xs text-ink-primary focus:outline-none focus:border-primary-main" />
                         </div>
                         <div>
                           <label className="text-[10px] text-ink-tertiary">Check-out</label>
                           <input type="date" value={form.checkout}
                             onChange={e => setForm(f => ({ ...f, checkout: e.target.value }))}
                             className="w-full rounded-lg glass-card bg-transparent px-3 py-2
-                              text-xs text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]" />
+                              text-xs text-ink-primary focus:outline-none focus:border-primary-main" />
                         </div>
                       </div>
                       <p className="text-[10px] text-amber-200/40">
@@ -221,7 +221,7 @@ export default function VillaScreen() {
       )}
 
       <motion.h2 variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="text-lg font-bold font-serif text-[#f9dcd5]">Current Guests</motion.h2>
+        className="text-lg font-bold font-serif text-ink-primary">Current Guests</motion.h2>
 
       <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}>
         <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search guests..." label="Search guests" />
@@ -264,7 +264,7 @@ export default function VillaScreen() {
               className="w-full flex items-center justify-between p-4 rounded-2xl glass-card
                 hover:bg-cream-alt transition-colors text-left">
               <div>
-                <p className="font-semibold text-[#f9dcd5]">{t.reference ?? 'Villa Guest'}</p>
+                <p className="font-semibold text-ink-primary">{t.reference ?? 'Villa Guest'}</p>
                 <p className="text-xs text-amber-200/40 mt-0.5">
                   Checked in {new Date(t.opened_at).toLocaleDateString('en-KE')}
                   {t.opened_by ? ` · by ${t.opened_by}` : ''}

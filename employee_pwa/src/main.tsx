@@ -1,4 +1,8 @@
 import { StrictMode, lazy } from 'react'
+import { useAuthStore } from './stores/authStore'
+import { initDeviceMode } from './lib/deviceMode'
+initDeviceMode()
+
 import { ErrorBoundary } from '@shared'
 import { MotionConfig } from 'framer-motion'
 import { createRoot } from 'react-dom/client'
@@ -87,6 +91,24 @@ const CalendarScreen = lazy(() => import('./screens/CalendarScreen'))
 const DisputesScreen = lazy(() => import('./screens/DisputesScreen'))
 const PerformanceScreen = lazy(() => import('./screens/PerformanceScreen'))
 const IncidentScreen = lazy(() => import('./screens/IncidentScreen'))
+import RegisterScreen from './screens/RegisterScreen'
+
+// ── HomeRedirect: landing page based on device mode ──
+function HomeRedirect() {
+  const user = useAuthStore((s) => s.user)
+  const station = localStorage.getItem('kurahia:station_mode') === 'true'
+  if (!user) return <Navigate to='/login' replace />
+  const dept = user.department ?? ''
+  const level = user.role_level ?? 0
+  if (station && level < 5) {
+    if (dept.includes('kitchen')) return <Navigate to='/pos/kitchen' replace />
+    if (dept.includes('bar')) return <Navigate to='/pos/bar' replace />
+    if (dept.includes('waiter') || dept.includes('front')) return <Navigate to='/pos/tabs' replace />
+    if (dept.includes('gate')) return <Navigate to='/gate/hub' replace />
+    return <Navigate to='/pos/tabs' replace />
+  }
+  return <Navigate to='/clock' replace />
+}
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -94,6 +116,7 @@ const queryClient = new QueryClient({
 
 const router = createBrowserRouter([
   // Public
+  { path: '/register', element: <RegisterScreen /> },
   { path: '/login',     element: <LoginScreen />   },
   { path: '/pin',       element: <PinEntryScreen /> },
   { path: '/pin/setup', element: <PinSetupScreen /> },

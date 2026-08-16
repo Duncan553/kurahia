@@ -181,7 +181,7 @@ export default function ConductScreen() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">
                     {rule.category} · v{rule.version}
                   </p>
-                  <h2 id={`rule-${rule.id}-title`} className="text-base font-bold text-[#f9dcd5] mt-0.5">
+                  <h2 id={`rule-${rule.id}-title`} className="text-base font-bold text-ink-primary mt-0.5">
                     {rule.title}
                   </h2>
                 </div>
@@ -208,7 +208,7 @@ export default function ConductScreen() {
                       'px-5 py-2.5 rounded-xl text-sm font-semibold transition-all',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                       scrollReady
-                        ? 'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.98]'
+                        ? 'bg-primary-main text-white hover:bg-primary-dark active:scale-[0.98]'
                         : 'bg-white/5 text-ink-secondary cursor-not-allowed',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                     ].join(' ')}

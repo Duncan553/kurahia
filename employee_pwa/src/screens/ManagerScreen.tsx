@@ -308,7 +308,7 @@ export default function ManagerScreen() {
                   whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
                   onClick={() => navigate(a.path)}
                   className="flex flex-col items-start gap-2 p-4 rounded-xl transition-all text-left
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main
                     glass-card hover:bg-white/8"
                   aria-label={`${a.label} — ${a.desc}`}>
                   <span className="text-ink-secondary">{a.svg}</span>

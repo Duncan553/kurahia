@@ -138,7 +138,7 @@ function TileCard({
       onKeyDown={href ? (e) => { if (e.key === 'Enter') navigate(href) } : undefined}
       className={[
         'rounded-2xl p-4 space-y-2 border border-white/10 shadow-lg',
-        href ? 'cursor-pointer hover:shadow-xl hover:border-white/20 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]' : '',
+        href ? 'cursor-pointer hover:shadow-xl hover:border-white/20 transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main' : '',
         className,
         'glass-card',
       ].join(' ')}
@@ -387,7 +387,7 @@ function ResortHealthSection() {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-serif font-bold text-[#f9dcd5]">Resort Health</h2>
+        <h2 className="text-2xl font-serif font-bold text-ink-primary">Resort Health</h2>
         {/* Tabs */}
         <div className="flex rounded-xl overflow-hidden border border-white/10">
           {(['overview', 'departments'] as const).map(t => (

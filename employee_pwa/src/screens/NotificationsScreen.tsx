@@ -146,12 +146,12 @@ export default function NotificationsScreen() {
               ].join(' ')}
             >
               {/* Unread dot */}
-              <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-[#fa5c29]"
+              <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-primary-main"
                 style={{ opacity: isUnread ? 1 : 0 }}
                 aria-hidden="true"
               />
               <div className="flex-1 min-w-0">
-                <p className={['text-sm truncate', isUnread ? 'font-semibold text-[#f9dcd5]' : 'text-ink-secondary'].join(' ')}>
+                <p className={['text-sm truncate', isUnread ? 'font-semibold text-ink-primary' : 'text-ink-secondary'].join(' ')}>
                   {notif.subject}
                 </p>
                 <p className="text-xs text-ink-tertiary mt-0.5 line-clamp-2">{notif.body}</p>

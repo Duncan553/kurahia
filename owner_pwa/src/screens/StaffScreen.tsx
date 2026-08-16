@@ -58,13 +58,13 @@ function StaffCard({
       {/* Avatar */}
       <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center
         text-sm font-bold leading-none
-        ${user.is_active ? 'bg-[#fa5c29] text-white' : 'bg-ink-tertiary/20 text-ink-tertiary'}`}>
+        ${user.is_active ? 'bg-primary-main text-white' : 'bg-ink-tertiary/20 text-ink-tertiary'}`}>
         {initials}
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold truncate ${user.is_active ? 'text-[#f9dcd5]' : 'text-ink-tertiary'}`}>
+        <p className={`text-sm font-semibold truncate ${user.is_active ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
           {profile?.full_name ?? user.username}
         </p>
         <p className="text-xs text-ink-secondary truncate">
@@ -131,21 +131,21 @@ function UserDrawer({
       <div className="rounded-xl bg-white/5 p-4 space-y-2">
         <div className="flex items-center gap-3">
           <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-base
-            ${user.is_active ? 'bg-[#fa5c29] text-white' : 'bg-ink-tertiary/20 text-ink-tertiary'}`}>
+            ${user.is_active ? 'bg-primary-main text-white' : 'bg-ink-tertiary/20 text-ink-tertiary'}`}>
             {(profile?.full_name ?? user.username).slice(0, 2).toUpperCase()}
           </div>
           <div>
-            <p className="font-semibold text-[#f9dcd5]">{profile?.full_name ?? user.username}</p>
+            <p className="font-semibold text-ink-primary">{profile?.full_name ?? user.username}</p>
             <p className="text-xs text-ink-secondary">@{user.username}</p>
           </div>
         </div>
         <div className="text-xs text-ink-secondary space-y-1 pt-2 border-t border-cream-deep">
-          <p>Role: <span className="font-medium text-[#f9dcd5]">{user.role}</span></p>
-          {user.department && <p>Dept: <span className="font-medium text-[#f9dcd5]">{user.department}</span></p>}
-          {profile?.phone && <p>Phone: <span className="font-medium text-[#f9dcd5]">{profile.phone}</span></p>}
-          {profile?.hire_date && <p>Hired: <span className="font-medium text-[#f9dcd5]">{profile.hire_date}</span></p>}
+          <p>Role: <span className="font-medium text-ink-primary">{user.role}</span></p>
+          {user.department && <p>Dept: <span className="font-medium text-ink-primary">{user.department}</span></p>}
+          {profile?.phone && <p>Phone: <span className="font-medium text-ink-primary">{profile.phone}</span></p>}
+          {profile?.hire_date && <p>Hired: <span className="font-medium text-ink-primary">{profile.hire_date}</span></p>}
           {profile?.wage_rate && (
-            <p>Wage: <span className="font-medium text-[#f9dcd5]">
+            <p>Wage: <span className="font-medium text-ink-primary">
               KSh {parseFloat(profile.wage_rate).toLocaleString('en-KE')} / {profile.wage_period?.toLowerCase()}
             </span></p>
           )}
@@ -249,7 +249,7 @@ function CreateUserFlow({
   }
 
   const inp = `w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
-    text-[#f9dcd5] placeholder:text-ink-tertiary
+    text-ink-primary placeholder:text-ink-tertiary
     focus:outline-none focus:ring-2 focus:ring-primary-main`
 
   return (
@@ -367,7 +367,7 @@ export default function StaffScreen() {
     <div className="p-4 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-5 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Staff</h1>
+          <h1 className="text-2xl font-bold text-ink-primary font-serif">Staff</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Employee accounts, roles, departments</p>
         </div>
         <Button
@@ -389,7 +389,7 @@ export default function StaffScreen() {
             onClick={() => setFilter(f)}
             className={[
               'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
-              filter === f ? 'bg-white/10 text-[#f9dcd5]' : 'text-ink-secondary hover:text-[#f9dcd5]',
+              filter === f ? 'bg-white/10 text-ink-primary' : 'text-ink-secondary hover:text-ink-primary',
             ].join(' ')}
           >
             {f === 'active' ? 'Active' : 'All'}

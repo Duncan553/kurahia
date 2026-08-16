@@ -128,7 +128,7 @@ export default function LoginScreen() {
                   border transition-all duration-200
                   focus:outline-none disabled:opacity-50
                   ${focused === 'user'
-                    ? 'border-[#fa5c29]/50 shadow-[0_0_0_2px_rgba(250,92,41,0.12)]'
+                    ? 'border-primary-main/50 shadow-[0_0_0_2px_rgba(250,92,41,0.20)]'
                     : 'border-white/[0.08] hover:border-white/[0.14]'
                   }`}
               />
@@ -155,7 +155,7 @@ export default function LoginScreen() {
                   border transition-all duration-200
                   focus:outline-none disabled:opacity-50
                   ${focused === 'pass'
-                    ? 'border-[#fa5c29]/50 shadow-[0_0_0_2px_rgba(250,92,41,0.12)]'
+                    ? 'border-primary-main/50 shadow-[0_0_0_2px_rgba(250,92,41,0.20)]'
                     : 'border-white/[0.08] hover:border-white/[0.14]'
                   }`}
               />
@@ -180,11 +180,11 @@ export default function LoginScreen() {
               disabled={!username || !password || loginMutation.isPending}
               whileTap={{ scale: 0.97 }}
               className="w-full py-3.5 rounded-xl
-                bg-[#fa5c29] hover:bg-[#ffb59f] active:bg-[#af3000]
+                bg-primary-main hover:bg-[#ffb59f] active:bg-[#af3000]
                 text-white text-sm font-semibold tracking-wider uppercase
                 shadow-none
                 hover:shadow-none
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent
                 disabled:opacity-35 disabled:cursor-not-allowed disabled:shadow-none
                 transition-all duration-200"
             >

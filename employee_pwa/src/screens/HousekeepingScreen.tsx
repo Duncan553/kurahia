@@ -179,7 +179,7 @@ export default function HousekeepingScreen() {
                 value={assignTarget}
                 onChange={e => setAssignTarget(e.target.value)}
                 className="w-full rounded-lg glass-card bg-transparent px-3 py-2
-                  text-xs text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
+                  text-xs text-ink-primary focus:outline-none focus:border-primary-main"
               >
                 <option value="">Select staff...</option>
                 {staff.map(s => (
@@ -240,7 +240,7 @@ export default function HousekeepingScreen() {
               value={flagReason}
               onChange={e => setFlagReason(e.target.value)}
               className="w-full rounded-lg glass-card bg-transparent px-3 py-2
-                text-xs text-[#f9dcd5] placeholder:text-ink-tertiary focus:outline-none focus:border-[#fa5c29]"
+                text-xs text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-primary-main"
             />
             <Button
               variant="secondary" size="sm" className="w-full"
@@ -273,7 +273,7 @@ export default function HousekeepingScreen() {
         initial="hidden" animate="visible" variants={stagger}>
 
         <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}>
-          <h1 className="text-2xl font-bold font-serif text-[#f9dcd5]">Housekeeping</h1>
+          <h1 className="text-2xl font-bold font-serif text-ink-primary">Housekeeping</h1>
           <p className="text-xs text-amber-200/40 mt-0.5">Villa cleaning status &amp; assignments</p>
           <p className="text-[10px] text-ink-tertiary mt-0.5">Track which villas need cleaning, who's cleaning them, and inspection status</p>
         </motion.div>
@@ -320,13 +320,13 @@ export default function HousekeepingScreen() {
                   <button
                     onClick={() => rec.id ? toggleCard(cardKey) : undefined}
                     className="w-full text-left p-4 space-y-3 focus-visible:outline-none
-                      focus-visible:ring-2 focus-visible:ring-[#fa5c29] rounded-t-2xl"
+                      focus-visible:ring-2 focus-visible:ring-primary-main rounded-t-2xl"
                     disabled={!rec.id}
                   >
                     {/* Top row: name + badge */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-semibold text-[#f9dcd5] text-sm truncate">
+                        <p className="font-semibold text-ink-primary text-sm truncate">
                           {rec.resource_name ?? 'Unknown Room'}
                         </p>
                         {rec.assigned_to && (

@@ -278,7 +278,7 @@ export default function MenuManageScreen() {
       <ErrorBoundary level="tile">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold font-serif text-[#f9dcd5]">Menu &amp; Services</h1>
+          <h1 className="text-2xl font-bold font-serif text-ink-primary">Menu &amp; Services</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Add, price, disable items &amp; manage recipes</p>
         </div>
         <Button variant="primary" size="sm" onClick={() => setAdding(a => !a)}>
@@ -300,7 +300,7 @@ export default function MenuManageScreen() {
             placeholder="Name — e.g. Grilled Tilapia, 60-min Massage"
             value={f.name} onChange={e => setF({ ...f, name: e.target.value })}
             className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
-              focus:outline-none focus:border-[#fa5c29]"
+              focus:outline-none focus:border-primary-main"
           />
           <div className="grid grid-cols-2 gap-2">
             <label htmlFor="menu-item-price" className="sr-only">Price (KSh)</label>
@@ -309,14 +309,14 @@ export default function MenuManageScreen() {
               inputMode="decimal" placeholder="Price (KSh)"
               value={f.price} onChange={e => setF({ ...f, price: e.target.value })}
               className="rounded-xl glass-card bg-transparent px-4 py-3 text-sm
-                focus:outline-none focus:border-[#fa5c29]"
+                focus:outline-none focus:border-primary-main"
             />
             <label htmlFor="menu-item-category" className="sr-only">Category (optional)</label>
             <input
               id="menu-item-category" placeholder="Category (optional)"
               value={f.category} onChange={e => setF({ ...f, category: e.target.value })}
               className="rounded-xl glass-card bg-transparent px-4 py-3 text-sm
-                focus:outline-none focus:border-[#fa5c29]"
+                focus:outline-none focus:border-primary-main"
             />
           </div>
           <Select
@@ -366,7 +366,7 @@ export default function MenuManageScreen() {
                       className="w-10 h-10 rounded-lg object-cover glass-card" />
                   ) : (
                     <div className="w-10 h-10 rounded-lg border border-dashed border-white/20
-                      flex items-center justify-center text-ink-tertiary group-hover:border-[#fa5c29]
+                      flex items-center justify-center text-ink-tertiary group-hover:border-primary-main
                       transition-colors">
                       <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                         <rect x="2" y="2" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.5"/>
@@ -384,7 +384,7 @@ export default function MenuManageScreen() {
                 </label>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#f9dcd5] truncate">{it.name}</p>
+                  <p className="text-sm font-semibold text-ink-primary truncate">{it.name}</p>
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-xs text-ink-tertiary">
                       {it.prep_station === 'NONE' ? 'no queue' : it.prep_station.toLowerCase()}
@@ -424,7 +424,7 @@ export default function MenuManageScreen() {
                       value={priceEdit.price}
                       onChange={e => setPriceEdit({ id: it.id, price: e.target.value })}
                       onKeyDown={e => e.key === 'Enter' && priceMut.mutate(priceEdit)}
-                      className="w-20 rounded-lg border border-[#fa5c29] px-2 py-1.5 text-sm tabular-nums"
+                      className="w-20 rounded-lg border border-primary-main px-2 py-1.5 text-sm tabular-nums"
                     />
                     <Button variant="primary" size="sm" loading={priceMut.isPending}
                       onClick={() => priceMut.mutate(priceEdit)}>Save</Button>
@@ -432,7 +432,7 @@ export default function MenuManageScreen() {
                 ) : (
                   <button
                     onClick={() => setPriceEdit({ id: it.id, price: it.price })}
-                    className="text-sm font-bold tabular-nums text-[#f9dcd5] underline decoration-dotted shrink-0"
+                    className="text-sm font-bold tabular-nums text-ink-primary underline decoration-dotted shrink-0"
                   >
                     KSh {parseFloat(it.price).toLocaleString('en-KE')}
                   </button>
@@ -470,7 +470,7 @@ export default function MenuManageScreen() {
                   <div key={line.invItemId}
                     className="flex items-center gap-2 p-2 rounded-xl bg-white/6">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#f9dcd5]">{line.invItemName}</p>
+                      <p className="text-sm font-medium text-ink-primary">{line.invItemName}</p>
                       <p className="text-xs text-ink-tertiary">
                         {(() => {
                           const inv = invItems.find(x => x.id === line.invItemId)
@@ -485,7 +485,7 @@ export default function MenuManageScreen() {
                       onChange={e => setDraftLines(prev =>
                         prev.map((l, j) => j === i ? { ...l, quantity: e.target.value } : l))}
                       className="w-20 rounded-lg glass-card bg-transparent px-2 py-1.5
-                        text-sm tabular-nums focus:outline-none focus:border-[#fa5c29]"
+                        text-sm tabular-nums focus:outline-none focus:border-primary-main"
                     />
                     <button
                       onClick={() => setDraftLines(prev => prev.filter((_, j) => j !== i))}
@@ -527,7 +527,7 @@ export default function MenuManageScreen() {
                     onChange={e => setNewQty(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && addIngredient()}
                     className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
-                      text-sm focus:outline-none focus:border-[#fa5c29]"
+                      text-sm focus:outline-none focus:border-primary-main"
                   />
                 </div>
                 {newIngName && (() => {
@@ -553,7 +553,7 @@ export default function MenuManageScreen() {
                 onChange={e => setCopySource(e.target.value)}
                 aria-label="Copy recipe from another dish"
                 className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
-                  text-sm text-ink-secondary focus:outline-none focus:border-[#fa5c29]"
+                  text-sm text-ink-secondary focus:outline-none focus:border-primary-main"
               >
                 <option value="">Choose a dish to copy its recipe…</option>
                 {copyItems.map(i => (
@@ -590,13 +590,13 @@ export default function MenuManageScreen() {
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-ink-secondary">Food cost</span>
-                      <span className="tabular-nums font-semibold text-[#f9dcd5]">
+                      <span className="tabular-nums font-semibold text-ink-primary">
                         KSh {draftCost.food_cost.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-ink-secondary">Gross margin</span>
-                      <span className="tabular-nums font-semibold text-[#f9dcd5]">
+                      <span className="tabular-nums font-semibold text-ink-primary">
                         KSh {draftCost.gross_margin.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>

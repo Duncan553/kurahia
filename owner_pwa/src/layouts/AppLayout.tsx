@@ -124,10 +124,10 @@ function SideLink({ path, label, Icon }: NavItem) {
       aria-label={label}
       className={({ isActive }) => [
         'flex items-center gap-3 px-4 py-3 rounded-lg mx-2 transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main',
         isActive
-          ? 'bg-[#fa5c29]/10 text-[#ffb59f]'
-          : 'text-[#aa8980] hover:bg-white/5 hover:text-[#f9dcd5]',
+          ? 'bg-primary-main/10 text-[#ffb59f]'
+          : 'text-ink-tertiary hover:bg-white/5 hover:text-ink-primary',
       ].join(' ')}
     >
       <span className="shrink-0"><Icon /></span>
@@ -161,11 +161,11 @@ export default function AppLayout() {
         {/* Logo — matches Stitch: circle icon + "Kurahia" + "WATERFRONT CLUB" */}
         <div className="p-4 lg:p-5 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[#fa5c29]/15 border border-[#fa5c29]/20 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-full bg-primary-main/15 border border-primary-main/20 flex items-center justify-center shrink-0">
               <span className="text-[#ffb59f] text-sm font-serif font-bold">K</span>
             </div>
             <div className="hidden lg:block">
-              <p className="text-sm font-serif font-bold text-[#f9dcd5]">Kurahia</p>
+              <p className="text-sm font-serif font-bold text-ink-primary">Kurahia</p>
               <p className="text-[8px] tracking-[0.2em] uppercase text-[#ffb59f]/60">Waterfront Club</p>
             </div>
           </div>
@@ -178,12 +178,12 @@ export default function AppLayout() {
 
         {/* Support + Log Out */}
         <div className="border-t border-white/5 p-3 space-y-1">
-          <button className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-[#aa8980] hover:text-[#f9dcd5] transition-colors text-sm">
+          <button className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-ink-tertiary hover:text-ink-primary transition-colors text-sm">
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M10 7v3M10 13h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
             <span className="hidden lg:block text-xs">Support</span>
           </button>
           <button onClick={signOut}
-            className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-[#aa8980] hover:text-[#f9dcd5] transition-colors text-sm">
+            className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-ink-tertiary hover:text-ink-primary transition-colors text-sm">
             <SignOutIcon />
             <span className="hidden lg:block text-xs">Log Out</span>
           </button>
@@ -197,26 +197,26 @@ export default function AppLayout() {
         <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
           style={{ background: 'rgba(30, 16, 12, 0.9)', backdropFilter: 'blur(16px)' }}>
           <div className="flex items-center gap-1">
-            <span className="sm:hidden text-base font-bold font-serif text-[#f9dcd5]">Kurahia</span>
-            <span className="hidden sm:block text-sm font-medium text-[#f9dcd5]">Kurahia Dashboard</span>
+            <span className="sm:hidden text-base font-bold font-serif text-ink-primary">Kurahia</span>
+            <span className="hidden sm:block text-sm font-medium text-ink-primary">Kurahia Dashboard</span>
           </div>
           <div className="hidden sm:flex items-center gap-1">
             <NavLink to="/" end className={({ isActive }) =>
-              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-[#fa5c29] text-white' : 'text-[#aa8980] hover:text-[#f9dcd5]'}`
+              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-primary-main text-white' : 'text-ink-tertiary hover:text-ink-primary'}`
             }>Revenue Today</NavLink>
             <NavLink to="/alerts" className={({ isActive }) =>
-              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-[#fa5c29] text-white' : 'text-[#aa8980] hover:text-[#f9dcd5]'}`
+              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-primary-main text-white' : 'text-ink-tertiary hover:text-ink-primary'}`
             }>Alerts Count</NavLink>
             <NavLink to="/bookings" className={({ isActive }) =>
-              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-[#fa5c29] text-white' : 'text-[#aa8980] hover:text-[#f9dcd5]'}`
+              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-primary-main text-white' : 'text-ink-tertiary hover:text-ink-primary'}`
             }>Bookings</NavLink>
           </div>
           <div className="flex items-center gap-3">
-            <button aria-label="Search" className="text-[#aa8980] hover:text-[#f9dcd5] transition-colors">
+            <button aria-label="Search" className="text-ink-tertiary hover:text-ink-primary transition-colors">
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.5"/><path d="M13 13l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
             </button>
             <button onClick={signOut} aria-label="Sign out"
-              className="sm:hidden w-7 h-7 rounded-full bg-[#fa5c29]/20 flex items-center justify-center text-[#ffb59f] text-xs font-bold">
+              className="sm:hidden w-7 h-7 rounded-full bg-primary-main/20 flex items-center justify-center text-[#ffb59f] text-xs font-bold">
               {user?.username?.[0]?.toUpperCase() ?? '?'}
             </button>
           </div>
@@ -240,7 +240,7 @@ export default function AppLayout() {
             >
               <Suspense fallback={
                 <div className="flex items-center justify-center py-24">
-                  <div className="w-7 h-7 rounded-full border-2 border-[#fa5c29] border-t-transparent animate-spin" />
+                  <div className="w-7 h-7 rounded-full border-2 border-primary-main border-t-transparent animate-spin" />
                 </div>
               }>
                 <Outlet />
@@ -260,8 +260,8 @@ export default function AppLayout() {
               end={path === '/dashboard'}
               className={({ isActive }) => [
                 'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px]',
-                'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29] focus-visible:ring-inset',
-                isActive ? 'text-[#fa5c29]' : 'text-[#aa8980] hover:text-[#f9dcd5]',
+                'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-inset',
+                isActive ? 'text-primary-main' : 'text-ink-tertiary hover:text-ink-primary',
               ].join(' ')}
             >
               <Icon />

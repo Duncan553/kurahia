@@ -221,7 +221,7 @@ export default function ScheduleScreen() {
         <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
           className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-6">
           <div>
-            <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#f9dcd5] tracking-tight">
+            <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
               My Schedule
             </h1>
             <p className="text-sm text-ink-secondary mt-1">
@@ -234,7 +234,7 @@ export default function ScheduleScreen() {
             <Link
               to="/absence"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold
-                glass-card bg-white/5 text-[#f9dcd5] hover:bg-white/10 transition-colors"
+                glass-card bg-white/5 text-ink-primary hover:bg-white/10 transition-colors"
             >
               Absence Notice
             </Link>
@@ -267,7 +267,7 @@ export default function ScheduleScreen() {
           {/* Summary card — right sidebar */}
           <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
             <div className="glass-card rounded-2xl p-5">
-              <h3 className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-4">
+              <h3 className="text-sm font-bold tracking-widest uppercase text-ink-tertiary mb-4">
                 Summary
               </h3>
               <div className="grid grid-cols-2 gap-4 mb-4">
@@ -275,7 +275,7 @@ export default function ScheduleScreen() {
                   <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
                     Total Hours
                   </p>
-                  <p className="text-3xl font-bold tabular-nums text-[#f9dcd5]">
+                  <p className="text-3xl font-bold tabular-nums text-ink-primary">
                     {totalHours.toFixed(1)}
                   </p>
                 </div>
@@ -283,7 +283,7 @@ export default function ScheduleScreen() {
                   <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-1">
                     Shifts
                   </p>
-                  <p className="text-3xl font-bold tabular-nums text-[#f9dcd5]">
+                  <p className="text-3xl font-bold tabular-nums text-ink-primary">
                     {shiftCount}
                   </p>
                 </div>
@@ -302,9 +302,9 @@ export default function ScheduleScreen() {
         {/* ── Shift Reminders section ─────────────────────────────────── */}
         <motion.div variants={fadeIn} transition={{ duration: 0.3 }} className="mt-6">
           <div className="glass-card rounded-2xl p-5">
-            <h3 className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-bold tracking-widest uppercase text-ink-tertiary mb-4 flex items-center gap-2">
               {/* Clock/reminder icon */}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-[#aa8980]" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-ink-tertiary" aria-hidden="true">
                 <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
                 <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -353,7 +353,7 @@ function DayCard({
     >
       {/* Day header row: weekday + optional today badge */}
       <div className="flex items-center justify-between mb-1">
-        <p className={`text-sm font-bold ${isToday ? 'text-status-paid' : 'text-[#f9dcd5]'}`}>
+        <p className={`text-sm font-bold ${isToday ? 'text-status-paid' : 'text-ink-primary'}`}>
           {isToday ? 'Today' : dayName}
         </p>
         {isToday && (
@@ -384,7 +384,7 @@ function DayCard({
                   <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
                   <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <p className="text-xs font-semibold text-[#f9dcd5] tabular-nums">
+                <p className="text-xs font-semibold text-ink-primary tabular-nums">
                   {formatTime(shift.start)} — {formatTime(shift.end)}
                 </p>
               </div>

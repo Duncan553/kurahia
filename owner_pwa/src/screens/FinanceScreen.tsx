@@ -73,7 +73,7 @@ function KpiCard({ label, value, sub, danger = false }: {
   return (
     <div className="glass-card rounded-2xl p-4 space-y-1">
       <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary">{label}</p>
-      <p className={`text-2xl font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-[#f9dcd5]'}`}>
+      <p className={`text-2xl font-bold tabular-nums ${danger ? 'text-status-failed' : 'text-ink-primary'}`}>
         {value}
       </p>
       {sub && <p className="text-xs text-ink-tertiary">{sub}</p>}
@@ -228,9 +228,9 @@ function BudgetSection({ period }: { period: string }) {
             {active.map(r => (
               <div key={r.department} className="glass-card rounded-xl px-4 py-3">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <p className="text-sm font-medium text-[#f9dcd5] truncate">{r.department}</p>
+                  <p className="text-sm font-medium text-ink-primary truncate">{r.department}</p>
                   <div className="shrink-0 text-right">
-                    <span className={`text-xs font-bold tabular-nums ${r.over_budget ? 'text-status-failed' : 'text-[#f9dcd5]'}`}>
+                    <span className={`text-xs font-bold tabular-nums ${r.over_budget ? 'text-status-failed' : 'text-ink-primary'}`}>
                       {Math.round(r.pct_used)}%
                     </span>
                     {r.over_budget && <span className="ml-1 text-[10px] text-status-failed">OVER</span>}
@@ -318,7 +318,7 @@ export default function FinanceScreen() {
     <div className="p-4 max-w-6xl mx-auto">
       <div className="flex items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Finance</h1>
+          <h1 className="text-2xl font-bold text-ink-primary font-serif">Finance</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Revenue, expenses, reconciliation summaries</p>
         </div>
         <div className="flex items-center gap-2">
@@ -357,7 +357,7 @@ export default function FinanceScreen() {
             onClick={() => setSection(key)}
             className={[
               'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
-              section === key ? 'bg-white/10 text-[#f9dcd5]' : 'text-ink-secondary hover:text-[#f9dcd5]',
+              section === key ? 'bg-white/10 text-ink-primary' : 'text-ink-secondary hover:text-ink-primary',
             ].join(' ')}
           >
             {label}

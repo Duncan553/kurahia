@@ -1,0 +1,245 @@
+/* ── Kurahia Design Tokens — PRODUCTION GLASS ────────────────────
+   v2.0 — Sharp, consistent, accessible
+   ─────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Hanken Grotesk';
+  src: url('/fonts/hanken-grotesk-latin.woff2') format('woff2');
+  font-weight: 100 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces-latin.woff2') format('woff2');
+  font-weight: 100 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  font-weight: 100 800; font-style: normal; font-display: swap;
+}
+
+@theme {
+  /* ── System palette ──────────────────────────────────────────── */
+  --color-primary-main: #fa5c29;
+  --color-primary-light: #ffb59f;
+  --color-primary-dark: #af3000;
+  --color-cream-card: #1e100c;
+  --color-cream-alt: rgba(43, 28, 24, 0.6);
+  --color-cream-deep: rgba(66, 49, 44, 0.6);
+
+  /* SHARP text: pure white primary for contrast */
+  --color-ink-primary: #ffffff;
+  --color-ink-secondary: rgba(255, 235, 225, 0.82);
+  --color-ink-tertiary: rgba(210, 180, 170, 0.55);
+
+  /* ── Ticket palette ──────────────────────────────────────────── */
+  --color-ticket-paper: rgba(43, 28, 24, 0.8);
+  --color-ticket-alt: rgba(43, 28, 24, 0.6);
+  --color-ticket-ink: #f1f5f9;
+  --color-stamp-red: #ef4444;
+  --color-leaf-green: #10b981;
+  --color-tea-brown: #d97706;
+
+  /* ── Status palette ──────────────────────────────────────────── */
+  --color-status-paid: #10b981;
+  --color-status-pending: #f59e0b;
+  --color-status-failed: #ef4444;
+  --color-status-neutral: #4A7889;
+
+  /* ── Data-viz accent ─────────────────────────────────────────── */
+  --color-honey: #C68A28;
+  --color-accent-cool: #C68A28;
+
+  /* ── Font families ───────────────────────────────────────────── */
+  --font-sans: 'Hanken Grotesk', sans-serif;
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* ── Type scale ──────────────────────────────────────────────── */
+  --text-2xl: 1.5625rem;
+  --text-3xl: 1.9375rem;
+  --text-4xl: 2.4375rem;
+  --text-5xl: 3.0625rem;
+
+  /* ── Spacing tokens (NEW) ────────────────────────────────────── */
+  --space-xs: 0.25rem;   /* 4px  */
+  --space-sm: 0.5rem;    /* 8px  */
+  --space-md: 1rem;      /* 16px */
+  --space-lg: 1.5rem;    /* 24px */
+  --space-xl: 2rem;      /* 32px */
+  --space-2xl: 2.5rem;   /* 40px */
+
+  /* ── Z-index scale (NEW) ─────────────────────────────────────── */
+  --z-drawer: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-overlay: 70;
+
+  /* ── Animation tokens (NEW) ────────────────────────────────── */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 350ms;
+}
+
+html { --font-size-base: 16px; }
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--font-size-base);
+    background: var(--color-cream-card);
+    color: var(--color-ink-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4 {
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.30);
+    letter-spacing: -0.02em;
+  }
+}
+
+.tabular-nums {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Ambient background (gives glass something to blur) ──────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: url('/images/resort-bg.jpg') center/cover no-repeat;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    /* Top-right: deep teal glow */
+    radial-gradient(ellipse 60% 50% at 75% 15%, rgba(74, 120, 137, 0.07) 0%, transparent 70%),
+    /* Bottom-left: warm amber glow */
+    radial-gradient(ellipse 50% 60% at 20% 85%, rgba(198, 138, 40, 0.05) 0%, transparent 70%),
+    /* Center: very faint sage */
+    radial-gradient(ellipse 70% 70% at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 60%),
+    /* Base overlay */
+    linear-gradient(160deg, rgba(35, 18, 12, 0.76) 0%, rgba(18, 9, 6, 0.48) 45%, rgba(30, 15, 10, 0.70) 100%);
+  pointer-events: none;
+}
+
+/* ── SHARP Glass panels ────────────────────────────────────────── */
+.glass-card {
+  contain: layout paint;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(24px) saturate(180%) brightness(1.05);
+  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  border-top-color: rgba(255, 255, 255, 0.30);
+  border-radius: 1rem;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(250, 92, 41, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  transition: transform var(--duration-fast) var(--ease-out-expo),
+              box-shadow var(--duration-fast) var(--ease-out-expo);
+}
+.glass-card:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.50),
+    0 0 0 1px rgba(250, 92, 41, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.glass-card-sage {
+  contain: layout paint;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%);
+  backdrop-filter: blur(20px) saturate(160%) brightness(1.03);
+  -webkit-backdrop-filter: blur(20px) saturate(160%) brightness(1.03);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top-color: rgba(255, 255, 255, 0.22);
+  border-radius: 1rem;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+}
+
+.glass-surface {
+  contain: layout paint;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.04) 100%);
+  backdrop-filter: blur(16px) saturate(150%) brightness(1.02);
+  -webkit-backdrop-filter: blur(16px) saturate(150%) brightness(1.02);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-reduced-transparency) {
+  .glass-card, .glass-card-sage, .glass-surface {
+    background: var(--color-cream-card);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Sharp gradient buttons */
+.gradient-hero {
+  background: linear-gradient(135deg, #ff6b3d 0%, #c73e00 100%);
+  border: 1px solid rgba(255, 130, 90, 0.45);
+  box-shadow:
+    0 4px 16px rgba(250, 92, 41, 0.40),
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    0 0 0 1px rgba(250, 92, 41, 0.15);
+  transition: all var(--duration-fast) var(--ease-out-expo);
+}
+.gradient-hero:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 20px rgba(250, 92, 41, 0.50),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 1px rgba(250, 92, 41, 0.20);
+}
+.gradient-hero:active {
+  transform: translateY(0);
+  box-shadow:
+    0 2px 8px rgba(250, 92, 41, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20);
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-pulse {
+  background: linear-gradient(90deg, rgba(43, 28, 24, 0.5) 25%, rgba(66, 49, 44, 0.3) 50%, rgba(43, 28, 24, 0.5) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse { animation: none; opacity: 0.6; }
+}
+
+/* Input focus ring */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(250, 92, 41, 0.22), inset 0 1px 0 rgba(255,255,255,0.10);
+}
+
+/* Scrollbar styling for glass containers */
+.glass-scroll::-webkit-scrollbar { width: 6px; }
+.glass-scroll::-webkit-scrollbar-track { background: transparent; }
+.glass-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+.glass-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }

@@ -68,7 +68,7 @@ function LogForm() {
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       className="glass-card rounded-2xl p-5 border border-white/10 space-y-4">
-      <h2 className="font-serif text-lg font-bold text-[#f9dcd5]">Log Incident</h2>
+      <h2 className="font-serif text-lg font-bold text-ink-primary">Log Incident</h2>
 
       <div className="space-y-1">
         <label className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Severity</label>
@@ -87,7 +87,7 @@ function LogForm() {
         <label className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Location *</label>
         <input value={location} onChange={e => setLocation(e.target.value)}
           placeholder="e.g. Pool area, Jet ski dock, Villa 6"
-          className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm text-[#f9dcd5]
+          className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm text-ink-primary
             placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-[#fa5c29]/40" />
       </div>
 
@@ -95,7 +95,7 @@ function LogForm() {
         <label className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">What happened *</label>
         <textarea value={description} onChange={e => setDescription(e.target.value)}
           rows={3} placeholder="Describe what happened clearly and factually."
-          className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm text-[#f9dcd5]
+          className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm text-ink-primary
             placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-[#fa5c29]/40 resize-none" />
       </div>
 
@@ -103,7 +103,7 @@ function LogForm() {
         <label className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Guest involved (optional)</label>
         <input value={guest} onChange={e => setGuest(e.target.value)}
           placeholder="Guest name if applicable"
-          className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm text-[#f9dcd5]
+          className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm text-ink-primary
             placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-[#fa5c29]/40" />
       </div>
 
@@ -163,7 +163,7 @@ function IncidentHistory() {
               <SeverityBadge severity={inc.severity} />
               {!inc.actioned && (
                 <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5
-                  rounded-full bg-[#fa5c29]/20 text-[#fa5c29] border border-[#fa5c29]/30">
+                  rounded-full bg-primary-main/20 text-[#fa5c29] border border-primary-main/30">
                   Needs attention
                 </span>
               )}
@@ -171,7 +171,7 @@ function IncidentHistory() {
             <p className="text-[10px] text-ink-tertiary shrink-0">{fmtDate(inc.created_at)}</p>
           </div>
 
-          <p className="text-sm text-[#f9dcd5] leading-relaxed">{inc.description}</p>
+          <p className="text-sm text-ink-primary leading-relaxed">{inc.description}</p>
 
           <div className="flex items-center gap-4 text-[10px] text-ink-tertiary">
             <span>📍 {inc.location}</span>
@@ -206,7 +206,7 @@ export default function IncidentScreen() {
     <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-2xl mx-auto space-y-6">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="font-serif text-2xl font-bold text-[#f9dcd5]">Incident Report</h1>
+          <h1 className="font-serif text-2xl font-bold text-ink-primary">Incident Report</h1>
           <p className="text-sm text-ink-secondary mt-1">
             Log any accident, injury, or safety concern immediately.
           </p>
@@ -219,7 +219,7 @@ export default function IncidentScreen() {
         {isManager && (
           <ErrorBoundary level="tile">
             <div className="space-y-3">
-              <h2 className="font-serif text-lg font-bold text-[#f9dcd5]">All Incidents</h2>
+              <h2 className="font-serif text-lg font-bold text-ink-primary">All Incidents</h2>
               <IncidentHistory />
             </div>
           </ErrorBoundary>

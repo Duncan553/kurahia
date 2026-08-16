@@ -32,7 +32,7 @@ function NavCard({ label, description, path, icon, danger }: {
         {icon}
       </span>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold ${danger ? 'text-status-failed' : 'text-[#f9dcd5]'}`}>
+        <p className={`text-sm font-semibold ${danger ? 'text-status-failed' : 'text-ink-primary'}`}>
           {label}
         </p>
         <p className="text-xs text-ink-tertiary mt-0.5">{description}</p>
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="mb-6 p-4">
-        <h1 className="font-serif text-2xl font-bold text-[#f9dcd5]">PROFILE.</h1>
+        <h1 className="font-serif text-2xl font-bold text-ink-primary">PROFILE.</h1>
         <p className="text-xs text-ink-tertiary mt-1">KURAHIA STAFF</p>
       </div>
 
@@ -80,12 +80,12 @@ export default function ProfileScreen() {
 
       {/* ── Identity card ─────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="flex items-center gap-4 -mt-2">
-        <div className="w-14 h-14 rounded-full bg-[#fa5c29] flex items-center justify-center
+        <div className="w-14 h-14 rounded-full bg-primary-main flex items-center justify-center
           text-white text-xl font-bold shrink-0 ring-4 ring-cream-card">
           {user?.username?.[0]?.toUpperCase() ?? '?'}
         </div>
         <div>
-          <p className="text-base font-bold text-[#f9dcd5]">{user?.username}</p>
+          <p className="text-base font-bold text-ink-primary">{user?.username}</p>
           <p className="text-sm text-ink-tertiary">
             {roleName(user?.role_level ?? 0)}
             {user?.department ? ` · ${user.department}` : ''}
@@ -172,7 +172,7 @@ export default function ProfileScreen() {
                 'flex-1 py-2 min-h-[44px] rounded-xl border text-sm font-semibold transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                 fontSize === key
-                  ? 'bg-ink-primary text-[#f9dcd5] border-ink-primary'
+                  ? 'bg-ink-primary text-ink-primary border-ink-primary'
                   : 'border-white/10 text-ink-secondary hover:bg-white/5',
               ].join(' ')}
             >
