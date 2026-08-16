@@ -162,7 +162,7 @@ export default function EventsScreen() {
       <ErrorBoundary level="tile">
       {/* ── Page header ──────────────────────────────────────────────── */}
       <motion.div variants={fadeIn} transition={{ duration: 0.3 }} className="mb-6">
-        <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#f9dcd5] tracking-tight">
+        <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
           Upcoming Events
         </h1>
         <p className="text-sm text-ink-secondary mt-1">
@@ -190,7 +190,7 @@ export default function EventsScreen() {
       {/* ── This Week ────────────────────────────────────────────────── */}
       {weekEvents.length > 0 && (
         <motion.div variants={fadeIn} transition={{ duration: 0.3 }} className="mb-8">
-          <h2 className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-3">
+          <h2 className="text-sm font-bold tracking-widest uppercase text-ink-tertiary mb-3">
             This Week
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -204,7 +204,7 @@ export default function EventsScreen() {
       {/* ── All Upcoming (full list) ─────────────────────────────────── */}
       {(events ?? []).length > todayEvents.length + weekEvents.length && (
         <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
-          <h2 className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-3">
+          <h2 className="text-sm font-bold tracking-widest uppercase text-ink-tertiary mb-3">
             Coming Up
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -245,12 +245,12 @@ function EventCard({ event, isToday = false }: { event: EventItem; isToday?: boo
       {/* Top row: title + status badge */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="font-serif text-lg font-bold text-[#f9dcd5] truncate">
+          <h3 className="font-serif text-lg font-bold text-ink-primary truncate">
             {event.title}
           </h3>
           {event.event_type && (
             <span className="inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide
-              bg-[#fa5c29]/10 text-[#fa5c29]">
+              bg-primary-main/10 text-[#fa5c29]">
               {event.event_type}
             </span>
           )}

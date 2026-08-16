@@ -96,7 +96,7 @@ export default function SuggestionsScreen() {
                 className={[
                   'flex-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark',
                   category === c
-                    ? 'bg-[#fa5c29] text-white'
+                    ? 'bg-primary-main text-white'
                     : 'text-ink-secondary hover:bg-white/5',
                 ].join(' ')}
               >
@@ -125,7 +125,7 @@ export default function SuggestionsScreen() {
 
         {/* Subject */}
         <motion.div variants={itemVariants}>
-          <label htmlFor="subject" className="block text-sm font-semibold text-[#f9dcd5] mb-1.5">
+          <label htmlFor="subject" className="block text-sm font-semibold text-ink-primary mb-1.5">
             Subject
           </label>
           <input
@@ -137,7 +137,7 @@ export default function SuggestionsScreen() {
             placeholder="Brief summary of your suggestion"
             aria-describedby={subjectError ? 'subject-error' : undefined}
             className={[
-              'w-full px-4 py-3 rounded-xl border bg-transparent text-sm text-[#f9dcd5]',
+              'w-full px-4 py-3 rounded-xl border bg-transparent text-sm text-ink-primary',
               'placeholder:text-ink-tertiary/60 transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-primary-dark focus:border-transparent',
               subjectError ? 'border-status-failed' : 'border-white/10',
@@ -153,7 +153,7 @@ export default function SuggestionsScreen() {
         {/* Body */}
         <motion.div variants={itemVariants}>
           <div className="flex items-baseline justify-between mb-1.5">
-            <label htmlFor="body" className="block text-sm font-semibold text-[#f9dcd5]">
+            <label htmlFor="body" className="block text-sm font-semibold text-ink-primary">
               Details
             </label>
             <span className={['text-xs tabular-nums', body.length > MAX_BODY * 0.9 ? 'text-status-failed' : 'text-ink-tertiary'].join(' ')}>
@@ -170,7 +170,7 @@ export default function SuggestionsScreen() {
             placeholder="Describe your suggestion in detail…"
             aria-describedby={bodyError ? 'body-error' : undefined}
             className={[
-              'w-full px-4 py-3 rounded-xl border bg-transparent text-sm text-[#f9dcd5] resize-none',
+              'w-full px-4 py-3 rounded-xl border bg-transparent text-sm text-ink-primary resize-none',
               'placeholder:text-ink-tertiary/60 transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-primary-dark focus:border-transparent',
               bodyError ? 'border-status-failed' : 'border-white/10',
@@ -193,7 +193,7 @@ export default function SuggestionsScreen() {
             'w-full py-3.5 rounded-xl text-sm font-semibold transition-all',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
             'disabled:opacity-50 disabled:cursor-not-allowed',
-            'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
+            'bg-primary-main text-white hover:bg-primary-dark active:scale-[0.99]',
           ].join(' ')}
         >
           {mutation.isPending ? (

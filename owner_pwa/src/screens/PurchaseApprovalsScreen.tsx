@@ -78,7 +78,7 @@ function ApprovalDrawer({
       <div className="rounded-xl bg-white/5 p-4 space-y-2">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="font-semibold text-[#f9dcd5] text-base">{request.item_name}</p>
+            <p className="font-semibold text-ink-primary text-base">{request.item_name}</p>
             <p className="text-xs text-ink-secondary mt-0.5">
               Qty: <span className="font-medium">{request.quantity}</span>
             </p>
@@ -86,8 +86,8 @@ function ApprovalDrawer({
           <StatusBadge status={statusBadge(request.status)} />
         </div>
         <div className="text-xs text-ink-secondary space-y-1 pt-1 border-t border-cream-deep">
-          <p>By: <span className="font-medium text-[#f9dcd5]">{request.requested_by}</span></p>
-          <p>Dept: <span className="font-medium text-[#f9dcd5]">{request.department}</span></p>
+          <p>By: <span className="font-medium text-ink-primary">{request.requested_by}</span></p>
+          <p>Dept: <span className="font-medium text-ink-primary">{request.department}</span></p>
           <p>Submitted: {timeAgo(request.created_at)}</p>
           {request.notes && <p className="italic">"{request.notes}"</p>}
         </div>
@@ -99,7 +99,7 @@ function ApprovalDrawer({
           <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary mb-1">
             Manager's Estimate
           </p>
-          <p className="text-2xl font-bold tabular-nums text-[#f9dcd5]">
+          <p className="text-2xl font-bold tabular-nums text-ink-primary">
             {formatKsh(request.estimated_cost) ?? request.estimated_cost}
           </p>
           <p className="text-xs text-ink-tertiary mt-0.5">Proposed by manager</p>
@@ -124,7 +124,7 @@ function ApprovalDrawer({
             onChange={e => setNotes(e.target.value)}
             placeholder="Add a note for your records…"
             className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
-              text-[#f9dcd5] placeholder:text-ink-tertiary resize-none
+              text-ink-primary placeholder:text-ink-tertiary resize-none
               focus:outline-none focus:ring-2 focus:ring-primary-main"
           />
         </div>
@@ -208,7 +208,7 @@ function RequestCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-[#f9dcd5] text-sm truncate">{req.item_name}</p>
+          <p className="font-semibold text-ink-primary text-sm truncate">{req.item_name}</p>
           <p className="text-xs text-ink-secondary mt-0.5">
             {req.department} · by {req.requested_by} · {timeAgo(req.created_at)}
           </p>
@@ -262,7 +262,7 @@ export default function PurchaseApprovalsScreen() {
   return (
     <div className="p-4 max-w-3xl mx-auto">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Purchase Approvals</h1>
+        <h1 className="text-2xl font-bold text-ink-primary font-serif">Purchase Approvals</h1>
         <p className="text-xs text-ink-tertiary mt-0.5">Review and approve restock requests</p>
       </div>
 
@@ -277,8 +277,8 @@ export default function PurchaseApprovalsScreen() {
             className={[
               'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
               tab === key
-                ? 'bg-white/10 text-[#f9dcd5]'
-                : 'text-ink-secondary hover:text-[#f9dcd5]',
+                ? 'bg-white/10 text-ink-primary'
+                : 'text-ink-secondary hover:text-ink-primary',
             ].join(' ')}
           >
             {label}

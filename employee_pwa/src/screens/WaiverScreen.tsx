@@ -126,7 +126,7 @@ export default function WaiverScreen() {
           disabled={mutation.isPending}
           className={[
             'w-full py-4 rounded-2xl text-base font-semibold transition-all mt-1',
-            'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
+            'bg-primary-main text-white hover:bg-primary-dark active:scale-[0.99]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
             'disabled:opacity-50 disabled:cursor-not-allowed',
           ].join(' ')}

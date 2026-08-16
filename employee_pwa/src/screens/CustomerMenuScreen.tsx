@@ -39,7 +39,7 @@ export default function CustomerMenuScreen() {
 
         {/* Header */}
         <div className="text-center mb-10">
-          <h1 className="font-serif text-4xl md:text-5xl font-bold text-[#f9dcd5] tracking-tight">
+          <h1 className="font-serif text-4xl md:text-5xl font-bold text-ink-primary tracking-tight">
             Our Menu
           </h1>
           <p className="text-ink-tertiary mt-2">Waterfront Country Club</p>
@@ -57,7 +57,7 @@ export default function CustomerMenuScreen() {
         {/* Categories */}
         {Object.entries(grouped).map(([category, catItems]) => (
           <div key={category} className="mb-10">
-            <h2 className="font-serif text-xl font-bold text-[#f9dcd5]/80 mb-4 border-b border-white/10 pb-2">
+            <h2 className="font-serif text-xl font-bold text-ink-primary/80 mb-4 border-b border-white/10 pb-2">
               {category}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr] gap-4">
@@ -80,14 +80,14 @@ export default function CustomerMenuScreen() {
                       )}
                       {soldOut && (
                         <div className="absolute inset-0 flex items-center justify-center bg-[rgba(30,16,12,0.6)]">
-                          <span className="text-xs font-bold text-[#f9dcd5]/70 uppercase">Sold Out</span>
+                          <span className="text-xs font-bold text-ink-primary/70 uppercase">Sold Out</span>
                         </div>
                       )}
                     </div>
 
                     {/* Info */}
                     <div className="p-4">
-                      <p className="text-sm font-semibold text-[#f9dcd5]">{item.name}</p>
+                      <p className="text-sm font-semibold text-ink-primary">{item.name}</p>
                       <p className="text-sm tabular-nums text-[#fa5c29] font-bold mt-1">
                         {soldOut ? '—' : kes(item.price)}
                       </p>
@@ -104,7 +104,7 @@ export default function CustomerMenuScreen() {
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate(tabId ? `/pos/tabs/${tabId}` : '/pos/tabs')}
-            className="px-8 py-4 rounded-2xl gradient-hero text-[#f9dcd5] font-bold text-lg
+            className="px-8 py-4 rounded-2xl gradient-hero text-ink-primary font-bold text-lg
               shadow-lg hover:shadow-xl transition-shadow">
             Open to Order →
           </motion.button>

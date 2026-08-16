@@ -1,187 +1,19 @@
 @import "tailwindcss";
 @source "../../shared_ui/src";
-
-/* ── Self-hosted fonts (SW-precached for offline) ──────────────── */
-@font-face {
-  font-family: 'Hanken Grotesk';
-  src: url('/fonts/hanken-grotesk-latin.woff2') format('woff2');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Fraunces';
-  src: url('/fonts/fraunces-latin.woff2') format('woff2');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'JetBrains Mono';
-  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
-  font-weight: 100 800;
-  font-style: normal;
-  font-display: swap;
-}
-
-@theme {
-  /* ── System palette (Stitch warm dark) ───────────────────────── */
-  --color-primary-main: #fa5c29;   /* warm orange accent (use sparingly) */
-  --color-primary-light: #ffb59f;  /* lighter orange for text */
-  --color-primary-dark: #af3000;   /* pressed orange */
-  --color-cream-card: #1e100c;     /* warm dark brown bg */
-  --color-cream-alt: rgba(43, 28, 24, 0.6);   /* warm surface */
-  --color-cream-deep: rgba(66, 49, 44, 0.6);  /* warm surface variant */
-  --color-ink-primary: #f9dcd5;    /* warm off-white text */
-  --color-ink-secondary: rgba(227, 190, 180, 0.7); /* warm secondary */
-  --color-ink-tertiary: rgba(170, 137, 128, 0.5);  /* warm tertiary */
-
-  /* ── Ticket palette (warm-adapted) ───────────────────────────── */
-  --color-ticket-paper: rgba(43, 28, 24, 0.8);
-  --color-ticket-alt: rgba(43, 28, 24, 0.6);
-  --color-ticket-ink: #f1f5f9;
-  --color-stamp-red: #ef4444;
-  --color-leaf-green: #10b981;
-  --color-tea-brown: #d97706;
-
-  /* ── Status palette (bright on dark — easy AA pass) ──────────── */
-  --color-status-paid: #10b981;    /* emerald-500 */
-  --color-status-pending: #f59e0b; /* amber-500 */
-  --color-status-failed: #ef4444;  /* red-500 */
-  --color-status-neutral: #4A7889;
-
-  /* ── Data-viz accent ─────────────────────────────────────────── */
-  --color-honey: #C68A28;          /* data viz accent ONLY */
-  --color-accent-cool: #C68A28;    /* alias → honey */
-
-  /* ── Font families ───────────────────────────────────────────── */
-  --font-sans: 'Hanken Grotesk', sans-serif;
-  --font-serif: 'Fraunces', Georgia, serif;
-  --font-mono: 'JetBrains Mono', monospace;
-
-  /* ── Type scale (8-step: 12/14/16/20/25/31/39/49px) ─────────── */
-  /* text-xs  = 12px (Tailwind default 0.75rem — unchanged) */
-  /* text-sm  = 14px (Tailwind default 0.875rem — unchanged) */
-  /* text-base = 16px (Tailwind default 1rem — unchanged) */
-  /* text-xl  = 20px (Tailwind default 1.25rem — unchanged) */
-  --text-2xl: 1.5625rem;  /* 25px — Tailwind default is 24px */
-  --text-3xl: 1.9375rem;  /* 31px — Tailwind default is 30px */
-  --text-4xl: 2.4375rem;  /* 39px — Tailwind default is 36px */
-  --text-5xl: 3.0625rem;  /* 49px — Tailwind default is 48px */
-
-  /* ── Tracking ────────────────────────────────────────────────── */
-  /* tracking-wide / tracking-widest use Tailwind defaults */
-  /* tracking-tight uses Tailwind default */
-
-  /* ── Breakpoints (Tailwind v4 defaults — confirmed) ─────────── */
-  /* sm: 640px  md: 768px  lg: 1024px  xl: 1280px */
-}
-
-/* F-18 font-size slider hook — regular CSS var, not a Tailwind token */
-html {
-  --font-size-base: 16px;
-}
+@import "../../shared_ui/src/styles/tokens.css";
 
 @layer base {
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
-
   body {
     margin: 0;
-    font-family: 'Hanken Grotesk', sans-serif;
+    font-family: var(--font-sans);
     font-size: var(--font-size-base);
-    background: #1e100c;
-    color: #f9dcd5;
+    background: var(--color-cream-card);
+    color: var(--color-ink-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Utility: tabular numbers for financial data — JetBrains Mono */
-.tabular-nums {
-  font-family: 'JetBrains Mono', monospace;
-  font-variant-numeric: tabular-nums;
-}
-
-
-/* ── Background — resort photo + warm overlay (glass needs real content) ── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  background: url('/images/resort-bg.jpg') center/cover no-repeat;
-}
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(to bottom, rgba(30, 16, 12, 0.85) 0%, rgba(30, 16, 12, 0.65) 100%);
-  pointer-events: none;
-}
-
-/* ── Glass panels — Apple-quality: saturate(160%) is the secret ────── */
-.glass-card {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-.glass-card-sage {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 1rem;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-.glass-surface {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 0.75rem;
-}
-@media (prefers-reduced-transparency) {
-  .glass-card { background: var(--color-cream-card); backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .glass-card-sage { background: var(--color-cream-alt); backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .glass-surface { background: var(--color-cream-card); backdrop-filter: none; -webkit-backdrop-filter: none; }
-}
-
-/* Gradient buttons — vibrant, not flat */
-.gradient-hero {
-  background: linear-gradient(135deg, #fa5c29 0%, #af3000 100%);
-  box-shadow: 0 4px 14px rgba(250, 92, 41, 0.25);
-}
-
-/* Skeleton shimmer retuned for parchment/sage base */
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-.animate-pulse {
-  background: linear-gradient(
-    90deg,
-    rgba(43, 28, 24, 0.5) 25%,
-    rgba(66, 49, 44, 0.3) 50%,
-    rgba(43, 28, 24, 0.5) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .animate-pulse { animation: none; opacity: 0.6; }
-}
-
-/* Login torn-paper edge — only active at md+ (tablet/desktop) */
 .login-torn-edge {
   clip-path: none;
 }
@@ -197,3 +29,9 @@ body::after {
     );
   }
 }
+
+/* ── Spacing utilities (standardized) ──────────────────────────── */
+.section-gap { margin-bottom: var(--space-xl); }
+.card-gap { gap: var(--space-md); }
+.inner-gap { gap: var(--space-sm); }
+.card-pad { padding: var(--space-lg); }

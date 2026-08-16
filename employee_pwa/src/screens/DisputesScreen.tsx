@@ -67,12 +67,12 @@ function DisputeCard({ d, onAction }: {
       {/* Header row: category + status badge */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-[#f9dcd5] truncate">
+          <p className="text-sm font-bold text-ink-primary truncate">
             {d.category.replace(/_/g, ' ')}
           </p>
           <p className="text-[10px] text-ink-tertiary mt-0.5">
             Filed {fmtDate(d.created_at)}
-            {d.reporter && <> by <span className="text-[#aa8980]">{d.reporter}</span></>}
+            {d.reporter && <> by <span className="text-ink-tertiary">{d.reporter}</span></>}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -86,8 +86,8 @@ function DisputeCard({ d, onAction }: {
 
       {/* Accused names */}
       {d.subjects.length > 0 && (
-        <p className="text-xs text-[#aa8980] mb-2">
-          Accused: <span className="font-medium text-[#f9dcd5]">{d.subjects.join(', ')}</span>
+        <p className="text-xs text-ink-tertiary mb-2">
+          Accused: <span className="font-medium text-ink-primary">{d.subjects.join(', ')}</span>
         </p>
       )}
 
@@ -109,7 +109,7 @@ function DisputeCard({ d, onAction }: {
       {/* Assigned to */}
       {d.assigned_to && (
         <p className="text-[10px] text-ink-tertiary mt-2">
-          Assigned to: <span className="text-[#aa8980]">{d.assigned_to}</span>
+          Assigned to: <span className="text-ink-tertiary">{d.assigned_to}</span>
         </p>
       )}
 
@@ -178,7 +178,7 @@ function ActionModal({ action, onClose, onSubmit, loading }: {
           placeholder={isResolve ? 'Resolution notes...' : 'Reason for dismissal...'}
           rows={4}
           className="w-full rounded-xl bg-white/5 border border-white/10 p-3
-            text-sm text-[#f9dcd5] placeholder:text-ink-tertiary
+            text-sm text-ink-primary placeholder:text-ink-tertiary
             focus:outline-none focus:ring-2 focus:ring-[#fa5c29] resize-none"
         />
         <div className="flex gap-2">
@@ -277,7 +277,7 @@ export default function DisputesScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#f9dcd5]">
+          <h1 className="font-serif text-2xl md:text-3xl font-bold text-ink-primary">
             Disputes
           </h1>
           <p className="text-sm text-ink-secondary mt-1">
@@ -293,8 +293,8 @@ export default function DisputesScreen() {
               onClick={() => setStatusFilter(s)}
               className={`px-4 py-2 rounded-full text-xs font-semibold border transition-colors
                 ${statusFilter === s
-                  ? 'border-[#f9dcd5]/40 bg-white/10 text-[#f9dcd5]'
-                  : 'border-white/10 text-[#aa8980] hover:text-[#f9dcd5] hover:bg-white/5'
+                  ? 'border-[#f9dcd5]/40 bg-white/10 text-ink-primary'
+                  : 'border-white/10 text-ink-tertiary hover:text-ink-primary hover:bg-white/5'
                 }`}
             >
               {s.replace(/_/g, ' ')}
@@ -321,7 +321,7 @@ export default function DisputesScreen() {
           {!isLoading && !isError && disputes.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <span className="text-5xl text-ink-tertiary/40">&#9745;</span>
-              <p className="text-[#aa8980] text-lg font-medium">No disputes found</p>
+              <p className="text-ink-tertiary text-lg font-medium">No disputes found</p>
               <p className="text-xs text-ink-tertiary">
                 {statusFilter !== 'ALL' ? 'Try a different filter.' : 'Nothing to review right now.'}
               </p>

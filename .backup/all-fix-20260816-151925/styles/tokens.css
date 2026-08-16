@@ -1,0 +1,230 @@
+/* ── Kurahia Design Tokens — SHARP GLASS EDITION ─────────────────
+   What changed and WHY:
+   • Glass opacity 0.06 → 0.10-0.12 (was invisible on dark bg)
+   • Borders 0.08 → 0.18-0.20 (edges now catch light)
+   • Added inset top highlight 0.30 (the "sun on glass" effect)
+   • Added bottom inset shadow (gives physical thickness)
+   • Added warm rim glow (subtle brand color at edges)
+   • Text primary: #f9dcd5 → #ffffff (brown on brown was muddy)
+   • Background overlay: angled multi-stop (less flat)
+   ─────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Hanken Grotesk';
+  src: url('/fonts/hanken-grotesk-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  /* ── System palette ──────────────────────────────────────────── */
+  --color-primary-main: #fa5c29;
+  --color-primary-light: #ffb59f;
+  --color-primary-dark: #af3000;
+  --color-cream-card: #1e100c;
+  --color-cream-alt: rgba(43, 28, 24, 0.6);
+  --color-cream-deep: rgba(66, 49, 44, 0.6);
+
+  /* SHARP text: pure white primary, warm bright secondary */
+  --color-ink-primary: #ffffff;
+  --color-ink-secondary: rgba(255, 235, 225, 0.82);
+  --color-ink-tertiary: rgba(210, 180, 170, 0.55);
+
+  /* ── Ticket palette ──────────────────────────────────────────── */
+  --color-ticket-paper: rgba(43, 28, 24, 0.8);
+  --color-ticket-alt: rgba(43, 28, 24, 0.6);
+  --color-ticket-ink: #f1f5f9;
+  --color-stamp-red: #ef4444;
+  --color-leaf-green: #10b981;
+  --color-tea-brown: #d97706;
+
+  /* ── Status palette ──────────────────────────────────────────── */
+  --color-status-paid: #10b981;
+  --color-status-pending: #f59e0b;
+  --color-status-failed: #ef4444;
+  --color-status-neutral: #4A7889;
+
+  /* ── Data-viz accent ─────────────────────────────────────────── */
+  --color-honey: #C68A28;
+  --color-accent-cool: #C68A28;
+
+  /* ── Font families ───────────────────────────────────────────── */
+  --font-sans: 'Hanken Grotesk', sans-serif;
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* ── Type scale ──────────────────────────────────────────────── */
+  --text-2xl: 1.5625rem;
+  --text-3xl: 1.9375rem;
+  --text-4xl: 2.4375rem;
+  --text-5xl: 3.0625rem;
+}
+
+html { --font-size-base: 16px; }
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--font-size-base);
+    background: var(--color-cream-card);
+    color: var(--color-ink-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Headings get subtle depth shadow for sharpness */
+  h1, h2, h3, h4 {
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.30);
+    letter-spacing: -0.02em;
+  }
+}
+
+.tabular-nums {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Background: resort photo + ANGLED, VARIED overlay ───────────
+   The 160deg angle and multi-stop gradient prevent the flat "mud"
+   look. Glass now has light and dark areas to refract. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: url('/images/resort-bg.jpg') center/cover no-repeat;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    160deg,
+    rgba(35, 18, 12, 0.76) 0%,
+    rgba(18, 9, 6, 0.48) 45%,
+    rgba(30, 15, 10, 0.70) 100%
+  );
+  pointer-events: none;
+}
+
+/* ── SHARP Glass panels ──────────────────────────────────────────
+   The 4 secrets to glass that pops:
+   1. Gradient background (thicker at top) — catches light
+   2. Strong inset top highlight — simulates light source
+   3. Visible border + warm rim glow — defines the edge
+   4. Bottom inset shadow — gives physical thickness
+*/
+.glass-card {
+  contain: layout paint;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  border-radius: 1rem;
+  box-shadow:
+    /* Lift */
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    /* Warm rim glow */
+    0 0 0 1px rgba(250, 92, 41, 0.08),
+    /* Top light reflection */
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    /* Bottom thickness */
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.glass-card-sage {
+  contain: layout paint;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 1rem;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+}
+
+.glass-surface {
+  contain: layout paint;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-reduced-transparency) {
+  .glass-card { background: var(--color-cream-card); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .glass-card-sage { background: var(--color-cream-alt); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .glass-surface { background: var(--color-cream-card); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+/* Sharp gradient buttons */
+.gradient-hero {
+  background: linear-gradient(135deg, #ff6b3d 0%, #c73e00 100%);
+  border: 1px solid rgba(255, 130, 90, 0.45);
+  box-shadow:
+    0 4px 16px rgba(250, 92, 41, 0.40),
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    0 0 0 1px rgba(250, 92, 41, 0.15);
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-pulse {
+  background: linear-gradient(
+    90deg,
+    rgba(43, 28, 24, 0.5) 25%,
+    rgba(66, 49, 44, 0.3) 50%,
+    rgba(43, 28, 24, 0.5) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse { animation: none; opacity: 0.6; }
+}
+
+/* Input focus: sharp orange ring */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(250, 92, 41, 0.22), inset 0 1px 0 rgba(255,255,255,0.10);
+}

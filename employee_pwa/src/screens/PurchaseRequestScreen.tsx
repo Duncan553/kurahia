@@ -103,7 +103,7 @@ export default function PurchaseRequestScreen() {
       <div className="p-4 max-w-3xl mx-auto space-y-6">
 
         <div>
-          <h1 className="text-xl font-bold text-[#f9dcd5]">Purchase Request</h1>
+          <h1 className="text-xl font-bold text-ink-primary">Purchase Request</h1>
           <p className="text-sm text-ink-tertiary">Request restocking — owner approves before purchase</p>
         </div>
 
@@ -121,7 +121,7 @@ export default function PurchaseRequestScreen() {
                 placeholder="e.g. 2kg Omo washing powder"
                 disabled={mutation.isPending}
                 className="w-full rounded-xl glass-card bg-transparent px-4 py-3
-                  text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                  text-sm text-ink-primary focus:outline-none focus:border-primary-main
                   focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
               />
             </div>
@@ -157,7 +157,7 @@ export default function PurchaseRequestScreen() {
               onBlur={() => touch('qty')}
               disabled={mutation.isPending}
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3
-                text-base text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                text-base text-ink-primary focus:outline-none focus:border-primary-main
                 focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
             />
           </div>
@@ -172,7 +172,7 @@ export default function PurchaseRequestScreen() {
               disabled={mutation.isPending}
               placeholder="Reason, urgency, preferred supplier…"
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3
-                text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                text-sm text-ink-primary focus:outline-none focus:border-primary-main
                 focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50 resize-none"
             />
           </div>
@@ -211,7 +211,7 @@ export default function PurchaseRequestScreen() {
                   className="flex items-center justify-between rounded-xl
                     glass-card px-4 py-3 gap-2">
                   <div className="min-w-0">
-                    <p className="font-medium text-[#f9dcd5] text-sm truncate">
+                    <p className="font-medium text-ink-primary text-sm truncate">
                       {r.item_name ?? 'Item'}
                     </p>
                     <p className="text-xs text-ink-tertiary tabular-nums">

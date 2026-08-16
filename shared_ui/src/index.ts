@@ -49,3 +49,15 @@ export { SearchInput } from './components/SearchInput'
 export type { SearchInputProps } from './components/SearchInput'
 
 export { ErrorBoundary } from './components/ErrorBoundary'
+
+
+// ── Glass surfaces ──
+export { GlassCard } from './components/GlassCard'
+export type { GlassCardProps, GlassIntensity } from './components/GlassCard'
+
+// ── Motion presets ──
+export { slideUp, fadeScale, slideFromRight } from './motion/presets'
+
+// ── Help system ──
+export { HelpTooltip } from './components/HelpTooltip'
+export type { HelpTooltipProps } from './components/HelpTooltip'

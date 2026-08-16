@@ -115,7 +115,7 @@ export default function FrontDeskScreen() {
         <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}
           className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-[#f9dcd5] font-serif">Front Desk</h1>
+            <h1 className="text-3xl font-bold text-ink-primary font-serif">Front Desk</h1>
             <p className="text-sm text-ink-tertiary mt-1">
               {data?.date ?? 'Today'}
               {lastUpdated ? ` · updated ${lastUpdated}` : ''}
@@ -123,11 +123,11 @@ export default function FrontDeskScreen() {
           </div>
           <div className="flex gap-4">
             <div className="glass-card px-5 py-3 text-center">
-              <p className="text-2xl font-bold tabular-nums text-[#f9dcd5]">{counts.arrivals}</p>
+              <p className="text-2xl font-bold tabular-nums text-ink-primary">{counts.arrivals}</p>
               <p className="text-[10px] uppercase tracking-widest text-ink-tertiary">Arrivals</p>
             </div>
             <div className="glass-card px-5 py-3 text-center">
-              <p className="text-2xl font-bold tabular-nums text-[#f9dcd5]">{counts.departures}</p>
+              <p className="text-2xl font-bold tabular-nums text-ink-primary">{counts.departures}</p>
               <p className="text-[10px] uppercase tracking-widest text-ink-tertiary">Departures</p>
             </div>
             <div className="glass-card px-5 py-3 text-center">
@@ -148,8 +148,8 @@ export default function FrontDeskScreen() {
             onChange={e => setBand(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && band && bandMut.mutate(band)}
             className="flex-1 rounded-xl glass-card bg-transparent px-4 py-2.5
-              text-sm text-[#f9dcd5] placeholder:text-ink-tertiary
-              focus:outline-none focus:border-[#fa5c29] focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+              text-sm text-ink-primary placeholder:text-ink-tertiary
+              focus:outline-none focus:border-primary-main focus-visible:ring-2 focus-visible:ring-primary-main"
           />
           <Button variant="ghost" size="sm" loading={bandMut.isPending}
             onClick={() => band && bandMut.mutate(band)}>
@@ -189,14 +189,14 @@ export default function FrontDeskScreen() {
               whileTap={{ scale: 0.97 }}
               className={[
                 'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
-                tab === t ? 'bg-white/8 shadow-sm text-[#f9dcd5]' : 'text-ink-tertiary hover:text-ink-secondary',
+                tab === t ? 'bg-white/8 shadow-sm text-ink-primary' : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
               {t.charAt(0).toUpperCase() + t.slice(1)}
               {!isLoading && (
                 <span className={[
                   'ml-1 text-[10px] font-bold',
-                  tab === t ? 'text-[#f9dcd5]' : 'text-ink-tertiary',
+                  tab === t ? 'text-ink-primary' : 'text-ink-tertiary',
                 ].join(' ')}>
                   ({counts[t]})
                 </span>
@@ -244,7 +244,7 @@ export default function FrontDeskScreen() {
                       <div key={a.booking_id}
                         className="glass-card rounded-2xl px-4 py-3 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-[#f9dcd5]">{a.guest_name}</p>
+                          <p className="text-sm font-semibold text-ink-primary">{a.guest_name}</p>
                           <StatusBadge status={depStatus} />
                         </div>
                         {a.resource && (
@@ -254,7 +254,7 @@ export default function FrontDeskScreen() {
                           <span>Deposit paid: <span className={`font-medium ${depStatus === 'paid' ? 'text-status-paid' : 'text-status-pending'}`}>
                             {ksh(a.deposit_paid)}
                           </span></span>
-                          <span>Required: <span className="font-medium text-[#f9dcd5]">{ksh(a.deposit_required)}</span></span>
+                          <span>Required: <span className="font-medium text-ink-primary">{ksh(a.deposit_required)}</span></span>
                         </div>
                       </div>
                     )
@@ -293,7 +293,7 @@ export default function FrontDeskScreen() {
                             : 'glass-card',
                         ].join(' ')}>
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-[#f9dcd5]">{d.guest_name}</p>
+                          <p className="text-sm font-semibold text-ink-primary">{d.guest_name}</p>
                           {hasBalance && (
                             <span className="text-xs font-semibold text-status-pending">
                               Outstanding
@@ -351,7 +351,7 @@ export default function FrontDeskScreen() {
                         ].join(' ')}
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-[#f9dcd5]">{o.guest_name}</p>
+                          <p className="text-sm font-semibold text-ink-primary">{o.guest_name}</p>
                           {clickable && (
                             <span className="text-[10px] text-ink-tertiary">View tab →</span>
                           )}
@@ -361,7 +361,7 @@ export default function FrontDeskScreen() {
                         )}
                         <p className="text-xs text-ink-tertiary">
                           Running tab:{' '}
-                          <span className={`font-semibold ${hasBalance ? 'text-[#f9dcd5]' : 'text-ink-tertiary'}`}>
+                          <span className={`font-semibold ${hasBalance ? 'text-ink-primary' : 'text-ink-tertiary'}`}>
                             {ksh(o.tab_balance)}
                           </span>
                         </p>

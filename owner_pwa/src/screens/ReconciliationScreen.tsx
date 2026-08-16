@@ -117,7 +117,7 @@ export default function ReconciliationScreen() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-[#f9dcd5] font-serif">Three-Way Reconciliation</h1>
+          <h1 className="text-xl font-bold text-ink-primary font-serif">Three-Way Reconciliation</h1>
           <p className="text-xs text-ink-secondary mt-0.5">Receipts · Cash · Stock</p>
         </div>
         {/* Date picker */}
@@ -129,7 +129,7 @@ export default function ReconciliationScreen() {
           max={todayNairobi()}
           onChange={e => setView(v => ({ ...v, date: e.target.value }))}
           className="rounded-xl border border-white/10 bg-transparent px-3 py-2
-            text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
+            text-sm text-ink-primary focus:outline-none focus:border-primary-main"
         />
       </div>
 
@@ -167,8 +167,8 @@ export default function ReconciliationScreen() {
               <Row label="Card"   value={kes(data.receipts.card)} />
               <Row label="M-Pesa" value={kes(data.receipts.mpesa)} />
               <div className="mt-2 pt-2 border-t border-white/10 flex justify-between">
-                <span className="text-xs font-semibold text-[#f9dcd5]">Total</span>
-                <span className="text-sm font-bold tabular-nums text-[#f9dcd5]">{kes(data.receipts.total)}</span>
+                <span className="text-xs font-semibold text-ink-primary">Total</span>
+                <span className="text-sm font-bold tabular-nums text-ink-primary">{kes(data.receipts.total)}</span>
               </div>
             </div>
 
@@ -206,7 +206,7 @@ export default function ReconciliationScreen() {
             {/* Corner 3: Stock / Judge */}
             <div className="glass-card rounded-2xl p-4">
               <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-3">Stock Alerts</p>
-              <p className="text-2xl font-bold text-[#f9dcd5] tabular-nums">
+              <p className="text-2xl font-bold text-ink-primary tabular-nums">
                 {data.stock.open_alerts_count}
               </p>
               <p className="text-xs text-ink-secondary mb-3">open alert{data.stock.open_alerts_count !== 1 ? 's' : ''}</p>
@@ -233,7 +233,7 @@ export default function ReconciliationScreen() {
                 Gaps detected
               </p>
               {data.gaps.map((g, i) => (
-                <p key={i} className="text-sm text-[#f9dcd5] leading-snug">• {g}</p>
+                <p key={i} className="text-sm text-ink-primary leading-snug">• {g}</p>
               ))}
             </div>
           )}
@@ -247,7 +247,7 @@ export default function ReconciliationScreen() {
               <div className="relative overflow-hidden rounded-2xl">
                 {/* Hold progress fill */}
                 <div
-                  className="absolute inset-y-0 left-0 bg-[#fa5c29]/15 transition-none pointer-events-none"
+                  className="absolute inset-y-0 left-0 bg-primary-main/15 transition-none pointer-events-none"
                   style={{ width: `${view.holdProgress}%` }}
                 />
                 <button
@@ -259,7 +259,7 @@ export default function ReconciliationScreen() {
                   onKeyDown={(e) => { if (e.key === ' ' && !e.repeat) { e.preventDefault(); startHold() } }}
                   onKeyUp={(e) => { if (e.key === ' ') { e.preventDefault(); cancelHold() } }}
                   aria-label="Close Period. Hold Space for 2 seconds to confirm."
-                  className="relative w-full py-4 bg-[#fa5c29] text-white rounded-2xl
+                  className="relative w-full py-4 bg-primary-main text-white rounded-2xl
                     text-base font-semibold select-none cursor-grab active:cursor-grabbing
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                 >
@@ -305,7 +305,7 @@ export default function ReconciliationScreen() {
               value={view.safeCount}
               onChange={e => setView(v => ({ ...v, safeCount: e.target.value }))}
               className="w-full rounded-xl border border-white/10 bg-transparent px-4 py-3
-                text-base text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]"
+                text-base text-ink-primary focus:outline-none focus:border-primary-main"
             />
           </div>
           <div className="flex gap-2 justify-end">

@@ -109,11 +109,11 @@ export default function PinSetupScreen() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.8, ease: 'easeOut' }}
       >
-        <p className="font-serif text-5xl font-bold tracking-widest text-[#f9dcd5] leading-none"
+        <p className="font-serif text-5xl font-bold tracking-widest text-ink-primary leading-none"
           style={{ textShadow: '0 2px 20px rgba(0,0,0,0.55)' }}>
           WATERFRONT<br />COUNTRY CLUB
         </p>
-        <p className="mt-2 text-[10px] tracking-[0.3em] uppercase text-[#f9dcd5]/60 font-medium">
+        <p className="mt-2 text-[10px] tracking-[0.3em] uppercase text-ink-primary/60 font-medium">
           JUJA · KIAMBU · KENYA
         </p>
       </motion.div>
@@ -223,7 +223,7 @@ export default function PinSetupScreen() {
                   disabled={!ready || setupMutation.isPending}
                   className="
                     w-full mt-2 py-3.5 rounded-xl
-                    bg-[#fa5c29] text-white
+                    bg-primary-main text-white
                     text-sm font-semibold tracking-widest uppercase
                     hover:bg-primary-main active:scale-[0.99]
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2

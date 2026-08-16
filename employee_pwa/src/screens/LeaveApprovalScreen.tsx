@@ -105,7 +105,7 @@ export default function LeaveApprovalScreen() {
       >
 
         <div>
-          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Leave Requests</h1>
+          <h1 className="text-2xl font-bold text-ink-primary font-serif">Leave Requests</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Review staff leave requests</p>
           <p className="text-[10px] text-ink-tertiary mt-0.5">Review and approve or reject staff leave requests</p>
         </div>
@@ -119,7 +119,7 @@ export default function LeaveApprovalScreen() {
               className={[
                 'flex-1 py-2 min-h-[44px] px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
                 filter === f
-                  ? 'bg-transparent shadow-sm text-[#f9dcd5]'
+                  ? 'bg-transparent shadow-sm text-ink-primary'
                   : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
@@ -180,7 +180,7 @@ export default function LeaveApprovalScreen() {
                   {/* Header row */}
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className={`font-semibold text-sm text-[#f9dcd5] ${isCancelled ? 'line-through opacity-60' : ''}`}>
+                      <p className={`font-semibold text-sm text-ink-primary ${isCancelled ? 'line-through opacity-60' : ''}`}>
                         {lr.employee ?? 'Unknown'}
                       </p>
                       <p className="text-xs text-ink-tertiary mt-0.5">
@@ -209,8 +209,8 @@ export default function LeaveApprovalScreen() {
                       <motion.button
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setApproveId(lr.id)}
-                        className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-[#fa5c29] text-white text-sm font-semibold
-                          hover:bg-[#af3000] transition-colors
+                        className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-primary-main text-white text-sm font-semibold
+                          hover:bg-primary-dark transition-colors
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                       >
                         Approve
@@ -260,8 +260,8 @@ export default function LeaveApprovalScreen() {
                 <button
                   onClick={() => approveMutation.mutate(approveId)}
                   disabled={approveMutation.isPending}
-                  className="flex-1 py-3 rounded-xl bg-[#fa5c29] text-white text-sm font-semibold
-                    hover:bg-[#af3000] disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 rounded-xl bg-primary-main text-white text-sm font-semibold
+                    hover:bg-primary-dark disabled:opacity-50 transition-colors"
                 >
                   {approveMutation.isPending ? 'Approving…' : 'Approve'}
                 </button>
@@ -297,7 +297,7 @@ export default function LeaveApprovalScreen() {
                   placeholder="Explain why this leave cannot be approved… (min 10 chars)"
                   autoFocus
                   className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
-                    text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                    text-ink-primary focus:outline-none focus:border-primary-main
                     focus:ring-2 focus:ring-primary-dark/20 resize-none"
                 />
                 {rejectNotes.length > 0 && !rejectNotesValid && (

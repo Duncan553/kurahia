@@ -33,7 +33,7 @@ function typeStatus(t: string): StatusValue {
 function dotColor(t: string): string {
   if (t === 'HOLIDAY')          return 'bg-status-paid'
   if (t === 'PEAK')             return 'bg-status-failed'
-  if (t === 'PLANNING_MEETING') return 'bg-[#fa5c29]'
+  if (t === 'PLANNING_MEETING') return 'bg-primary-main'
   return 'bg-ink-tertiary'
 }
 
@@ -134,12 +134,12 @@ function MonthGrid({ year, month, entries }: {
               className={`h-12 rounded-xl flex flex-col items-center justify-center gap-0.5
                 transition-all text-sm relative
                 ${isToday
-                  ? 'bg-[#fa5c29]/20 text-[#fa5c29] font-bold'
+                  ? 'bg-primary-main/20 text-[#fa5c29] font-bold'
                   : isSelected
-                    ? 'bg-white/10 text-[#f9dcd5]'
-                    : 'text-[#aa8980] hover:bg-white/5 hover:text-[#f9dcd5]'
+                    ? 'bg-white/10 text-ink-primary'
+                    : 'text-ink-tertiary hover:bg-white/5 hover:text-ink-primary'
                 }
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]`}
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main`}
             >
               <span className="tabular-nums">{day}</span>
               {/* Event dots */}
@@ -163,7 +163,7 @@ function MonthGrid({ year, month, entries }: {
           exit={{ opacity: 0, height: 0 }}
           className="mt-4 space-y-2"
         >
-          <p className="text-xs font-semibold text-[#f9dcd5]">
+          <p className="text-xs font-semibold text-ink-primary">
             {selectedDay} {MONTH_NAMES[month]}
           </p>
           {selectedEntries.length === 0 ? (
@@ -172,7 +172,7 @@ function MonthGrid({ year, month, entries }: {
             selectedEntries.map(e => (
               <div key={e.id} className="glass-card rounded-xl p-3 border border-white/10">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-[#f9dcd5]">{e.title}</p>
+                  <p className="text-sm font-semibold text-ink-primary">{e.title}</p>
                   <StatusBadge status={typeStatus(e.entry_type)} />
                 </div>
                 <p className="text-[10px] text-ink-tertiary mt-1">
@@ -234,7 +234,7 @@ function UpcomingList({ entries }: { entries: CalendarEntry[] }) {
           {/* Entry info */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-[#f9dcd5] truncate">{e.title}</p>
+              <p className="text-sm font-semibold text-ink-primary truncate">{e.title}</p>
               <StatusBadge status={typeStatus(e.entry_type)} size="sm" />
             </div>
             <p className="text-[10px] text-ink-tertiary mt-0.5">
@@ -291,7 +291,7 @@ export default function CalendarScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#f9dcd5]">
+          <h1 className="font-serif text-2xl md:text-3xl font-bold text-ink-primary">
             Calendar
           </h1>
           <p className="text-sm text-ink-secondary mt-1">
@@ -304,18 +304,18 @@ export default function CalendarScreen() {
           <div className="flex items-center gap-3">
             <button onClick={prevMonth}
               className="w-8 h-8 rounded-lg glass-card flex items-center justify-center
-                text-[#aa8980] hover:text-[#f9dcd5] transition-colors"
+                text-ink-tertiary hover:text-ink-primary transition-colors"
               aria-label="Previous month">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <h2 className="text-base font-bold text-[#f9dcd5] min-w-[140px] text-center">
+            <h2 className="text-base font-bold text-ink-primary min-w-[140px] text-center">
               {MONTH_NAMES[month]} {year}
             </h2>
             <button onClick={nextMonth}
               className="w-8 h-8 rounded-lg glass-card flex items-center justify-center
-                text-[#aa8980] hover:text-[#f9dcd5] transition-colors"
+                text-ink-tertiary hover:text-ink-primary transition-colors"
               aria-label="Next month">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -329,7 +329,7 @@ export default function CalendarScreen() {
               <button key={v} onClick={() => setView(v)}
                 className={`px-3 py-1.5 text-[10px] font-bold tracking-widest uppercase transition-colors
                   ${view === v
-                    ? 'bg-white/10 text-[#f9dcd5]'
+                    ? 'bg-white/10 text-ink-primary'
                     : 'text-ink-tertiary hover:text-ink-secondary'
                   }`}>
                 {v}
@@ -343,7 +343,7 @@ export default function CalendarScreen() {
           {[
             { label: 'Holiday', color: 'bg-status-paid' },
             { label: 'Peak', color: 'bg-status-failed' },
-            { label: 'Planning', color: 'bg-[#fa5c29]' },
+            { label: 'Planning', color: 'bg-primary-main' },
             { label: 'Observance', color: 'bg-ink-tertiary' },
           ].map(l => (
             <div key={l.label} className="flex items-center gap-1.5">

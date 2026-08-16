@@ -135,7 +135,7 @@ export default function AlertsScreen() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Judge Alerts</h1>
+          <h1 className="text-2xl font-bold text-ink-primary font-serif">Judge Alerts</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Silent anomaly detection — theft, waste, overbudget</p>
         </div>
         {!isLoading && (
@@ -221,7 +221,7 @@ export default function AlertsScreen() {
                       <span className="text-[10px] text-ink-secondary truncate">· {alert.item_name}</span>
                     )}
                   </div>
-                  <p className="text-sm text-[#f9dcd5] leading-snug">{alert.description}</p>
+                  <p className="text-sm text-ink-primary leading-snug">{alert.description}</p>
                   <p className="text-[10px] text-ink-secondary mt-1.5">{timeAgo(alert.created_at)}</p>
                 </div>
                 {/* Acknowledge / done */}

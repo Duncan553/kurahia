@@ -58,7 +58,7 @@ export default function AbsenceNoticeScreen() {
     <div className="p-4 max-w-3xl mx-auto space-y-6">
 
       <div>
-        <h1 className="text-xl font-bold text-[#f9dcd5]">Absence Notice</h1>
+        <h1 className="text-xl font-bold text-ink-primary">Absence Notice</h1>
         <p className="text-sm text-ink-tertiary">Calling in? Record it so your manager knows immediately</p>
       </div>
 
@@ -79,7 +79,7 @@ export default function AbsenceNoticeScreen() {
                   'w-full py-3 px-4 rounded-xl border text-sm font-medium text-left transition-all',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                   reason === r
-                    ? 'border-[#fa5c29] bg-[#fa5c29]/10 text-primary-dark'
+                    ? 'border-primary-main bg-primary-main/10 text-primary-dark'
                     : 'border-white/10 bg-transparent text-ink-secondary hover:border-primary-main',
                 ].join(' ')}
               >
@@ -103,7 +103,7 @@ export default function AbsenceNoticeScreen() {
               placeholder="Brief description…"
               autoFocus
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3
-                text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                text-sm text-ink-primary focus:outline-none focus:border-primary-main
                 focus:ring-2 focus:ring-primary-dark/20 resize-none"
             />
             {customErr && <p className="text-sm text-status-failed mt-1">{customErr}</p>}
@@ -123,7 +123,7 @@ export default function AbsenceNoticeScreen() {
           disabled={mutation.isPending || !reason}
           className={[
             'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-            'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
+            'bg-primary-main text-white hover:bg-primary-dark active:scale-[0.99]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
             'disabled:opacity-50 disabled:cursor-not-allowed',
           ].join(' ')}

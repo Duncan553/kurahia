@@ -99,7 +99,7 @@ export default function PurchaseReqScreen() {
       <div className="p-4 max-w-3xl mx-auto space-y-4">
 
         <div>
-          <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Purchase Requests</h1>
+          <h1 className="text-2xl font-bold text-ink-primary font-serif">Purchase Requests</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Submit restock requests</p>
         </div>
 
@@ -112,7 +112,7 @@ export default function PurchaseReqScreen() {
               className={[
                 'flex-1 py-2 min-h-[44px] px-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
                 filter === f
-                  ? 'bg-transparent shadow-sm text-[#f9dcd5]'
+                  ? 'bg-transparent shadow-sm text-ink-primary'
                   : 'text-ink-tertiary hover:text-ink-secondary',
               ].join(' ')}
             >
@@ -179,7 +179,7 @@ export default function PurchaseReqScreen() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className={`text-sm font-semibold text-[#f9dcd5] ${dim ? 'opacity-70' : ''}`}>
+                      <p className={`text-sm font-semibold text-ink-primary ${dim ? 'opacity-70' : ''}`}>
                         {req.item_name ?? 'Unknown item'}
                       </p>
                       <p className="text-xs text-ink-tertiary mt-0.5">
@@ -197,7 +197,7 @@ export default function PurchaseReqScreen() {
                   {req.estimated_cost && (
                     <p className="text-xs text-ink-tertiary">
                       Estimated:{' '}
-                      <span className="font-semibold text-[#f9dcd5]">
+                      <span className="font-semibold text-ink-primary">
                         KSh {parseFloat(req.estimated_cost).toLocaleString()}
                       </span>
                     </p>
@@ -206,8 +206,8 @@ export default function PurchaseReqScreen() {
                   {req.status === 'PENDING' && (
                     <button
                       onClick={() => openPropose(req)}
-                      className="w-full mt-1 py-2.5 min-h-[44px] rounded-xl bg-[#fa5c29] text-white text-sm font-semibold
-                        hover:bg-[#af3000] transition-colors
+                      className="w-full mt-1 py-2.5 min-h-[44px] rounded-xl bg-primary-main text-white text-sm font-semibold
+                        hover:bg-primary-dark transition-colors
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                     >
                       Propose budget
@@ -217,8 +217,8 @@ export default function PurchaseReqScreen() {
                   {req.status === 'PROPOSED' && (
                     <button
                       onClick={() => openPropose(req)}
-                      className="w-full mt-1 py-2 min-h-[44px] rounded-xl border-2 border-[#fa5c29]/40 text-primary-dark
-                        text-sm font-semibold hover:bg-[#fa5c29]/5 transition-colors"
+                      className="w-full mt-1 py-2 min-h-[44px] rounded-xl border-2 border-primary-main/40 text-primary-dark
+                        text-sm font-semibold hover:bg-primary-main/5 transition-colors"
                     >
                       Update estimate
                     </button>
@@ -246,16 +246,16 @@ export default function PurchaseReqScreen() {
           >
             <div className="rounded-xl bg-white/5 px-4 py-3 text-sm space-y-0.5">
               <p className="text-ink-tertiary">
-                Item: <span className="text-[#f9dcd5] font-medium">{selected.item_name}</span>
+                Item: <span className="text-ink-primary font-medium">{selected.item_name}</span>
               </p>
               <p className="text-ink-tertiary">
-                Qty: <span className="text-[#f9dcd5] font-medium">
+                Qty: <span className="text-ink-primary font-medium">
                   {parseFloat(selected.quantity).toLocaleString()}
                 </span>
               </p>
               {selected.requested_by && (
                 <p className="text-ink-tertiary">
-                  Requested by: <span className="text-[#f9dcd5] font-medium">{selected.requested_by}</span>
+                  Requested by: <span className="text-ink-primary font-medium">{selected.requested_by}</span>
                 </p>
               )}
             </div>
@@ -274,7 +274,7 @@ export default function PurchaseReqScreen() {
                 placeholder="0.00"
                 autoFocus
                 className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-base
-                  text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
+                  text-ink-primary focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-dark/20"
               />
             </div>
 
@@ -288,7 +288,7 @@ export default function PurchaseReqScreen() {
                 onChange={(e) => setPropNotes(e.target.value)}
                 placeholder="Supplier name, urgency, any caveats…"
                 className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
-                  text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                  text-ink-primary focus:outline-none focus:border-primary-main
                   focus:ring-2 focus:ring-primary-dark/20 resize-none"
               />
             </div>
@@ -302,7 +302,7 @@ export default function PurchaseReqScreen() {
               disabled={!costValid}
               className={[
                 'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-                'bg-[#fa5c29] text-white hover:bg-[#af3000] active:scale-[0.99]',
+                'bg-primary-main text-white hover:bg-primary-dark active:scale-[0.99]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               ].join(' ')}
@@ -342,8 +342,8 @@ export default function PurchaseReqScreen() {
                     proposeMutation.mutate({ id: confirmId })
                   }}
                   disabled={proposeMutation.isPending}
-                  className="flex-1 py-3 rounded-xl bg-[#fa5c29] text-white text-sm font-semibold
-                    hover:bg-[#af3000] disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 rounded-xl bg-primary-main text-white text-sm font-semibold
+                    hover:bg-primary-dark disabled:opacity-50 transition-colors"
                 >
                   {proposeMutation.isPending ? 'Submitting…' : 'Confirm'}
                 </button>

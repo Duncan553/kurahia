@@ -103,7 +103,7 @@ export default function ServicePayScreen() {
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold font-serif text-[#f9dcd5]">{deptName}</h1>
+          <h1 className="text-2xl font-bold font-serif text-ink-primary">{deptName}</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Sell · View Stock · Request Restock</p>
         </div>
 
@@ -117,8 +117,8 @@ export default function ServicePayScreen() {
             onChange={e => setBand(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && band && bandMut.mutate(band)}
             className="flex-1 rounded-xl glass-card bg-transparent px-4 py-2.5
-              text-sm text-[#f9dcd5] placeholder:text-ink-tertiary
-              focus:outline-none focus:border-[#fa5c29] focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+              text-sm text-ink-primary placeholder:text-ink-tertiary
+              focus:outline-none focus:border-primary-main focus-visible:ring-2 focus-visible:ring-primary-main"
           />
           <Button variant="ghost" size="sm" loading={bandMut.isPending}
             onClick={() => band && bandMut.mutate(band)}>
@@ -131,7 +131,7 @@ export default function ServicePayScreen() {
           {([['pos', 'Sell'], ['stock', 'Stock'], ['request', 'Request']] as const).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
               className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
-                tab === key ? 'bg-white/10 text-[#f9dcd5]' : 'text-ink-tertiary hover:text-ink-secondary'
+                tab === key ? 'bg-white/10 text-ink-primary' : 'text-ink-tertiary hover:text-ink-secondary'
               }`}>
               {label}
               {key === 'stock' && lowStock.length > 0 && (
@@ -164,19 +164,19 @@ export default function ServicePayScreen() {
                       <motion.div key={item.id} whileTap={{ scale: 0.98 }}
                         className="flex items-center gap-3 p-4 glass-card">
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[#f9dcd5]">{item.name}</p>
+                          <p className="font-semibold text-ink-primary">{item.name}</p>
                           <p className="text-sm text-ink-tertiary tabular-nums">{kes(item.price)}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {qty > 0 && (
                             <>
                               <button onClick={() => setDraft(d => ({ ...d, [item.id]: Math.max(0, (d[item.id] ?? 0) - 1) }))}
-                                className="w-9 h-9 rounded-full bg-white/5 text-[#f9dcd5] font-bold flex items-center justify-center">−</button>
-                              <span className="w-6 text-center font-bold tabular-nums text-[#f9dcd5]">{qty}</span>
+                                className="w-9 h-9 rounded-full bg-white/5 text-ink-primary font-bold flex items-center justify-center">−</button>
+                              <span className="w-6 text-center font-bold tabular-nums text-ink-primary">{qty}</span>
                             </>
                           )}
                           <button onClick={() => setDraft(d => ({ ...d, [item.id]: (d[item.id] ?? 0) + 1 }))}
-                            className="w-9 h-9 rounded-full bg-[#fa5c29] text-white font-bold flex items-center justify-center">+</button>
+                            className="w-9 h-9 rounded-full bg-primary-main text-white font-bold flex items-center justify-center">+</button>
                         </div>
                       </motion.div>
                     )
@@ -186,7 +186,7 @@ export default function ServicePayScreen() {
                   <div className="border-t border-white/10 pt-4 mt-4 space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-ink-secondary">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
-                      <span className="text-lg font-bold tabular-nums text-[#f9dcd5]">{kes(total)}</span>
+                      <span className="text-lg font-bold tabular-nums text-ink-primary">{kes(total)}</span>
                     </div>
                     <Button variant="primary" size="lg" className="w-full" onClick={() => { setPay(p => ({ ...p, amount: String(total) })); setStage('pay') }}>
                       Proceed to Payment →
@@ -199,13 +199,13 @@ export default function ServicePayScreen() {
               <div className="space-y-4">
                 <div className="glass-card p-4 text-center">
                   <p className="text-xs text-ink-tertiary mb-1">Collect</p>
-                  <p className="text-3xl font-bold tabular-nums text-[#f9dcd5]">{kes(total)}</p>
+                  <p className="text-3xl font-bold tabular-nums text-ink-primary">{kes(total)}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {METHODS.map(m => (
                     <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
                       className={`py-3 rounded-xl text-sm font-semibold border transition-colors ${
-                        pay.method === m ? 'bg-[#fa5c29] text-white border-[#fa5c29]' : 'text-ink-secondary border-white/10'
+                        pay.method === m ? 'bg-primary-main text-white border-primary-main' : 'text-ink-secondary border-white/10'
                       }`}>
                       {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}
                     </button>
@@ -214,7 +214,7 @@ export default function ServicePayScreen() {
                 <input type="number" min="0" step="0.01" inputMode="decimal"
                   placeholder="Amount received (KSh)"
                   value={pay.amount} onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}
-                  className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]" />
+                  className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-ink-primary focus:outline-none focus:border-primary-main" />
                 <button onClick={() => setPay(p => ({ ...p, amount: String(total) }))}
                   className="w-full py-2 rounded-xl text-sm glass-card text-ink-secondary hover:bg-white/5">
                   Exact — {kes(total)}
@@ -250,7 +250,7 @@ export default function ServicePayScreen() {
                   return (
                     <div key={it.id} className="glass-card p-4">
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-[#f9dcd5]">{it.name}</span>
+                        <span className="text-ink-primary">{it.name}</span>
                         <span className={`tabular-nums font-bold ${it.below_reorder ? 'text-status-failed' : 'text-emerald-400'}`}>
                           {stock} {it.unit}
                         </span>
@@ -271,13 +271,13 @@ export default function ServicePayScreen() {
         {tab === 'request' && (
           <div className="space-y-4">
             <div className="glass-card p-4">
-              <p className="text-sm text-[#f9dcd5] mb-2">Request restock or supplies from the manager:</p>
+              <p className="text-sm text-ink-primary mb-2">Request restock or supplies from the manager:</p>
               <textarea
                 rows={4} value={requestText} onChange={e => setRequestText(e.target.value)}
                 placeholder="e.g. Need more massage oil, running low on towels..."
                 className="w-full rounded-xl glass-card bg-transparent px-4 py-3
-                  text-sm text-[#f9dcd5] placeholder:text-ink-tertiary resize-none
-                  focus:outline-none focus:border-[#fa5c29]"
+                  text-sm text-ink-primary placeholder:text-ink-tertiary resize-none
+                  focus:outline-none focus:border-primary-main"
               />
               <Button variant="primary" size="md" className="w-full mt-3"
                 loading={requestMut.isPending}

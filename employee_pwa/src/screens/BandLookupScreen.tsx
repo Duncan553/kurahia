@@ -80,7 +80,7 @@ export default function BandLookupScreen() {
     <div className="p-4 max-w-3xl mx-auto space-y-5">
 
       <div>
-        <h1 className="text-2xl font-bold text-[#f9dcd5] font-serif">Band Lookup</h1>
+        <h1 className="text-2xl font-bold text-ink-primary font-serif">Band Lookup</h1>
         <p className="text-xs text-ink-tertiary mt-0.5">Search wristbands by number</p>
       </div>
 
@@ -95,15 +95,15 @@ export default function BandLookupScreen() {
           onChange={(e) => { setInput(e.target.value); setResult(null); setNotFound(false) }}
           onKeyDown={handleKey}
           className="flex-1 rounded-xl glass-card bg-transparent px-4 py-3
-            text-lg font-semibold tabular-nums text-[#f9dcd5]
-            focus:outline-none focus:border-[#fa5c29] focus:ring-2 focus:ring-primary-dark/20"
+            text-lg font-semibold tabular-nums text-ink-primary
+            focus:outline-none focus:border-primary-main focus:ring-2 focus:ring-primary-dark/20"
         />
         <button
           onClick={lookup}
           disabled={loading || !input.trim()}
           className={[
-            'px-5 py-3 rounded-xl bg-[#fa5c29] text-white font-semibold text-sm',
-            'hover:bg-[#af3000] transition-all shrink-0',
+            'px-5 py-3 rounded-xl bg-primary-main text-white font-semibold text-sm',
+            'hover:bg-primary-dark transition-all shrink-0',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
           ].join(' ')}
@@ -134,9 +134,9 @@ export default function BandLookupScreen() {
         <div className="rounded-2xl glass-card bg-transparent shadow-sm overflow-hidden">
 
           {/* Header */}
-          <div className="bg-[#fa5c29]/10 px-5 py-4 flex items-center justify-between">
+          <div className="bg-primary-main/10 px-5 py-4 flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold tabular-nums text-[#f9dcd5]">
+              <p className="text-2xl font-bold tabular-nums text-ink-primary">
                 Band #{result.band_number}
               </p>
               <p className="text-xs text-ink-tertiary mt-0.5 flex items-center">
@@ -167,7 +167,7 @@ export default function BandLookupScreen() {
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between text-sm">
                 <span className="text-ink-tertiary">{label}</span>
-                <span className="text-[#f9dcd5] font-medium truncate max-w-[55%] text-right">{value}</span>
+                <span className="text-ink-primary font-medium truncate max-w-[55%] text-right">{value}</span>
               </div>
             ))}
           </div>

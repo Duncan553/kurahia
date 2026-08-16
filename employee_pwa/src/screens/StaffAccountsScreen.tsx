@@ -9,7 +9,7 @@ interface StaffUser { id: string; username: string; role: string; department: st
 interface Meta { roles: { id: string; name: string; level: number }[]; departments: { id: string; name: string }[] }
 
 const BLANK = { username:'', password:'', roleId:'', deptId:'', fullName:'', phone:'', wageRate:'', wagePeriod:'', hireDate:'', nationalId:'', emgName:'', emgPhone:'' }
-const inp = 'w-full rounded-xl px-3 py-2.5 glass-card bg-transparent text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]'
+const inp = 'w-full rounded-xl px-3 py-2.5 glass-card bg-transparent text-sm text-ink-primary focus:outline-none focus:border-primary-main'
 const toE164 = (p: string) => { const s = p.replace(/\s+/g,''); return s.startsWith('+254')?s : s.startsWith('254')?'+'+s : s.startsWith('0')?'+254'+s.slice(1):s }
 const extractErr = (e: unknown) => (e as {response?:{data?:{error?:string}}})?.response?.data?.error ?? 'Something went wrong.'
 const LBL = ({ children }: { children: React.ReactNode }) => (
@@ -92,7 +92,7 @@ export default function StaffAccountsScreen() {
       <ErrorBoundary level="tile">
       <div className="max-w-3xl mx-auto p-4 md:p-6 pb-8 space-y-4">
         <div className="mb-6">
-          <h1 className="font-serif text-2xl font-bold text-[#f9dcd5]">Staff Accounts</h1>
+          <h1 className="font-serif text-2xl font-bold text-ink-primary">Staff Accounts</h1>
           <p className="text-xs text-ink-tertiary mt-1">Create accounts, manage access</p>
         </div>
 
@@ -100,9 +100,9 @@ export default function StaffAccountsScreen() {
           <AnimatePresence>
             {credentials && (
               <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0}}
-                className="rounded-2xl border-2 border-[#fa5c29] bg-[#fa5c29]/5 p-4 space-y-2">
+                className="rounded-2xl border-2 border-primary-main bg-primary-main/5 p-4 space-y-2">
                 <p className="text-xs font-semibold tracking-widest text-primary-dark uppercase">Account ready — give these to the staff member</p>
-                <div className="space-y-1 font-mono text-sm text-[#f9dcd5]">
+                <div className="space-y-1 font-mono text-sm text-ink-primary">
                   <p><span className="text-ink-tertiary">Username:</span> {credentials.u}</p>
                   <p><span className="text-ink-tertiary">Password:</span> {credentials.p}</p>
                 </div>
@@ -119,7 +119,7 @@ export default function StaffAccountsScreen() {
                 className="glass-card rounded-2xl p-4 space-y-3 overflow-hidden">
 
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-[#f9dcd5]">
+                  <p className="text-sm font-semibold text-ink-primary">
                     {step === 1 ? 'New account — login details' : 'Employee profile'}
                   </p>
                   {step === 2 && <span className="text-xs text-status-ok font-semibold">Step 2 of 2</span>}
@@ -194,7 +194,7 @@ export default function StaffAccountsScreen() {
           {!showForm && (
             <button onClick={() => setShowForm(true)}
               className="w-full rounded-2xl border-2 border-dashed border-white/10 py-4
-                text-sm font-semibold text-ink-tertiary hover:border-[#fa5c29] hover:text-primary-dark
+                text-sm font-semibold text-ink-tertiary hover:border-primary-main hover:text-primary-dark
                 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark">
               + Create new account
             </button>
@@ -213,7 +213,7 @@ export default function StaffAccountsScreen() {
             {staff.map(u => (
               <div key={u.id} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl glass-card ${!u.is_active ? 'opacity-60' : ''}`}>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#f9dcd5] truncate">{u.username}</p>
+                  <p className="text-sm font-semibold text-ink-primary truncate">{u.username}</p>
                   <p className="text-xs text-ink-secondary">{u.role}{u.department ? ` · ${u.department}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

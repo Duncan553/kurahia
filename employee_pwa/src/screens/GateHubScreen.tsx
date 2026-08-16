@@ -119,9 +119,9 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
         onClick={() => setConfirmOpen(true)}
         disabled={mut.isPending}
         aria-label="Issue wristband"
-        className="w-full py-5 rounded-2xl bg-[#fa5c29] text-white text-lg font-bold
-          hover:bg-[#af3000] transition-colors disabled:opacity-50
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]
+        className="w-full py-5 rounded-2xl bg-primary-main text-white text-lg font-bold
+          hover:bg-primary-dark transition-colors disabled:opacity-50
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main
           shadow-lg shadow-[#fa5c29]/20"
       >
         {mut.isPending ? 'Issuing…' : 'Issue Wristband'}
@@ -152,8 +152,8 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
             Cancel
           </button>
           <button onClick={() => mut.mutate()} disabled={mut.isPending}
-            className="flex-1 py-3 rounded-xl bg-[#fa5c29] text-white font-semibold
-              hover:bg-[#af3000] transition-colors disabled:opacity-50">
+            className="flex-1 py-3 rounded-xl bg-primary-main text-white font-semibold
+              hover:bg-primary-dark transition-colors disabled:opacity-50">
             {mut.isPending ? 'Issuing…' : 'Confirm'}
           </button>
         </div>

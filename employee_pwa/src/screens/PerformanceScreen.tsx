@@ -127,10 +127,10 @@ function StaffRow({ profile, period, isExpanded, onToggle }: {
         onClick={onToggle}
         className="w-full flex items-center gap-3 p-4 text-left
           hover:bg-white/5 transition-colors
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
       >
         {/* Avatar circle */}
-        <div className="w-10 h-10 rounded-full bg-[#fa5c29]/15 border border-[#fa5c29]/20
+        <div className="w-10 h-10 rounded-full bg-primary-main/15 border border-primary-main/20
           flex items-center justify-center shrink-0">
           <span className="text-[#fa5c29] text-sm font-bold">
             {profile.full_name.charAt(0).toUpperCase()}
@@ -139,7 +139,7 @@ function StaffRow({ profile, period, isExpanded, onToggle }: {
 
         {/* Name + department */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[#f9dcd5] truncate">{profile.full_name}</p>
+          <p className="text-sm font-semibold text-ink-primary truncate">{profile.full_name}</p>
           <p className="text-[10px] text-ink-tertiary">
             {profile.department ?? 'No department'}
           </p>
@@ -210,7 +210,7 @@ function StaffRow({ profile, period, isExpanded, onToggle }: {
                     ].map(s => (
                       <div key={s.label} className="rounded-xl bg-white/5 p-2.5">
                         <p className="text-[10px] text-ink-tertiary">{s.label}</p>
-                        <p className="text-sm font-bold tabular-nums text-[#f9dcd5]">{s.val}</p>
+                        <p className="text-sm font-bold tabular-nums text-ink-primary">{s.val}</p>
                       </div>
                     ))}
                   </div>
@@ -219,7 +219,7 @@ function StaffRow({ profile, period, isExpanded, onToggle }: {
                   {perf.detail.guest_rating && (
                     <div className="rounded-xl bg-white/5 p-2.5">
                       <p className="text-[10px] text-ink-tertiary">Guest Rating</p>
-                      <p className="text-sm font-bold tabular-nums text-[#f9dcd5]">
+                      <p className="text-sm font-bold tabular-nums text-ink-primary">
                         {perf.detail.guest_rating} / 5
                       </p>
                     </div>
@@ -273,7 +273,7 @@ export default function PerformanceScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#f9dcd5]">
+          <h1 className="font-serif text-2xl md:text-3xl font-bold text-ink-primary">
             Performance
           </h1>
           <p className="text-sm text-ink-secondary mt-1">
@@ -295,7 +295,7 @@ export default function PerformanceScreen() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name or department..."
               className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10
-                text-sm text-[#f9dcd5] placeholder:text-ink-tertiary
+                text-sm text-ink-primary placeholder:text-ink-tertiary
                 focus:outline-none focus:ring-2 focus:ring-[#fa5c29]"
             />
           </div>
@@ -320,7 +320,7 @@ export default function PerformanceScreen() {
           {!isLoading && !isError && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <span className="text-5xl text-ink-tertiary/40">&#128100;</span>
-              <p className="text-[#aa8980] text-lg font-medium">No staff found</p>
+              <p className="text-ink-tertiary text-lg font-medium">No staff found</p>
               <p className="text-xs text-ink-tertiary">
                 {search ? 'Try a different search term.' : 'No active employee profiles.'}
               </p>

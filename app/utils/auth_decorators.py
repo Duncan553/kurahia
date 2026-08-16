@@ -39,3 +39,55 @@ def require_active_user(fn):
         return fn(*args, **kwargs)
     # Apply jwt_required LAST so it runs FIRST — token validated before kill-switch check
     return jwt_required()(_inner)
+
+# ── Clock-in gate ─────────────────────────────────────────────────
+# Operational endpoints (POS, tabs, payments) require active CLOCK_IN.
+# Prevents off-the-books labor and ensures shift records are accurate.
+
+def require_clocked_in(fn):
+    @wraps(fn)
+    def _inner(*args, **kwargs):
+        user_id = get_jwt_identity()
+        from app.models.employee_profile import EmployeeProfile
+        from app.models.clock_event import ClockEvent
+        profile = db.session.query(EmployeeProfile).filter_by(
+            user_id=user_id, is_active=True
+        ).first()
+        if not profile:
+            return jsonify({"error": "No employee profile. Ask your manager to create one."}), 403
+        latest = (
+            db.session.query(ClockEvent)
+            .filter_by(employee_id=profile.id)
+            .order_by(ClockEvent.occurred_at_utc.desc())
+            .first()
+        )
+        if not latest or latest.event_type != "CLOCK_IN":
+            return jsonify({"error": "You must clock in before using this feature."}), 403
+        return fn(*args, **kwargs)
+    return jwt_required()(_inner)
+
+# ── Clock-in gate ─────────────────────────────────────────────────
+# Operational endpoints (POS, tabs, payments) require active CLOCK_IN.
+# Prevents off-the-books labor and ensures shift records are accurate.
+
+def require_clocked_in(fn):
+    @wraps(fn)
+    def _inner(*args, **kwargs):
+        user_id = get_jwt_identity()
+        from app.models.employee_profile import EmployeeProfile
+        from app.models.clock_event import ClockEvent
+        profile = db.session.query(EmployeeProfile).filter_by(
+            user_id=user_id, is_active=True
+        ).first()
+        if not profile:
+            return jsonify({"error": "No employee profile. Ask your manager to create one."}), 403
+        latest = (
+            db.session.query(ClockEvent)
+            .filter_by(employee_id=profile.id)
+            .order_by(ClockEvent.occurred_at_utc.desc())
+            .first()
+        )
+        if not latest or latest.event_type != "CLOCK_IN":
+            return jsonify({"error": "You must clock in before using this feature."}), 403
+        return fn(*args, **kwargs)
+    return jwt_required()(_inner)

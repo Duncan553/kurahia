@@ -91,7 +91,7 @@ function ItemQtyForm({
           onBlur={() => touch('qty')}
           disabled={isPending}
           className="w-full rounded-xl glass-card bg-transparent px-4 py-3
-            text-base text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+            text-base text-ink-primary focus:outline-none focus:border-primary-main
             focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50"
         />
       </div>
@@ -110,7 +110,7 @@ function ItemQtyForm({
             disabled={isPending}
             placeholder="e.g. Fridge failure overnight, chicken spoiled"
             className="w-full rounded-xl glass-card bg-transparent px-4 py-3
-              text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+              text-sm text-ink-primary focus:outline-none focus:border-primary-main
               focus:ring-2 focus:ring-primary-dark/20 disabled:opacity-50 resize-none"
           />
           {reasonErr && <p className="text-sm text-status-failed mt-1">{reasonErr}</p>}
@@ -181,7 +181,7 @@ export default function QuickEntryScreen() {
       <ErrorBoundary level="tile">
 
       <div>
-        <h1 className="text-xl font-bold text-[#f9dcd5]">Quick Entry</h1>
+        <h1 className="text-xl font-bold text-ink-primary">Quick Entry</h1>
         <p className="text-sm text-ink-tertiary">Log spoilage or staff meals</p>
       </div>
 
@@ -194,7 +194,7 @@ export default function QuickEntryScreen() {
             className={[
               'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium capitalize transition-all',
               tab === t
-                ? 'bg-transparent shadow-sm text-[#f9dcd5]'
+                ? 'bg-transparent shadow-sm text-ink-primary'
                 : 'text-ink-tertiary hover:text-ink-secondary',
             ].join(' ')}
           >

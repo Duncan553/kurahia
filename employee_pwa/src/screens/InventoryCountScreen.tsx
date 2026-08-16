@@ -342,10 +342,10 @@ export default function InventoryCountScreen() {
               ══════════════════════════════════════════════════════════ */}
           <motion.div variants={fadeIn} className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-8">
             <div>
-              <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#f9dcd5] tracking-tight">
+              <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
                 Inventory Overview
               </h1>
-              <p className="text-sm text-[#aa8980] mt-1">
+              <p className="text-sm text-ink-tertiary mt-1">
                 Live stock metrics and recent movements
               </p>
               <p className="text-[10px] text-ink-tertiary mt-0.5">Quick look at stock health across all departments</p>
@@ -356,9 +356,9 @@ export default function InventoryCountScreen() {
                 whileTap={{ scale: 0.97 }}
                 onClick={() => setTab('count')}
                 className="min-h-[44px] flex items-center gap-1.5 px-4 rounded-xl
-                  glass-card text-[#f9dcd5] text-xs font-semibold
+                  glass-card text-ink-primary text-xs font-semibold
                   hover:bg-white/10 transition-colors
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                   <rect x="2" y="3" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
@@ -370,9 +370,9 @@ export default function InventoryCountScreen() {
                 whileTap={{ scale: 0.97 }}
                 onClick={openAddDrawer}
                 className="shrink-0 min-h-[44px] flex items-center gap-1.5 px-4 rounded-xl
-                  bg-[#fa5c29] text-white text-xs font-semibold
-                  hover:bg-[#fa5c29]/90 transition-colors
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]"
+                  bg-primary-main text-white text-xs font-semibold
+                  hover:bg-primary-main/90 transition-colors
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                   <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -385,12 +385,12 @@ export default function InventoryCountScreen() {
           {/* ── Department picker (owner only) ──────────────────────── */}
           {isOwner && tab !== 'overview' && (
             <motion.div variants={fadeIn} className="mb-6">
-              <label className="text-[10px] uppercase tracking-widest text-[#aa8980] font-medium mb-2 block">Department</label>
+              <label className="text-[10px] uppercase tracking-widest text-ink-tertiary font-medium mb-2 block">Department</label>
               <select
                 value={selectedDeptId}
                 onChange={(e) => setSelectedDeptId(e.target.value)}
                 className="w-full max-w-xs rounded-xl glass-card px-4 py-3 min-h-[44px]
-                  text-sm text-[#f9dcd5] bg-transparent
+                  text-sm text-ink-primary bg-transparent
                   focus:outline-none focus:ring-2 focus:ring-[#fa5c29]/40"
               >
                 <option value="" className="bg-[#1e100c]">Select department...</option>
@@ -399,7 +399,7 @@ export default function InventoryCountScreen() {
                 ))}
               </select>
               {!selectedDeptId && (
-                <p className="mt-3 text-sm text-[#aa8980]">Select a department to view its inventory.</p>
+                <p className="mt-3 text-sm text-ink-tertiary">Select a department to view its inventory.</p>
               )}
             </motion.div>
           )}
@@ -407,8 +407,8 @@ export default function InventoryCountScreen() {
           {/* ── Manager dept label ─────────────────────────────────── */}
           {!isOwner && userDept && tab !== 'overview' && (
             <motion.div variants={fadeIn} className="flex items-center gap-2 mb-4">
-              <span className="text-[10px] uppercase tracking-widest text-[#aa8980] font-medium">Dept</span>
-              <span className="px-3 py-1 rounded-lg bg-[#fa5c29]/10 text-[#fa5c29] text-xs font-semibold">
+              <span className="text-[10px] uppercase tracking-widest text-ink-tertiary font-medium">Dept</span>
+              <span className="px-3 py-1 rounded-lg bg-primary-main/10 text-[#fa5c29] text-xs font-semibold">
                 {userDept}
               </span>
             </motion.div>
@@ -427,8 +427,8 @@ export default function InventoryCountScreen() {
                 className={[
                   'flex-1 py-2 min-h-[44px] rounded-lg text-xs font-medium transition-all',
                   tab === t.key
-                    ? 'bg-white/8 shadow-sm text-[#f9dcd5]'
-                    : 'text-[#aa8980] hover:text-[#f9dcd5]/70',
+                    ? 'bg-white/8 shadow-sm text-ink-primary'
+                    : 'text-ink-tertiary hover:text-ink-primary/70',
                 ].join(' ')}
               >
                 {t.label}
@@ -448,11 +448,11 @@ export default function InventoryCountScreen() {
                   <motion.div variants={fadeIn}>
                     <Glass>
                       <div className="p-5">
-                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">Total Items</p>
-                        <p className="text-4xl md:text-5xl font-bold tabular-nums text-[#f9dcd5] leading-none">
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Total Items</p>
+                        <p className="text-4xl md:text-5xl font-bold tabular-nums text-ink-primary leading-none">
                           {overviewItems.length}
                         </p>
-                        <p className="text-[10px] text-[#aa8980] mt-2">
+                        <p className="text-[10px] text-ink-tertiary mt-2">
                           {overviewItems.length - lowStockItems.length} healthy
                         </p>
                       </div>
@@ -465,11 +465,11 @@ export default function InventoryCountScreen() {
                   <motion.div variants={fadeIn}>
                     <Glass>
                       <div className="p-5">
-                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">Low Stock</p>
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Low Stock</p>
                         <p className={`text-4xl md:text-5xl font-bold tabular-nums leading-none ${lowStockItems.length > 0 ? 'text-status-failed' : 'text-status-paid'}`}>
                           {lowStockItems.length}
                         </p>
-                        <p className="text-[10px] text-[#aa8980] mt-2">
+                        <p className="text-[10px] text-ink-tertiary mt-2">
                           {lowStockItems.length > 0 ? 'Below reorder level' : 'All healthy'}
                         </p>
                       </div>
@@ -482,11 +482,11 @@ export default function InventoryCountScreen() {
                   <motion.div variants={fadeIn}>
                     <Glass>
                       <div className="p-5">
-                        <p className="text-[10px] font-bold tracking-widest uppercase text-[#aa8980] mb-2">Pending Orders</p>
-                        <p className={`text-4xl md:text-5xl font-bold tabular-nums leading-none ${pendingOrders.length > 0 ? 'text-status-pending' : 'text-[#f9dcd5]'}`}>
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">Pending Orders</p>
+                        <p className={`text-4xl md:text-5xl font-bold tabular-nums leading-none ${pendingOrders.length > 0 ? 'text-status-pending' : 'text-ink-primary'}`}>
                           {pendingOrders.length}
                         </p>
-                        <p className="text-[10px] text-[#aa8980] mt-2">
+                        <p className="text-[10px] text-ink-tertiary mt-2">
                           {pendingOrders.length > 0
                             ? `${pendingOrders.length} awaiting approval`
                             : 'No pending requests'}
@@ -503,7 +503,7 @@ export default function InventoryCountScreen() {
                 {/* LEFT: Departmental Health */}
                 <ErrorBoundary level="tile">
                   <motion.div variants={fadeIn}>
-                    <p className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-4">
+                    <p className="text-sm font-bold tracking-widest uppercase text-ink-tertiary mb-4">
                       Departmental Health
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -519,12 +519,12 @@ export default function InventoryCountScreen() {
                                   <span className="text-[#fa5c29]">
                                     <DeptIcon name={dept} />
                                   </span>
-                                  <span className="font-semibold text-[#f9dcd5] text-sm">{dept}</span>
+                                  <span className="font-semibold text-ink-primary text-sm">{dept}</span>
                                 </div>
                                 {/* Health percentage */}
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="text-[10px] text-[#aa8980]">Overall Stock</span>
-                                  <span className="text-xs tabular-nums font-bold text-[#f9dcd5]">{healthPct}%</span>
+                                  <span className="text-[10px] text-ink-tertiary">Overall Stock</span>
+                                  <span className="text-xs tabular-nums font-bold text-ink-primary">{healthPct}%</span>
                                 </div>
                                 {/* Progress bar */}
                                 <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
@@ -553,7 +553,7 @@ export default function InventoryCountScreen() {
                       {/* Empty state if no departments loaded yet */}
                       {Object.keys(byDept).length === 0 && (
                         <div className="col-span-2 py-8 text-center">
-                          <p className="text-sm text-[#aa8980]">No inventory data yet</p>
+                          <p className="text-sm text-ink-tertiary">No inventory data yet</p>
                         </div>
                       )}
                     </div>
@@ -563,15 +563,15 @@ export default function InventoryCountScreen() {
                 {/* RIGHT: Activity Log */}
                 <ErrorBoundary level="tile">
                   <motion.div variants={fadeIn}>
-                    <p className="text-sm font-bold tracking-widest uppercase text-[#aa8980] mb-4">
+                    <p className="text-sm font-bold tracking-widest uppercase text-ink-tertiary mb-4">
                       Activity Log
                     </p>
                     <Glass>
                       <div className="p-5">
                         {activityLog.length === 0 ? (
                           <div className="py-6 text-center">
-                            <p className="text-sm text-[#aa8980]">No recent activity</p>
-                            <p className="text-[10px] text-[#aa8980]/60 mt-1">
+                            <p className="text-sm text-ink-tertiary">No recent activity</p>
+                            <p className="text-[10px] text-ink-tertiary/60 mt-1">
                               Counts submitted this session appear here
                             </p>
                           </div>
@@ -584,7 +584,7 @@ export default function InventoryCountScreen() {
                                   entry.adj < 0 ? 'bg-status-failed' : entry.adj > 0 ? 'bg-status-paid' : 'bg-[#aa8980]'
                                 }`} />
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-xs text-[#f9dcd5] truncate">
+                                  <p className="text-xs text-ink-primary truncate">
                                     {entry.itemName} counted
                                     {entry.adj !== 0 && (
                                       <span className={`ml-1 tabular-nums font-medium ${
@@ -595,7 +595,7 @@ export default function InventoryCountScreen() {
                                     )}
                                   </p>
                                   {entry.dept && (
-                                    <p className="text-[10px] text-[#aa8980]">{entry.dept}</p>
+                                    <p className="text-[10px] text-ink-tertiary">{entry.dept}</p>
                                   )}
                                 </div>
                               </div>
@@ -609,10 +609,10 @@ export default function InventoryCountScreen() {
                               <div key={item.id} className="flex items-start gap-2">
                                 <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 bg-status-failed" />
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-xs text-[#f9dcd5] truncate">
+                                  <p className="text-xs text-ink-primary truncate">
                                     {item.name} stock critical
                                   </p>
-                                  <p className="text-[10px] text-[#aa8980]">
+                                  <p className="text-[10px] text-ink-tertiary">
                                     {parseFloat(item.current_stock)} {item.unit} remaining
                                   </p>
                                 </div>
@@ -623,7 +623,7 @@ export default function InventoryCountScreen() {
                         {/* View full log link (navigates to count tab) */}
                         <button
                           onClick={() => setTab('count')}
-                          className="mt-3 text-[10px] font-semibold text-[#aa8980] hover:text-[#f9dcd5] transition-colors w-full text-center"
+                          className="mt-3 text-[10px] font-semibold text-ink-tertiary hover:text-ink-primary transition-colors w-full text-center"
                         >
                           View Full Log
                         </button>
@@ -644,27 +644,27 @@ export default function InventoryCountScreen() {
               {/* Owner must select dept first */}
               {isOwner && !selectedDeptId ? (
                 <motion.div variants={fadeIn} className="mb-4">
-                  <p className="text-[10px] uppercase tracking-widest text-[#aa8980] font-medium mb-2">Department</p>
+                  <p className="text-[10px] uppercase tracking-widest text-ink-tertiary font-medium mb-2">Department</p>
                   <div className="flex flex-wrap gap-2">
                     {departments?.map((d) => (
                       <button
                         key={d.id}
                         onClick={() => setSelectedDeptId(d.id)}
                         className="px-3 py-1.5 min-h-[44px] rounded-lg text-xs font-semibold transition-all
-                          bg-white/5 text-[#aa8980] hover:bg-white/10"
+                          bg-white/5 text-ink-tertiary hover:bg-white/10"
                       >
                         {d.name}
                       </button>
                     ))}
                   </div>
-                  <p className="mt-3 text-sm text-[#aa8980]">Select a department to view its inventory.</p>
+                  <p className="mt-3 text-sm text-ink-tertiary">Select a department to view its inventory.</p>
                 </motion.div>
               ) : (
                 <>
                   <SearchInput value={searchQ} onChange={setSearchQ} placeholder="Search inventory..." label="Search inventory" />
 
                   {searchQ && countItems.length === 0 && !isLoading && (
-                    <p className="text-sm text-[#aa8980] text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
+                    <p className="text-sm text-ink-tertiary text-center py-8">No results for &lsquo;{searchQ}&rsquo; &middot; Hakuna kitu</p>
                   )}
 
                   {isLoading && (
@@ -679,7 +679,7 @@ export default function InventoryCountScreen() {
                   )}
 
                   {isError && (
-                    <div className="p-4 rounded-xl bg-white/5 text-sm text-[#aa8980] text-center mt-4">
+                    <div className="p-4 rounded-xl bg-white/5 text-sm text-ink-tertiary text-center mt-4">
                       Couldn't load items. Check connection.
                     </div>
                   )}
@@ -710,12 +710,12 @@ export default function InventoryCountScreen() {
                             whileHover={{ y: -2 }}
                             className={[
                               'rounded-xl border p-4 space-y-2 transition-colors',
-                              submitted ? 'bg-[#fa5c29]/10 border-[#fa5c29]/30' : 'glass-card',
+                              submitted ? 'bg-primary-main/10 border-primary-main/30' : 'glass-card',
                             ].join(' ')}
                           >
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-medium text-[#f9dcd5]">{item.name}</span>
-                              <span className="text-xs text-[#aa8980]">{item.unit}</span>
+                              <span className="font-medium text-ink-primary">{item.name}</span>
+                              <span className="text-xs text-ink-tertiary">{item.unit}</span>
                               {item.below_reorder && (
                                 <span className="text-[10px] font-semibold uppercase tracking-wide
                                   bg-status-pending/10 text-status-pending rounded-full px-2 py-0.5">
@@ -739,7 +739,7 @@ export default function InventoryCountScreen() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-[#aa8980] tabular-nums shrink-0">
+                              <span className="text-xs text-ink-tertiary tabular-nums shrink-0">
                                 System: {item.current_stock} {item.unit}
                               </span>
                               {adj !== null && <VarianceBadge adj={result!.adjustment} watchList={item.is_watch_list} />}
@@ -756,7 +756,7 @@ export default function InventoryCountScreen() {
                                 onChange={(e) => setInputs((prev) => ({ ...prev, [item.id]: e.target.value }))}
                                 disabled={pending.has(item.id)}
                                 className="flex-1 rounded-xl glass-card bg-transparent px-3 py-2
-                                  text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                                  text-sm text-ink-primary focus:outline-none focus:border-primary-main
                                   focus:ring-2 focus:ring-[#fa5c29]/20 disabled:opacity-50"
                               />
                               <motion.button
@@ -765,11 +765,11 @@ export default function InventoryCountScreen() {
                                 disabled={pending.has(item.id) || !inputs[item.id]?.trim()}
                                 className={[
                                   'px-4 py-2 min-h-[44px] rounded-xl text-sm font-semibold transition-all shrink-0',
-                                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29]',
+                                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main',
                                   'disabled:opacity-40 disabled:cursor-not-allowed',
                                   submitted
-                                    ? 'bg-[#fa5c29]/20 text-[#fa5c29] hover:bg-[#fa5c29]/30'
-                                    : 'bg-[#fa5c29] text-white hover:bg-[#fa5c29]/90',
+                                    ? 'bg-primary-main/20 text-[#fa5c29] hover:bg-primary-main/30'
+                                    : 'bg-primary-main text-white hover:bg-primary-main/90',
                                 ].join(' ')}
                               >
                                 {pending.has(item.id) ? (
@@ -798,52 +798,52 @@ export default function InventoryCountScreen() {
               <p className="text-[10px] text-ink-tertiary">Compare what should be there vs what's actually there — flags waste or theft</p>
               {isOwner && !selectedDeptId && (
                 <motion.div variants={fadeIn} className="mb-4">
-                  <p className="text-[10px] uppercase tracking-widest text-[#aa8980] font-medium mb-2">Department</p>
+                  <p className="text-[10px] uppercase tracking-widest text-ink-tertiary font-medium mb-2">Department</p>
                   <div className="flex flex-wrap gap-2">
                     {departments?.map((d) => (
                       <button
                         key={d.id}
                         onClick={() => setSelectedDeptId(d.id)}
                         className="px-3 py-1.5 min-h-[44px] rounded-lg text-xs font-semibold transition-all
-                          bg-white/5 text-[#aa8980] hover:bg-white/10"
+                          bg-white/5 text-ink-tertiary hover:bg-white/10"
                       >
                         {d.name}
                       </button>
                     ))}
                   </div>
-                  <p className="mt-3 text-sm text-[#aa8980]">Select a department first.</p>
+                  <p className="mt-3 text-sm text-ink-tertiary">Select a department first.</p>
                 </motion.div>
               )}
               {(!isOwner || selectedDeptId) && (
                 <>
                   <div className="flex gap-2 items-end">
                     <div className="flex-1">
-                      <label className="block text-xs font-medium text-[#aa8980] mb-1">From</label>
+                      <label className="block text-xs font-medium text-ink-tertiary mb-1">From</label>
                       <input
                         type="date"
                         value={fromDate}
                         onChange={(e) => setFromDate(e.target.value)}
                         className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
-                          text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                          text-sm text-ink-primary focus:outline-none focus:border-primary-main
                           focus:ring-2 focus:ring-[#fa5c29]/20"
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-xs font-medium text-[#aa8980] mb-1">To</label>
+                      <label className="block text-xs font-medium text-ink-tertiary mb-1">To</label>
                       <input
                         type="date"
                         value={toDate}
                         onChange={(e) => setToDate(e.target.value)}
                         className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
-                          text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                          text-sm text-ink-primary focus:outline-none focus:border-primary-main
                           focus:ring-2 focus:ring-[#fa5c29]/20"
                       />
                     </div>
                     <button
                       onClick={() => { setVarTriggered(true); refetchVariance() }}
                       disabled={varFetching}
-                      className="px-4 py-2.5 rounded-xl bg-[#fa5c29] text-white text-sm font-semibold
-                        hover:bg-[#fa5c29]/90 disabled:opacity-50 transition-all shrink-0"
+                      className="px-4 py-2.5 rounded-xl bg-primary-main text-white text-sm font-semibold
+                        hover:bg-primary-main/90 disabled:opacity-50 transition-all shrink-0"
                     >
                       {varFetching ? '...' : 'Run'}
                     </button>
@@ -878,12 +878,12 @@ export default function InventoryCountScreen() {
                             ].join(' ')}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-medium text-[#f9dcd5] text-sm">{v.item_name}</span>
+                              <span className="font-medium text-ink-primary text-sm">{v.item_name}</span>
                               {v.no_closing_count ? (
-                                <span className="text-xs text-[#aa8980] italic">Not yet counted</span>
+                                <span className="text-xs text-ink-tertiary italic">Not yet counted</span>
                               ) : (
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs tabular-nums text-[#aa8980]">
+                                  <span className="text-xs tabular-nums text-ink-tertiary">
                                     {v.opening_stock} → {v.closing_stock}
                                   </span>
                                   {v.adjustment && (
@@ -893,7 +893,7 @@ export default function InventoryCountScreen() {
                               )}
                             </div>
                             {v.variance_pct && !v.no_closing_count && (
-                              <p className={`text-[11px] mt-0.5 ${v.flagged ? 'text-status-failed' : 'text-[#aa8980]'}`}>
+                              <p className={`text-[11px] mt-0.5 ${v.flagged ? 'text-status-failed' : 'text-ink-tertiary'}`}>
                                 {parseFloat(v.variance_pct) > 0 ? '+' : ''}{v.variance_pct}% variance
                               </p>
                             )}
@@ -904,7 +904,7 @@ export default function InventoryCountScreen() {
                   )}
 
                   {!varFetching && !variance && (
-                    <p className="text-center text-sm text-[#aa8980] py-6">
+                    <p className="text-center text-sm text-ink-tertiary py-6">
                       Select a date range and tap Run.
                     </p>
                   )}
@@ -944,14 +944,14 @@ export default function InventoryCountScreen() {
 
           {/* Department */}
           <div>
-            <label className="block text-sm font-medium text-[#aa8980] mb-1.5">
+            <label className="block text-sm font-medium text-ink-tertiary mb-1.5">
               Department *
             </label>
             <select
               value={newDeptId}
               onChange={(e) => setNewDeptId(e.target.value)}
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3
-                text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                text-sm text-ink-primary focus:outline-none focus:border-primary-main
                 focus:ring-2 focus:ring-[#fa5c29]/20"
             >
               {!departments?.length && (
@@ -965,8 +965,8 @@ export default function InventoryCountScreen() {
 
           {/* Reorder level */}
           <div>
-            <label className="block text-sm font-medium text-[#aa8980] mb-1.5">
-              Reorder level <span className="font-normal text-[#aa8980]/60">(optional)</span>
+            <label className="block text-sm font-medium text-ink-tertiary mb-1.5">
+              Reorder level <span className="font-normal text-ink-tertiary/60">(optional)</span>
             </label>
             <input
               type="number"
@@ -977,7 +977,7 @@ export default function InventoryCountScreen() {
               onChange={(e) => setNewReorder(e.target.value)}
               placeholder="Alert threshold quantity"
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3
-                text-sm text-[#f9dcd5] focus:outline-none focus:border-[#fa5c29]
+                text-sm text-ink-primary focus:outline-none focus:border-primary-main
                 focus:ring-2 focus:ring-[#fa5c29]/20"
             />
           </div>
@@ -990,7 +990,7 @@ export default function InventoryCountScreen() {
               'w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-sm',
               newWatch
                 ? 'border-status-failed/40 bg-status-failed/5 text-status-failed'
-                : 'border-white/10 bg-white/5 text-[#aa8980]',
+                : 'border-white/10 bg-white/5 text-ink-tertiary',
             ].join(' ')}
           >
             <span className="font-medium">Flag as watch-list item</span>
@@ -1004,7 +1004,7 @@ export default function InventoryCountScreen() {
               )}
             </span>
           </button>
-          <p className="text-xs text-[#aa8980] -mt-2 px-1">
+          <p className="text-xs text-ink-tertiary -mt-2 px-1">
             Watch-list items show a red alert when stock drops below reorder level.
           </p>
 
@@ -1012,8 +1012,8 @@ export default function InventoryCountScreen() {
             type="submit"
             disabled={!addFormValid || addItemMutation.isPending}
             className="w-full py-4 rounded-2xl text-base font-semibold transition-all
-              bg-[#fa5c29] text-white hover:bg-[#fa5c29]/90 active:scale-[0.99]
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fa5c29] focus-visible:ring-offset-2
+              bg-primary-main text-white hover:bg-primary-main/90 active:scale-[0.99]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2
               disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {addItemMutation.isPending ? (

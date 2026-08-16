@@ -81,7 +81,7 @@ function FeedbackCard({ fb }: {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#f9dcd5]">{fb.guest_name}</p>
+          <p className="text-sm font-semibold text-ink-primary">{fb.guest_name}</p>
           <p className="text-[10px] text-ink-tertiary mt-0.5">
             {fmtDate(fb.created_at)} at {fmtTime(fb.created_at)}
           </p>
@@ -120,7 +120,7 @@ function StaffFeedbackSection() {
 
   return (
     <div className="space-y-4">
-      <h2 className="font-serif text-lg font-bold text-[#f9dcd5]">By Staff</h2>
+      <h2 className="font-serif text-lg font-bold text-ink-primary">By Staff</h2>
       <p className="text-xs text-ink-tertiary">
         Select an employee to see their guest feedback breakdown.
       </p>
@@ -137,8 +137,8 @@ function StaffFeedbackSection() {
               onClick={() => setSelectedStaff(selectedStaff === p.id ? null : p.id)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors
                 ${selectedStaff === p.id
-                  ? 'border-[#f9dcd5]/40 bg-white/10 text-[#f9dcd5]'
-                  : 'border-white/10 text-[#aa8980] hover:text-[#f9dcd5] hover:bg-white/5'
+                  ? 'border-[#f9dcd5]/40 bg-white/10 text-ink-primary'
+                  : 'border-white/10 text-ink-tertiary hover:text-ink-primary hover:bg-white/5'
                 }`}
             >
               {p.full_name}
@@ -162,7 +162,7 @@ function StaffFeedbackSection() {
           ) : staffFb ? (
             <>
               <div className="flex items-baseline justify-between mb-3">
-                <p className="text-sm font-semibold text-[#f9dcd5]">
+                <p className="text-sm font-semibold text-ink-primary">
                   {staffFb.employee_name ?? 'Staff'}
                 </p>
                 <div className="flex items-baseline gap-1">
@@ -217,7 +217,7 @@ export default function FeedbackScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#f9dcd5]">
+          <h1 className="font-serif text-2xl md:text-3xl font-bold text-ink-primary">
             Guest Feedback
           </h1>
           <p className="text-sm text-ink-secondary mt-1">
@@ -246,7 +246,7 @@ export default function FeedbackScreen() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-bold tabular-nums text-[#f9dcd5]">{data.count}</p>
+                  <p className="text-3xl font-bold tabular-nums text-ink-primary">{data.count}</p>
                   <p className="text-xs text-ink-tertiary">total reviews</p>
                 </div>
               </div>
@@ -259,7 +259,7 @@ export default function FeedbackScreen() {
               <button key={t} onClick={() => setTab(t)}
                 className={`px-5 py-2 text-xs font-bold tracking-widest uppercase transition-colors
                   ${tab === t
-                    ? 'bg-white/10 text-[#f9dcd5]'
+                    ? 'bg-white/10 text-ink-primary'
                     : 'text-ink-tertiary hover:text-ink-secondary'
                   }`}>
                 {t === 'recent' ? 'Recent' : 'By Staff'}
@@ -287,7 +287,7 @@ export default function FeedbackScreen() {
               {!isLoading && !isError && data && data.recent.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                   <span className="text-5xl text-ink-tertiary/40">&#9733;</span>
-                  <p className="text-[#aa8980] text-lg font-medium">No feedback yet</p>
+                  <p className="text-ink-tertiary text-lg font-medium">No feedback yet</p>
                   <p className="text-xs text-ink-tertiary">
                     Guest feedback will appear here once submitted.
                   </p>
