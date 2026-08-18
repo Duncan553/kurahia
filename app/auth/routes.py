@@ -26,6 +26,7 @@ from flask_jwt_extended import (
 from app.extensions import db, limiter
 from app.models.user import User, _ph
 from app.models.employee_profile import EmployeeProfile
+from app.models.department import Department
 from app.models.audit_log import AuditLog
 from app.utils.auth import record_failed_attempt, check_active_and_unlocked
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError

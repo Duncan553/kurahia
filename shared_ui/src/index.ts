@@ -65,7 +65,5 @@ export type { HelpTooltipProps } from './components/HelpTooltip'
 // ── Form system ──
 export { FormField } from './components/FormField'
 export type { FormFieldProps } from './components/FormField'
-export { Select } from './components/Select'
-export type { SelectProps } from './components/Select'
 export { FormSection } from './components/FormSection'
 export type { FormSectionProps } from './components/FormSection'
