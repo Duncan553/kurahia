@@ -51,6 +51,8 @@ def _queue_for_station(station: str, actor: User):
             "menu_item_id":  oi.menu_item_id,
             "menu_item":     oi.menu_item.name if oi.menu_item else None,
             "category":      oi.menu_item.category if oi.menu_item else None,
+            "allergens":     oi.menu_item.allergens if oi.menu_item else None,
+            "dietary_flags": oi.menu_item.dietary_flags if oi.menu_item else None,
             "quantity":      str(oi.quantity),
             "status":        oi.status,
             "created_at":    oi.created_at.isoformat(),
