@@ -205,7 +205,10 @@ export default function ReconciliationScreen() {
               )}
               {data.cash_reconciliation.pending_staff.length > 0 && (
                 <div className="pt-1">
-                  <p className="text-[10px] text-status-pending font-semibold">Unreconciled</p>
+                  {/* "Still unreconciled" above is a KES amount; this is a name list —
+                      both got called "Unreconciled" which reads as the same thing at a
+                      glance. Labeled distinctly on purpose. */}
+                  <p className="text-[10px] text-status-pending font-semibold">Staff pending</p>
                   <p className="text-[11px] text-ink-secondary">
                     {data.cash_reconciliation.pending_staff.join(', ')}
                   </p>
