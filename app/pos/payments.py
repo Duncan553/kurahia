@@ -72,10 +72,16 @@ def record_payment(tab_id):
     db.session.commit()
 
     balance = get_tab_balance(tab_id)
+    # GET /tabs/:id's payments[] entries use "id"/"created_at"/"received_by" —
+    # kept "payment_id" here too (additive) since nothing currently reads it,
+    # but the two shapes for "a payment" shouldn't disagree on field names.
     return jsonify({
+        "id":            payment.id,
         "payment_id":    payment.id,
         "amount":        str(amount),
         "method":        method,
         "tab_balance":   str(balance),
         "mpesa_code":    mpesa_code,
+        "created_at":    payment.created_at_utc.isoformat(),
+        "received_by":   actor.username,
     }), 201
