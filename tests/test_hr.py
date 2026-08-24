@@ -78,6 +78,55 @@ class TestEmployeeProfiles:
                          headers=auth(manager_token))
         assert rv.status_code == 403
 
+    def test_disabled_profile_kills_already_issued_token(self, client, owner_token, waiter_token, waiter_profile):
+        """The kill-switch invariant: disabling a profile must lock the login
+        account too, or a JWT issued before the disable keeps working on every
+        endpoint that isn't clock-gated (require_active_user only ever checked
+        User.is_active, never EmployeeProfile.is_active)."""
+        # Sanity: the token works before disable.
+        rv = client.get("/hr/clock-status", headers=auth(waiter_token))
+        assert rv.status_code == 200
+
+        rv = client.post(f"/hr/profiles/{waiter_profile.id}/disable", headers=auth(owner_token))
+        assert rv.status_code == 200
+
+        # Same still-unexpired token, no re-login — must now be rejected.
+        rv = client.get("/hr/clock-status", headers=auth(waiter_token))
+        assert rv.status_code == 403
+
+    def test_owner_cannot_disable_own_profile(self, client, owner_token, app):
+        from app.models.employee_profile import EmployeeProfile
+        from app.models.user import User
+        from app.extensions import db
+        with app.app_context():
+            owner = db.session.query(User).filter_by(username="owner1").first()
+            profile = EmployeeProfile(user_id=owner.id, full_name="Test Owner", phone="+254700000099")
+            db.session.add(profile)
+            db.session.commit()
+            pid = profile.id
+        rv = client.post(f"/hr/profiles/{pid}/disable", headers=auth(owner_token))
+        assert rv.status_code == 403
+
+    def test_reactivating_profile_disabled_account_requires_owner(self, client, owner_token, manager_token, waiter_profile, app):
+        """/auth/users/<id>/activate must not be able to silently undo an
+        owner-level profile disable — only the owner can reverse it there too."""
+        from app.models.employee_profile import EmployeeProfile
+        from app.extensions import db
+
+        rv = client.post(f"/hr/profiles/{waiter_profile.id}/disable", headers=auth(owner_token))
+        assert rv.status_code == 200
+        target_user_id = waiter_profile.user_id
+
+        # A manager who outranks the waiter cannot reactivate a profile-disabled account.
+        rv = client.post(f"/auth/users/{target_user_id}/activate", headers=auth(manager_token))
+        assert rv.status_code == 403
+
+        # The owner can, and it cascades the profile back on too.
+        rv = client.post(f"/auth/users/{target_user_id}/activate", headers=auth(owner_token))
+        assert rv.status_code == 200
+        with app.app_context():
+            assert db.session.get(EmployeeProfile, waiter_profile.id).is_active is True
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 2. WiFi allow-list

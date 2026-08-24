@@ -29,6 +29,7 @@ from app.models.employee_profile import EmployeeProfile
 from app.models.department import Department
 from app.models.audit_log import AuditLog
 from app.utils.auth import record_failed_attempt, check_active_and_unlocked
+from app.utils.auth_decorators import require_active_user
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -300,7 +301,7 @@ def change_password():
 # ── Kill-switch (deactivate account) ─────────────────────────────────────────
 
 @auth_bp.post("/deactivate/<target_user_id>")
-@jwt_required()
+@require_active_user
 def deactivate_user(target_user_id):
     actor_id = get_jwt_identity()
     actor = db.session.get(User, actor_id)

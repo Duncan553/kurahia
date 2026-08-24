@@ -17,9 +17,12 @@ from app.extensions import db
 from app.models.user import User
 from app.models.role import Role
 from app.models.department import Department
+from app.models.employee_profile import EmployeeProfile
 from app.models.audit_log import AuditLog
 
 users_bp = Blueprint("users", __name__, url_prefix="/auth/users")
+
+OWNER_LEVEL = 10
 
 
 @users_bp.post("")
@@ -181,8 +184,18 @@ def activate_user(user_id):
     if actor.role.level <= target.role.level:
         return jsonify({"error": "You don't have the authority to activate this account."}), 403
 
+    # If this account was locked out via a disabled EmployeeProfile — an
+    # owner-only action (hr/profiles.py disable_profile) — only the owner can
+    # undo it here too. Without this, any outranking manager could silently
+    # reverse a decision the system otherwise reserves for the owner.
+    profile = db.session.query(EmployeeProfile).filter_by(user_id=target.id).first()
+    if profile and not profile.is_active and actor.role.level < OWNER_LEVEL:
+        return jsonify({"error": "This account was disabled at the profile level — only the owner can re-activate it."}), 403
+
     with db.session.begin_nested():
         target.is_active = True
+        if profile and not profile.is_active:
+            profile.is_active = True
 
     AuditLog.log(actor=actor.username, action="user.activate", target=target.username)
     db.session.commit()
