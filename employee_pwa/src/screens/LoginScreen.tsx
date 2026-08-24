@@ -4,10 +4,11 @@ import { motion } from 'framer-motion'
 import { Button, Input, FormField } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
+import { decodeJWT } from '../lib/jwt'
 
 export default function LoginScreen() {
   const navigate = useNavigate()
-  const setToken = useAuthStore((s) => s.setToken)
+  const setAuth = useAuthStore((s) => s.setAuth)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -23,8 +24,7 @@ export default function LoginScreen() {
     setError('')
     try {
       const res = await api.post('/auth/login', { username: username.trim().toLowerCase(), password })
-      setToken(res.data.access_token)
-      // AuthGate will handle redirect
+      const claims = decodeJWT(res.data.access_token); setAuth({ id: claims.sub, username: username.trim().toLowerCase(), role_level: claims.role_level, department: claims.department ?? null }, res.data.access_token, res.data.refresh_token ?? ''); navigate('/clock')
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Login failed')
     } finally {
