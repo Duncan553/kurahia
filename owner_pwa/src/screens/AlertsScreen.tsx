@@ -60,12 +60,39 @@ function CostVarianceIcon() {
       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
+function GateIcon() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <rect x="2" y="3.5" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+    <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.5"/>
+  </svg>
+}
+function FraudIcon() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
+function WarningIcon() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <path d="M8 1.5l7 12.5H1L8 1.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M8 6.5V9.5M8 11.5h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
 
+// The backend's actual alert_type values span more families than this list can
+// track exactly (app/judge/engine.py, app/services/gate.py, app/finance/*.py all
+// fire their own — VARIANCE/BUDGET/GATE_*/CASH/MPESA/BANK/VOID/GHOST/EVENT...).
+// Bucket by keyword instead of an ever-drifting exact-match list, so a new alert
+// type still gets a meaningful icon instead of silently falling into a "safe"-
+// looking default the moment someone adds one without updating this file.
 function AlertTypeIcon({ type }: { type: string }) {
-  if (type === 'RATIO') return <RatioIcon />
+  if (type === 'RATIO' || type.includes('VARIANCE')) return <RatioIcon />
   if (type === 'SPOILAGE_SPIKE') return <SpoilageIcon />
   if (type === 'COST_VARIANCE') return <CostVarianceIcon />
-  return <SafeIcon />
+  if (type.includes('GATE')) return <GateIcon />
+  if (type.includes('VOID') || type.includes('GHOST') || type.includes('ABUSE')) return <FraudIcon />
+  if (type.includes('CASH') || type.includes('MPESA') || type.includes('BANK') || type.includes('BUDGET')) return <SafeIcon />
+  return <WarningIcon />
 }
 
 // ── Severity styling ───────────────────────────────────────────────────────────
