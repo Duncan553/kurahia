@@ -108,6 +108,11 @@ def three_way_report():
     total_expected_recon = sum(Decimal(str(r.expected_amount)) for r in recons)
     total_handed_in      = sum(Decimal(str(r.actual_amount))   for r in recons)
     recon_diff           = total_handed_in - total_expected_recon
+    # `recon_diff` only covers reconciliations that have actually happened — it
+    # reads 0.00 even when most of today's cash hasn't been reconciled yet. This
+    # is the real outstanding gap: everything collected today that hasn't been
+    # handed in and matched against a reconciliation record at all.
+    unreconciled_amount = cash_total_collected - total_handed_in
 
     shortfalls = [
         {
@@ -176,6 +181,7 @@ def three_way_report():
             "total_expected":   str(total_expected_recon),
             "total_handed_in":  str(total_handed_in),
             "difference":       str(recon_diff),
+            "unreconciled_amount": str(unreconciled_amount),
             "shortfalls":       shortfalls,
             "pending_staff":    pending_staff,
         },

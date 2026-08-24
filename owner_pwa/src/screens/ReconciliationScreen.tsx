@@ -13,6 +13,7 @@ interface ReconData {
     total_expected: string
     total_handed_in: string
     difference: string
+    unreconciled_amount: string
     shortfalls: { staff: string; expected: string; actual: string; difference: string }[]
     pending_staff: string[]
   }
@@ -179,9 +180,18 @@ export default function ReconciliationScreen() {
               <Row label="Expected"  value={kes(data.cash_reconciliation.total_expected)} />
               <Row label="Handed in" value={kes(data.cash_reconciliation.total_handed_in)} />
               <Row
-                label="Difference"
+                label="Difference (reconciled)"
                 value={kes(data.cash_reconciliation.difference)}
                 valueClass={diffColor(data.cash_reconciliation.difference)}
+              />
+              {/* This is the number that matters for "does today actually balance" —
+                  `difference` above only covers cash someone has already reconciled,
+                  and reads 0.00 even when most of the day's cash is still sitting
+                  unaccounted for (see pending_staff below). */}
+              <Row
+                label="Still unreconciled"
+                value={kes(data.cash_reconciliation.unreconciled_amount)}
+                valueClass={diffColor(data.cash_reconciliation.unreconciled_amount)}
               />
               {data.cash_reconciliation.shortfalls.length > 0 && (
                 <div className="pt-2 space-y-1">
