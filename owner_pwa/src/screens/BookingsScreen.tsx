@@ -226,7 +226,9 @@ const STATUS_TABS: { key: StatusFilter; label: string }[] = [
 
 export default function BookingsScreen() {
   const [searchQ, setSearchQ] = useState('')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('CONFIRMED')
+  // Default to "who's actually here" — CONFIRMED (not-yet-arrived) hid every
+  // guest currently on the property, which is the more useful thing to see first.
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('CHECKED_IN')
   const [dateFilter, setDateFilter] = useState('')
   const [selected, setSelected] = useState<Booking | null>(null)
 
