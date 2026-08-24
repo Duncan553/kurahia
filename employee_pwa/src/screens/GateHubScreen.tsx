@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Modal, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
+import { formatBandBalance } from '../lib/format'
 
 // Gate station hub: issue wristbands + today's stats (bands issued, total fees).
 // Band lookup lives on POS screens; booking check-in lives on FrontDesk.
@@ -86,16 +87,17 @@ function RecentBands() {
         Recent Bands — check before issuing another for the same guest
       </p>
       <div className="space-y-2">
-        {bands.slice(0, 4).map(b => (
-          <div key={b.id} className="flex items-center justify-between py-1 text-sm">
-            <span className="font-semibold text-ink-primary">#{b.band_number}</span>
-            <span className="text-xs tabular-nums text-ink-tertiary">
-              {parseFloat(b.tab_balance) > 0
-                ? `KSh ${parseFloat(b.tab_balance).toLocaleString()} owed`
-                : `KSh ${Math.abs(parseFloat(b.tab_balance)).toLocaleString()} credit left`}
-            </span>
-          </div>
-        ))}
+        {bands.slice(0, 4).map(b => {
+          const bal = formatBandBalance(b.tab_balance)
+          return (
+            <div key={b.id} className="flex items-center justify-between py-1 text-sm">
+              <span className="font-semibold text-ink-primary">#{b.band_number}</span>
+              <span className="text-xs tabular-nums text-ink-tertiary">
+                KSh {bal.amount} {bal.owed ? 'owed' : 'credit left'}
+              </span>
+            </div>
+          )
+        })}
         {bands.length > 4 && (
           <p className="text-[10px] text-ink-tertiary text-center pt-1">+{bands.length - 4} more inside</p>
         )}

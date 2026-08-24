@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useToastStore } from '@shared'
 import api from '../lib/axios'
+import { formatBandBalance } from '../lib/format'
 
 interface BandResult {
   id: string
@@ -75,6 +76,7 @@ export default function BandLookupScreen() {
   }
 
   const balance = result ? parseFloat(result.tab_balance) : 0
+  const bandBalance = result ? formatBandBalance(result.tab_balance) : null
 
   return (
     <div className="p-4 max-w-3xl mx-auto space-y-5">
@@ -147,15 +149,14 @@ export default function BandLookupScreen() {
               </p>
             </div>
             <div className="text-right">
-              {/* tab_balance = charges − payments (invariant #2): negative means
-                  unspent prepaid credit, not debt. Color was already correct
-                  (red=owed, green=settled/credit) — the raw signed number wasn't. */}
-              <p className="text-xs text-ink-tertiary mb-0.5">{balance > 0 ? 'Owed' : 'Credit remaining'}</p>
+              {/* Color was already correct (red=owed, green=settled/credit) —
+                  the raw signed number wasn't (see lib/format.ts formatBandBalance). */}
+              <p className="text-xs text-ink-tertiary mb-0.5">{bandBalance?.label}</p>
               <p className={[
                 'text-2xl font-bold tabular-nums',
                 balance > 0 ? 'text-status-failed' : 'text-status-paid',
               ].join(' ')}>
-                KES {Math.abs(balance).toLocaleString()}
+                KES {bandBalance?.amount}
               </p>
             </div>
           </div>

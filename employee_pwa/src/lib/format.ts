@@ -58,3 +58,19 @@ export function timeAgo(iso: string): string {
   if (hrs < 24) return `${hrs}h ago`
   return `${Math.floor(hrs / 24)}d ago`
 }
+
+// A band's tab_balance is charges − payments (derived-state invariant): negative
+// means unspent prepaid credit, not debt. Was being formatted independently
+// (and inconsistently) in three screens — WristbandScreen, BandLookupScreen,
+// GateHubScreen — one shared source of truth instead. Returns the bare number
+// (absolute value, still to be prefixed with KSh/KES per screen convention)
+// plus a label/owed flag so callers don't each re-derive the sign logic.
+export function formatBandBalance(rawBalance: string): { label: string; amount: string; owed: boolean } {
+  const n = parseFloat(rawBalance)
+  const owed = n > 0
+  return {
+    label: owed ? 'Owed' : 'Credit remaining',
+    amount: Math.abs(n).toLocaleString(),
+    owed,
+  }
+}

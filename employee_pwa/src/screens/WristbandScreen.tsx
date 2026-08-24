@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Modal, Skeleton, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
+import { formatBandBalance } from '../lib/format'
 
 type PaymentMethod = 'CASH' | 'MPESA' | 'CARD' | 'BANK_TRANSFER'
 
@@ -247,20 +248,18 @@ export default function WristbandScreen() {
                   Recent Bands
                 </p>
                 <div className="space-y-2">
-                  {bands.slice(0, 4).map((b) => (
-                    <div key={b.id} className="flex items-center justify-between py-1.5
-                      border-b border-white/5 last:border-0">
-                      <span className="text-sm font-semibold text-ink-primary">#{b.band_number}</span>
-                      {/* tab_balance = charges − payments (invariant #2): negative means
-                          unspent prepaid credit, not debt — label it so it doesn't read
-                          as a negative number owed. */}
-                      <span className="text-xs tabular-nums text-ink-tertiary">
-                        {parseFloat(b.tab_balance) > 0
-                          ? `KSh ${parseFloat(b.tab_balance).toLocaleString()} owed`
-                          : `KSh ${Math.abs(parseFloat(b.tab_balance)).toLocaleString()} credit left`}
-                      </span>
-                    </div>
-                  ))}
+                  {bands.slice(0, 4).map((b) => {
+                    const bal = formatBandBalance(b.tab_balance)
+                    return (
+                      <div key={b.id} className="flex items-center justify-between py-1.5
+                        border-b border-white/5 last:border-0">
+                        <span className="text-sm font-semibold text-ink-primary">#{b.band_number}</span>
+                        <span className="text-xs tabular-nums text-ink-tertiary">
+                          KSh {bal.amount} {bal.owed ? 'owed' : 'credit left'}
+                        </span>
+                      </div>
+                    )
+                  })}
                   {bands.length > 4 && (
                     <p className="text-[10px] text-ink-tertiary text-center pt-1">
                       +{bands.length - 4} more inside
