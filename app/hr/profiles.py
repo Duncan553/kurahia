@@ -181,6 +181,11 @@ def disable_profile(profile_id):
     if not profile:
         return jsonify({"error": "Employee profile not found."}), 404
     profile.is_active = False
+    # Kill-switch invariant: a disabled profile must also lock the login account,
+    # or the still-valid JWT keeps working on every non-clock-gated endpoint
+    # (require_active_user only checks User.is_active, never EmployeeProfile.is_active).
+    if profile.user:
+        profile.user.is_active = False
     db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.profile.disable", target=profile_id)
     db.session.commit()
@@ -197,6 +202,9 @@ def enable_profile(profile_id):
     if not profile:
         return jsonify({"error": "Employee profile not found."}), 404
     profile.is_active = True
+    # Mirror disable_profile's cascade so re-enabling a profile also restores login.
+    if profile.user:
+        profile.user.is_active = True
     db.session.flush()
     AuditLog.log(actor=actor.username, action="hr.profile.enable", target=profile_id)
     db.session.commit()
