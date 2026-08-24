@@ -86,9 +86,12 @@ function WarningIcon() {
 // type still gets a meaningful icon instead of silently falling into a "safe"-
 // looking default the moment someone adds one without updating this file.
 function AlertTypeIcon({ type }: { type: string }) {
-  if (type === 'RATIO' || type.includes('VARIANCE')) return <RatioIcon />
+  // Exact matches before the keyword bucket below — COST_VARIANCE contains
+  // "VARIANCE" too, so a generic .includes('VARIANCE') check ahead of this
+  // would shadow it and make CostVarianceIcon permanently unreachable.
   if (type === 'SPOILAGE_SPIKE') return <SpoilageIcon />
   if (type === 'COST_VARIANCE') return <CostVarianceIcon />
+  if (type === 'RATIO' || type.includes('VARIANCE')) return <RatioIcon />
   if (type.includes('GATE')) return <GateIcon />
   if (type.includes('VOID') || type.includes('GHOST') || type.includes('ABUSE')) return <FraudIcon />
   if (type.includes('CASH') || type.includes('MPESA') || type.includes('BANK') || type.includes('BUDGET')) return <SafeIcon />
