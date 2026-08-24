@@ -115,7 +115,7 @@ export default function HeadChefScreen() {
   })
 
   return (
-    <RequireRole minLevel={5}>
+    <RequireRole minLevel={3}>
       <div className="min-h-screen p-4 md:p-6">
         <motion.div className="max-w-6xl mx-auto"
           initial="hidden" animate="visible" variants={stagger}>

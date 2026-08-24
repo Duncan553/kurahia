@@ -182,7 +182,7 @@ const router = createBrowserRouter([
         // ── Housekeeping: villa/housekeeping dept (L1+) + managers (L5+)
         { path: '/housekeeping', element: <HousekeepingScreen /> },
 
-        // ── Gate / Front Desk (level 3+) ─────────────────────────
+        // ── Gate / Front Desk / dept leads (level 3+) ────────────
         {
           element: <RoleGate minLevel={3} />,
           children: [
@@ -192,6 +192,10 @@ const router = createBrowserRouter([
             // GateHubScreen (/gate/hub) is the primary gate-staff landing.
             { path: '/gate/issue',         element: <WristbandScreen /> },
             { path: '/front-desk/checkin', element: <CheckInScreen />   },
+            // head_chef is seeded at level 3 (same tier as bar_lead, gate_lead,
+            // front_desk) — this used to sit under the level-5 manager group,
+            // which locked head chefs out of their own dashboard.
+            { path: '/chef',               element: <HeadChefScreen />  },
           ],
         },
 
@@ -203,7 +207,6 @@ const router = createBrowserRouter([
           element: <RoleGate minLevel={5} />,
           children: [
             { path: '/manager',                    element: <ManagerScreen />         },
-            { path: '/chef',                       element: <HeadChefScreen />        },
             { path: '/inventory/count',            element: <InventoryCountScreen />  },
             { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
             { path: '/equipment/maintenance',      element: <MaintenanceLogScreen />  },
