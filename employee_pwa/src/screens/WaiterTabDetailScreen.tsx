@@ -4,6 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton, Button, useToastStore, SearchInput, Modal, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
+import { useAuthStore } from '../stores/authStore'
+
+const FRONT_DESK_LEVEL = 3   // must match app/reports/routes.py + app/notifications/core.py
 
 interface MenuItem {
   id: string; name: string; price: string; category: string | null
@@ -70,6 +73,8 @@ export default function WaiterTabDetailScreen() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
+  const roleLevel = useAuthStore(s => s.user?.role_level ?? 0)
+  const canHandleReceipts = roleLevel >= FRONT_DESK_LEVEL
 
   const [draft, setDraft] = useState<Record<string, number>>({})
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({})
@@ -97,7 +102,11 @@ export default function WaiterTabDetailScreen() {
     queryFn: () => api.get<MenuItem[]>('/menu/items').then(r => r.data),
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
-    select: (all) => all.filter(i => i.prep_station === 'KITCHEN' || i.prep_station === 'BAR'),
+    // NONE = self-serve items with no kitchen/bar prep step (spa & gym services,
+    // water-activity add-ons). StationBadge already renders these as "Self-serve";
+    // this filter used to drop them entirely, so a spa/water tab charge silently
+    // showed the wrong (food/drink) menu instead — see StationBadge above.
+    select: (all) => all.filter(i => i.prep_station === 'KITCHEN' || i.prep_station === 'BAR' || i.prep_station === 'NONE'),
   })
 
   // ── Derived ─────────────────────────────────────────────────────────────
@@ -130,6 +139,10 @@ export default function WaiterTabDetailScreen() {
   const draftCount = draftEntries.reduce((s, e) => s + e.qty, 0)
   const bal = parseFloat(tab?.balance ?? '0')
   const allOrderItems = (tab?.orders ?? []).flatMap(o => o.items)
+  // Mirrors the backend's is_tab_closable (app/services/tab.py): only SERVED/CANCELLED
+  // are terminal. Balance alone isn't enough — a PENDING/RECEIVED/READY item still
+  // blocks close, and the button used to show as ready anyway, then 400 on tap.
+  const allItemsResolved = allOrderItems.every(oi => oi.status === 'SERVED' || oi.status === 'CANCELLED')
 
   // ── Mutations ───────────────────────────────────────────────────────────
 
@@ -539,31 +552,47 @@ export default function WaiterTabDetailScreen() {
         )}
 
         {/* Close tab */}
-        {bal <= 0 && tab?.status !== 'CLOSED' && (
+        {bal <= 0 && tab?.status !== 'CLOSED' && allItemsResolved && (
           <Button variant="primary" size="lg" className="w-full" loading={closeMut.isPending}
             onClick={() => closeMut.mutate()}>
             Close Table ✓
           </Button>
         )}
+        {bal <= 0 && tab?.status !== 'CLOSED' && !allItemsResolved && (
+          <p className="text-center text-xs text-ink-tertiary py-2">
+            Waiting on the kitchen/bar to finish and serve every item before this table can close.
+          </p>
+        )}
 
         {tab?.status === 'CLOSED' && (
           <div className="space-y-3">
             <p className="text-center text-sm text-status-paid font-semibold py-2">✓ Table closed</p>
-            <button
-              onClick={() => {
-                const ref = tab.reference || `tab_${tabId?.slice(0, 8)}`
-                downloadPdf(`/reports/receipt/${tabId}`, `receipt_${ref.replace(/ /g, '_')}.pdf`)
-                  .catch(e => addToast({ type: 'error', message: (e as Error).message }))
-              }}
-              className="w-full py-2.5 rounded-xl glass-card text-sm font-semibold text-ink-primary
-                hover:bg-white/5 transition-colors border border-white/10"
-            >
-              Print Receipt (PDF)
-            </button>
-            <Button variant="ghost" size="md" className="w-full"
-              onClick={() => setShowReceiptModal(true)}>
-              Send Receipt via WhatsApp
-            </Button>
+            {canHandleReceipts ? (
+              <>
+                <button
+                  onClick={() => {
+                    const ref = tab.reference || `tab_${tabId?.slice(0, 8)}`
+                    downloadPdf(`/reports/receipt/${tabId}`, `receipt_${ref.replace(/ /g, '_')}.pdf`)
+                      .catch(e => addToast({ type: 'error', message: (e as Error).message }))
+                  }}
+                  className="w-full py-2.5 rounded-xl glass-card text-sm font-semibold text-ink-primary
+                    hover:bg-white/5 transition-colors border border-white/10"
+                >
+                  Print Receipt (PDF)
+                </button>
+                <Button variant="ghost" size="md" className="w-full"
+                  onClick={() => setShowReceiptModal(true)}>
+                  Send Receipt via WhatsApp
+                </Button>
+              </>
+            ) : (
+              // Both actions require front desk level+ on the backend (app/reports/routes.py,
+              // app/notifications/core.py) — these buttons used to show for every waiter
+              // regardless, so closing a table always ended in two dead 403s.
+              <p className="text-center text-xs text-ink-tertiary py-2">
+                Ask front desk to print or send this receipt.
+              </p>
+            )}
           </div>
         )}
       </div>
