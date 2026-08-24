@@ -180,6 +180,10 @@ def disable_profile(profile_id):
     profile = db.session.get(EmployeeProfile, profile_id)
     if not profile:
         return jsonify({"error": "Employee profile not found."}), 404
+    if profile.user_id == actor.id:
+        return jsonify({"error": "You can't disable your own profile — several owner-lookup routines "
+                                  "(judge alerts, low-stock notices) would silently stop finding an active "
+                                  "owner. Have another owner-level account do this, or use flask seed owner first."}), 403
     profile.is_active = False
     # Kill-switch invariant: a disabled profile must also lock the login account,
     # or the still-valid JWT keeps working on every non-clock-gated endpoint
