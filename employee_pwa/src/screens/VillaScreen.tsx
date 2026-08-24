@@ -51,13 +51,19 @@ export default function VillaScreen() {
   // Availability check for today forward (7 days window)
   const today = new Date().toISOString().slice(0, 10)
   const weekLater = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10)
-  const { data: resources = [], isLoading: resLoading } = useQuery<VillaResource[]>({
+  const { data: resources = [], isLoading: resLoading, error: resError } = useQuery<VillaResource[]>({
     queryKey: ['villa-availability', today],
     queryFn: () => api.get<VillaResource[]>(
       `/bookings/availability?resource_type=VILLA&from=${today}T00:00:00&to=${weekLater}T23:59:59`
     ).then(r => r.data),
     staleTime: 60_000,
+    retry: false, // a 403 here is a permission fact, not a flaky network call — don't retry it
   })
+  // /bookings/availability requires FRONT_DESK_LEVEL (3); housekeeping/villa staff
+  // routed here by AppLayout are often level 1, so this legitimately 403s for them.
+  // Without this check the empty-array fallback below claimed "nothing configured,"
+  // which is wrong and sends people looking for a setup step that isn't the issue.
+  const resForbidden = (resError as { response?: { status?: number } } | undefined)?.response?.status === 403
 
   // Create booking mutation
   const bookMut = useMutation({
@@ -215,7 +221,9 @@ export default function VillaScreen() {
       {!resLoading && resources.length === 0 && (
         <motion.div variants={fadeIn} transition={{ duration: 0.35, ease: 'easeOut' }}>
           <p className="text-sm text-ink-tertiary text-center py-4">
-            No villa resources configured yet. Ask the manager to set up villa resources.
+            {resForbidden
+              ? "You don't have permission to view villa availability — front desk level or above needed. Ask your manager."
+              : 'No villa resources configured yet. Ask the manager to set up villa resources.'}
           </p>
         </motion.div>
       )}
