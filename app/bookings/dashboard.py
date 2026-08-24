@@ -74,7 +74,7 @@ def front_desk_today():
                 })
 
     return jsonify({
-        "date": today.isoformat(),
+        "date": day_start.date().isoformat(),
         "arrivals": [{
             "booking_id":     b.id,
             "guest_name":     b.guest_name,
