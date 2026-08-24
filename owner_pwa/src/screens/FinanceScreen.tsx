@@ -162,13 +162,15 @@ function RevenueSection({ period }: { period: string }) {
 // ── Budget burn section ───────────────────────────────────────────────────────
 
 function BudgetSection({ period }: { period: string }) {
-  const { data: rows, isLoading } = useQuery<BudgetRow[]>({
+  // /finance/budgets/status returns { period, budgets: BudgetRow[] }, not a bare array.
+  const { data, isLoading } = useQuery<{ budgets: BudgetRow[]; period: string }>({
     queryKey: ['finance-budgets', period],
-    queryFn: () => api.get<BudgetRow[]>(`/finance/budgets/status?period=${period}`).then(r => r.data),
+    queryFn: () => api.get(`/finance/budgets/status?period=${period}`).then(r => r.data),
     staleTime: 5 * 60_000,
   })
+  const rows = Array.isArray(data) ? data : (data?.budgets ?? [])
 
-  const active = (rows ?? []).filter(r => parseFloat(r.budget) > 0)
+  const active = rows.filter(r => parseFloat(r.budget) > 0)
 
   // Donut chart data
   const donutData = active.slice(0, 5).map(r => ({
