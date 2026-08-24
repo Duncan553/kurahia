@@ -76,7 +76,13 @@ def open_tab():
     AuditLog.log(actor=actor.username, action="tab.open", target=tab.id,
                  details=f"ref={reference}")
     db.session.commit()
-    return jsonify({"id": tab.id, "reference": tab.reference, "status": tab.status}), 201
+    # Match GET /tabs/:id's shape (WaiterTabsScreen's Tab interface declares
+    # tab_type/opened_at/balance too) — a fresh tab has zero balance by
+    # definition, no need to query it.
+    return jsonify({
+        "id": tab.id, "reference": tab.reference, "tab_type": tab.tab_type,
+        "status": tab.status, "opened_at": tab.opened_at_utc.isoformat(), "balance": "0",
+    }), 201
 
 
 @tabs_bp.get("/<tab_id>")
