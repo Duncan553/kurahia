@@ -60,7 +60,8 @@ def issue_band_route():
     idem_key = data.get("idempotency_key") or str(uuid.uuid4())
 
     if method not in PaymentMethod.__members__:
-        return jsonify({"error": f"method must be one of {list(PaymentMethod.__members__)}."}), 400
+        allowed = ", ".join(PaymentMethod.__members__)
+        return jsonify({"error": f"Payment method must be one of: {allowed}."}), 400
 
     # Idempotency — return existing band if key seen before
     existing = db.session.query(Wristband).filter_by(idempotency_key=idem_key).first()
