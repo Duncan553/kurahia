@@ -195,7 +195,12 @@ function OrderTicket({
                          gradient-hero text-white disabled:opacity-50
                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
             >
-              {station === 'BAR' ? 'Serve' : 'Complete'}
+              {/* This fires the RECEIVED→READY transition (marks it ready at the pass) —
+                  a separate /order-items/:id/serve endpoint exists for the waiter to
+                  call once it actually reaches the guest. "Serve" here read as if that
+                  had already happened, and disagreed with Kitchen's "Complete" for the
+                  identical state change. */}
+              Ready for Pickup
             </button>
           </>
         )}
