@@ -147,12 +147,15 @@ export default function BandLookupScreen() {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-ink-tertiary mb-0.5">Tab balance</p>
+              {/* tab_balance = charges − payments (invariant #2): negative means
+                  unspent prepaid credit, not debt. Color was already correct
+                  (red=owed, green=settled/credit) — the raw signed number wasn't. */}
+              <p className="text-xs text-ink-tertiary mb-0.5">{balance > 0 ? 'Owed' : 'Credit remaining'}</p>
               <p className={[
                 'text-2xl font-bold tabular-nums',
                 balance > 0 ? 'text-status-failed' : 'text-status-paid',
               ].join(' ')}>
-                KES {balance.toLocaleString()}
+                KES {Math.abs(balance).toLocaleString()}
               </p>
             </div>
           </div>
