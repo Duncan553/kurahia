@@ -11,6 +11,7 @@ from app.extensions import db
 class RequestStatus(str, enum.Enum):
     DRAFT     = "DRAFT"
     PENDING   = "PENDING"
+    PROPOSED  = "PROPOSED"   # manager has attached an estimated_cost, awaiting owner
     APPROVED  = "APPROVED"
     REJECTED  = "REJECTED"
     FULFILLED = "FULFILLED"
