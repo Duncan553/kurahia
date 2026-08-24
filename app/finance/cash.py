@@ -15,6 +15,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
+from app.models.employee_profile import EmployeeProfile
 from app.models.cash_reconciliation import CashReconciliation, ReconciliationStatus, cash_recon_payments
 from app.models.judge_alert import JudgeAlert, AlertSeverity, AlertStatus
 from app.models.audit_log import AuditLog
@@ -43,9 +44,13 @@ def pending_cash():
         return jsonify({"error": "Staff member not found."}), 404
 
     total, payments = get_staff_pending_cash(staff_id)
+    # CashReconScreen's staff picker shows EmployeeProfile.full_name ("Joyce Wambua");
+    # this used to send back the raw username ("joyce.wambua") instead, so the
+    # confirm screen headlined a different-looking name right under the picker.
+    profile = db.session.query(EmployeeProfile).filter_by(user_id=staff_id).first()
     return jsonify({
         "staff_id":       staff_id,
-        "staff_name":     staff.username,
+        "staff_name":     profile.full_name if profile else staff.username,
         "expected_total": str(total),
         "payment_count":  len(payments),
         "payments": [
