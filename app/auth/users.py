@@ -7,7 +7,7 @@ Hierarchy rule: you can only create accounts for roles BELOW your own level.
   staff (1)   → cannot create anyone
 
 POST /auth/users        → create account
-GET  /auth/users        → list users (staff/leads see own dept; manager+ sees all)
+GET  /auth/users        → list users (manager sees own dept; owner sees all)
 POST /auth/users/<id>/activate → re-activate a deactivated account
 """
 from flask import Blueprint, request, jsonify
@@ -20,8 +20,6 @@ from app.models.department import Department
 from app.models.audit_log import AuditLog
 
 users_bp = Blueprint("users", __name__, url_prefix="/auth/users")
-
-MANAGER_LEVEL = 5
 
 
 @users_bp.post("")
@@ -140,12 +138,7 @@ def list_users():
     if not include_disabled:
         query = query.filter_by(is_active=True)
 
-    # Dept-scoping only applies below manager level. Managers (5+) need company-wide
-    # visibility to actually do their job — leave approval (/hr/leave-requests) and
-    # cash reconciliation (/finance/cash/pending) already work this way unscoped;
-    # this used to be the one screen out of step with that, degenerate for any
-    # manager whose own department (e.g. "Management") has no staff in it besides them.
-    if actor.role.level < MANAGER_LEVEL and actor.department_id:
+    if actor.role.level < 10 and actor.department_id:
         query = query.filter_by(department_id=actor.department_id)
 
     return jsonify([

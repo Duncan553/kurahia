@@ -69,10 +69,15 @@ def list_requests():
     if sg and sg.lower() == "true":
         query = query.filter(PurchaseRequest.system_generated == True)
 
-    # No further department filter: this endpoint already requires manager level
-    # (line 48) to reach at all, and management needs cross-department visibility
-    # to budget/purchase holistically — the same reasoning applied to /auth/users
-    # (dept-scoping is degenerate for a manager whose own department has no staff).
+    if actor.role.level < 10 and actor.department_id:
+        from app.models.user import User as U
+        dept_ids = [u.id for u in db.session.query(U).filter_by(department_id=actor.department_id).all()]
+        query = query.filter(
+            db.or_(
+                PurchaseRequest.requested_by_id.in_(dept_ids),
+                PurchaseRequest.requested_by_id.is_(None),
+            )
+        )
 
     reqs = query.order_by(PurchaseRequest.created_at.desc()).all()
     return jsonify([{
@@ -199,10 +204,7 @@ def propose_budget(pr_id):
     pr = db.session.get(PurchaseRequest, pr_id)
     if not pr:
         return jsonify({"error": "Purchase request not found."}), 404
-    # PENDING = first proposal; PROPOSED = manager revising their own estimate
-    # before the owner has acted on it. Anything past that is a real decision
-    # already made and shouldn't be quietly overwritten.
-    if pr.status not in (RequestStatus.PENDING, RequestStatus.PROPOSED):
+    if pr.status != RequestStatus.PENDING:
         return jsonify({"error": f"Request is already {pr.status}."}), 400
 
     data = request.get_json(silent=True) or {}
@@ -220,7 +222,6 @@ def propose_budget(pr_id):
         pr.estimated_cost  = cost
         pr.manager_id      = actor.id
         pr.manager_notes   = data.get("notes")
-        pr.status          = RequestStatus.PROPOSED.value
 
     AuditLog.log(actor=actor.username, action="purchase_request.propose", target=pr.id)
     db.session.commit()
@@ -243,7 +244,7 @@ def approve_request(pr_id):
     if pr.requested_by_id == actor.id:
         return jsonify({"error": "You can't approve your own purchase request."}), 403
 
-    if pr.status not in (RequestStatus.PENDING, RequestStatus.PROPOSED):
+    if pr.status not in (RequestStatus.PENDING,):
         return jsonify({"error": f"This request is already {pr.status} and cannot be approved again."}), 400
 
     data   = request.get_json(silent=True) or {}
