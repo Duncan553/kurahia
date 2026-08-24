@@ -15,6 +15,8 @@ interface Stats {
   total_entry_fees: string
 }
 
+interface Band { id: string; band_number: number; tab_balance: string }
+
 type Method = 'CASH' | 'MPESA' | 'CARD' | 'BANK_TRANSFER'
 
 const METHODS: { value: Method; label: string }[] = [
@@ -60,6 +62,45 @@ function StatsBar({ stats }: { stats: Stats | undefined }) {
         ))}
       </motion.div>
     </>
+  )
+}
+
+// ── Recent bands ─────────────────────────────────────────────────────────────
+// This screen and WristbandScreen (/gate/issue) both hit POST /gate/issue-band
+// independently, each with its own idempotency key — nothing stops a worker
+// from issuing a real second paid band for the same guest by using both
+// screens in a row. Surfacing what's already been issued today, right next
+// to the Issue button, gives a gate attendant a chance to notice before it
+// happens instead of relying on idempotency (which only catches a retry of
+// the exact same tap, not a human repeating the whole flow elsewhere).
+function RecentBands() {
+  const { data: bands, isLoading } = useQuery<Band[]>({
+    queryKey: ['gate-active-bands'],
+    queryFn: () => api.get<Band[]>('/gate/active-bands').then(r => r.data),
+    refetchInterval: 30_000,
+  })
+  if (isLoading || !bands || bands.length === 0) return null
+  return (
+    <div className="glass-card rounded-2xl p-4 mb-6">
+      <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-ink-tertiary mb-3">
+        Recent Bands — check before issuing another for the same guest
+      </p>
+      <div className="space-y-2">
+        {bands.slice(0, 4).map(b => (
+          <div key={b.id} className="flex items-center justify-between py-1 text-sm">
+            <span className="font-semibold text-ink-primary">#{b.band_number}</span>
+            <span className="text-xs tabular-nums text-ink-tertiary">
+              {parseFloat(b.tab_balance) > 0
+                ? `KSh ${parseFloat(b.tab_balance).toLocaleString()} owed`
+                : `KSh ${Math.abs(parseFloat(b.tab_balance)).toLocaleString()} credit left`}
+            </span>
+          </div>
+        ))}
+        {bands.length > 4 && (
+          <p className="text-[10px] text-ink-tertiary text-center pt-1">+{bands.length - 4} more inside</p>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -213,6 +254,8 @@ export default function GateHubScreen() {
         className="mb-8">
         <IssueSection onIssued={refresh} />
       </motion.div>
+
+      <RecentBands />
 
       {/* Stats — secondary, below the action */}
       {!isLoading && <StatsBar stats={stats} />}
