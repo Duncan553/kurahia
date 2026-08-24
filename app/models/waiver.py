@@ -24,6 +24,10 @@ class Waiver(db.Model):
     signed_by_name    = db.Column(db.String(200), nullable=False)
     signature_proof   = db.Column(db.Text, nullable=True)   # base64 PNG of drawn signature
     is_active         = db.Column(db.Boolean, nullable=False, default=True)
+    # Nullable so pre-existing rows (created before this column existed) don't need
+    # a backfill — SQLite/Postgres both allow multiple NULLs under a UNIQUE constraint.
+    # Every new waiver is required to carry one (see create_waiver in bookings/waivers.py).
+    idempotency_key   = db.Column(db.String(100), nullable=True, unique=True)
 
     signed_at_utc = db.Column(
         db.DateTime(timezone=True), nullable=False,
