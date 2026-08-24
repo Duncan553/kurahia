@@ -182,14 +182,22 @@ def start_cleaning(cleaning_id):
     if not record:
         return jsonify({"error": "Cleaning record not found."}), 404
 
-    # Only the assigned housekeeper or a manager can start
-    if record.assigned_to_id != actor.id and actor.role.level < MANAGER_LEVEL:
+    # The assigned housekeeper, a manager, or — if nobody's been assigned yet —
+    # any housekeeping/villa-dept worker can self-claim it. Without this, a
+    # freshly-dirtied room (auto-created with assigned_to_id=None on checkout)
+    # had no working "Start Cleaning" path until a manager happened to assign it.
+    dept_name = actor.department.name.lower() if actor.department else ""
+    is_hk_dept = any(k in dept_name for k in ("villa", "housekeep"))
+    can_self_claim = record.assigned_to_id is None and is_hk_dept
+    if record.assigned_to_id != actor.id and actor.role.level < MANAGER_LEVEL and not can_self_claim:
         return jsonify({"error": "Only the assigned housekeeper or a manager can start cleaning."}), 403
 
     ok, err = _transition_ok(record.status, CleaningStatusEnum.CLEANING.value)
     if not ok:
         return jsonify({"error": err}), 400
 
+    if can_self_claim:
+        record.assigned_to_id = actor.id
     record.status = CleaningStatusEnum.CLEANING.value
     record.updated_at = datetime.now(timezone.utc)
 
