@@ -2,6 +2,7 @@
 bookings/waivers.py — Waiver collection and verification.
 Required for water activities; checked at session-booking time.
 """
+import uuid
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
@@ -27,11 +28,25 @@ def create_waiver():
     booking_id    = data.get("booking_id")
     activity_type = (data.get("activity_type") or "").upper()
     signed_by     = (data.get("signed_by_name") or "").strip()
+    idem          = data.get("idempotency_key") or str(uuid.uuid4())
 
     if not booking_id or not signed_by:
         return jsonify({"error": "booking_id and signed_by_name are required."}), 400
     if activity_type not in WaiverActivityType.__members__:
         return jsonify({"error": f"activity_type must be one of {list(WaiverActivityType.__members__)}."}), 400
+
+    # A guest double-tapping "Sign" (or a kiosk retrying a flaky request) must not
+    # create two waiver records for the same signature.
+    existing = db.session.query(Waiver).filter_by(idempotency_key=idem).first()
+    if existing:
+        return jsonify({
+            "id":            existing.id,
+            "booking_id":    existing.booking_id,
+            "activity_type": existing.activity_type,
+            "signed_by":     existing.signed_by_name,
+            "signed_at":     existing.signed_at_utc.isoformat(),
+            "duplicate":     True,
+        }), 200
 
     booking = db.session.get(Booking, booking_id)
     if not booking:
@@ -42,6 +57,7 @@ def create_waiver():
         activity_type=activity_type,
         signed_by_name=signed_by,
         signature_proof=data.get("signature_proof"),
+        idempotency_key=idem,
     )
     db.session.add(waiver)
     db.session.flush()
