@@ -98,7 +98,7 @@ function HomeRedirect() {
   const user = useAuthStore((s) => s.user)
   const station = localStorage.getItem('kurahia:station_mode') === 'true'
   if (!user) return <Navigate to='/login' replace />
-  const dept = user.department ?? ''
+  const dept = (user.department ?? '').toLowerCase() // DB names are Title-Case ("Kitchen"), so lowercase before matching
   const level = user.role_level ?? 0
   if (station && level < 5) {
     if (dept.includes('kitchen')) return <Navigate to='/pos/kitchen' replace />
@@ -137,7 +137,7 @@ const router = createBrowserRouter([
       {
       element: <ErrorBoundary><AppLayout /></ErrorBoundary>,
       children: [
-        { path: '/', element: <Navigate to="/clock" replace /> },
+        { path: '/', element: <HomeRedirect /> },
 
         // ── Universal: all staff ──────────────────────────────────
         { path: '/clock',           element: <ClockScreen />         },
