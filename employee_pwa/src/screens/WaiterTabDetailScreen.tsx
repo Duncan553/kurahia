@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton, Button, useToastStore, SearchInput, Modal, ErrorBoundary } from '@shared'
@@ -146,6 +146,17 @@ export default function WaiterTabDetailScreen() {
   const draftTotal = draftEntries.reduce((s, e) => s + e.price * e.qty, 0)
   const draftCount = draftEntries.reduce((s, e) => s + e.qty, 0)
   const bal = parseFloat(tab?.balance ?? '0')
+
+  // Auto-fill the exact amount owed (charges minus payments minus any band
+  // credit already applied — `bal` already IS that math) as soon as it's
+  // known, instead of making staff type it or hunt for the "Exact" button.
+  // Re-fires after a payment posts and `bal` drops to a smaller remainder
+  // (e.g. a deliberate partial payment), so the field always tracks what's
+  // actually still owed — but never overwrites an amount staff already typed.
+  useEffect(() => {
+    if (bal > 0) setPay(p => (p.amount ? p : { ...p, amount: String(bal) }))
+  }, [bal])
+
   const allOrderItems = (tab?.orders ?? []).flatMap(o => o.items)
   // Mirrors the backend's is_tab_closable (app/services/tab.py): only SERVED/CANCELLED
   // are terminal. Balance alone isn't enough — a PENDING/RECEIVED/READY item still
