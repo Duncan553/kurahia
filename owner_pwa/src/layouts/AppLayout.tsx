@@ -249,8 +249,16 @@ export default function AppLayout() {
           </AnimatePresence>
         </main>
 
-        {/* Mobile bottom nav — hidden on sm+ */}
-        <nav className="sm:hidden shrink-0 flex border-t border-white/5"
+        {/* Mobile bottom nav — hidden on sm+. 10 sections don't fit a 390px
+            screen at equal width (flex-1 forced ~39px per item, under the
+            44px touch-target minimum, and squeezed 'Feedback'/'Bookings'
+            into barely any gap between their labels — confirmed via a real
+            screenshot). Fixed-width items + horizontal scroll instead of
+            forcing everything to fit: nothing is hidden, every item stays
+            a comfortable tap target, and it's the same scroll-for-overflow
+            pattern already used elsewhere in the app (e.g. category chips
+            in WaiterTabDetailScreen). */}
+        <nav className="sm:hidden shrink-0 flex overflow-x-auto scrollbar-hide border-t border-white/5"
           style={{ background: 'rgba(30, 16, 12, 0.95)' }}
           aria-label="Owner navigation">
           {SIDEBAR_ITEMS.map(({ path, label, Icon }) => (
@@ -259,7 +267,7 @@ export default function AppLayout() {
               to={path}
               end={path === '/dashboard'}
               className={({ isActive }) => [
-                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px]',
+                'shrink-0 w-[72px] flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px]',
                 'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-inset',
                 isActive ? 'text-primary-main' : 'text-ink-tertiary hover:text-ink-primary',
               ].join(' ')}
