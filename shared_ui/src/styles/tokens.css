@@ -99,6 +99,22 @@ html { --font-size-base: 16px; }
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.30);
     letter-spacing: -0.02em;
   }
+
+  /* Native <select> dropdown popups and date/time pickers are rendered by
+     the OS/browser shell, not the page — they fall back to a light platform
+     default that the app's own light text then renders against unreadably.
+     Per-component `style={{ colorScheme: 'dark' }}` (Select.tsx, Input.tsx,
+     and every raw <select>/date input across both PWAs) handles most
+     browsers; this global rule is the belt-and-suspenders backup — an
+     actual stylesheet rule that some browsers honor more reliably than an
+     inline style on the popup's <option> children specifically. */
+  select, input[type="date"], input[type="time"], input[type="datetime-local"] {
+    color-scheme: dark;
+  }
+  select option {
+    background-color: var(--color-cream-card);
+    color: var(--color-ink-primary);
+  }
 }
 
 .tabular-nums {
