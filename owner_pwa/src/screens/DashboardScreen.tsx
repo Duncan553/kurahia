@@ -448,7 +448,12 @@ function PendingApprovalsTile() {
   if (isLoading) return <TileSkeleton />
   if (isError)   return <TileError label="Purchase Approvals" />
 
-  const pending = (data ?? []).filter(r => r.status === 'PENDING' && r.estimated_cost !== null)
+  // estimated_cost is only ever set together with a transition to PROPOSED
+  // (app/inventory/purchases.py propose_budget) — a PENDING request never
+  // carries one, so "status===PENDING && estimated_cost!==null" was an
+  // almost-always-empty combination. PENDING or PROPOSED is what's actually
+  // "waiting for the owner" (matches approve_request's accepted statuses).
+  const pending = (data ?? []).filter(r => r.status === 'PENDING' || r.status === 'PROPOSED')
 
   return (
     <TileCard title="Purchase Approvals" href="/purchase-approvals">
