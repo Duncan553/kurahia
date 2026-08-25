@@ -7,6 +7,10 @@ export interface InputProps extends ComponentPropsWithoutRef<'input'> {
 export function Input({ className = '', error, ...props }: InputProps) {
   return (
     <input
+      // Same fix as Select.tsx: type="date"/"time"/"datetime-local" all open
+      // an OS-rendered popup that ignores page CSS and needs this to render
+      // in dark mode instead of the platform's light default.
+      style={{ colorScheme: 'dark' }}
       className={[
         'w-full px-4 py-3.5 min-h-[52px] rounded-xl',
         'bg-white/[0.06] border text-ink-primary placeholder:text-ink-tertiary/50',

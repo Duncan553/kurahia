@@ -134,6 +134,7 @@ export default function LeaveRequestScreen() {
             <label className="block text-xs font-medium text-ink-tertiary mb-1">Start date *</label>
             <input
               type="date"
+              style={{ colorScheme: 'dark' }}
               value={startDate}
               min={today}
               onChange={(e) => setStartDate(e.target.value)}
@@ -146,6 +147,7 @@ export default function LeaveRequestScreen() {
             <label className="block text-xs font-medium text-ink-tertiary mb-1">End date *</label>
             <input
               type="date"
+              style={{ colorScheme: 'dark' }}
               value={endDate}
               min={startDate}
               onChange={(e) => { setEndDate(e.target.value); setTouched(true) }}

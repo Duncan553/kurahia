@@ -822,6 +822,7 @@ export default function InventoryCountScreen() {
                       <label className="block text-xs font-medium text-ink-tertiary mb-1">From</label>
                       <input
                         type="date"
+                        style={{ colorScheme: 'dark' }}
                         value={fromDate}
                         onChange={(e) => setFromDate(e.target.value)}
                         className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
@@ -833,6 +834,7 @@ export default function InventoryCountScreen() {
                       <label className="block text-xs font-medium text-ink-tertiary mb-1">To</label>
                       <input
                         type="date"
+                        style={{ colorScheme: 'dark' }}
                         value={toDate}
                         onChange={(e) => setToDate(e.target.value)}
                         className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5
