@@ -101,7 +101,68 @@ def list_profiles():
         "is_active": p.is_active,
         "wage_rate": str(p.wage_rate) if p.wage_rate else None,
         "wage_period": p.wage_period,
+        "payment_method":         p.payment_method,
+        "payment_account_number": p.payment_account_number,
     } for p in profiles]), 200
+
+
+@profiles_bp.get("/profiles/me")
+@require_active_user
+def get_my_profile():
+    """Own profile — no manager check, any staff can read their own record.
+    Used by employee_pwa's Profile screen (payment account section)."""
+    actor = db.session.get(User, get_jwt_identity())
+    profile = db.session.query(EmployeeProfile).filter_by(user_id=actor.id, is_active=True).first()
+    if not profile:
+        return jsonify({"error": "No employee profile found. Ask your manager to create one."}), 404
+    return jsonify({
+        "id":                     profile.id,
+        "full_name":              profile.full_name,
+        "phone":                  profile.phone,
+        "payment_method":         profile.payment_method,
+        "payment_account_number": profile.payment_account_number,
+    }), 200
+
+
+PAYMENT_METHODS = {"MPESA", "BANK"}
+
+
+@profiles_bp.patch("/profiles/me/payment")
+@require_active_user
+def set_my_payment_account():
+    """Employee sets/edits their OWN payroll payment account. Deliberately a
+    narrow endpoint (not the full edit_profile below) — an employee must never
+    be able to touch wage_rate, hire_date, etc. on themselves; only manager+
+    can via PATCH /hr/profiles/<id>."""
+    actor = db.session.get(User, get_jwt_identity())
+    profile = db.session.query(EmployeeProfile).filter_by(user_id=actor.id, is_active=True).first()
+    if not profile:
+        return jsonify({"error": "No employee profile found. Ask your manager to create one."}), 404
+
+    data   = request.get_json(silent=True) or {}
+    method = (data.get("payment_method") or "").strip().upper()
+    number = (data.get("payment_account_number") or "").strip()
+
+    if method not in PAYMENT_METHODS:
+        return jsonify({"error": f"payment_method must be one of {sorted(PAYMENT_METHODS)}."}), 400
+    if not number:
+        return jsonify({"error": "payment_account_number is required."}), 400
+    if len(number) > 60:
+        return jsonify({"error": "payment_account_number is too long."}), 400
+
+    profile.payment_method = method
+    profile.payment_account_number = number
+    profile.updated_at_utc = datetime.now(timezone.utc)
+    db.session.flush()
+    # Audit log only — never logs the account number itself (avoids putting
+    # payroll PII in a log every manager/owner can read via /audit).
+    AuditLog.log(actor=actor.username, action="hr.profile.set_payment",
+                 target=profile.id, details=f"method={method}")
+    db.session.commit()
+    return jsonify({
+        "payment_method": profile.payment_method,
+        "payment_account_number": profile.payment_account_number,
+    }), 200
 
 
 @profiles_bp.get("/profiles/<profile_id>")
@@ -126,6 +187,8 @@ def get_profile(profile_id):
         "wage_period":   profile.wage_period,
         "is_active":     profile.is_active,
         "photo_path":    profile.photo_path,
+        "payment_method":         profile.payment_method,
+        "payment_account_number": profile.payment_account_number,
     }), 200
 
 
