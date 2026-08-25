@@ -189,7 +189,7 @@ export default function PayrollDraftScreen() {
               </div>
             )}
             <div className="flex items-center justify-between px-4 py-3 rounded-2xl
-              bg-ink-primary text-ink-primary">
+              bg-ink-primary text-cream-card">
               <p className="text-sm font-semibold">Total net payroll</p>
               <p className="text-base font-bold tabular-nums">{kes(totalNet)}</p>
             </div>

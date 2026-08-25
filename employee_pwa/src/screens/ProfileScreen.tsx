@@ -172,7 +172,7 @@ export default function ProfileScreen() {
                 'flex-1 py-2 min-h-[44px] rounded-xl border text-sm font-semibold transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
                 fontSize === key
-                  ? 'bg-ink-primary text-ink-primary border-ink-primary'
+                  ? 'bg-ink-primary text-cream-card border-ink-primary'
                   : 'border-white/10 text-ink-secondary hover:bg-white/5',
               ].join(' ')}
             >
