@@ -1,7 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Skeleton, EmptyState, StatusBadge, ErrorBoundary } from '@shared'
+import { Skeleton, EmptyState, StatusBadge, ErrorBoundary, Modal, Button, useToastStore } from '@shared'
 import type { StatusValue } from '@shared'
+import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 import { toDateKey, todayKey, formatTime } from '../lib/format'
 
@@ -70,9 +72,146 @@ function endOfWeek(): Date {
 const fadeIn = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
 const stagger = { visible: { transition: { staggerChildren: 0.06 } } }
 
+const extractErr = (e: unknown) =>
+  (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
+
+interface EventType { id: string; name: string }
+
+/** Create an event. Manager+ per the backend (app/events/core.py) — this
+ * screen was read-only (view + acknowledge assignments) with no way for
+ * anyone to actually create the event in the first place, anywhere in the app. */
+function CreateEventModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const qc = useQueryClient()
+  const addToast = useToastStore(s => s.addToast)
+  const [title, setTitle] = useState('')
+  const [typeId, setTypeId] = useState('')
+  const [newTypeName, setNewTypeName] = useState('')
+  const [startsAt, setStartsAt] = useState('')
+  const [endsAt, setEndsAt] = useState('')
+  const [guests, setGuests] = useState('1')
+  const [location, setLocation] = useState('')
+  const [idem] = useState(() => crypto.randomUUID())
+
+  const { data: types = [] } = useQuery<EventType[]>({
+    queryKey: ['event-types'],
+    queryFn: () => api.get<EventType[]>('/event-types').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
+
+  const createTypeMut = useMutation({
+    mutationFn: () => api.post<EventType>('/event-types', { name: newTypeName.trim() }).then(r => r.data),
+    onSuccess: (t) => {
+      qc.invalidateQueries({ queryKey: ['event-types'] })
+      setTypeId(t.id); setNewTypeName('')
+    },
+    onError: e => addToast({ type: 'error', message: extractErr(e) }),
+  })
+
+  const createEventMut = useMutation({
+    mutationFn: () => api.post('/events', {
+      title: title.trim(),
+      event_type_id: typeId,
+      starts_at_utc: new Date(startsAt).toISOString(),
+      ends_at_utc: new Date(endsAt).toISOString(),
+      expected_guests: Number(guests) || 1,
+      location: location.trim() || null,
+      idempotency_key: idem,
+    }),
+    onSuccess: () => {
+      addToast({ type: 'success', message: 'Event created.' })
+      qc.invalidateQueries({ queryKey: ['events', 'upcoming'] })
+      setTitle(''); setTypeId(''); setStartsAt(''); setEndsAt(''); setGuests('1'); setLocation('')
+      onClose()
+    },
+    onError: e => addToast({ type: 'error', message: extractErr(e) }),
+  })
+
+  const canSubmit = title.trim() && typeId && startsAt && endsAt
+
+  return (
+    <Modal open={open} onClose={onClose} title="Create Event" size="md">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs font-semibold text-ink-secondary mb-1">Title</label>
+          <input value={title} onChange={e => setTitle(e.target.value)}
+            placeholder="e.g. Kamau & Wanjiru Wedding"
+            className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+              placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-primary-main" />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-ink-secondary mb-1">Event type</label>
+          <div className="flex gap-2">
+            <select
+              style={{ colorScheme: 'dark' }}
+              value={typeId} onChange={e => setTypeId(e.target.value)}
+              className="flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+                focus:outline-none focus:ring-2 focus:ring-primary-main"
+            >
+              <option value="">Select type...</option>
+              {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <input value={newTypeName} onChange={e => setNewTypeName(e.target.value)}
+              placeholder="New type name, e.g. Conference"
+              className="flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs text-ink-primary
+                placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-primary-main" />
+            <Button variant="ghost" size="sm" disabled={!newTypeName.trim() || createTypeMut.isPending}
+              onClick={() => createTypeMut.mutate()}>
+              + Add type
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-ink-secondary mb-1">Starts</label>
+            <input type="datetime-local" style={{ colorScheme: 'dark' }} value={startsAt}
+              onChange={e => setStartsAt(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+                focus:outline-none focus:ring-2 focus:ring-primary-main" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-ink-secondary mb-1">Ends</label>
+            <input type="datetime-local" style={{ colorScheme: 'dark' }} value={endsAt}
+              onChange={e => setEndsAt(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+                focus:outline-none focus:ring-2 focus:ring-primary-main" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-ink-secondary mb-1">Expected guests</label>
+            <input type="number" min="1" value={guests} onChange={e => setGuests(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+                focus:outline-none focus:ring-2 focus:ring-primary-main" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-ink-secondary mb-1">Location (optional)</label>
+            <input value={location} onChange={e => setLocation(e.target.value)}
+              placeholder="e.g. Lakeside Lawn"
+              className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+                placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-primary-main" />
+          </div>
+        </div>
+
+        <Button variant="primary" className="w-full"
+          disabled={!canSubmit || createEventMut.isPending}
+          onClick={() => createEventMut.mutate()}>
+          {createEventMut.isPending ? 'Creating…' : 'Create Event'}
+        </Button>
+      </div>
+    </Modal>
+  )
+}
+
 // ── Main screen ────────────────────────────────────────────────────────────
 
 export default function EventsScreen() {
+  const [showCreate, setShowCreate] = useState(false)
+
   // Fetch upcoming events (PLANNED + CONFIRMED, sorted by start date)
   const { data: events, isLoading, isError, refetch } = useQuery<EventItem[]>({
     queryKey: ['events', 'upcoming'],
@@ -148,6 +287,12 @@ export default function EventsScreen() {
           title="No upcoming events."
           description="When weddings, conferences, or special bookings are scheduled, they'll show up here."
         />
+        <RequireRole minLevel={5}>
+          <Button variant="primary" size="sm" className="mt-4" onClick={() => setShowCreate(true)}>
+            + Create Event
+          </Button>
+        </RequireRole>
+        <CreateEventModal open={showCreate} onClose={() => setShowCreate(false)} />
       </div>
     )
   }
@@ -161,14 +306,23 @@ export default function EventsScreen() {
     >
       <ErrorBoundary level="tile">
       {/* ── Page header ──────────────────────────────────────────────── */}
-      <motion.div variants={fadeIn} transition={{ duration: 0.3 }} className="mb-6">
-        <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
-          Upcoming Events
-        </h1>
-        <p className="text-sm text-ink-secondary mt-1">
-          Weddings, conferences, special bookings
-        </p>
+      <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
+        className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
+            Upcoming Events
+          </h1>
+          <p className="text-sm text-ink-secondary mt-1">
+            Weddings, conferences, special bookings
+          </p>
+        </div>
+        <RequireRole minLevel={5}>
+          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+            + Create Event
+          </Button>
+        </RequireRole>
       </motion.div>
+      <CreateEventModal open={showCreate} onClose={() => setShowCreate(false)} />
 
       {/* ── Today's Events (hero section) ────────────────────────────── */}
       {todayEvents.length > 0 && (
