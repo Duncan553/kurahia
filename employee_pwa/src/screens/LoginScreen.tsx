@@ -9,6 +9,7 @@ import { decodeJWT } from '../lib/jwt'
 export default function LoginScreen() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
+  const setSetupToken = useAuthStore((s) => s.setSetupToken)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -23,8 +24,21 @@ export default function LoginScreen() {
     setLoading(true)
     setError('')
     try {
-      const res = await api.post('/auth/login', { username: username.trim().toLowerCase(), password })
-      const claims = decodeJWT(res.data.access_token); setAuth({ id: claims.sub, username: username.trim().toLowerCase(), role_level: claims.role_level, department: claims.department ?? null }, res.data.access_token, res.data.refresh_token ?? ''); navigate('/clock')
+      const cleanUsername = username.trim().toLowerCase()
+      const res = await api.post('/auth/login', { username: cleanUsername, password })
+      if (res.data.requires_pin_setup) {
+        // First-ever login: backend issued a 10-minute setup-only token with
+        // no refresh token, meant for /auth/set-pin, not for setAuth(). This
+        // used to be ignored entirely — the user got dropped on /clock with a
+        // token that silently expired ~10 minutes later and no way back to
+        // PinSetupScreen (which was fully built but never navigated to).
+        setSetupToken(res.data.access_token)
+        navigate('/pin/setup', { state: { username: cleanUsername } })
+        return
+      }
+      const claims = decodeJWT(res.data.access_token)
+      setAuth({ id: claims.sub, username: cleanUsername, role_level: claims.role_level, department: claims.department ?? null }, res.data.access_token, res.data.refresh_token ?? '')
+      navigate('/clock')
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Login failed')
     } finally {
