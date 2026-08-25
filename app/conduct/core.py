@@ -161,12 +161,20 @@ def sign_rule():
 @conduct_bp.get("/signatures/<employee_id>")
 @require_active_user
 def get_signatures(employee_id):
+    """<employee_id> is nominally an EmployeeProfile.id, but ConductScreen.tsx
+    (the only caller for a non-manager) only has the JWT's User.id in the
+    auth store — a different UUID for the same person, since User and
+    EmployeeProfile are separate tables. Comparing employee_id against
+    profile.id therefore always failed for a real employee checking their
+    own signatures, 403ing every load. Below manager level there's no
+    legitimate reason to look up anyone but yourself anyway, so ignore
+    whatever id was in the URL and resolve straight from the actor."""
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
-        # Employees can see their own
         profile = db.session.query(EmployeeProfile).filter_by(user_id=actor.id).first()
-        if not profile or profile.id != employee_id:
-            return jsonify({"error": "Manager or above required to view others' signatures."}), 403
+        if not profile:
+            return jsonify({"error": "Employee profile required."}), 400
+        employee_id = profile.id
 
     sigs = db.session.query(ConductSignature).filter_by(employee_id=employee_id).all()
     return jsonify([{
