@@ -84,29 +84,74 @@ def client(app):
     return app.test_client()
 
 
+def _get_or_create_profile(username, full_name, phone):
+    """Idempotent — several fixtures/tests independently want an EmployeeProfile
+    for the same shared user (owner1/manager1/waiter1). Whichever runs first
+    creates it; everyone else just gets the same row back, so fixture request
+    order never causes a duplicate-insert IntegrityError on the unique
+    EmployeeProfile.user_id constraint."""
+    from app.models.employee_profile import EmployeeProfile
+    user = _db.session.query(User).filter_by(username=username).first()
+    profile = _db.session.query(EmployeeProfile).filter_by(user_id=user.id).first()
+    if not profile:
+        profile = EmployeeProfile(user_id=user.id, full_name=full_name, phone=phone)
+        _db.session.add(profile)
+        _db.session.commit()
+    return profile
+
+
+def _clock_in(profile):
+    """Write a CLOCK_IN event directly (bypassing the WiFi-allow-list check
+    that only applies inside the real /hr/clock-in endpoint) so the actor
+    passes require_clocked_in. ClockEvent is append-only — adding one here is
+    harmless even if a test later adds its own events for the same profile.
+    occurred_at_utc and idempotency_key have no model-level default (app/hr/
+    clock.py always passes both explicitly) — omitting them here was a
+    NOT NULL constraint violation."""
+    import uuid
+    from datetime import datetime, timezone
+    from app.models.clock_event import ClockEvent, ClockEventType
+    _db.session.add(ClockEvent(
+        employee_id=profile.id, event_type=ClockEventType.CLOCK_IN.value,
+        occurred_at_utc=datetime.now(timezone.utc),
+        idempotency_key=str(uuid.uuid4()),
+    ))
+    _db.session.commit()
+
+
 @pytest.fixture
 def owner_token(client):
-    """JWT access token for owner1."""
+    """JWT access token for owner1. Also gives owner1 a profile + clocks them
+    in — POS/tabs/payments (require_clocked_in) started requiring both once
+    the RBAC-hardening pass added that decorator; these fixtures predate it."""
     rv = client.post("/auth/login", json={"username": "owner1", "password": "OwnerPass1!"})
-    return rv.get_json()["access_token"]
+    token = rv.get_json()["access_token"]
+    _clock_in(_get_or_create_profile("owner1", "Test Owner", "+254700000099"))
+    return token
 
 
 @pytest.fixture
 def manager_token(client):
     rv = client.post("/auth/login", json={"username": "manager1", "password": "ManagerPass1!"})
-    return rv.get_json()["access_token"]
+    token = rv.get_json()["access_token"]
+    _clock_in(_get_or_create_profile("manager1", "Test Manager", "+254700000002"))
+    return token
 
 
 @pytest.fixture
 def kitchen_token(client):
     rv = client.post("/auth/login", json={"username": "kitchen1", "password": "KitchenPass1!"})
-    return rv.get_json()["access_token"]
+    token = rv.get_json()["access_token"]
+    _clock_in(_get_or_create_profile("kitchen1", "Test Kitchen", "+254700000003"))
+    return token
 
 
 @pytest.fixture
 def waiter_token(client):
     rv = client.post("/auth/login", json={"username": "waiter1", "password": "WaiterPass1!"})
-    return rv.get_json()["access_token"]
+    token = rv.get_json()["access_token"]
+    _clock_in(_get_or_create_profile("waiter1", "Test Waiter", "+254700000001"))
+    return token
 
 
 @pytest.fixture
@@ -150,26 +195,16 @@ def wifi_allowed(app):
 
 @pytest.fixture
 def waiter_profile(app):
-    """EmployeeProfile for waiter1."""
-    from app.models.employee_profile import EmployeeProfile
-    from app.models.user import User
-    user = _db.session.query(User).filter_by(username="waiter1").first()
-    profile = EmployeeProfile(user_id=user.id, full_name="Test Waiter", phone="+254700000001")
-    _db.session.add(profile)
-    _db.session.commit()
-    return profile
+    """EmployeeProfile for waiter1. Same name/phone as owner_token & co. use
+    via _get_or_create_profile — whichever fixture runs first for a given
+    test wins, the other just gets the same row back."""
+    return _get_or_create_profile("waiter1", "Test Waiter", "+254700000001")
 
 
 @pytest.fixture
 def manager_profile(app):
     """EmployeeProfile for manager1."""
-    from app.models.employee_profile import EmployeeProfile
-    from app.models.user import User
-    user = _db.session.query(User).filter_by(username="manager1").first()
-    profile = EmployeeProfile(user_id=user.id, full_name="Test Manager", phone="+254700000002")
-    _db.session.add(profile)
-    _db.session.commit()
-    return profile
+    return _get_or_create_profile("manager1", "Test Manager", "+254700000002")
 
 
 @pytest.fixture
