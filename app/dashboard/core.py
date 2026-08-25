@@ -244,8 +244,12 @@ def finance_view():
     unmatched_mpesa = db.session.query(PaymentReconciliation).filter_by(
         status=PaymentReconciliationStatus.UNMATCHED.value
     ).count() if hasattr(PaymentReconciliationStatus, 'UNMATCHED') else 0
-    pending_approvals = db.session.query(PurchaseRequest).filter_by(
-        status=RequestStatus.PENDING.value
+    # "Pending owner approval" covers both stages before a decision is made:
+    # PENDING (no estimate yet) and PROPOSED (manager attached one, owner
+    # hasn't acted). Counting PENDING only would silently drop a request off
+    # this badge the moment a manager proposes a budget for it.
+    pending_approvals = db.session.query(PurchaseRequest).filter(
+        PurchaseRequest.status.in_([RequestStatus.PENDING.value, RequestStatus.PROPOSED.value])
     ).count()
 
     total_revenue = db.session.query(func.sum(Payment.amount)).filter(

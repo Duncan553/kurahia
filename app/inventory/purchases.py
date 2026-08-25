@@ -204,7 +204,10 @@ def propose_budget(pr_id):
     pr = db.session.get(PurchaseRequest, pr_id)
     if not pr:
         return jsonify({"error": "Purchase request not found."}), 404
-    if pr.status != RequestStatus.PENDING:
+    # PENDING = first proposal; PROPOSED = manager revising their own estimate
+    # before the owner has acted on it. Anything past that is a real decision
+    # already made and shouldn't be quietly overwritten.
+    if pr.status not in (RequestStatus.PENDING, RequestStatus.PROPOSED):
         return jsonify({"error": f"Request is already {pr.status}."}), 400
 
     data = request.get_json(silent=True) or {}
@@ -222,6 +225,7 @@ def propose_budget(pr_id):
         pr.estimated_cost  = cost
         pr.manager_id      = actor.id
         pr.manager_notes   = data.get("notes")
+        pr.status          = RequestStatus.PROPOSED.value
 
     AuditLog.log(actor=actor.username, action="purchase_request.propose", target=pr.id)
     db.session.commit()
@@ -244,7 +248,7 @@ def approve_request(pr_id):
     if pr.requested_by_id == actor.id:
         return jsonify({"error": "You can't approve your own purchase request."}), 403
 
-    if pr.status not in (RequestStatus.PENDING,):
+    if pr.status not in (RequestStatus.PENDING, RequestStatus.PROPOSED):
         return jsonify({"error": f"This request is already {pr.status} and cannot be approved again."}), 400
 
     data   = request.get_json(silent=True) or {}
