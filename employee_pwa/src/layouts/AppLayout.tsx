@@ -508,6 +508,13 @@ export default function AppLayout() {
   })
   const badgeCount = inbox?.length ?? 0
 
+  // Shares the same TanStack cache key as AuthGate/ClockScreen — free read, no
+  // extra request. Needed below to break a redirect loop with AuthGate.
+  const { data: clockStatus } = useQuery<{ status: string }>({
+    queryKey: ['clock-status'],
+    queryFn: () => api.get('/hr/clock-status').then((r) => r.data),
+  })
+
   function signOut() { clearAuth(); navigate('/pin') }
 
   function toggleStationMode() {
@@ -522,7 +529,17 @@ export default function AppLayout() {
   // Station tablets skip clock on login — go straight to their work screen.
   // On personal phones (default) this never fires: the employee always lands on Clock.
   // Must stay BELOW every hook (early return above a hook breaks React rule #310).
-  if (stationMode && location.pathname === '/clock' && roleLevel < 5) {
+  //
+  // The clockStatus==='CLOCK_IN' check is load-bearing, not decorative: AuthGate
+  // (components/AuthGate.tsx) forces anyone who ISN'T clocked in onto /clock,
+  // from any route. Before this check, this block redirected AWAY from /clock
+  // unconditionally whenever station-mode+department matched — including the
+  // exact moment AuthGate had just forced them there because they still needed
+  // to clock in. The two rules fought forever: AuthGate → /clock, this block →
+  // department screen, AuthGate → /clock again. A station-mode employee could
+  // never actually reach the clock-in button. Now this only fires for someone
+  // who's already clocked in and merely landed on /clock (e.g. a stale link).
+  if (stationMode && location.pathname === '/clock' && roleLevel < 5 && clockStatus?.status === 'CLOCK_IN') {
     if (deptIs(department, 'kitchen'))                                  return <Navigate to="/pos/kitchen" replace />
     if (deptIs(department, 'bar'))                                      return <Navigate to="/pos/bar" replace />
     if (deptIs(department, 'front-of-house', 'waiter', 'restaurant'))  return <Navigate to="/pos/tabs" replace />
