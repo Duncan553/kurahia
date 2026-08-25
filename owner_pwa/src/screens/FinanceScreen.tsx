@@ -13,6 +13,8 @@ import api from '../lib/axios'
 interface FinanceDashboard {
   period: string
   revenue: { today: string; week: string; month: string }
+  expenses: { purchases: string; payroll: string; total: string }
+  profit_month: string
   budgets: { department: string; budget: string; spent: string; remaining: string; pct_used: number; over_budget: boolean }[]
   open_shortfalls: number
   no_receipt_purchases: number
@@ -125,6 +127,37 @@ function RevenueSection({ period }: { period: string }) {
         <KpiCard label="Today"  value={formatKsh(dash?.revenue.today,  true)} />
         <KpiCard label="Week"   value={formatKsh(dash?.revenue.week,   true)} />
         <KpiCard label="Month"  value={formatKsh(dash?.revenue.month,  true)} />
+      </div>
+
+      {/* Expenses + profit for the month — purchases + payroll, set against
+          revenue. Was nowhere in the app before: the daily summary PDF had
+          revenue only, no expense or profit figure existed anywhere. */}
+      <div className="glass-card rounded-2xl p-4">
+        <p className="text-[10px] font-semibold tracking-widest uppercase text-ink-secondary mb-3">
+          Profit & Loss — {period}
+        </p>
+        <div className="space-y-1.5 text-sm">
+          <div className="flex justify-between">
+            <span className="text-ink-secondary">Revenue</span>
+            <span className="text-ink-primary font-semibold tabular-nums">{formatKsh(dash?.revenue.month, true)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-ink-secondary">Purchases</span>
+            <span className="text-status-failed tabular-nums">−{formatKsh(dash?.expenses.purchases, true)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-ink-secondary">Payroll</span>
+            <span className="text-status-failed tabular-nums">−{formatKsh(dash?.expenses.payroll, true)}</span>
+          </div>
+          <div className="border-t border-white/10 pt-1.5 flex justify-between">
+            <span className="text-ink-primary font-semibold">Profit</span>
+            <span className={`font-bold tabular-nums ${
+              parseFloat(dash?.profit_month ?? '0') >= 0 ? 'text-status-paid' : 'text-status-failed'
+            }`}>
+              {formatKsh(dash?.profit_month, true)}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* 30-day bar chart */}
