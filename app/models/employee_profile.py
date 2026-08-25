@@ -33,6 +33,12 @@ class EmployeeProfile(db.Model):
     wage_rate   = db.Column(db.Numeric(12, 4), nullable=True)
     wage_period = db.Column(db.String(10),     nullable=True)   # HOURLY / DAILY / MONTHLY
 
+    # Where payroll pays this employee. Employee sets/edits their own; manager
+    # and owner see it read-only on StaffScreen. Plain columns, same as
+    # phone/national_id above — nothing in this codebase is encrypted at rest.
+    payment_method         = db.Column(db.String(20), nullable=True)   # MPESA / BANK
+    payment_account_number = db.Column(db.String(60),  nullable=True)  # phone no. or bank acct no.
+
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
     created_at_utc = db.Column(

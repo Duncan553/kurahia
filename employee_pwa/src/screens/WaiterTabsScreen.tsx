@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Skeleton, EmptyState, Modal, Button, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
+import { useAuthStore } from '../stores/authStore'
 
 interface Tab {
   id: string; reference: string | null; tab_type: string
   status: string; opened_at: string; balance: string
+  assigned_to: string | null; assigned_to_id: string | null
 }
 interface Ping { id: string; reference_type: string; subject: string; body: string }
+interface StaffUser { id: string; username: string }
 
 const kes = (v: string) =>
   `KSh ${parseFloat(v).toLocaleString('en-KE', { minimumFractionDigits: 0 })}`
@@ -43,16 +46,41 @@ export default function WaiterTabsScreen() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
+  const user = useAuthStore(s => s.user)
+  const isManager = (user?.role_level ?? 0) >= 5
   const [ref, setRef] = useState('')
   const [open, setOpen] = useState(false)
   const [band, setBand] = useState('')
+  const [assigning, setAssigning] = useState<string | null>(null)   // tab id being assigned
+  const [assignTarget, setAssignTarget] = useState('')
   const idem = useState(() => crypto.randomUUID())[0]
 
+  // Manager sees every open table (to assign waiters to them); a waiter sees
+  // only what's been assigned to them — mirrors HousekeepingScreen's split.
   const { data: tabs = [], isLoading } = useQuery<Tab[]>({
-    queryKey: ['my-tabs'],
-    queryFn: () => api.get<Tab[]>('/tabs?mine=true&status=OPEN').then(r => r.data),
+    queryKey: ['my-tabs', isManager],
+    queryFn: () => api.get<Tab[]>(isManager ? '/tabs?status=OPEN' : '/tabs?mine=true&status=OPEN').then(r => r.data),
     staleTime: 15_000,
     refetchOnWindowFocus: true,
+  })
+
+  // Staff list for the assign dropdown (manager only)
+  const { data: staff = [] } = useQuery<StaffUser[]>({
+    queryKey: ['tabs', 'staff'],
+    queryFn: () => api.get<StaffUser[]>('/auth/users').then(r => r.data),
+    enabled: isManager,
+    staleTime: 120_000,
+  })
+
+  const assignMut = useMutation({
+    mutationFn: ({ tabId, employeeId }: { tabId: string; employeeId: string }) =>
+      api.post(`/tabs/${tabId}/assign`, { employee_id: employeeId }),
+    onSuccess: () => {
+      addToast({ type: 'success', message: 'Waiter assigned.' })
+      qc.invalidateQueries({ queryKey: ['my-tabs'] })
+      setAssigning(null); setAssignTarget('')
+    },
+    onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
 
   // Kitchen/bar "order ready" pings — shown right here, no separate alerts tab
@@ -101,7 +129,9 @@ export default function WaiterTabsScreen() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Current Service</p>
-          <h1 className="text-3xl md:text-4xl font-bold font-serif text-ink-primary">My Tables</h1>
+          <h1 className="text-3xl md:text-4xl font-bold font-serif text-ink-primary">
+            {isManager ? 'All Tables' : 'My Tables'}
+          </h1>
         </div>
         <Button variant="primary" size="sm" onClick={() => setOpen(true)}>+ New Table</Button>
       </div>
@@ -154,7 +184,7 @@ export default function WaiterTabsScreen() {
             <path d="M4 14h32M14 14V8a1 1 0 011-1h10a1 1 0 011 1v6"
               stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>}
-          title="No open tables. Tap + New Table to start."
+          title={isManager ? 'No open tables right now.' : 'No tables assigned to you yet. Ask your manager.'}
         />
       )}
 
@@ -163,49 +193,95 @@ export default function WaiterTabsScreen() {
         {tabs.map(t => {
           const bal = parseFloat(t.balance)
           return (
-            <button key={t.id} onClick={() => navigate(`/pos/tabs/${t.id}`)}
-              aria-label={`Open tab ${t.reference ?? 'Walk-in'}`}
-              className="glass-card rounded-2xl p-4 text-left
-                hover:border-white/20 hover:shadow-xl transition-all active:scale-[0.98]
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main
-                flex flex-col justify-between min-h-[160px]">
-              {/* Top: table name + status badges */}
-              <div>
-                <div className="flex items-start justify-between mb-1">
-                  <h3 className="text-lg font-bold text-ink-primary leading-tight">
-                    {t.reference ?? 'Walk-in'}
-                  </h3>
-                  {bal > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-status-pending/20 text-status-pending">
-                      Paying
-                    </span>
+            <div key={t.id}
+              className="glass-card rounded-2xl p-4 flex flex-col justify-between min-h-[160px]">
+              <div
+                role="button" tabIndex={0}
+                onClick={() => navigate(`/pos/tabs/${t.id}`)}
+                onKeyDown={e => e.key === 'Enter' && navigate(`/pos/tabs/${t.id}`)}
+                aria-label={`Open tab ${t.reference ?? 'Walk-in'}`}
+                className="text-left cursor-pointer hover:opacity-90 transition-opacity
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main rounded-lg">
+                {/* Top: table name + status badges */}
+                <div>
+                  <div className="flex items-start justify-between mb-1">
+                    <h3 className="text-lg font-bold text-ink-primary leading-tight">
+                      {t.reference ?? 'Walk-in'}
+                    </h3>
+                    {bal > 0 && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-status-pending/20 text-status-pending">
+                        Paying
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">
+                    {tabLocation(t.reference)}
+                  </p>
+                </div>
+
+                {/* Middle: time + guests */}
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="text-[10px] text-ink-tertiary">Status</p>
+                    <p className="font-semibold text-ink-primary">{timeSinceOpen(t.opened_at)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-ink-tertiary">Type</p>
+                    <p className="font-semibold text-ink-primary">{t.tab_type || 'Dine-in'}</p>
+                  </div>
+                </div>
+
+                {/* Bottom: current total */}
+                <div className="mt-3 pt-2 border-t border-white/5">
+                  <p className="text-[10px] text-ink-tertiary">Current Total</p>
+                  <p className={`text-sm font-bold tabular-nums ${bal > 0 ? 'text-status-failed' : 'text-status-paid'}`}>
+                    {kes(t.balance)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Manager: who's this table assigned to + (re)assign control.
+                  Tracked by name — same shape as HousekeepingScreen's assign block. */}
+              {isManager && (
+                <div className="mt-3 pt-2 border-t border-white/5" onClick={e => e.stopPropagation()}>
+                  <p className="text-[10px] text-ink-tertiary mb-1">
+                    Waiter: <span className="font-semibold text-ink-primary">{t.assigned_to ?? 'Unassigned'}</span>
+                  </p>
+                  {assigning === t.id ? (
+                    <div className="space-y-1.5">
+                      <select
+                        style={{ colorScheme: 'dark' }}
+                        value={assignTarget}
+                        onChange={e => setAssignTarget(e.target.value)}
+                        className="w-full rounded-lg glass-card bg-transparent px-2 py-1.5
+                          text-xs text-ink-primary focus:outline-none focus:border-primary-main"
+                      >
+                        <option value="">Select waiter...</option>
+                        {staff.filter(s => s.id !== t.assigned_to_id).map(s => (
+                          <option key={s.id} value={s.id}>{s.username}</option>
+                        ))}
+                      </select>
+                      <div className="flex gap-1.5">
+                        <Button variant="ghost" size="sm" className="flex-1"
+                          onClick={() => { setAssigning(null); setAssignTarget('') }}>
+                          Cancel
+                        </Button>
+                        <Button variant="primary" size="sm" className="flex-1"
+                          loading={assignMut.isPending} disabled={!assignTarget}
+                          onClick={() => assignMut.mutate({ tabId: t.id, employeeId: assignTarget })}>
+                          Assign
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button variant="ghost" size="sm" className="w-full"
+                      onClick={() => { setAssigning(t.id); setAssignTarget('') }}>
+                      {t.assigned_to ? 'Reassign' : 'Assign Waiter'}
+                    </Button>
                   )}
                 </div>
-                <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">
-                  {tabLocation(t.reference)}
-                </p>
-              </div>
-
-              {/* Middle: time + guests */}
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <p className="text-[10px] text-ink-tertiary">Status</p>
-                  <p className="font-semibold text-ink-primary">{timeSinceOpen(t.opened_at)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-ink-tertiary">Type</p>
-                  <p className="font-semibold text-ink-primary">{t.tab_type || 'Dine-in'}</p>
-                </div>
-              </div>
-
-              {/* Bottom: current total */}
-              <div className="mt-3 pt-2 border-t border-white/5">
-                <p className="text-[10px] text-ink-tertiary">Current Total</p>
-                <p className={`text-sm font-bold tabular-nums ${bal > 0 ? 'text-status-failed' : 'text-status-paid'}`}>
-                  {kes(t.balance)}
-                </p>
-              </div>
-            </button>
+              )}
+            </div>
           )
         })}
 
