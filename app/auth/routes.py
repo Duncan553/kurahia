@@ -25,6 +25,7 @@ from flask_jwt_extended import (
 )
 from app.extensions import db, limiter
 from app.models.user import User, _ph
+from app.models.role import Role
 from app.models.employee_profile import EmployeeProfile
 from app.models.department import Department
 from app.models.audit_log import AuditLog
@@ -360,6 +361,18 @@ def reset_lockout(target_user_id):
     return jsonify({"message": f"Lockout cleared for {target.username}."}), 200
 
 # ── Self-registration for new staff ─────────────────────────────────
+
+@auth_bp.get("/departments")
+def list_departments_public():
+    """Unauthenticated: just {id, name} for active departments, so the
+    self-registration form (RegisterScreen.tsx — nobody has a token yet)
+    can populate its department dropdown with real DB ids instead of the
+    hardcoded fake strings it used to send, which never matched a real
+    Department row and made every registration 404."""
+    depts = db.session.query(Department).filter_by(is_active=True).order_by(Department.name).all()
+    return jsonify([{"id": d.id, "name": d.name} for d in depts]), 200
+
+
 @auth_bp.post("/register")
 def register():
     data = request.get_json(silent=True) or {}
@@ -398,6 +411,7 @@ def register():
         user.set_password(password)
         user.set_pin(pin)
         db.session.add(user)
+        db.session.flush()  # assigns user.id (Python-side default) before the FK below needs it
 
         profile = EmployeeProfile(
             user_id=user.id,
