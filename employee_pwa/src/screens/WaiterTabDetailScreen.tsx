@@ -252,7 +252,7 @@ export default function WaiterTabDetailScreen() {
           <button key={cat} onClick={() => setActiveCat(cat)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
               activeCat === cat
-                ? 'bg-ink-primary text-ink-primary'
+                ? 'bg-ink-primary text-cream-card'
                 : 'bg-white/5 text-ink-secondary hover:bg-cream-deep'
             }`}>
             {cat}
