@@ -299,15 +299,6 @@ const NAV_ITEMS: NavItem[] = [
     mode: 'personal',
     visible: () => true,
   },
-  {
-    id: 'incidents',
-    path: '/incidents',
-    label: 'Incident',
-    Icon: IncidentIcon,
-    mode: 'personal',
-    visible: () => true,
-  },
-
   // ── Station tablet: work dashboards ─────────────────────────────────────────
   {
     id: 'waiter',
@@ -414,6 +405,20 @@ const NAV_ITEMS: NavItem[] = [
     Icon: EventsIcon,
     mode: 'station',
     visible: (level) => level >= 3,
+  },
+  {
+    id: 'incidents',
+    path: '/incidents',
+    label: 'Incident',
+    Icon: IncidentIcon,
+    // 'both' — was personal-only, meaning a station tablet (kitchen/bar/gate/
+    // etc.) had no way to report an incident at all, only someone's own phone.
+    // Safety reporting needs to work right where the incident happens. Placed
+    // after the station work-tools (not with clock/alerts/profile above) so
+    // it doesn't bump the actual work screen out of the mobile nav's first
+    // 5 slots on a station tablet.
+    mode: 'both',
+    visible: () => true,
   },
 
   // ── Manager: both modes (managers carry their tablet everywhere) ─────────────

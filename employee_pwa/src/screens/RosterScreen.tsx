@@ -96,7 +96,9 @@ export default function RosterScreen() {
                   className="rounded-lg glass-card bg-transparent px-2 py-1.5 text-xs text-ink-primary
                     focus:outline-none focus:border-primary-main"
                 >
-                  <option value="">{homeDept ? `${homeDept.name} (home)` : 'Select station...'}</option>
+                  {/* homeDept can be missing (e.g. a disabled/legacy department still on
+                      the account) — show the raw value instead of a blank-looking default */}
+                  <option value="">{homeDept ? `${homeDept.name} (home)` : `${u.department ?? 'No department'} (home)`}</option>
                   {departments.filter(d => d.id !== homeDept?.id).map(d => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
