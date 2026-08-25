@@ -4,6 +4,39 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { resolve } from 'path'
 
+// A handful of these proxy prefixes are also real frontend routes
+// (/gate/hub the page vs /gate/issue-band the API; /notifications,
+// /conduct, /calendar, /disputes, /incidents, /housekeeping, /events are
+// exact-path collisions). A JS-initiated API call (axios) sends
+// Accept: application/json; a browser doing a full page load/refresh/
+// deep-link/PWA-relaunch sends Accept: text/html first — bypass the proxy
+// for the latter so Vite's own SPA handling serves index.html instead of
+// this request reaching Flask and getting its raw (unstyled) 404 page.
+function bypassPageNavigations(req: { headers: Record<string, string | string[] | undefined> }) {
+  const accept = req.headers.accept
+  if (typeof accept === 'string' && accept.includes('text/html')) {
+    return '/index.html'
+  }
+}
+
+const PROXIED_PATHS = [
+  '/auth', '/hr', '/notifications', '/conduct', '/suggestions', '/health', '/inventory',
+  '/gate', '/bookings', '/bookable-resources', '/booking-payments', '/front-desk',
+  '/waivers', '/tabs', '/orders', '/order-items', '/receipts',
+  '/menu', '/kitchen', '/bar', '/equipment', '/finance', '/feedback', '/admin',
+  '/calendar', '/disputes', '/dashboard', '/events', '/event-types',
+  '/guest-records', '/housekeeping', '/incidents', '/judge',
+  '/lost-found', '/reports', '/suppliers', '/uploads',
+]
+
+const proxyConfig = Object.fromEntries(
+  PROXIED_PATHS.map(p => [p, {
+    target: 'http://localhost:5000',
+    changeOrigin: true,
+    bypass: bypassPageNavigations,
+  }])
+)
+
 export default defineConfig({
   plugins: [
     react(),
@@ -43,57 +76,9 @@ export default defineConfig({
   },
   // vite preview needs the same proxy — SW verification runs against the built app
   preview: {
-    proxy: Object.fromEntries(
-      ['/auth','/hr','/notifications','/conduct','/suggestions','/health','/inventory',
-       '/gate','/bookings','/bookable-resources','/booking-payments','/front-desk',
-       '/waivers','/tabs','/orders','/order-items','/receipts',
-       '/menu','/kitchen','/bar','/equipment','/finance','/feedback','/admin',
-       '/calendar','/disputes','/dashboard','/events','/event-types',
-       '/guest-records','/housekeeping','/incidents','/judge',
-       '/lost-found','/reports','/suppliers','/uploads','/notifications']
-        .map(p => [p, { target: 'http://localhost:5000', changeOrigin: true }])
-    ),
+    proxy: proxyConfig,
   },
   server: {
-    proxy: {
-      // All API routes → Flask on :5000. Browser sees same origin → no CORS.
-      '/auth':              { target: 'http://localhost:5000', changeOrigin: true },
-      '/hr':                { target: 'http://localhost:5000', changeOrigin: true },
-      '/notifications':     { target: 'http://localhost:5000', changeOrigin: true },
-      '/conduct':           { target: 'http://localhost:5000', changeOrigin: true },
-      '/suggestions':       { target: 'http://localhost:5000', changeOrigin: true },
-      '/health':            { target: 'http://localhost:5000', changeOrigin: true },
-      '/inventory':         { target: 'http://localhost:5000', changeOrigin: true },
-      '/gate':              { target: 'http://localhost:5000', changeOrigin: true },
-      '/bookings':          { target: 'http://localhost:5000', changeOrigin: true },
-      '/bookable-resources':{ target: 'http://localhost:5000', changeOrigin: true },
-      '/booking-payments':  { target: 'http://localhost:5000', changeOrigin: true },
-      '/front-desk':        { target: 'http://localhost:5000', changeOrigin: true },
-      '/waivers':           { target: 'http://localhost:5000', changeOrigin: true },
-      '/tabs':              { target: 'http://localhost:5000', changeOrigin: true },
-      '/orders':            { target: 'http://localhost:5000', changeOrigin: true },
-      '/order-items':       { target: 'http://localhost:5000', changeOrigin: true },
-      '/receipts':          { target: 'http://localhost:5000', changeOrigin: true },
-      '/menu':              { target: 'http://localhost:5000', changeOrigin: true },
-      '/kitchen':           { target: 'http://localhost:5000', changeOrigin: true },
-      '/bar':               { target: 'http://localhost:5000', changeOrigin: true },
-      '/equipment':         { target: 'http://localhost:5000', changeOrigin: true },
-      '/finance':           { target: 'http://localhost:5000', changeOrigin: true },
-      '/feedback':          { target: 'http://localhost:5000', changeOrigin: true },
-      '/admin':             { target: 'http://localhost:5000', changeOrigin: true },
-      '/calendar':          { target: 'http://localhost:5000', changeOrigin: true },
-      '/disputes':          { target: 'http://localhost:5000', changeOrigin: true },
-      '/dashboard':         { target: 'http://localhost:5000', changeOrigin: true },
-      '/events':            { target: 'http://localhost:5000', changeOrigin: true },
-      '/event-types':       { target: 'http://localhost:5000', changeOrigin: true },
-      '/guest-records':     { target: 'http://localhost:5000', changeOrigin: true },
-      '/housekeeping':      { target: 'http://localhost:5000', changeOrigin: true },
-      '/incidents':         { target: 'http://localhost:5000', changeOrigin: true },
-      '/judge':             { target: 'http://localhost:5000', changeOrigin: true },
-      '/lost-found':        { target: 'http://localhost:5000', changeOrigin: true },
-      '/reports':           { target: 'http://localhost:5000', changeOrigin: true },
-      '/suppliers':         { target: 'http://localhost:5000', changeOrigin: true },
-      '/uploads':           { target: 'http://localhost:5000', changeOrigin: true },
-    },
+    proxy: proxyConfig,
   },
 })
