@@ -59,6 +59,10 @@ export default function WaiterTabsScreen() {
   // only what's been assigned to them — mirrors HousekeepingScreen's split.
   const { data: tabs = [], isLoading } = useQuery<Tab[]>({
     queryKey: ['my-tabs', isManager],
+    // mine=true also includes unassigned tables now (so a pending-payment
+    // table nobody's claimed yet isn't invisible to every waiter) — scoped on
+    // the backend to WALK_IN/VILLA (waiters deliver to villas too) and never
+    // BAND (gate wristband accounts — a different workflow entirely).
     queryFn: () => api.get<Tab[]>(isManager ? '/tabs?status=OPEN' : '/tabs?mine=true&status=OPEN').then(r => r.data),
     staleTime: 15_000,
     refetchOnWindowFocus: true,

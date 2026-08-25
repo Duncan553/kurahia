@@ -115,6 +115,19 @@ html { --font-size-base: 16px; }
     background-color: var(--color-cream-card);
     color: var(--color-ink-primary);
   }
+
+  /* Every app shell (owner_pwa, employee_pwa, station_pwa AppLayout.tsx) scrolls
+     its <main> content area, not the page body — h-screen flex layout with a
+     fixed header/nav and `overflow-y: auto` on <main>. Without this, that nested
+     scroll region has no momentum/inertia on iOS Safari (only the document gets
+     that natively) and lets a drag that runs out of content bleed into the
+     page trying to bounce/refresh underneath it — both read as "scrolling
+     feels stiff/complicated" compared to a normal full-page scroll, on every
+     screen in every app since it's the one shared shell they all render into. */
+  main {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
 }
 
 .tabular-nums {
