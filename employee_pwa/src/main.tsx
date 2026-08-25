@@ -150,7 +150,6 @@ const router = createBrowserRouter([
         { path: '/absence',         element: <AbsenceNoticeScreen /> },
         { path: '/calendar',        element: <CalendarScreen />      },
         { path: '/disputes',        element: <DisputesScreen />      },
-        { path: '/performance',     element: <PerformanceScreen />   },
         { path: '/incidents',       element: <IncidentScreen />      },
 
         // ── Band lookup: all staff (level 1+) ────────────────────
@@ -207,6 +206,12 @@ const router = createBrowserRouter([
           element: <RoleGate minLevel={5} />,
           children: [
             { path: '/manager',                    element: <ManagerScreen />         },
+            // GET /hr/profiles (what this screen lists) is manager-only by
+            // design — browsing every staff member's performance score isn't
+            // a level-1 action. Was in the universal group with no gate at
+            // all, so a direct visit 403'd with a misleading "check your
+            // connection" message instead of "Access restricted."
+            { path: '/performance',                element: <PerformanceScreen />     },
             { path: '/inventory/count',            element: <InventoryCountScreen />  },
             { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
             { path: '/equipment/maintenance',      element: <MaintenanceLogScreen />  },
