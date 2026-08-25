@@ -131,14 +131,14 @@ export default function StaffAccountsScreen() {
                     <div><LBL>Temporary password <span className="normal-case">(min 8 chars)</span></LBL><input className={inp} value={f.password} onChange={set('password')} placeholder="Write this down" /></div>
                     <div>
                       <LBL>Role</LBL>
-                      <select className={inp} value={f.roleId} onChange={set('roleId')}>
+                      <select style={{ colorScheme: 'dark' }} className={inp} value={f.roleId} onChange={set('roleId')}>
                         <option value="">Select role</option>
                         {meta?.roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                       </select>
                     </div>
                     <div>
                       <LBL>Department</LBL>
-                      <select className={inp} value={f.deptId} onChange={set('deptId')}>
+                      <select style={{ colorScheme: 'dark' }} className={inp} value={f.deptId} onChange={set('deptId')}>
                         <option value="">Select department</option>
                         {meta?.departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                       </select>
@@ -159,7 +159,7 @@ export default function StaffAccountsScreen() {
                       <div><LBL>Wage rate (optional)</LBL><input className={inp} value={f.wageRate} onChange={set('wageRate')} placeholder="1500" /></div>
                       <div>
                         <LBL>Period</LBL>
-                        <select className={inp} value={f.wagePeriod} onChange={set('wagePeriod')}>
+                        <select style={{ colorScheme: 'dark' }} className={inp} value={f.wagePeriod} onChange={set('wagePeriod')}>
                           <option value="">—</option>
                           <option value="HOURLY">Hourly</option>
                           <option value="DAILY">Daily</option>

@@ -290,6 +290,7 @@ export default function ShiftScreen() {
               Employee *
             </label>
             <select
+              style={{ colorScheme: 'dark' }}
               value={empId}
               onChange={(e) => setEmpId(e.target.value)}
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm

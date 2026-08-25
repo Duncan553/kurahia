@@ -387,6 +387,7 @@ export default function InventoryCountScreen() {
             <motion.div variants={fadeIn} className="mb-6">
               <label className="text-[10px] uppercase tracking-widest text-ink-tertiary font-medium mb-2 block">Department</label>
               <select
+                style={{ colorScheme: 'dark' }}
                 value={selectedDeptId}
                 onChange={(e) => setSelectedDeptId(e.target.value)}
                 className="w-full max-w-xs rounded-xl glass-card px-4 py-3 min-h-[44px]
@@ -948,6 +949,7 @@ export default function InventoryCountScreen() {
               Department *
             </label>
             <select
+              style={{ colorScheme: 'dark' }}
               value={newDeptId}
               onChange={(e) => setNewDeptId(e.target.value)}
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3

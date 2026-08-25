@@ -8,6 +8,13 @@ export function Select({ className = '', error, children, ...props }: SelectProp
   return (
     <div className="relative">
       <select
+        // The closed box respects our classes fine, but the OPEN dropdown
+        // popup is rendered by the OS/browser shell, not our CSS — it was
+        // falling back to the platform default (white panel), which the
+        // page's own light text color then rendered against unreadably.
+        // color-scheme: dark tells the browser to draw native form widgets,
+        // including this popup, with its own dark-mode palette instead.
+        style={{ colorScheme: 'dark' }}
         className={[
           'w-full px-4 py-3.5 min-h-[52px] rounded-xl appearance-none',
           'bg-white/[0.06] border text-ink-primary',

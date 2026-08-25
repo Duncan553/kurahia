@@ -549,6 +549,7 @@ export default function MenuManageScreen() {
                 Copy from another dish
               </p>
               <select
+                style={{ colorScheme: 'dark' }}
                 value={copySource}
                 onChange={e => setCopySource(e.target.value)}
                 aria-label="Copy recipe from another dish"
