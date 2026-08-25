@@ -77,14 +77,17 @@ export default function ConductScreen() {
   }
 
   const signMutation = useMutation({
-    mutationFn: ({ rule_key, version }: { rule_key: string; version: number }) =>
-      api.post('/conduct/sign', { rule_key, version, idempotency_key: crypto.randomUUID() }),
+    // Backend reads conduct_rule_id (app/conduct/core.py sign_rule), not
+    // rule_key/version — this sent the wrong field entirely, so every sign
+    // attempt 400'd ("conduct_rule_id is required.").
+    mutationFn: (ruleId: string) =>
+      api.post('/conduct/sign', { conduct_rule_id: ruleId, idempotency_key: crypto.randomUUID() }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conduct', 'signatures', userId] })
       addToast({ type: 'success', message: 'Code of conduct signed.' })
     },
-    onError: () => {
-      addToast({ type: 'error', message: 'Could not sign. Try again.' })
+    onError: (err: any) => {
+      addToast({ type: 'error', message: err?.response?.data?.error || 'Could not sign. Try again.' })
     },
   })
 
@@ -202,7 +205,7 @@ export default function ConductScreen() {
                 ) : (
                   <motion.button
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => signMutation.mutate({ rule_key: rule.rule_key, version: rule.version })}
+                    onClick={() => signMutation.mutate(rule.id)}
                     disabled={!scrollReady || signMutation.isPending}
                     className={[
                       'px-5 py-2.5 rounded-xl text-sm font-semibold transition-all',
