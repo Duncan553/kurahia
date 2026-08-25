@@ -273,14 +273,14 @@ function CreateUserFlow({
           </div>
           <div>
             <label className="block text-xs font-semibold text-ink-secondary mb-1">Role</label>
-            <select className={inp} value={f.roleId} onChange={set('roleId')}>
+            <select style={{ colorScheme: 'dark' }} className={inp} value={f.roleId} onChange={set('roleId')}>
               <option value="">Select role…</option>
               {meta.roles.map(r => <option key={r.id} value={r.id}>{r.name} (level {r.level})</option>)}
             </select>
           </div>
           <div>
             <label className="block text-xs font-semibold text-ink-secondary mb-1">Department</label>
-            <select className={inp} value={f.deptId} onChange={set('deptId')}>
+            <select style={{ colorScheme: 'dark' }} className={inp} value={f.deptId} onChange={set('deptId')}>
               <option value="">Select department…</option>
               {meta.departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
@@ -314,7 +314,7 @@ function CreateUserFlow({
             </div>
             <div className="w-32">
               <label className="block text-xs font-semibold text-ink-secondary mb-1">Period</label>
-              <select className={inp} value={f.wagePeriod} onChange={set('wagePeriod')}>
+              <select style={{ colorScheme: 'dark' }} className={inp} value={f.wagePeriod} onChange={set('wagePeriod')}>
                 <option value="MONTHLY">Monthly</option>
                 <option value="DAILY">Daily</option>
                 <option value="HOURLY">Hourly</option>

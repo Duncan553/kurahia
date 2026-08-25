@@ -338,6 +338,7 @@ export default function FinanceScreen() {
           <label className="sr-only" htmlFor="finance-period">Period</label>
           <select
             id="finance-period"
+            style={{ colorScheme: 'dark' }}
             value={period}
             onChange={e => setPeriod(e.target.value)}
             aria-label="Select period"

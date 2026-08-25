@@ -176,6 +176,7 @@ export default function HousekeepingScreen() {
                 Assign Housekeeper
               </label>
               <select
+                style={{ colorScheme: 'dark' }}
                 value={assignTarget}
                 onChange={e => setAssignTarget(e.target.value)}
                 className="w-full rounded-lg glass-card bg-transparent px-3 py-2
