@@ -23,7 +23,7 @@ from app.services.judge_alerts import fire_alert_if_absent
 from app.services.finance import (
     parse_date_bounds, parse_month_bounds,
     get_period_revenue_by_method, get_period_cash_reconciled_total,
-    get_budget_spend,
+    get_budget_spend, get_staff_pending_cash,
 )
 
 reports_bp = Blueprint("finance_reports", __name__, url_prefix="/finance")
@@ -109,10 +109,7 @@ def three_way_report():
     total_handed_in      = sum(Decimal(str(r.actual_amount))   for r in recons)
     recon_diff           = total_handed_in - total_expected_recon
     # `recon_diff` only covers reconciliations that have actually happened — it
-    # reads 0.00 even when most of today's cash hasn't been reconciled yet. This
-    # is the real outstanding gap: everything collected today that hasn't been
-    # handed in and matched against a reconciliation record at all.
-    unreconciled_amount = cash_total_collected - total_handed_in
+    # reads 0.00 even when most of today's cash hasn't been reconciled yet.
 
     shortfalls = [
         {
@@ -141,6 +138,15 @@ def three_way_report():
         u = db.session.get(User, sid)
         if u:
             pending_staff.append(u.username)
+
+    # The real outstanding gap: how much cash is sitting with staff right now,
+    # unreconciled — not `cash_total_collected - total_handed_in`, which mixed
+    # two different time scopes (cash collected THIS period vs. reconciliations
+    # that closed THIS period, which can sweep up older pending cash from a
+    # prior period) and could go negative once a stale multi-day balance got
+    # reconciled in one go. Summing each pending staff member's true current
+    # pending total is scope-correct and never negative.
+    unreconciled_amount = sum(get_staff_pending_cash(sid)[0] for sid in pending_staff_ids)
 
     # ── Corner 3: Stock / judge ────────────────────────────────────────────
     open_alerts = db.session.query(JudgeAlert).filter(
