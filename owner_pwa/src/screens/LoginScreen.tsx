@@ -37,6 +37,17 @@ export default function LoginScreen() {
         navigate('/pin/setup', { state: { username } })
         return
       }
+      // Owner PWA is owner-only (AuthGate.tsx enforces the same check on every
+      // route). Credentials were genuinely correct here — a manager/staff
+      // account logging in with the right password used to just silently
+      // bounce back to this exact form with the fields cleared and zero
+      // explanation, indistinguishable from a wrong password. That's the
+      // failure mode "front end refuses login, doesn't say why" traces back
+      // to when the account trying is real but isn't the owner.
+      if (claims.role_level < 10) {
+        setErrorMsg('This app is for the owner account only. Use the Kurahia Staff app instead.')
+        return
+      }
       // Normal login — store auth and go to dashboard
       setAuth({ id: claims.sub, username, role_level: claims.role_level }, data.access_token, data.refresh_token ?? '')
       navigate('/')
