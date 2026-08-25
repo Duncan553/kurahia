@@ -167,7 +167,17 @@ export default function KioskWaiverScreen() {
   const [agreed, setAgreed]             = useState(false)
   const [hasSigned, setHasSigned]       = useState(false)
   const [pinOpen, setPinOpen]           = useState(false)
+  // Which action the PIN prompt is gating — set before opening it, read in
+  // onConfirm below, so "exit" can't accidentally trigger a waiver submit.
+  const [pinAction, setPinAction]       = useState<'submit' | 'exit'>('submit')
   const [submitted, setSubmitted]       = useState(false)
+  // Stable across retries, rotated only after a real success in onSuccess below —
+  // matches KioskFeedbackScreen's pattern. Was crypto.randomUUID() *inside*
+  // mutationFn, so every retry got a fresh key and could never be deduped by
+  // the backend's idempotency check (app/bookings/waivers.py) — a network
+  // hiccup or a guest's second tap after a failed attempt created a second
+  // waiver row for the same signature.
+  const [idemKey, setIdemKey] = useState(() => crypto.randomUUID())
 
   // Hidden corner tap counter
   const tapCount = useRef(0)
@@ -177,23 +187,6 @@ export default function KioskWaiverScreen() {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef    = useRef<HTMLCanvasElement>(null)
   const drawing      = useRef(false)
-
-  // Guard: missing booking_id
-  if (!bookingId) {
-    return (
-      <div className="min-h-screen bg-ticket-paper flex flex-col items-center justify-center p-8 text-center gap-4">
-        <h1 className="font-serif text-3xl font-bold text-stamp-red tracking-wide">No Booking Selected</h1>
-        <p className="text-ticket-ink/70">Staff must launch the waiver kiosk from a booking card.</p>
-        <button
-          onClick={() => { deactivateKiosk(); navigate('/', { replace: true }) }}
-          className="mt-4 min-h-[44px] px-6 rounded-xl bg-tea-brown text-ticket-paper font-semibold
-            hover:bg-tea-brown/90 transition-colors"
-        >
-          Return to Staff App
-        </button>
-      </div>
-    )
-  }
 
   // Guard: kiosk mode must be active
   useEffect(() => {
@@ -318,12 +311,13 @@ export default function KioskWaiverScreen() {
         activity_type:  'WATER_ACTIVITY',
         signed_by_name: signedByName.trim(),
         signature_proof,
-        idempotency_key: crypto.randomUUID(),  // sent but not yet enforced by backend
+        idempotency_key: idemKey,
       }).then((r) => r.data)
     },
     onSuccess: (data) => {
       addToast({ type: 'success', message: `Waiver recorded for ${data.signed_by}.` })
       setSubmitted(true)
+      setIdemKey(crypto.randomUUID())  // done with this attempt — next signature gets a fresh key
       setTimeout(() => {
         deactivateKiosk()
         navigate('/', { replace: true })
@@ -337,17 +331,42 @@ export default function KioskWaiverScreen() {
     },
   })
 
-  // Hidden corner exit: 3 taps in 1.5s
+  // Hidden corner exit: 3 taps in 1.5s. Requires the staff PIN like every
+  // other kiosk exit path (KioskMenuScreen's PinExitModal) — this used to
+  // deactivate straight away, so a guest signing alone at the tablet could
+  // 3-tap out into the staff member's full logged-in session with no
+  // re-authentication.
   function handleCornerTap() {
     tapCount.current += 1
     clearTimeout(tapTimer.current)
     if (tapCount.current >= 3) {
       tapCount.current = 0
-      deactivateKiosk()
-      navigate('/', { replace: true })
+      setPinAction('exit')
+      setPinOpen(true)
     } else {
       tapTimer.current = setTimeout(() => { tapCount.current = 0 }, 1500)
     }
+  }
+
+  // Guard: missing booking_id — below every hook (Rules of Hooks). This used
+  // to sit above the 4 useEffects and the useMutation above, so a route-param
+  // transition from no bookingId to a real one (no full unmount) changed the
+  // number of hooks React saw between renders: "Rendered fewer hooks than
+  // expected" — a real, reproduced crash, not theoretical.
+  if (!bookingId) {
+    return (
+      <div className="min-h-screen bg-ticket-paper flex flex-col items-center justify-center p-8 text-center gap-4">
+        <h1 className="font-serif text-3xl font-bold text-stamp-red tracking-wide">No Booking Selected</h1>
+        <p className="text-ticket-ink/70">Staff must launch the waiver kiosk from a booking card.</p>
+        <button
+          onClick={() => { deactivateKiosk(); navigate('/', { replace: true }) }}
+          className="mt-4 min-h-[44px] px-6 rounded-xl bg-tea-brown text-ticket-paper font-semibold
+            hover:bg-tea-brown/90 transition-colors"
+        >
+          Return to Staff App
+        </button>
+      </div>
+    )
   }
 
   const canSubmit = signedByName.trim().length >= 3 && agreed && hasSigned
@@ -482,7 +501,7 @@ export default function KioskWaiverScreen() {
         {/* Submit */}
         <button
           type="button"
-          onClick={() => setPinOpen(true)}
+          onClick={() => { setPinAction('submit'); setPinOpen(true) }}
           disabled={!canSubmit || mutation.isPending}
           className="w-full py-4 rounded-2xl bg-tea-brown text-ticket-paper
             text-base font-semibold tracking-wide
@@ -525,7 +544,12 @@ export default function KioskWaiverScreen() {
               onCancel={() => setPinOpen(false)}
               onConfirm={() => {
                 setPinOpen(false)
-                mutation.mutate()
+                if (pinAction === 'exit') {
+                  deactivateKiosk()
+                  navigate('/', { replace: true })
+                } else {
+                  mutation.mutate()
+                }
               }}
             />
           </motion.div>
