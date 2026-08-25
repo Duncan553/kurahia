@@ -362,8 +362,12 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Villa',
     Icon: VillaIcon,
     mode: 'station',
+    // level >= 3: VillaScreen's booking-availability call (GET /bookings/
+    // availability) requires FRONT_DESK_LEVEL (3) on the backend — a level-1
+    // housekeeping staffer hit a real 403 here. They still get Cleaning
+    // (below) regardless of level.
     visible: (level, dept) =>
-      deptIs(dept, 'villa', 'housekeep') ||
+      (deptIs(dept, 'villa', 'housekeep') && level >= 3) ||
       (level >= 3 && level <= 4 && !deptIs(dept, 'kitchen', 'bar')),
   },
   {

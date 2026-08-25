@@ -106,8 +106,11 @@ const NAV_ITEMS: NavItem[] = [
     visible: (_l, d) => deptIs(d, 'water', 'activit', 'aqua') },
   { id: 'water-pay', path: '/pos/water-pay', label: 'Payment', Icon: WaterIcon,
     visible: (_l, d) => deptIs(d, 'water', 'activit', 'aqua') },
+  // level >= 3: VillaScreen's booking-availability call (GET /bookings/availability)
+  // requires FRONT_DESK_LEVEL (3) on the backend — a level-1 housekeeping staffer
+  // hit a real 403 here. They still get Cleaning below regardless of level.
   { id: 'villa', path: '/villa', label: 'Villa', Icon: VillaIcon,
-    visible: (_l, d) => deptIs(d, 'villa', 'housekeep') },
+    visible: (l, d) => deptIs(d, 'villa', 'housekeep') && l >= 3 },
   { id: 'housekeeping', path: '/housekeeping', label: 'Cleaning', Icon: HousekeepingIcon,
     visible: (_l, d) => deptIs(d, 'villa', 'housekeep') },
   { id: 'gate-hub', path: '/gate/hub', label: 'Gate', Icon: GateIcon,
