@@ -1,11 +1,12 @@
 """
 finance/budgets.py — Per-department monthly budget management.
 
-POST   /finance/budgets              → owner sets a budget
+POST   /finance/budgets              → manager or above sets a budget
 PATCH  /finance/budgets/:id          → owner edits amount
 POST   /finance/budgets/:id/disable  → owner suspends a budget
 POST   /finance/budgets/:id/enable   → owner re-activates
 GET    /finance/budgets/status?period=YYYY-MM → per-dept: budget vs spend vs remaining
+GET    /finance/budgets/status?period=YYYY    → same, summed across that year's 12 months
 """
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
@@ -28,9 +29,12 @@ MANAGER_LEVEL = 5
 @budgets_bp.post("/budgets")
 @require_active_user
 def create_budget():
+    # Manager+ can set a budget (edit/disable/enable below stay owner-only —
+    # changing or removing a budget already in force is more sensitive than
+    # setting one for the first time).
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < OWNER_LEVEL:
-        return jsonify({"error": "Only the owner can set budgets."}), 403
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required to set budgets."}), 403
 
     data    = request.get_json(silent=True) or {}
     dept_id = data.get("department_id")
@@ -151,12 +155,50 @@ def budget_status():
         from datetime import datetime
         period_str = datetime.now(timezone.utc).strftime("%Y-%m")
 
+    include_disabled = request.args.get("include_disabled", "false").lower() == "true"
+
+    # A bare 4-digit year (e.g. "2026") asks for the whole-year view: sum
+    # every month that year has a budget for, per department, rather than
+    # one specific month. Budgets are still only ever SET monthly (create_budget
+    # above) — this only changes how the status/reporting endpoint reads them
+    # back, so no schema change, no new period format to store or migrate.
+    if period_str.isdigit() and len(period_str) == 4:
+        year = period_str
+        query = db.session.query(Budget).filter(Budget.period.like(f"{year}-%"))
+        if not include_disabled:
+            query = query.filter_by(is_active=True)
+        budgets = query.all()
+
+        by_dept: dict[str, dict] = {}
+        for b in budgets:
+            month_start, month_end = parse_month_bounds(b.period)
+            spent = get_budget_spend(b.department_id, month_start, month_end)
+            dept_name = b.department.name if b.department else b.department_id
+            row = by_dept.setdefault(dept_name, {"budget": Decimal("0"), "spent": Decimal("0")})
+            row["budget"] += Decimal(str(b.amount))
+            row["spent"]  += spent
+
+        result = []
+        for dept_name, row in by_dept.items():
+            bamt, spent = row["budget"], row["spent"]
+            remaining = bamt - spent
+            pct_used  = float(spent / bamt * 100) if bamt > 0 else 0.0
+            result.append({
+                "department":  dept_name,
+                "period":      year,
+                "budget":      str(bamt),
+                "spent":       str(spent),
+                "remaining":   str(remaining),
+                "pct_used":    round(pct_used, 1),
+                "over_budget": spent > bamt,
+            })
+        return jsonify({"period": year, "budgets": result}), 200
+
     try:
         period_start, period_end = parse_month_bounds(period_str)
     except ValueError:
-        return jsonify({"error": "Invalid period. Use YYYY-MM."}), 400
+        return jsonify({"error": "Invalid period. Use YYYY-MM (month) or YYYY (year)."}), 400
 
-    include_disabled = request.args.get("include_disabled", "false").lower() == "true"
     query = db.session.query(Budget).filter_by(period=period_str)
     if not include_disabled:
         query = query.filter_by(is_active=True)
