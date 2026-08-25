@@ -13,6 +13,7 @@ interface StaffUser {
 interface Profile {
   user_id: string; full_name: string; phone: string
   hire_date: string | null; wage_rate: string | null; wage_period: string | null
+  payment_method: string | null; payment_account_number: string | null
 }
 
 interface Meta {
@@ -105,6 +106,17 @@ function UserDrawer({
 }) {
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
+  const [resetting, setResetting] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+
+  const resetPasswordMut = useMutation({
+    mutationFn: () => api.patch(`/auth/users/${user.id}`, { password: newPassword }),
+    onSuccess: () => {
+      addToast({ type: 'success', message: `Password reset for ${user.username}. Give them the new one directly.` })
+      setResetting(false); setNewPassword('')
+    },
+    onError: e => addToast({ type: 'error', message: extractErr(e) }),
+  })
 
   const toggleMut = useMutation({
     mutationFn: () =>
@@ -149,6 +161,13 @@ function UserDrawer({
               KSh {parseFloat(profile.wage_rate).toLocaleString('en-KE')} / {profile.wage_period?.toLowerCase()}
             </span></p>
           )}
+          {profile?.payment_account_number ? (
+            <p>Payment: <span className="font-medium text-ink-primary">
+              {profile.payment_method === 'BANK' ? 'Bank' : 'M-Pesa'} — {profile.payment_account_number}
+            </span></p>
+          ) : profile && (
+            <p className="text-status-pending">Payment: <span className="font-medium">not added by employee yet</span></p>
+          )}
           <p>Status: <span className={`font-medium ${user.is_active ? 'text-status-paid' : 'text-status-failed'}`}>
             {user.is_active ? 'Active' : 'Inactive'}
           </span></p>
@@ -184,6 +203,37 @@ function UserDrawer({
         >
           {lockoutMut.isPending ? 'Clearing…' : 'Reset Login Lockout'}
         </Button>
+
+        {/* Manager/owner can force-set a new password — endpoint already existed
+            (PATCH /auth/users/<id>), this was just never wired to a button. */}
+        {resetting ? (
+          <div className="space-y-2 rounded-lg border border-white/10 p-3">
+            <label className="block text-xs font-semibold text-ink-secondary">New password (8+ chars)</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              placeholder="Temporary password"
+              className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm
+                text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-primary-main"
+            />
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" className="flex-1"
+                onClick={() => { setResetting(false); setNewPassword('') }}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" className="flex-1"
+                disabled={newPassword.length < 8 || resetPasswordMut.isPending}
+                onClick={() => resetPasswordMut.mutate()}>
+                {resetPasswordMut.isPending ? 'Saving…' : 'Save New Password'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="ghost" className="w-full" onClick={() => setResetting(true)}>
+            Reset Password
+          </Button>
+        )}
       </div>
     </div>
   )

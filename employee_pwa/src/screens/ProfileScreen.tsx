@@ -1,7 +1,18 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Button, useToastStore } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import { useFontSizePref, type FontSizeKey } from '../lib/fontSizePref'
+import api from '../lib/axios'
+
+interface MyProfile {
+  full_name: string; phone: string
+  payment_method: string | null; payment_account_number: string | null
+}
+const extractErr = (e: unknown) =>
+  (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
 
 function roleName(level: number): string {
   if (level >= 10) return 'Owner'
@@ -42,6 +53,96 @@ function NavCard({ label, description, path, icon, danger }: {
         <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </motion.button>
+  )
+}
+
+/* Payment account — where payroll pays this employee. Employee edits their
+   own; manager/owner see it read-only on owner_pwa's StaffScreen. */
+function PaymentAccountCard() {
+  const addToast = useToastStore(s => s.addToast)
+  const qc = useQueryClient()
+  const [editing, setEditing] = useState(false)
+  const [method, setMethod] = useState<'MPESA' | 'BANK'>('MPESA')
+  const [number, setNumber] = useState('')
+
+  const { data, isLoading } = useQuery<MyProfile>({
+    queryKey: ['my-profile'],
+    queryFn: () => api.get<MyProfile>('/hr/profiles/me').then(r => r.data),
+    retry: (count, err) =>
+      (err as { response?: { status?: number } })?.response?.status === 404 ? false : count < 1,
+  })
+
+  const saveMut = useMutation({
+    mutationFn: () => api.patch('/hr/profiles/me/payment', { payment_method: method, payment_account_number: number }),
+    onSuccess: () => {
+      addToast({ type: 'success', message: 'Payment account saved.' })
+      qc.invalidateQueries({ queryKey: ['my-profile'] })
+      setEditing(false)
+    },
+    onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
+  })
+
+  if (isLoading) return null
+  // No employee profile yet (see ClockScreen's identical check) — nothing to show.
+  if (data === undefined) return null
+
+  function startEdit() {
+    setMethod((data?.payment_method as 'MPESA' | 'BANK') || 'MPESA')
+    setNumber(data?.payment_account_number ?? '')
+    setEditing(true)
+  }
+
+  return (
+    <div className="glass-card rounded-2xl p-4 space-y-3">
+      <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">
+        Payment Account
+      </p>
+      {!editing ? (
+        <>
+          {data.payment_account_number ? (
+            <p className="text-sm text-ink-primary">
+              {data.payment_method === 'BANK' ? 'Bank account' : 'M-Pesa'}: <span className="font-semibold">{data.payment_account_number}</span>
+            </p>
+          ) : (
+            <p className="text-sm text-ink-tertiary">No payment account on file — payroll needs this to pay you.</p>
+          )}
+          <Button variant="ghost" size="sm" onClick={startEdit}>
+            {data.payment_account_number ? 'Change' : 'Add payment account'}
+          </Button>
+        </>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex gap-2" role="group" aria-label="Payment method">
+            {(['MPESA', 'BANK'] as const).map(m => (
+              <button key={m} type="button" onClick={() => setMethod(m)}
+                aria-pressed={method === m}
+                className={[
+                  'flex-1 py-2 rounded-xl border text-sm font-semibold transition-colors',
+                  method === m ? 'bg-ink-primary text-cream-card border-ink-primary' : 'border-white/10 text-ink-secondary',
+                ].join(' ')}>
+                {m === 'MPESA' ? 'M-Pesa' : 'Bank'}
+              </button>
+            ))}
+          </div>
+          <input
+            value={number}
+            onChange={e => setNumber(e.target.value)}
+            placeholder={method === 'MPESA' ? 'M-Pesa number, e.g. 0712345678' : 'Bank account number'}
+            className="w-full rounded-xl glass-card bg-transparent px-4 py-2.5
+              text-sm text-ink-primary placeholder:text-ink-tertiary
+              focus:outline-none focus:border-primary-main"
+          />
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" className="flex-1" onClick={() => setEditing(false)}>Cancel</Button>
+            <Button variant="primary" size="sm" className="flex-1"
+              loading={saveMut.isPending} disabled={!number.trim()}
+              onClick={() => saveMut.mutate()}>
+              Save
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -91,6 +192,11 @@ export default function ProfileScreen() {
             {user?.department ? ` · ${user.department}` : ''}
           </p>
         </div>
+      </motion.div>
+
+      {/* ── Payment account (payroll) ─────────────────────────────── */}
+      <motion.div variants={itemVariants}>
+        <PaymentAccountCard />
       </motion.div>
 
       {/* ── HR actions ────────────────────────────────────────────── */}
