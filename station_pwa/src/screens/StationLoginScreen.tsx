@@ -17,8 +17,8 @@ interface JWTClaims extends Record<string, unknown> {
 
 const KEYPAD = ['1','2','3','4','5','6','7','8','9','','0','⌫'] as const
 
-const HERO_URL =
-  'https://waterfrontcountryclub.com/wp-content/uploads/2025/08/DJI_0669-scaled.jpg'
+// Real Kurahia property photo, served locally (no external dependency at login time).
+const HERO_URL = '/images/resort-bg.jpg'
 
 export default function StationLoginScreen() {
   const navigate = useNavigate()
