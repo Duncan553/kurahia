@@ -40,6 +40,17 @@ const SHORT_THRESHOLD = 500   // KSh — above this, hold-to-confirm required
 
 function genKey() { return crypto.randomUUID() }
 
+// ReconciliationStatus values (app/models/cash_reconciliation.py) are
+// BALANCED/SHORT/OVER — none of which exist in StatusBadge's StatusValue
+// union. The lowercased cast used to lie to the compiler while CONFIG[status]
+// threw at runtime on every successful reconciliation. Same color mapping
+// this screen's own background-color logic already used a few lines below.
+function reconStatusBadge(status: string): 'paid' | 'failed' | 'pending' {
+  if (status === 'BALANCED') return 'paid'
+  if (status === 'SHORT') return 'failed'
+  return 'pending' // OVER
+}
+
 // ── Hold-to-Confirm (2 s press) ─────────────────────────────────────────────
 
 function HoldToConfirm({
@@ -55,6 +66,7 @@ function HoldToConfirm({
 
   function startHold() {
     if (disabled) return
+    if (intervalRef.current) return  // already running — don't stack a second interval
     confirmedRef.current = false
     intervalRef.current = setInterval(() => {
       setProgress((prev) => {
@@ -84,9 +96,15 @@ function HoldToConfirm({
 
   return (
     <button
-      onMouseDown={startHold}
-      onMouseUp={stopHold}
-      onMouseLeave={stopHold}
+      // Pointer Events alone cover mouse+touch+pen (this is a tablet-first
+      // app). The old code also bound onMouseDown/Up/Leave — for mouse input
+      // browsers fire pointerdown then a compatibility mousedown, so
+      // startHold() ran twice per press, leaking an untracked setInterval
+      // (intervalRef only ever held the second one) that could independently
+      // reach 100% and fire a real POST /finance/cash/reconcile after the
+      // user believed they'd released or cancelled. The startHold guard
+      // above is defense in depth; removing the duplicate handlers is the
+      // actual fix.
       onPointerDown={startHold}
       onPointerUp={stopHold}
       onPointerLeave={stopHold}
@@ -169,7 +187,7 @@ function ReconForm({
           <p className="text-2xl font-bold tabular-nums text-ink-primary">
             KSh {Math.abs(diff).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
           </p>
-          <StatusBadge status={result.status.toLowerCase() as 'paid' | 'pending' | 'cancelled'} />
+          <StatusBadge status={reconStatusBadge(result.status)} />
           {result.status === 'SHORT' && (
             <p className="text-sm text-status-failed mt-1">
               {pending.staff_name} is KSh {Math.abs(diff).toLocaleString('en-KE')} short.
