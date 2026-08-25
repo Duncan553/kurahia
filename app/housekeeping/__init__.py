@@ -32,6 +32,18 @@ MANAGER_LEVEL = 5
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+def _is_hk_dept(actor: User) -> bool:
+    """True if actor's department is villa/housekeeping. Three call sites in
+    this file used to each inline this substring check — one shared source
+    of truth now, so a department rename only needs updating in one place.
+    Still a hardcoded name match rather than a DB-resident flag (invariant
+    #10 in CLAUDE.md would ideally have this as owner-editable config, e.g.
+    a Department.category column) — flagging as a real follow-up, not fixed
+    here to avoid a schema change unrelated to the bug this was fixing."""
+    dept_name = actor.department.name.lower() if actor.department else ""
+    return any(k in dept_name for k in ("villa", "housekeep"))
+
+
 def _status_dict(cs: CleaningStatus) -> dict:
     """Serialise a CleaningStatus row for JSON response."""
     return {
@@ -88,8 +100,7 @@ def list_status():
     actor = db.session.get(User, get_jwt_identity())
 
     # Housekeeping/villa dept staff (any level) or managers can view
-    dept_name = actor.department.name.lower() if actor.department else ""
-    is_hk_dept = any(k in dept_name for k in ("villa", "housekeep"))
+    is_hk_dept = _is_hk_dept(actor)
     if actor.role.level < MANAGER_LEVEL and not is_hk_dept:
         return jsonify({"error": "Villa/housekeeping department or manager access required."}), 403
 
@@ -186,8 +197,7 @@ def start_cleaning(cleaning_id):
     # any housekeeping/villa-dept worker can self-claim it. Without this, a
     # freshly-dirtied room (auto-created with assigned_to_id=None on checkout)
     # had no working "Start Cleaning" path until a manager happened to assign it.
-    dept_name = actor.department.name.lower() if actor.department else ""
-    is_hk_dept = any(k in dept_name for k in ("villa", "housekeep"))
+    is_hk_dept = _is_hk_dept(actor)
     can_self_claim = record.assigned_to_id is None and is_hk_dept
     if record.assigned_to_id != actor.id and actor.role.level < MANAGER_LEVEL and not can_self_claim:
         return jsonify({"error": "Only the assigned housekeeper or a manager can start cleaning."}), 403
@@ -299,8 +309,7 @@ def flag_issue(cleaning_id):
         return jsonify({"error": "Cleaning record not found."}), 404
 
     # Any housekeeping staff or manager can flag
-    dept_name = actor.department.name.lower() if actor.department else ""
-    is_hk_dept = any(k in dept_name for k in ("villa", "housekeep"))
+    is_hk_dept = _is_hk_dept(actor)
     if actor.role.level < MANAGER_LEVEL and not is_hk_dept:
         return jsonify({"error": "Villa/housekeeping department or manager access required."}), 403
 
