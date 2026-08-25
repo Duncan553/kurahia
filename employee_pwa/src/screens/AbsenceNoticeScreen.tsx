@@ -15,9 +15,18 @@ const REASONS = [
   'Other',
 ]
 
+// app/models/absence_notice.py NoticeType — required by the backend
+// (app/hr/absence.py:32-39, 400s without it) but this screen never collected
+// it at all, so no absence notice could ever be recorded.
+const NOTICE_TYPES: { value: 'LATE' | 'ABSENT'; label: string }[] = [
+  { value: 'LATE',   label: "I'm coming, but I'll be late" },
+  { value: 'ABSENT', label: "I won't be in at all" },
+]
+
 export default function AbsenceNoticeScreen() {
   const navigate  = useNavigate()
   const addToast  = useToastStore((s) => s.addToast)
+  const [noticeType, setNoticeType] = useState<'LATE' | 'ABSENT' | ''>('')
   const [reason,  setReason]  = useState('')
   const [custom,  setCustom]  = useState('')
   const [idemKey, setIdemKey] = useState(genKey)
@@ -27,11 +36,13 @@ export default function AbsenceNoticeScreen() {
   const reasonErr   = touched && !finalReason ? 'Select or enter a reason.' : ''
   const customErr   = touched && reason === 'Other' && custom.trim().length < 3
     ? 'Describe the reason (min 3 chars).' : ''
-  const isValid = !!finalReason && (reason !== 'Other' || custom.trim().length >= 3)
+  const noticeTypeErr = touched && !noticeType ? 'Select one.' : ''
+  const isValid = !!noticeType && !!finalReason && (reason !== 'Other' || custom.trim().length >= 3)
 
   const mutation = useMutation({
     mutationFn: () =>
       api.post('/hr/absence-notices', {
+        notice_type:     noticeType,
         reason:          finalReason,
         idempotency_key: idemKey,
       }).then((r) => r.data),
@@ -63,6 +74,32 @@ export default function AbsenceNoticeScreen() {
       </div>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
+
+        {/* Late vs absent */}
+        <div>
+          <label className="block text-sm font-medium text-ink-secondary mb-2">
+            What's happening? *
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {NOTICE_TYPES.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => { setNoticeType(t.value); setTouched(false) }}
+                className={[
+                  'py-3 px-4 rounded-xl border text-sm font-medium text-left transition-all',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
+                  noticeType === t.value
+                    ? 'border-primary-main bg-primary-main/10 text-primary-dark'
+                    : 'border-white/10 bg-transparent text-ink-secondary hover:border-primary-main',
+                ].join(' ')}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {noticeTypeErr && <p className="text-sm text-status-failed mt-1">{noticeTypeErr}</p>}
+        </div>
 
         {/* Reason selector */}
         <div>
@@ -120,7 +157,7 @@ export default function AbsenceNoticeScreen() {
 
         <button
           type="submit"
-          disabled={mutation.isPending || !reason}
+          disabled={mutation.isPending || !noticeType || !reason}
           className={[
             'w-full py-4 rounded-2xl text-base font-semibold transition-all',
             'bg-primary-main text-white hover:bg-primary-dark active:scale-[0.99]',
