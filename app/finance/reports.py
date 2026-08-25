@@ -393,6 +393,32 @@ def finance_dashboard():
     # Always 0; included for completeness.
     no_receipt_purchases = 0
 
+    # ── Expenses + profit for the month ───────────────────────────────────
+    # Purchases: resort-wide, not scoped to a department (unlike
+    # get_budget_spend, which is one department at a time for the budget
+    # rows above) — this is the actual total stock spend for the period.
+    from app.models.purchase import Purchase
+    raw_purchases = db.session.query(func.sum(Purchase.actual_cost)).filter(
+        Purchase.timestamp_added >= month_start,
+        Purchase.timestamp_added < month_end,
+    ).scalar()
+    purchase_expenses = Decimal(str(raw_purchases)) if raw_purchases is not None else Decimal("0")
+
+    # Payroll: reuses the same calculation PayrollDraftScreen shows per
+    # employee (app/services/payroll.py) — net_pay is None for anyone with
+    # no wage_rate set on their profile yet, which counts as 0 here (an
+    # honest reflection of real data, not a bug: payroll can't estimate a
+    # cost nobody has recorded).
+    from app.services.payroll import calculate_payroll
+    payroll_rows = calculate_payroll(month_start, month_end)
+    payroll_cost = sum(
+        (Decimal(r["net_pay"]) for r in payroll_rows if r.get("net_pay") is not None),
+        Decimal("0"),
+    )
+
+    total_expenses = purchase_expenses + payroll_cost
+    profit_month    = revenue_month - total_expenses
+
     return jsonify({
         "period": period_str,
         "revenue": {
@@ -400,6 +426,12 @@ def finance_dashboard():
             "week":  str(revenue_week),
             "month": str(revenue_month),
         },
+        "expenses": {
+            "purchases": str(purchase_expenses),
+            "payroll":   str(payroll_cost),
+            "total":     str(total_expenses),
+        },
+        "profit_month":         str(profit_month),
         "budgets":              budget_rows,
         "open_shortfalls":      open_shortfalls,
         "no_receipt_purchases": no_receipt_purchases,
