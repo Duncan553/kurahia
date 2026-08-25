@@ -10,7 +10,12 @@ interface PurchaseRequest {
   item_name: string
   item_id: string | null
   quantity: string
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'FULFILLED'
+  // PROPOSED = manager has attached a cost estimate, still awaiting the
+  // owner's decision — approve_request (app/inventory/purchases.py) accepts
+  // requests in PENDING or PROPOSED. This is the normal, expected path (a
+  // request almost always has an estimate attached before reaching the
+  // owner), so it has to be treated the same as PENDING everywhere below.
+  status: 'PENDING' | 'PROPOSED' | 'APPROVED' | 'REJECTED' | 'FULFILLED'
   created_at: string
   requested_by: string
   department: string
@@ -42,7 +47,11 @@ function timeAgo(iso: string) {
 function statusBadge(s: string): import('@shared').StatusValue {
   if (s === 'APPROVED' || s === 'FULFILLED') return 'confirmed'
   if (s === 'REJECTED') return 'failed'
-  return 'pending'
+  return 'pending'  // PENDING or PROPOSED — both still awaiting a decision
+}
+
+function isActionable(status: string): boolean {
+  return status === 'PENDING' || status === 'PROPOSED'
 }
 
 // ── Approval drawer ───────────────────────────────────────────────────────────
@@ -70,7 +79,7 @@ function ApprovalDrawer({
     onError: e => addToast({ type: 'error', message: extractErr(e) }),
   })
 
-  const isPending = request.status === 'PENDING'
+  const isPending = isActionable(request.status)
 
   return (
     <div className="space-y-5">
@@ -196,7 +205,7 @@ function RequestCard({
   req: PurchaseRequest
   onSelect: () => void
 }) {
-  const isPending = req.status === 'PENDING'
+  const isPending = isActionable(req.status)
   const hasCost = req.estimated_cost !== null
 
   return (
@@ -254,10 +263,11 @@ export default function PurchaseApprovalsScreen() {
 
   const filtered = (data ?? []).filter(r => {
     if (tab === 'all') return true
+    if (tab === 'pending') return isActionable(r.status)  // PENDING or PROPOSED
     return r.status.toLowerCase() === tab
   })
 
-  const pendingCount = (data ?? []).filter(r => r.status === 'PENDING').length
+  const pendingCount = (data ?? []).filter(r => isActionable(r.status)).length
 
   return (
     <div className="p-4 max-w-3xl mx-auto">
