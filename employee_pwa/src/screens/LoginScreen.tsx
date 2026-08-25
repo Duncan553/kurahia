@@ -98,7 +98,25 @@ export default function LoginScreen() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-ink-tertiary">
+        {/* /pin was only ever reached via sign-out (clearAuth() + navigate('/pin')
+            in ClockScreen/ProfileScreen/AppLayout) — a cold start, first launch of
+            the day, or the PWA being fully closed and reopened had no path to it
+            at all. Shared-tablet staff who already have a PIN set were stuck
+            typing their full password every single time, which defeats most of
+            the point of PIN login existing (docs/FRONTEND_DESIGN.md's "Shared
+            tablet pattern"). */}
+        <p className="mt-4 text-center text-sm text-ink-tertiary">
+          Already set up your PIN?{' '}
+          <button
+            type="button"
+            onClick={() => navigate('/pin')}
+            className="text-primary-main hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main rounded"
+          >
+            Use PIN instead
+          </button>
+        </p>
+
+        <p className="mt-3 text-center text-sm text-ink-tertiary">
           New staff?{' '}
           <button
             type="button"
