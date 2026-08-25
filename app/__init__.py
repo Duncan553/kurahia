@@ -139,7 +139,7 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(card_gateway_bp)
 
     from app.hr import (profiles_bp, wifi_bp, shifts_bp, clock_bp,
-                        leave_bp, absence_bp, attendance_bp, performance_bp)
+                        leave_bp, absence_bp, attendance_bp, performance_bp, roster_bp)
     app.register_blueprint(profiles_bp)
     app.register_blueprint(wifi_bp)
     app.register_blueprint(shifts_bp)
@@ -148,6 +148,7 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(absence_bp)
     app.register_blueprint(attendance_bp)
     app.register_blueprint(performance_bp)
+    app.register_blueprint(roster_bp)
 
     from app.bookings import (resources_bp, bookings_bp, deposits_bp,
                                waivers_bp, guests_bp, dashboard_bp)
