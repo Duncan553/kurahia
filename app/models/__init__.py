@@ -62,6 +62,7 @@ from .cleaning_status import CleaningStatus, CleaningStatusEnum, VALID_CLEANING_
 from .lost_found import LostFound, LostFoundStatus
 from .supplier import Supplier
 from .incident import Incident, IncidentSeverity
+from .station_roster import StationRoster
 
 __all__ = [
     "Department", "Role", "User", "AuditLog",
@@ -118,4 +119,5 @@ __all__ = [
     "LostFound", "LostFoundStatus",
     "Supplier",
     "Incident", "IncidentSeverity",
+    "StationRoster",
 ]

@@ -136,6 +136,13 @@ export default function ManagerScreen() {
         <circle cx="15" cy="15" r="1.5" stroke="currentColor" strokeWidth="1.5"/>
       </svg>
     ) },
+    { label: 'Roster', desc: 'Put staff on a station for today', path: '/manager/roster', svg: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <rect x="2" y="4" width="16" height="13" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+        <path d="M6 2v4M14 2v4M2 9h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M6.5 13h3M6.5 15.5h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ) },
   ]
 
   return (

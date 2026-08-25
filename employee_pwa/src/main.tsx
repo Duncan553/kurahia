@@ -7,8 +7,9 @@ import { ErrorBoundary } from '@shared'
 import { MotionConfig } from 'framer-motion'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { registerSW } from 'virtual:pwa-register'
+import api from './lib/axios'
 import './index.css'
 
 // Service worker: auto-updates on new deploy (skipWaiting in sw.ts)
@@ -68,6 +69,7 @@ const CashReconScreen = lazy(() => import('./screens/CashReconScreen'))
 const LeaveApprovalScreen = lazy(() => import('./screens/LeaveApprovalScreen'))
 const ShiftScreen = lazy(() => import('./screens/ShiftScreen'))
 const AttendanceScreen = lazy(() => import('./screens/AttendanceScreen'))
+const RosterScreen = lazy(() => import('./screens/RosterScreen'))
 const PurchaseReqScreen = lazy(() => import('./screens/PurchaseReqScreen'))
 const FrontDeskScreen = lazy(() => import('./screens/FrontDeskScreen'))
 const HeadChefScreen = lazy(() => import('./screens/HeadChefScreen'))
@@ -97,8 +99,17 @@ import RegisterScreen from './screens/RegisterScreen'
 function HomeRedirect() {
   const user = useAuthStore((s) => s.user)
   const station = localStorage.getItem('kurahia:station_mode') === 'true'
+  // Today's roster overrides the account's fixed department — same source
+  // AppLayout uses, so a manager's reassignment for today is respected here
+  // too, not just on subsequent navigation. See AppLayout.tsx.
+  const { data: rosterToday } = useQuery<{ department: string | null }>({
+    queryKey: ['roster', 'me'],
+    queryFn: () => api.get('/hr/roster/me').then(r => r.data),
+    staleTime: 5 * 60_000,
+    enabled: !!user,
+  })
   if (!user) return <Navigate to='/login' replace />
-  const dept = (user.department ?? '').toLowerCase() // DB names are Title-Case ("Kitchen"), so lowercase before matching
+  const dept = (rosterToday?.department ?? user.department ?? '').toLowerCase() // DB names are Title-Case ("Kitchen"), so lowercase before matching
   const level = user.role_level ?? 0
   if (station && level < 5) {
     if (dept.includes('kitchen')) return <Navigate to='/pos/kitchen' replace />
@@ -224,6 +235,7 @@ const router = createBrowserRouter([
             { path: '/manager/attendance', element: <AttendanceScreen />    },
             { path: '/manager/purchases',  element: <PurchaseReqScreen />   },
             { path: '/manager/front-desk', element: <FrontDeskScreen />     },
+            { path: '/manager/roster',     element: <RosterScreen />        },
           ],
         },
       ],    // end AppLayout children
