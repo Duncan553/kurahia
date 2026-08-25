@@ -87,10 +87,12 @@ export default function HousekeepingScreen() {
     refetchInterval: 60_000,
   })
 
-  // Fetch staff list for assignment dropdown (manager only)
+  // Fetch staff list for assignment dropdown (manager only).
+  // Was hitting '/users' (404, no such route — real prefix is '/auth/users')
+  // so this dropdown has always rendered empty for every manager, silently.
   const { data: staff = [] } = useQuery<StaffUser[]>({
     queryKey: ['housekeeping', 'staff'],
-    queryFn: () => api.get<StaffUser[]>('/users').then(r => r.data),
+    queryFn: () => api.get<StaffUser[]>('/auth/users').then(r => r.data),
     enabled: isManager,
     staleTime: 120_000,
   })

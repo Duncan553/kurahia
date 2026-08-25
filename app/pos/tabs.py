@@ -20,11 +20,19 @@ from app.services.tab import get_tab_balance, is_tab_closable
 
 tabs_bp = Blueprint("tabs", __name__, url_prefix="/tabs")
 
+MANAGER_LEVEL = 5
+
 
 @tabs_bp.get("")
 @require_active_user
 def list_tabs():
-    """List tabs. Optional filters: status=OPEN|CLOSED, mine=true, tab_type=WALK_IN|VILLA|BAND."""
+    """List tabs. Optional filters: status=OPEN|CLOSED, mine=true, tab_type=WALK_IN|VILLA|BAND.
+
+    mine=true means "assigned to me" (assigned_to_id) for anyone below manager
+    level — a waiter's own Tables screen. Manager+ passing mine=true still get
+    "opened by me" (assigned_to_id doesn't apply the same way to a manager
+    covering the whole floor); everyone else sees whatever they're assigned.
+    """
     actor     = db.session.get(User, get_jwt_identity())
     status    = (request.args.get("status") or "").upper() or None
     mine      = request.args.get("mine", "false").lower() == "true"
@@ -36,7 +44,10 @@ def list_tabs():
             return jsonify({"error": f"status must be one of {list(TabStatus.__members__)}."}), 400
         query = query.filter_by(status=status)
     if mine:
-        query = query.filter_by(opened_by_id=actor.id)
+        if actor.role.level < MANAGER_LEVEL:
+            query = query.filter_by(assigned_to_id=actor.id)
+        else:
+            query = query.filter_by(opened_by_id=actor.id)
     if tab_type:
         if tab_type not in TabType.__members__:
             return jsonify({"error": f"tab_type must be one of {list(TabType.__members__)}."}), 400
@@ -45,13 +56,15 @@ def list_tabs():
     tabs = query.order_by(Tab.opened_at_utc.desc()).all()
     return jsonify([
         {
-            "id":        t.id,
-            "reference": t.reference,
-            "tab_type":  t.tab_type,
-            "status":    t.status,
-            "opened_at": t.opened_at_utc.isoformat(),
-            "opened_by": t.opened_by.username if t.opened_by else None,
-            "balance":   str(get_tab_balance(t.id)),
+            "id":           t.id,
+            "reference":    t.reference,
+            "tab_type":     t.tab_type,
+            "status":       t.status,
+            "opened_at":    t.opened_at_utc.isoformat(),
+            "opened_by":    t.opened_by.username if t.opened_by else None,
+            "assigned_to":  t.assigned_to.username if t.assigned_to else None,
+            "assigned_to_id": t.assigned_to_id,
+            "balance":      str(get_tab_balance(t.id)),
         }
         for t in tabs
     ]), 200
@@ -105,6 +118,8 @@ def get_tab(tab_id):
         "status":      tab.status,
         "opened_at":   tab.opened_at_utc.isoformat(),
         "opened_by":   tab.opened_by.username if tab.opened_by else None,
+        "assigned_to": tab.assigned_to.username if tab.assigned_to else None,
+        "assigned_to_id": tab.assigned_to_id,
         "balance":     str(balance),
         "charges":  [{"id": c.id, "description": c.description, "amount": str(c.amount),
                       "created_at": c.created_at.isoformat()} for c in charges],
@@ -124,6 +139,44 @@ def get_tab(tab_id):
             }
             for o in orders
         ],
+    }), 200
+
+
+@tabs_bp.post("/<tab_id>/assign")
+@require_active_user
+def assign_tab(tab_id):
+    """Manager assigns (or reassigns) this table to a waiter. Same shape as
+    POST /housekeeping/assign — one active assignment at a time, reassignable,
+    history lives in AuditLog rather than a separate table."""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager access required to assign waiters."}), 403
+
+    tab = db.session.get(Tab, tab_id)
+    if not tab:
+        return jsonify({"error": "Tab not found."}), 404
+    if tab.status == TabStatus.CLOSED.value:
+        return jsonify({"error": "Cannot assign a closed tab."}), 400
+
+    data        = request.get_json(silent=True) or {}
+    employee_id = data.get("employee_id")
+    if not employee_id:
+        return jsonify({"error": "employee_id is required."}), 400
+
+    employee = db.session.get(User, employee_id)
+    if not employee or not employee.is_active:
+        return jsonify({"error": "Employee not found or disabled."}), 404
+
+    with db.session.begin_nested():
+        tab.assigned_to_id = employee.id
+        tab.assigned_at_utc = datetime.now(timezone.utc)
+
+    AuditLog.log(actor=actor.username, action="tab.assign", target=tab.id,
+                 details=f"assigned {employee.username} to {tab.reference or tab.id[:8]}")
+    db.session.commit()
+    return jsonify({
+        "id": tab.id, "assigned_to": employee.username, "assigned_to_id": employee.id,
+        "assigned_at": tab.assigned_at_utc.isoformat(),
     }), 200
 
 

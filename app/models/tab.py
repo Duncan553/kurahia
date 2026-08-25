@@ -37,8 +37,16 @@ class Tab(db.Model):
     closed_at_utc = db.Column(db.DateTime(timezone=True), nullable=True)
     closed_by_id  = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
 
-    opened_by = db.relationship("User", foreign_keys=[opened_by_id], lazy="select")
-    closed_by = db.relationship("User", foreign_keys=[closed_by_id], lazy="select")
+    # Which waiter this table is currently assigned to (manager-set). Nullable —
+    # a freshly opened tab has no assignment until a manager assigns one.
+    # Same shape as CleaningStatus.assigned_to_id/assigned_at (app/models/cleaning_status.py) —
+    # one active assignment at a time, reassignable, history lives in AuditLog.
+    assigned_to_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
+    assigned_at_utc = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    opened_by   = db.relationship("User", foreign_keys=[opened_by_id], lazy="select")
+    closed_by   = db.relationship("User", foreign_keys=[closed_by_id], lazy="select")
+    assigned_to = db.relationship("User", foreign_keys=[assigned_to_id], lazy="select")
 
     def __repr__(self):
         return f"<Tab {self.reference or self.id[:8]} {self.status}>"

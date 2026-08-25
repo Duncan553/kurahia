@@ -22,7 +22,8 @@ from app.models.audit_log import AuditLog
 
 users_bp = Blueprint("users", __name__, url_prefix="/auth/users")
 
-OWNER_LEVEL = 10
+OWNER_LEVEL   = 10
+MANAGER_LEVEL = 5
 
 
 @users_bp.post("")
@@ -141,7 +142,14 @@ def list_users():
     if not include_disabled:
         query = query.filter_by(is_active=True)
 
-    if actor.role.level < 10 and actor.department_id:
+    # Department leads (level 3, e.g. head_chef/bar_lead) only need to see
+    # their own team — scope them. Manager (5) and owner (10) run the whole
+    # floor across every department, so neither gets scoped: a manager whose
+    # own department is "Management" would otherwise never see a single
+    # waiter/kitchen/bar/housekeeping user, which broke every cross-department
+    # assignment flow (waiter table assignment, housekeeping assignment) the
+    # moment the actor was a manager rather than the owner.
+    if actor.role.level < MANAGER_LEVEL and actor.department_id:
         query = query.filter_by(department_id=actor.department_id)
 
     return jsonify([
