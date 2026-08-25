@@ -15,6 +15,7 @@ interface MenuItem {
 interface OrderItem { id: string; name: string | null; quantity: string; status: string; notes: string | null }
 interface TabDetail {
   id: string; reference: string | null; status: string; balance: string
+  tab_type: string
   charges: { id: string; description: string; amount: string }[]
   payments: { id: string; method: string; amount: string }[]
   orders: { id: string; status: string; items: OrderItem[] }[]
@@ -103,18 +104,25 @@ export default function WaiterTabDetailScreen() {
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
     // NONE = self-serve items with no kitchen/bar prep step (spa & gym services,
-    // water-activity add-ons). StationBadge already renders these as "Self-serve";
-    // this filter used to drop them entirely, so a spa/water tab charge silently
-    // showed the wrong (food/drink) menu instead — see StationBadge above.
+    // water-activity add-ons). Fetch the superset here; which of them are
+    // actually relevant depends on what kind of tab this is — see stationItems.
     select: (all) => all.filter(i => i.prep_station === 'KITCHEN' || i.prep_station === 'BAR' || i.prep_station === 'NONE'),
   })
 
   // ── Derived ─────────────────────────────────────────────────────────────
 
   const stationItems = useMemo(() => {
-    if (activeStation === 'ALL') return items
-    return items.filter(i => i.prep_station === activeStation)
-  }, [items, activeStation])
+    // A waiter serving a table (WALK_IN) or delivering to a villa (VILLA,
+    // billed on that villa's own tab — same food/drink service, different
+    // location) only ever orders food and bar. NONE (self-serve spa/water
+    // items) only belongs here when the tab came from redeeming a guest's
+    // wristband (BAND) — the one path spa/water staff reach this same screen
+    // through, via ServicePayScreen's band lookup. Mixing water-activity
+    // tickets into a waiter's own table menu was a real reported bug.
+    const relevant = tab?.tab_type === 'BAND' ? items : items.filter(i => i.prep_station !== 'NONE')
+    if (activeStation === 'ALL') return relevant
+    return relevant.filter(i => i.prep_station === activeStation)
+  }, [items, activeStation, tab?.tab_type])
 
   const categories = useMemo(() => {
     const cats = [...new Set(stationItems.map(i => i.category ?? 'Other'))]
