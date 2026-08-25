@@ -132,10 +132,12 @@ def create_entry():
 @calendar_bp.get("")
 @require_active_user
 def list_entries():
-    actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
-
+    # Read-only, all staff — CalendarScreen.tsx is registered in main.tsx as a
+    # universal route with no RoleGate (peak dates/holidays affect everyone's
+    # shifts, not just managers), but this endpoint required MANAGER_LEVEL —
+    # every non-manager employee hit a 403 on every load, 100% of the time.
+    # Creating/disabling entries (below) is correctly manager-only; only the
+    # read side had the wrong gate.
     from_dt = _parse_dt(request.args.get("from"))
     to_dt   = _parse_dt(request.args.get("to"))
     q = db.session.query(CalendarEntry).filter_by(is_active=True)
