@@ -152,7 +152,6 @@ const router = createBrowserRouter([
 
         // ── Universal: all staff ──────────────────────────────────
         { path: '/clock',           element: <ClockScreen />         },
-        { path: '/schedule',        element: <ScheduleScreen />      },
         { path: '/notifications',   element: <NotificationsScreen /> },
         { path: '/profile',         element: <ProfileScreen />       },
         { path: '/conduct',         element: <ConductScreen />       },
@@ -223,6 +222,13 @@ const router = createBrowserRouter([
             // all, so a direct visit 403'd with a misleading "check your
             // connection" message instead of "Access restricted."
             { path: '/performance',                element: <PerformanceScreen />     },
+            // Same bug, same fix: GET /hr/shifts is manager-only on the
+            // backend (app/hr/shifts.py) and the nav item already hides this
+            // for level<5 — but the route itself had no gate, so a level-1
+            // account landing here directly (bookmark, back-button, typed
+            // URL) got a permanently-blank page (unhandled 403) instead of
+            // "Access restricted."
+            { path: '/schedule',                   element: <ScheduleScreen />        },
             { path: '/inventory/count',            element: <InventoryCountScreen />  },
             { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
             { path: '/equipment/maintenance',      element: <MaintenanceLogScreen />  },
