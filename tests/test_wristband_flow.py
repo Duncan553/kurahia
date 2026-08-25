@@ -16,8 +16,26 @@ from app.services.tab import get_tab_balance
 
 class TestWristbandFlow:
     def _get_gate_token(self, client):
-        """Login as a gate-level user (owner has gate+ access)."""
+        """Login as a gate-level user (owner has gate+ access). Also gives
+        owner1 a profile + clocks them in — /orders (used by
+        test_charge_reduces_credit) requires require_clocked_in."""
+        import uuid
+        from datetime import datetime, timezone
+        from app.models.employee_profile import EmployeeProfile
+        from app.models.clock_event import ClockEvent, ClockEventType
         rv = client.post("/auth/login", json={"username": "owner1", "password": "OwnerPass1!"})
+        owner = db.session.query(User).filter_by(username="owner1").first()
+        profile = db.session.query(EmployeeProfile).filter_by(user_id=owner.id).first()
+        if not profile:
+            profile = EmployeeProfile(user_id=owner.id, full_name="Test Owner", phone="+254700000099")
+            db.session.add(profile)
+            db.session.commit()
+        db.session.add(ClockEvent(
+            employee_id=profile.id, event_type=ClockEventType.CLOCK_IN.value,
+            occurred_at_utc=datetime.now(timezone.utc),
+            idempotency_key=str(uuid.uuid4()),
+        ))
+        db.session.commit()
         return rv.get_json()["access_token"]
 
     def _issue_band(self, client, token):

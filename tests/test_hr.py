@@ -100,9 +100,14 @@ class TestEmployeeProfiles:
         from app.extensions import db
         with app.app_context():
             owner = db.session.query(User).filter_by(username="owner1").first()
-            profile = EmployeeProfile(user_id=owner.id, full_name="Test Owner", phone="+254700000099")
-            db.session.add(profile)
-            db.session.commit()
+            # owner_token already creates this profile (so require_clocked_in
+            # passes on POS endpoints elsewhere) — reuse it instead of a second
+            # insert, which would violate EmployeeProfile.user_id's unique constraint.
+            profile = db.session.query(EmployeeProfile).filter_by(user_id=owner.id).first()
+            if not profile:
+                profile = EmployeeProfile(user_id=owner.id, full_name="Test Owner", phone="+254700000099")
+                db.session.add(profile)
+                db.session.commit()
             pid = profile.id
         rv = client.post(f"/hr/profiles/{pid}/disable", headers=auth(owner_token))
         assert rv.status_code == 403
@@ -249,11 +254,16 @@ class TestClockInOut:
         assert rv.status_code == 200
         assert rv.get_json()["duplicate"] is True
 
-    def test_no_profile_blocks_clock_in(self, client, manager_token, wifi_allowed):
-        # manager1 has no employee profile yet
+    def test_no_profile_blocks_clock_in(self, client, wifi_allowed):
+        # manager1 has no employee profile yet — deliberately NOT using the
+        # manager_token fixture here, since it now creates one (so POS/payment
+        # tests elsewhere pass require_clocked_in). Raw login keeps this test's
+        # actual premise (no profile) true.
+        rv = client.post("/auth/login", json={"username": "manager1", "password": "ManagerPass1!"})
+        token = rv.get_json()["access_token"]
         rv = client.post("/hr/clock-in",
                          json={},
-                         headers=auth(manager_token),
+                         headers=auth(token),
                          environ_base={"REMOTE_ADDR": "127.0.0.1"})
         assert rv.status_code == 403
 
@@ -383,11 +393,14 @@ class TestAbsenceNotices:
         assert rv.status_code == 200
         assert len(rv.get_json()) >= 1
 
-    def test_no_profile_blocks_notice(self, client, manager_token):
-        # manager1 has no employee profile
+    def test_no_profile_blocks_notice(self, client):
+        # manager1 has no employee profile — raw login, not the manager_token
+        # fixture, for the same reason as test_no_profile_blocks_clock_in above.
+        rv = client.post("/auth/login", json={"username": "manager1", "password": "ManagerPass1!"})
+        token = rv.get_json()["access_token"]
         rv = client.post("/hr/absence-notices", json={
             "notice_type": "ABSENT",
-        }, headers=auth(manager_token))
+        }, headers=auth(token))
         assert rv.status_code == 403
 
 

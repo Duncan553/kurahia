@@ -42,15 +42,19 @@ def event_type(app):
 
 @pytest.fixture
 def employee_profile(app):
-    """EmployeeProfile for waiter1 — needed for assignments and notification delivery."""
+    """EmployeeProfile for waiter1 — needed for assignments and notification delivery.
+    Idempotent: waiter_token (conftest.py) may have already created this same
+    row so require_clocked_in passes elsewhere in the same test."""
     from app.models.employee_profile import EmployeeProfile
     from app.models.user import User
     from app.extensions import db
     user = db.session.query(User).filter_by(username="waiter1").first()
-    profile = EmployeeProfile(user_id=user.id, full_name="Test Waiter",
-                               phone="+254700000001")
-    db.session.add(profile)
-    db.session.commit()
+    profile = db.session.query(EmployeeProfile).filter_by(user_id=user.id).first()
+    if not profile:
+        profile = EmployeeProfile(user_id=user.id, full_name="Test Waiter",
+                                   phone="+254700000001")
+        db.session.add(profile)
+        db.session.commit()
     return profile
 
 

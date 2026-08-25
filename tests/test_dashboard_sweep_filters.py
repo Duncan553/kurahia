@@ -20,9 +20,15 @@ class TestAttendanceDeptFilter:
         bar = db.session.query(Department).filter_by(name="Bar").first()
 
         mgr = db.session.query(User).filter_by(username="manager1").first()
-        p1 = EmployeeProfile(user_id=mgr.id, full_name="Chef A", phone="+254700000010")
-        db.session.add(p1)
-        db.session.flush()
+        # Idempotent — manager_token (conftest.py) already creates a profile
+        # for manager1 so it passes require_clocked_in elsewhere; reuse it
+        # instead of a second insert (unique constraint on user_id). Nothing
+        # below asserts on full_name, so which one "wins" doesn't matter.
+        p1 = db.session.query(EmployeeProfile).filter_by(user_id=mgr.id).first()
+        if not p1:
+            p1 = EmployeeProfile(user_id=mgr.id, full_name="Chef A", phone="+254700000010")
+            db.session.add(p1)
+            db.session.flush()
 
         from app.services.business_day import business_day_bounds_today
         day_start, day_end = business_day_bounds_today()
