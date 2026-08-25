@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { api } from '../lib/axios'
+import api from '../lib/axios'
 import { useToastStore } from '@shared'
 import { playOrderAlert, isMuted } from '../lib/audio'
 
