@@ -1,11 +1,73 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ResponsiveContainer, BarChart, Bar, Tooltip } from 'recharts'
 import { RequireRole } from '../components/AuthGate'
 import { useAuthStore } from '../stores/authStore'
-import { ErrorBoundary } from '@shared'
+import { ErrorBoundary, Modal, Button, useToastStore } from '@shared'
 import api from '../lib/axios'
+
+const extractErr = (e: unknown) =>
+  (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
+
+/** Set a department's budget for the current month. Manager+ per the backend
+ * (app/finance/budgets.py) — this used to be owner-only with no UI anywhere
+ * to do it at all. Kept as a small modal off the existing Budget Burn tile
+ * rather than a whole page, since it's a rare, quick action. */
+function SetBudgetModal({ open, onClose, period, departments }: {
+  open: boolean; onClose: () => void; period: string; departments: { id: string; name: string }[]
+}) {
+  const qc = useQueryClient()
+  const addToast = useToastStore(s => s.addToast)
+  const [deptId, setDeptId] = useState('')
+  const [amount, setAmount] = useState('')
+
+  const setBudgetMut = useMutation({
+    mutationFn: () => api.post('/finance/budgets', { department_id: deptId, period, amount }),
+    onSuccess: () => {
+      addToast({ type: 'success', message: 'Budget set.' })
+      qc.invalidateQueries({ queryKey: ['mgr-budgets'] })
+      setDeptId(''); setAmount(''); onClose()
+    },
+    onError: e => addToast({ type: 'error', message: extractErr(e) }),
+  })
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Set Budget — ${period}`} size="sm">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs font-semibold text-ink-secondary mb-1">Department</label>
+          <select
+            style={{ colorScheme: 'dark' }}
+            value={deptId}
+            onChange={e => setDeptId(e.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+              focus:outline-none focus:ring-2 focus:ring-primary-main"
+          >
+            <option value="">Select department...</option>
+            {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-ink-secondary mb-1">Budget (KSh)</label>
+          <input
+            type="number" min="0" value={amount}
+            onChange={e => setAmount(e.target.value)}
+            placeholder="e.g. 150000"
+            className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+              placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-primary-main"
+          />
+        </div>
+        <Button variant="primary" className="w-full"
+          disabled={!deptId || !amount || setBudgetMut.isPending}
+          onClick={() => setBudgetMut.mutate()}>
+          {setBudgetMut.isPending ? 'Setting…' : 'Set Budget'}
+        </Button>
+      </div>
+    </Modal>
+  )
+}
 
 interface InvItem {
   id: string; name: string; unit: string; current_stock: string
@@ -38,6 +100,7 @@ function G({ children, className = '', onClick }: {
 export default function ManagerScreen() {
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
+  const [showBudgetModal, setShowBudgetModal] = useState(false)
 
   const { data: items = [] } = useQuery<InvItem[]>({
     queryKey: ['mgr-inventory'],
@@ -259,7 +322,13 @@ export default function ManagerScreen() {
             <ErrorBoundary level="tile">
               <G>
                 <div className="p-5">
-                  <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary mb-1">Budget Burn</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[11px] font-semibold tracking-wider uppercase text-ink-tertiary">Budget Burn</p>
+                    <button onClick={() => setShowBudgetModal(true)}
+                      className="text-[10px] text-primary-main hover:underline font-semibold">
+                      + Set Budget
+                    </button>
+                  </div>
                   <p className="text-[10px] text-ink-tertiary mb-3">How much of the monthly budget each department has spent</p>
                   {budgets.length === 0 ? <p className="text-sm text-ink-tertiary/60">No budgets set</p> : (
                     <div className="space-y-3">
@@ -330,6 +399,13 @@ export default function ManagerScreen() {
 
         </motion.div>
       </div>
+
+      <SetBudgetModal
+        open={showBudgetModal}
+        onClose={() => setShowBudgetModal(false)}
+        period={period}
+        departments={meta?.departments ?? []}
+      />
     </RequireRole>
   )
 }
