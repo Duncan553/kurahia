@@ -215,3 +215,62 @@ def test_change_password_unauthenticated(client):
         json={"current_password": "ManagerPass1!", "new_password": "NewPass9999!"},
     )
     assert rv.status_code == 401
+
+
+# ── 7. Self-registration ────────────────────────────────────────────────────────
+# No coverage existed for this endpoint before — it shipped with three stacked
+# bugs (missing Role import, frontend sending fake department ids, EmployeeProfile
+# built with user.id read before the User row was flushed) that a full register
+# attempt would have caught immediately.
+
+def test_public_departments_endpoint_needs_no_auth(client):
+    """RegisterScreen has no token yet — this must work with zero auth headers."""
+    rv = client.get("/auth/departments")
+    assert rv.status_code == 200
+    depts = rv.get_json()
+    assert len(depts) > 0
+    assert set(depts[0].keys()) == {"id", "name"}
+
+
+def test_register_creates_pending_inactive_account(app, client):
+    dept_id = client.get("/auth/departments").get_json()[0]["id"]
+    rv = client.post("/auth/register", json={
+        "username": "newstaffmember", "password": "testpass123", "pin": "1234",
+        "full_name": "New Staff Member", "phone": "+254700111222",
+        "department_id": dept_id,
+    })
+    assert rv.status_code == 201
+    body = rv.get_json()
+    assert body["status"] == "pending_approval"
+
+    with app.app_context():
+        from app.models.employee_profile import EmployeeProfile
+        user = db.session.query(User).filter_by(username="newstaffmember").first()
+        assert user is not None
+        assert user.is_active is False  # awaits manager approval — kill-switch already blocks login
+        profile = db.session.query(EmployeeProfile).filter_by(user_id=user.id).first()
+        assert profile is not None
+        assert profile.full_name == "New Staff Member"
+
+
+def test_register_rejects_fake_department_id(client):
+    """The exact bug this endpoint used to have: a made-up id (what the old
+    hardcoded frontend list sent) must 404, not 500."""
+    rv = client.post("/auth/register", json={
+        "username": "faildept", "password": "testpass123", "pin": "1234",
+        "full_name": "Fail Dept", "phone": "+254700111333",
+        "department_id": "kitchen",
+    })
+    assert rv.status_code == 404
+
+
+def test_register_duplicate_username_rejected(client):
+    dept_id = client.get("/auth/departments").get_json()[0]["id"]
+    payload = {
+        "username": "dupereg", "password": "testpass123", "pin": "1234",
+        "full_name": "Dupe Reg", "phone": "+254700111444", "department_id": dept_id,
+    }
+    rv = client.post("/auth/register", json=payload)
+    assert rv.status_code == 201
+    rv = client.post("/auth/register", json=payload)
+    assert rv.status_code == 409

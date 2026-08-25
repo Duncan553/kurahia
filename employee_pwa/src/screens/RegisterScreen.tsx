@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Button, Input, Select, FormField, FormSection, HelpTooltip } from '@shared'
 import api from '../lib/axios'
@@ -17,24 +18,22 @@ interface FormData {
   confirmPin: string
 }
 
-const DEPARTMENTS = [
-  { id: 'kitchen', name: 'Kitchen' },
-  { id: 'bar', name: 'Bar' },
-  { id: 'front-of-house', name: 'Front of House' },
-  { id: 'gate', name: 'Gate / Security' },
-  { id: 'villa', name: 'Villa / Housekeeping' },
-  { id: 'water', name: 'Water Activities' },
-  { id: 'spa', name: 'Spa & Wellness' },
-  { id: 'maintenance', name: 'Maintenance' },
-  { id: 'general', name: 'General' },
-]
+interface Department { id: string; name: string }
 
 export default function RegisterScreen() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
-  
+
+  // Public, unauthenticated — nobody has a token yet at signup. Real DB ids,
+  // not the hardcoded fake strings this used to send (which 404'd every time).
+  const { data: departments = [] } = useQuery<Department[]>({
+    queryKey: ['public-departments'],
+    queryFn: () => api.get<Department[]>('/auth/departments').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
+
   const [form, setForm] = useState<FormData>({
     username: '',
     password: '',
@@ -209,7 +208,7 @@ export default function RegisterScreen() {
                   onChange={e => updateField('departmentId', e.target.value)}
                 >
                   <option value="" disabled>Select your department</option>
-                  {DEPARTMENTS.map(d => (
+                  {departments.map(d => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </Select>
