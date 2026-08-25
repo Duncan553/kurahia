@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@source "../../shared_ui/src";
+@import "../../shared_ui/src/styles/tokens.css";
+
+@layer base {
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--font-size-base);
+    background: var(--color-cream-card);
+    color: var(--color-ink-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ── Spacing utilities (standardized, matches employee_pwa/owner_pwa) ── */
+.section-gap { margin-bottom: var(--space-xl); }
+.card-gap { gap: var(--space-md); }
+.inner-gap { gap: var(--space-sm); }
+.card-pad { padding: var(--space-lg); }
