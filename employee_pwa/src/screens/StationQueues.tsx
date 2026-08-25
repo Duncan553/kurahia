@@ -3,7 +3,9 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/axios'
 import { useToastStore } from '@shared'
-import { playOrderAlert, isMuted } from '../lib/audio'
+import { playOrderAlert, isMuted, setMuted as setAudioMuted } from '../lib/audio'
+
+const MUTE_STORAGE_KEY = 'kurahia-audio-muted'
 
 type Station = 'KITCHEN' | 'BAR'
 
@@ -242,8 +244,14 @@ function OrderTicket({
 function StationBoard({ station }: { station: Station }) {
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
-  const [count, setCount] = useState(0)
-  const [muted, setMuted] = useState(isMuted)
+  // Was useState(isMuted) with a same-named local setMuted — it only ever
+  // updated this component's own UI state, never called lib/audio.ts's real
+  // setMuted(), so playOrderAlert()'s internal `muted` check never changed:
+  // the mute button toggled its icon but never actually muted anything.
+  const [muted, setLocalMuted] = useState(() => {
+    const stored = localStorage.getItem(MUTE_STORAGE_KEY)
+    return stored !== null ? stored === '1' : isMuted()
+  })
   const prevIdsRef = useRef<Set<string>>(new Set())
 
   const endpoint = station === 'KITCHEN' ? '/kitchen/queue' : '/bar/queue'
@@ -254,8 +262,12 @@ function StationBoard({ station }: { station: Station }) {
     queryFn: () => api.get(endpoint).then(r => r.data),
     refetchInterval: 15_000,
     staleTime: 0,
-    select: (data) => { setCount(data.length); return data },
   })
+
+  // lib/audio.ts's `muted` module variable starts false regardless of what
+  // was persisted last session — sync it once on mount so a previously-muted
+  // tablet doesn't start alerting again until someone re-taps the button.
+  useEffect(() => { setAudioMuted(muted) }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Audio alert on new items
   useEffect(() => {
@@ -321,7 +333,12 @@ function StationBoard({ station }: { station: Station }) {
           </div>
         </div>
         <button
-          onClick={() => { setMuted(!muted); localStorage.setItem('kurahia-audio-muted', muted ? '0' : '1') }}
+          onClick={() => {
+            const next = !muted
+            setLocalMuted(next)
+            setAudioMuted(next)  // the call that was missing — this is what playOrderAlert() actually checks
+            localStorage.setItem(MUTE_STORAGE_KEY, next ? '1' : '0')
+          }}
           className="p-2 rounded-lg glass-surface text-ink-tertiary hover:text-ink-primary"
           aria-label={muted ? 'Unmute alerts' : 'Mute alerts'}
         >
