@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
-import { Skeleton } from '@shared'
+import { Skeleton, Button, useToastStore } from '@shared'
 import api from '../lib/axios'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -161,11 +161,88 @@ function RevenueSection({ period }: { period: string }) {
 
 // ── Budget burn section ───────────────────────────────────────────────────────
 
+const extractErr = (e: unknown) =>
+  (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
+
+/** Set (or update) a department's budget for a period. Manager+ per the backend
+ * (app/finance/budgets.py) — was owner-only until this was explicitly widened;
+ * there was previously no UI for this at all anywhere in the app, despite the
+ * empty-state hint below pointing users at a "Finance → Budgets" flow that
+ * didn't exist. */
+function SetBudgetForm({ period }: { period: string }) {
+  const qc = useQueryClient()
+  const addToast = useToastStore(s => s.addToast)
+  const [deptId, setDeptId] = useState('')
+  const [amount, setAmount] = useState('')
+
+  const { data: meta } = useQuery<{ departments: { id: string; name: string }[] }>({
+    queryKey: ['auth-meta'],
+    queryFn: () => api.get('/auth/users/meta').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
+
+  const setBudgetMut = useMutation({
+    mutationFn: () => api.post('/finance/budgets', { department_id: deptId, period, amount }),
+    onSuccess: () => {
+      addToast({ type: 'success', message: 'Budget set.' })
+      qc.invalidateQueries({ queryKey: ['finance-budgets', period] })
+      setAmount('')
+    },
+    onError: e => addToast({ type: 'error', message: extractErr(e) }),
+  })
+
+  return (
+    <div className="glass-card rounded-2xl p-4 flex flex-wrap items-end gap-3">
+      <div className="flex-1 min-w-[140px]">
+        <label className="block text-[10px] font-semibold uppercase tracking-wider text-ink-tertiary mb-1">
+          Department
+        </label>
+        <select
+          style={{ colorScheme: 'dark' }}
+          value={deptId}
+          onChange={e => setDeptId(e.target.value)}
+          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+            focus:outline-none focus:ring-2 focus:ring-primary-main"
+        >
+          <option value="">Select department...</option>
+          {meta?.departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+        </select>
+      </div>
+      <div className="w-36">
+        <label className="block text-[10px] font-semibold uppercase tracking-wider text-ink-tertiary mb-1">
+          Budget (KSh) for {period}
+        </label>
+        <input
+          type="number" min="0" value={amount}
+          onChange={e => setAmount(e.target.value)}
+          placeholder="e.g. 150000"
+          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+            placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-primary-main"
+        />
+      </div>
+      <Button
+        variant="primary" size="sm"
+        disabled={!deptId || !amount || setBudgetMut.isPending}
+        onClick={() => setBudgetMut.mutate()}
+      >
+        {setBudgetMut.isPending ? 'Setting…' : 'Set Budget'}
+      </Button>
+    </div>
+  )
+}
+
 function BudgetSection({ period }: { period: string }) {
+  // Budgets are still only ever SET per month (SetBudgetForm below always
+  // uses the real YYYY-MM period) — this toggle only changes how they're
+  // viewed: GET /finance/budgets/status accepts a bare year and sums that
+  // year's monthly budgets/spend per department server-side.
+  const [granularity, setGranularity] = useState<'month' | 'year'>('month')
+  const viewPeriod = granularity === 'year' ? period.slice(0, 4) : period
+
   // /finance/budgets/status returns { period, budgets: BudgetRow[] }, not a bare array.
   const { data, isLoading } = useQuery<{ budgets: BudgetRow[]; period: string }>({
-    queryKey: ['finance-budgets', period],
-    queryFn: () => api.get(`/finance/budgets/status?period=${period}`).then(r => r.data),
+    queryKey: ['finance-budgets', viewPeriod],
+    queryFn: () => api.get(`/finance/budgets/status?period=${viewPeriod}`).then(r => r.data),
     staleTime: 5 * 60_000,
   })
   const rows = Array.isArray(data) ? data : (data?.budgets ?? [])
@@ -191,10 +268,25 @@ function BudgetSection({ period }: { period: string }) {
 
   return (
     <div className="space-y-3">
+      <SetBudgetForm period={period} />
+
+      {/* Monthly (this specific month) vs Yearly (that year's 12 months summed) */}
+      <div className="flex gap-1 bg-white/5 rounded-xl p-1 w-fit" role="tablist">
+        {(['month', 'year'] as const).map(g => (
+          <button key={g} role="tab" aria-selected={granularity === g}
+            onClick={() => setGranularity(g)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              granularity === g ? 'bg-white/10 text-ink-primary' : 'text-ink-secondary hover:text-ink-primary'
+            }`}>
+            {g === 'month' ? `Monthly (${period})` : `Yearly (${period.slice(0, 4)})`}
+          </button>
+        ))}
+      </div>
+
       {active.length === 0 ? (
         <div className="rounded-2xl border border-white/10 p-6 text-center">
-          <p className="text-sm text-ink-tertiary">No budgets set for this period.</p>
-          <p className="text-xs text-ink-tertiary mt-1">Add budgets via Finance → Budgets to track department spend.</p>
+          <p className="text-sm text-ink-tertiary">No budgets set for this {granularity === 'year' ? 'year' : 'period'} yet.</p>
+          <p className="text-xs text-ink-tertiary mt-1">Set one above to start tracking department spend.</p>
         </div>
       ) : (
         <>
