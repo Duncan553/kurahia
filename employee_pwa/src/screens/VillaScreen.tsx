@@ -180,14 +180,16 @@ export default function VillaScreen() {
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-[10px] text-ink-tertiary">Check-in</label>
-                          <input type="date" value={form.checkin}
+                          <input type="date"
+                            style={{ colorScheme: 'dark' }} value={form.checkin}
                             onChange={e => setForm(f => ({ ...f, checkin: e.target.value }))}
                             className="w-full rounded-lg glass-card bg-transparent px-3 py-2
                               text-xs text-ink-primary focus:outline-none focus:border-primary-main" />
                         </div>
                         <div>
                           <label className="text-[10px] text-ink-tertiary">Check-out</label>
-                          <input type="date" value={form.checkout}
+                          <input type="date"
+                            style={{ colorScheme: 'dark' }} value={form.checkout}
                             onChange={e => setForm(f => ({ ...f, checkout: e.target.value }))}
                             className="w-full rounded-lg glass-card bg-transparent px-3 py-2
                               text-xs text-ink-primary focus:outline-none focus:border-primary-main" />

@@ -126,6 +126,7 @@ export default function ReconciliationScreen() {
         <input
           id="recon-date"
           type="date"
+          style={{ colorScheme: 'dark' }}
           value={view.date}
           max={todayNairobi()}
           onChange={e => setView(v => ({ ...v, date: e.target.value }))}

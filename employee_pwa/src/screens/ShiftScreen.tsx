@@ -308,6 +308,7 @@ export default function ShiftScreen() {
               <label className="block text-sm font-medium text-ink-secondary mb-1.5">Start *</label>
               <input
                 type="datetime-local"
+                style={{ colorScheme: 'dark' }}
                 value={startDT}
                 onChange={(e) => setStartDT(e.target.value)}
                 className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5 text-sm
@@ -318,6 +319,7 @@ export default function ShiftScreen() {
               <label className="block text-sm font-medium text-ink-secondary mb-1.5">End *</label>
               <input
                 type="datetime-local"
+                style={{ colorScheme: 'dark' }}
                 value={endDT}
                 onChange={(e) => setEndDT(e.target.value)}
                 className="w-full rounded-xl glass-card bg-transparent px-3 py-2.5 text-sm

@@ -249,6 +249,7 @@ export default function MaintenanceLogScreen() {
                 </label>
                 <input
                   type="datetime-local"
+                  style={{ colorScheme: 'dark' }}
                   value={performedAt}
                   onChange={(e) => setPerformedAt(e.target.value)}
                   className="w-full rounded-xl glass-card bg-transparent px-4 py-3

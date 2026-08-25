@@ -276,6 +276,7 @@ export default function BookingsScreen() {
           <input
             id="booking-date"
             type="date"
+            style={{ colorScheme: 'dark' }}
             value={dateFilter}
             onChange={e => setDateFilter(e.target.value)}
             className="flex-1 text-xs border border-white/10 bg-transparent rounded-lg px-2 py-1.5
