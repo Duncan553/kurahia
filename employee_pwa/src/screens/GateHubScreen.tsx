@@ -148,7 +148,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
             whileTap={{ scale: 0.97 }}
             className={`min-h-[44px] rounded-xl text-xs font-semibold border transition-colors ${
               method === value
-                ? 'bg-ink-primary text-white border-ink-primary'
+                ? 'bg-ink-primary text-cream-card border-ink-primary'
                 : 'border-cream-alt text-ink-secondary hover:bg-cream-alt'
             }`}>
             {label}
