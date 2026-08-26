@@ -88,18 +88,35 @@ export default function ClockScreen() {
     return () => window.removeEventListener('online', handleOnline)
   }, [queryClient, addToast])
 
+  /**
+   * The direction is passed IN as a variable — it is never read from state
+   * inside the mutation.
+   *
+   * It used to be `isClockedIn ? '/hr/clock-out' : '/hr/clock-in'` computed
+   * inside mutationFn, which was silently broken: React Query runs `onMutate`
+   * BEFORE `mutationFn`, and onMutate below writes the optimistic status into
+   * the cache. That re-render flipped `isClockedIn`, so by the time mutationFn
+   * ran it read the value it had just optimistically changed and posted the
+   * OPPOSITE endpoint. Tapping "Clock Out" while on duty sent /hr/clock-in and
+   * appended a second CLOCK_IN — nobody could clock out, and because
+   * ClockEvent is an append-only ledger the duplicates corrupt hours-worked,
+   * which feeds payroll. Proven with a request trace:
+   *     handleTap  isClockedIn=true   data.status=CLOCK_IN
+   *     mutationFn isClockedIn=false  data.status=CLOCK_OUT   → POST /hr/clock-in
+   */
   const mutation = useMutation({
-    mutationFn: () =>
-      api.post<ClockResponse>(isClockedIn ? '/hr/clock-out' : '/hr/clock-in'),
+    mutationFn: (type: ClockEventType) =>
+      api.post<ClockResponse>(type === 'CLOCK_OUT' ? '/hr/clock-out' : '/hr/clock-in'),
 
-    onMutate: async () => {
+    onMutate: async (type: ClockEventType) => {
       await queryClient.cancelQueries({ queryKey: ['clock-status'] })
       const prev = queryClient.getQueryData<ClockStatus>(['clock-status'])
 
-      // Optimistically flip the local status
+      // Optimistically flip the local status — using the SAME `type` the
+      // request will use, not a re-read of state.
       const optimisticEvent: LastEvent = {
         id:          `opt-${Date.now()}`,
-        event_type:  isClockedIn ? 'CLOCK_OUT' : 'CLOCK_IN',
+        event_type:  type,
         occurred_at: new Date().toISOString(),
         shift_id:    null,
       }
@@ -134,8 +151,9 @@ export default function ClockScreen() {
   })
 
   function handleTap() {
+    // Decide the direction ONCE, here, from the state the user actually saw.
+    const type: ClockEventType = isClockedIn ? 'CLOCK_OUT' : 'CLOCK_IN'
     if (!navigator.onLine) {
-      const type: ClockEventType = isClockedIn ? 'CLOCK_OUT' : 'CLOCK_IN'
       queryClient.setQueryData<ClockStatus>(['clock-status'], {
         status:     type,
         last_event: {
@@ -149,7 +167,7 @@ export default function ClockScreen() {
       addToast({ type: 'warning', message: `Clocked ${type === 'CLOCK_IN' ? 'in' : 'out'} (offline — will sync when connected).` })
       return
     }
-    mutation.mutate()
+    mutation.mutate(type)
   }
 
   /* Format helpers for the Stitch layout */
