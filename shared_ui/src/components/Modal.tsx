@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef } from 'react'
+import { useIsDesktop } from '../hooks/useIsDesktop'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ReactNode } from 'react'
 
@@ -59,23 +60,6 @@ const desktopVariants = {
   hidden:  { scale: 0.95, opacity: 0 },
   visible: { scale: 1,    opacity: 1, transition: { duration: 0.2, ease: 'easeOut' as const } },
   exit:    { scale: 0.95, opacity: 0, transition: { duration: 0.2, ease: 'easeIn'  as const } },
-}
-
-/**
- * Which layout to animate. Matches Tailwind's `md` breakpoint so the motion
- * variant always agrees with the CSS that positions the panel.
- */
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
-  )
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)')
-    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
-  return isDesktop
 }
 
 export function Modal({ open, onClose, title, children, size = 'md', preventClose = false }: ModalProps) {

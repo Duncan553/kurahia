@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, Button, useToastStore, SearchInput, Modal, ErrorBoundary, Icon } from '../index'
+import { Skeleton, Button, useToastStore, SearchInput, Modal, ErrorBoundary, Icon, useIsDesktop } from '../index'
 import type { IconName } from '../index'
 import api from '../lib/axios'
 import { useAuthStore } from '../stores/authStore'
@@ -79,6 +79,11 @@ export default function WaiterTabDetailScreen() {
   const addToast = useToastStore(s => s.addToast)
   const roleLevel = useAuthStore(s => s.user?.role_level ?? 0)
   const canHandleReceipts = roleLevel >= FRONT_DESK_LEVEL
+  // JS breakpoint (not a CSS one) — see the comment on the pane switch below:
+  // the desktop and mobile layouts are structurally different, so only ONE of
+  // them may exist in the DOM at a time. The declaration was missing entirely,
+  // which meant this file did not compile.
+  const isDesktop = useIsDesktop()
 
   const [draft, setDraft] = useState<Record<string, number>>({})
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({})
@@ -767,16 +772,30 @@ export default function WaiterTabDetailScreen() {
         ))}
       </div>
 
-      {/* Desktop: two-pane grid. Mobile: single pane. Hidden during entry prompt. */}
-      <div className={`flex-1 min-h-0 md:grid md:grid-cols-[3fr_2fr] divide-x divide-cream-alt ${showEntryPrompt ? 'hidden' : 'hidden md:grid'}`}>
-        <div className="overflow-hidden">{menuPane}</div>
-        <div className="overflow-hidden bg-transparent">{orderPane}</div>
-      </div>
+      {/* ONE set of panes.
 
-      {/* Mobile: single pane — hidden during entry prompt */}
-      <div className={`flex-1 min-h-0 md:hidden ${showEntryPrompt ? 'hidden' : ''}`}>
-        {mobilePane === 'menu' ? menuPane : orderPane}
-      </div>
+          This was two sibling containers — a `hidden md:grid` two-pane desktop
+          layout and a `md:hidden` single-pane mobile one — each rendering
+          {menuPane} and {orderPane}. Both were always in the DOM, so this screen
+          rendered every pane TWICE: measured at 1280px, 29 of 98 buttons were
+          duplicates (every "Add <item> to order" appeared twice) plus a genuine
+          duplicate DOM id, `search-input` x2. A screen reader read the whole menu
+          out twice, and the duplicate id broke <label htmlFor> binding.
+
+          The two layouts are structurally different (both panes side by side vs
+          one at a time), so CSS alone can't merge them — hence the JS breakpoint. */}
+      {!showEntryPrompt && (
+        isDesktop ? (
+          <div className="flex-1 min-h-0 grid grid-cols-[3fr_2fr] divide-x divide-cream-alt">
+            <div className="overflow-hidden">{menuPane}</div>
+            <div className="overflow-hidden bg-transparent">{orderPane}</div>
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0">
+            {mobilePane === 'menu' ? menuPane : orderPane}
+          </div>
+        )
+      )}
 
       {cancelModal}
       {receiptModal}
