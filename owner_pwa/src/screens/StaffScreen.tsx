@@ -438,7 +438,8 @@ export default function StaffScreen() {
             aria-selected={filter === f}
             onClick={() => setFilter(f)}
             className={[
-              'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
+              // min-h-[44px] — the Active/All toggle was 32px tall.
+              'flex-1 min-h-[44px] rounded-lg text-xs font-semibold transition-colors',
               filter === f ? 'bg-white/10 text-ink-primary' : 'text-ink-secondary hover:text-ink-primary',
             ].join(' ')}
           >

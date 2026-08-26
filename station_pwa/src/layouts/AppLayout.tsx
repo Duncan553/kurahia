@@ -171,10 +171,16 @@ export default function AppLayout() {
             </span>
           )}
         </div>
+        {/* Sign out. 44x44 tappable box, 32px orange circle inside — the header
+            looks unchanged, only the hit area grew. -mr-1.5 eats back into the
+            header's px-4 so the circle stays on the same pixel. */}
         <button onClick={signOut}
-          className="w-8 h-8 rounded-full bg-primary-main/20 flex items-center justify-center
-            text-primary-main text-sm font-bold shrink-0" aria-label="Sign out">
-          {user?.username?.[0]?.toUpperCase() ?? '?'}
+          className="w-11 h-11 -mr-1.5 flex items-center justify-center rounded-full
+            shrink-0" aria-label="Sign out">
+          <span className="w-8 h-8 rounded-full bg-primary-main/20 flex items-center justify-center
+            text-primary-main text-sm font-bold" aria-hidden="true">
+            {user?.username?.[0]?.toUpperCase() ?? '?'}
+          </span>
         </button>
       </header>
 

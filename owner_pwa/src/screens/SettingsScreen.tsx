@@ -90,15 +90,24 @@ function DepartmentsTab() {
                 {d.name}
               </span>
             </div>
-            <div className="flex gap-1 shrink-0">
+            {/* Row actions. These were 37x24 and 55x24 — the smallest real
+                controls on the Settings screen and there are ~19 of them.
+                min-h/min-w-[44px] gives each a full touch box; -my-2.5 pulls the
+                extra 10px per side back OUT of the layout, so the hit area grows
+                into the card's own py-3 padding and the row height never changes.
+                (The negative margin does not shrink the button itself — the
+                browser still hit-tests the full 44px box.) */}
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => { setEditTarget(d); setEditName(d.name) }}
-                className="px-2 py-1 text-xs text-ink-secondary hover:text-ink-primary rounded"
+                className="px-2 -my-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center
+                  text-xs text-ink-secondary hover:text-ink-primary rounded-lg"
                 aria-label={`Edit ${d.name}`}
               >Edit</button>
               <button
                 onClick={() => toggleMut.mutate({ id: d.id, active: !d.is_active })}
-                className={`px-2 py-1 text-xs rounded ${d.is_active ? 'text-status-failed hover:bg-status-failed/10' : 'text-status-paid hover:bg-status-paid/10'}`}
+                className={`px-2 -my-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center
+                  text-xs rounded-lg ${d.is_active ? 'text-status-failed hover:bg-status-failed/10' : 'text-status-paid hover:bg-status-paid/10'}`}
                 aria-label={d.is_active ? `Disable ${d.name}` : `Enable ${d.name}`}
               >
                 {d.is_active ? 'Disable' : 'Enable'}
@@ -232,14 +241,21 @@ function BaselinesTab() {
                   <p className="text-xs text-ink-secondary">±{b.tolerance_percent}%</p>
                 </div>
               </div>
-              <div className="flex gap-1">
+              {/* Same 44px hit box + negative-margin trick as the Departments rows above. */}
+              <div className="flex items-center gap-1 -my-1">
                 <button
                   onClick={() => { setEditTarget(b); setEditRatio(b.expected_ratio); setEditTolerance(b.tolerance_percent) }}
-                  className="px-2 py-1 text-xs text-ink-secondary hover:text-ink-primary rounded"
+                  className="px-2 -my-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center
+                    text-xs text-ink-secondary hover:text-ink-primary rounded-lg"
+                  aria-label={`Edit baseline for ${b.item_name ?? b.item_id}`}
                 >Edit</button>
                 <button
                   onClick={() => toggleMut.mutate({ id: b.id, active: !b.is_active })}
-                  className={`px-2 py-1 text-xs rounded ${b.is_active ? 'text-status-failed hover:bg-status-failed/10' : 'text-status-paid hover:bg-status-paid/10'}`}
+                  className={`px-2 -my-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center
+                    text-xs rounded-lg ${b.is_active ? 'text-status-failed hover:bg-status-failed/10' : 'text-status-paid hover:bg-status-paid/10'}`}
+                  aria-label={b.is_active
+                    ? `Disable baseline for ${b.item_name ?? b.item_id}`
+                    : `Enable baseline for ${b.item_name ?? b.item_id}`}
                 >
                   {b.is_active ? 'Disable' : 'Enable'}
                 </button>
@@ -404,7 +420,8 @@ export default function SettingsScreen() {
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
             className={[
-              'shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap',
+              // min-h-[44px] — the tab strip was 32px tall.
+              'shrink-0 px-3.5 min-h-[44px] rounded-xl text-xs font-semibold transition-colors whitespace-nowrap',
               tab === t.key
                 ? 'bg-primary-main text-white'
                 : 'bg-white/5 text-ink-secondary hover:text-ink-primary',

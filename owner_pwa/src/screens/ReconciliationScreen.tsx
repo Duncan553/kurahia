@@ -130,7 +130,8 @@ export default function ReconciliationScreen() {
           value={view.date}
           max={todayNairobi()}
           onChange={e => setView(v => ({ ...v, date: e.target.value }))}
-          className="rounded-xl border border-white/10 bg-transparent px-3 py-2
+          /* min-h-[44px]: the date picker rendered 38px tall */
+          className="min-h-[44px] rounded-xl border border-white/10 bg-transparent px-3 py-2
             text-sm text-ink-primary focus:outline-none focus:border-primary-main"
         />
       </div>

@@ -126,11 +126,11 @@ export default function ServicePayScreen() {
           </Button>
         </div>
 
-        {/* Tab switcher */}
+        {/* Tab switcher. min-h-[44px] — the segments were 36px tall. */}
         <div className="flex rounded-xl overflow-hidden glass-card mb-6">
           {([['pos', 'Sell'], ['stock', 'Stock'], ['request', 'Request']] as const).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
-              className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
+              className={`flex-1 min-h-[44px] text-xs font-semibold transition-colors ${
                 tab === key ? 'bg-white/10 text-ink-primary' : 'text-ink-tertiary hover:text-ink-secondary'
               }`}>
               {label}

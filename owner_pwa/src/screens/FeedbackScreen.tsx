@@ -127,7 +127,8 @@ function StaffFeedbackSection() {
 
       {profLoading ? (
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {[1, 2, 3].map(i => <Skeleton key={i} variant="text" className="w-24 h-8 rounded-full shrink-0" />)}
+          {/* h-11 matches the real chips' new 44px height, so nothing jumps on load */}
+          {[1, 2, 3].map(i => <Skeleton key={i} variant="text" className="w-24 h-11 rounded-full shrink-0" />)}
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
@@ -135,7 +136,9 @@ function StaffFeedbackSection() {
             <button
               key={p.id}
               onClick={() => setSelectedStaff(selectedStaff === p.id ? null : p.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors
+              // min-h-[44px] takes the staff chips from 32px to the touch minimum;
+              // inline-flex keeps the name centred inside the taller pill.
+              className={`px-3 inline-flex items-center min-h-[44px] rounded-full text-xs font-semibold border transition-colors
                 ${selectedStaff === p.id
                   ? 'border-[#f9dcd5]/40 bg-white/10 text-ink-primary'
                   : 'border-white/10 text-ink-tertiary hover:text-ink-primary hover:bg-white/5'
@@ -257,7 +260,7 @@ export default function FeedbackScreen() {
           <div className="flex rounded-xl overflow-hidden border border-white/10 mb-6 w-fit">
             {(['recent', 'staff'] as const).map(t => (
               <button key={t} onClick={() => setTab(t)}
-                className={`px-5 py-2 text-xs font-bold tracking-widest uppercase transition-colors
+                className={`px-5 inline-flex items-center min-h-[44px] text-xs font-bold tracking-widest uppercase transition-colors
                   ${tab === t
                     ? 'bg-white/10 text-ink-primary'
                     : 'text-ink-tertiary hover:text-ink-secondary'

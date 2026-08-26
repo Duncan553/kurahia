@@ -324,9 +324,12 @@ function HeroSection() {
             ))}
           </div>
         )}
+        {/* Card-footer action, not an inline link — it gets a real 44px hit box.
+            -mb-3 absorbs most of the added height so the card doesn't grow. */}
         <button
           onClick={() => navigate('/alerts')}
-          className="mt-4 text-[10px] font-bold tracking-widest uppercase text-primary-main hover:text-primary-light transition-colors"
+          className="mt-1 -mb-3 inline-flex items-center min-h-[44px]
+            text-[10px] font-bold tracking-widest uppercase text-primary-main hover:text-primary-light transition-colors"
         >
           VIEW ALL LOGS
         </button>
@@ -388,11 +391,12 @@ function ResortHealthSection() {
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-serif font-bold text-ink-primary">Resort Health</h2>
-        {/* Tabs */}
+        {/* Tabs. min-h-[44px] takes each segment from 27px to the touch minimum;
+            inline-flex keeps the label optically centred in the taller box. */}
         <div className="flex rounded-xl overflow-hidden border border-white/10">
           {(['overview', 'departments'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`px-4 py-1.5 text-[10px] font-bold tracking-widest uppercase transition-colors ${
+              className={`px-4 inline-flex items-center min-h-[44px] text-[10px] font-bold tracking-widest uppercase transition-colors ${
                 tab === t
                   ? 'bg-white/10 text-ink-primary'
                   : 'text-ink-tertiary hover:text-ink-secondary'
@@ -844,9 +848,14 @@ export default function DashboardScreen() {
             <p className="text-xs text-ink-tertiary">
               Last updated: {updatedAgo !== null && updatedAgo < 120 ? (updatedAgo < 5 ? 'just now' : `${updatedAgo}s ago`) : 'loading...'}
             </p>
+            {/* Worst tap target in the whole suite: this was a bare 14x14 svg.
+                The glyph is still 14px — only the button box around it is 44x44,
+                centred with flex. -m-2.5 pulls the extra 15px per side back out
+                of the layout so the row's spacing is unchanged. */}
             <button
               onClick={refreshAll}
-              className="text-ink-tertiary hover:text-ink-primary transition-colors"
+              className="w-11 h-11 -m-2.5 shrink-0 flex items-center justify-center rounded-lg
+                text-ink-tertiary hover:text-ink-primary transition-colors"
               aria-label="Refresh all tiles"
             >
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">

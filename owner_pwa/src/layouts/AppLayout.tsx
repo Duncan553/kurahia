@@ -176,15 +176,20 @@ export default function AppLayout() {
           {SIDEBAR_ITEMS.map((item) => <SideLink key={item.path} {...item} />)}
         </nav>
 
-        {/* Support + Log Out */}
-        <div className="border-t border-white/5 p-3 space-y-1">
-          <button className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-ink-tertiary hover:text-ink-primary transition-colors text-sm">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M10 7v3M10 13h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        {/* Support + Log Out.
+            p-2 on the collapsed tablet rail instead of p-3: the rail is 64px wide,
+            so p-3 left these two buttons only 39px of width — under the 44px touch
+            minimum on the horizontal axis. p-2 gives them 47px. lg: keeps the
+            roomier p-3 on the expanded desktop sidebar, where width was never the
+            problem. min-h-[44px] fixes the vertical axis (they were 32/36px). */}
+        <div className="border-t border-white/5 p-2 lg:p-3 space-y-1">
+          <button className="flex items-center gap-3 w-full px-2 py-2 min-h-[44px] rounded-lg text-ink-tertiary hover:text-ink-primary transition-colors text-sm">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" className="shrink-0"><circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M10 7v3M10 13h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
             <span className="hidden lg:block text-xs">Support</span>
           </button>
           <button onClick={signOut}
-            className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-ink-tertiary hover:text-ink-primary transition-colors text-sm">
-            <SignOutIcon />
+            className="flex items-center gap-3 w-full px-2 py-2 min-h-[44px] rounded-lg text-ink-tertiary hover:text-ink-primary transition-colors text-sm">
+            <span className="shrink-0"><SignOutIcon /></span>
             <span className="hidden lg:block text-xs">Log Out</span>
           </button>
         </div>
@@ -200,24 +205,37 @@ export default function AppLayout() {
             <span className="sm:hidden text-base font-bold font-serif text-ink-primary">Kurahia</span>
             <span className="hidden sm:block text-sm font-medium text-ink-primary">Kurahia Dashboard</span>
           </div>
+          {/* Shortcut pills. min-h-[44px] + inline-flex: they were 28px tall (py-1.5
+              on a 12px font) and these are tablet-only controls, so a thumb is the
+              only thing that ever hits them. The header is h-12/48px, so a 44px
+              pill fits without changing the bar's height. */}
           <div className="hidden sm:flex items-center gap-1">
             <NavLink to="/" end className={({ isActive }) =>
-              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-primary-main text-white' : 'text-ink-tertiary hover:text-ink-primary'}`
+              `inline-flex items-center min-h-[44px] px-3 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-primary-main text-white' : 'text-ink-tertiary hover:text-ink-primary'}`
             }>Revenue Today</NavLink>
             <NavLink to="/alerts" className={({ isActive }) =>
-              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-primary-main text-white' : 'text-ink-tertiary hover:text-ink-primary'}`
+              `inline-flex items-center min-h-[44px] px-3 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-primary-main text-white' : 'text-ink-tertiary hover:text-ink-primary'}`
             }>Alerts Count</NavLink>
             <NavLink to="/bookings" className={({ isActive }) =>
-              `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-primary-main text-white' : 'text-ink-tertiary hover:text-ink-primary'}`
+              `inline-flex items-center min-h-[44px] px-3 rounded-md text-xs font-semibold transition-colors ${isActive ? 'bg-primary-main text-white' : 'text-ink-tertiary hover:text-ink-primary'}`
             }>Bookings</NavLink>
           </div>
-          <div className="flex items-center gap-3">
-            <button aria-label="Search" className="text-ink-tertiary hover:text-ink-primary transition-colors">
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.5"/><path d="M13 13l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          {/* -mr-2 on the group claws back half the padding the two 44px hit boxes
+              add, so the icons stay visually where they were against the px-4 edge. */}
+          <div className="flex items-center gap-1 -mr-2">
+            {/* The magnifier stays 16px; only the button around it is 44x44. */}
+            <button aria-label="Search"
+              className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg
+                text-ink-tertiary hover:text-ink-primary transition-colors">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.5"/><path d="M13 13l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
             </button>
+            {/* Same trick for the avatar: 44x44 button, 28px circle inside. */}
             <button onClick={signOut} aria-label="Sign out"
-              className="sm:hidden w-7 h-7 rounded-full bg-primary-main/20 flex items-center justify-center text-[#ffb59f] text-xs font-bold">
-              {user?.username?.[0]?.toUpperCase() ?? '?'}
+              className="sm:hidden w-11 h-11 flex items-center justify-center rounded-full shrink-0">
+              <span className="w-7 h-7 rounded-full bg-primary-main/20 flex items-center justify-center text-[#ffb59f] text-xs font-bold"
+                aria-hidden="true">
+                {user?.username?.[0]?.toUpperCase() ?? '?'}
+              </span>
             </button>
           </div>
         </header>

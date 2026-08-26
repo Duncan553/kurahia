@@ -285,7 +285,8 @@ export default function PurchaseApprovalsScreen() {
             aria-selected={tab === key}
             onClick={() => setTab(key)}
             className={[
-              'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
+              // min-h-[44px] — the filter tabs were 36px tall.
+              'flex-1 min-h-[44px] rounded-lg text-xs font-semibold transition-colors',
               tab === key
                 ? 'bg-white/10 text-ink-primary'
                 : 'text-ink-secondary hover:text-ink-primary',

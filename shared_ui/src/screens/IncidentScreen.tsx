@@ -74,8 +74,12 @@ function LogForm() {
         <label className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Severity</label>
         <div className="flex gap-2">
           {SEVERITIES.map(s => (
+            // Severity chips were 30px tall. min-h-[44px] + inline-flex gives a
+            // proper touch box without changing the pill's width or type scale —
+            // this form gets filled in a hurry, often with one hand.
             <button key={s.value} onClick={() => setSeverity(s.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors
+              className={`px-4 inline-flex items-center justify-center min-h-[44px] min-w-[44px]
+                rounded-full text-xs font-bold border transition-colors
                 ${severity === s.value ? s.color : 'border-white/10 text-ink-tertiary'}`}>
               {s.label}
             </button>

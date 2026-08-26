@@ -261,7 +261,8 @@ export default function BookingsScreen() {
               aria-selected={statusFilter === t.key}
               onClick={() => setStatusFilter(t.key)}
               className={[
-                'shrink-0 flex-1 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap px-2',
+                // min-h-[44px] — these tabs were 32px tall.
+                'shrink-0 flex-1 min-h-[44px] rounded-lg text-xs font-semibold transition-colors whitespace-nowrap px-2',
                 statusFilter === t.key ? 'bg-white/10 text-ink-primary' : 'text-ink-secondary hover:text-ink-primary',
               ].join(' ')}
             >
@@ -270,7 +271,9 @@ export default function BookingsScreen() {
           ))}
         </div>
 
-        {/* Date filter */}
+        {/* Date filter. min-h-[44px] on the input: a native date picker on a phone
+            is a tap target like any other, and this one rendered 30px tall.
+            The Clear link next to it gets the same floor. */}
         <div className="flex items-center gap-2">
           <label htmlFor="booking-date" className="text-xs text-ink-secondary shrink-0">Check-in date:</label>
           <input
@@ -279,12 +282,12 @@ export default function BookingsScreen() {
             style={{ colorScheme: 'dark' }}
             value={dateFilter}
             onChange={e => setDateFilter(e.target.value)}
-            className="flex-1 text-xs border border-white/10 bg-transparent rounded-lg px-2 py-1.5
+            className="flex-1 min-h-[44px] text-xs border border-white/10 bg-transparent rounded-lg px-2 py-1.5
               text-ink-primary focus:outline-none focus:ring-2 focus:ring-primary-main"
           />
           {dateFilter && (
             <button onClick={() => setDateFilter('')}
-              className="text-xs text-ink-tertiary hover:text-ink-primary">
+              className="inline-flex items-center min-h-[44px] px-2 text-xs text-ink-tertiary hover:text-ink-primary">
               Clear
             </button>
           )}

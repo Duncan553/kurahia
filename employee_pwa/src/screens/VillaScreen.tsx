@@ -143,7 +143,9 @@ export default function VillaScreen() {
                 {v.available && canBook && (
                   <button
                     onClick={() => setBooking(booking === v.id ? null : v.id)}
-                    className="mt-2 w-full py-2 rounded-xl text-xs font-semibold
+                    /* min-h-[44px]: this was a 32px button and it is the one
+                       control on the card that actually books a villa. */
+                    className="mt-2 w-full min-h-[44px] rounded-xl text-xs font-semibold
                       bg-primary-main text-white hover:bg-primary-main/90 transition-colors"
                   >
                     Book Villa
