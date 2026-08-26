@@ -55,6 +55,13 @@ export function Button({
  <motion.button
  whileTap={{ scale: 0.97 }}
  disabled={isDisabled}
+ // The native `disabled` attribute alone drops the button out of the
+ // accessibility tree in some screen readers — the user hears nothing at all
+ // instead of "Save, dimmed, busy". These two re-announce it explicitly.
+ // `|| undefined` omits the attribute entirely when false, rather than
+ // rendering aria-busy="false" on every idle button in the app.
+ aria-disabled={isDisabled || undefined}
+ aria-busy={loading || undefined}
  className={[
  'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200',
  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2 focus-visible:ring-offset-cream-card',
