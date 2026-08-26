@@ -19,7 +19,7 @@ function bypassPageNavigations(req: { headers: Record<string, string | string[] 
 // employee_pwa's, since this app has no personal HR/leave/payroll screens.
 const PROXIED_PATHS = [
   '/auth', '/hr', '/notifications', '/inventory', '/gate', '/bookings',
-  '/bookable-resources', '/front-desk', '/waivers', '/tabs', '/orders',
+  '/bookable-resources', '/booking-payments', '/front-desk', '/waivers', '/tabs', '/orders',
   '/order-items', '/receipts', '/menu', '/kitchen', '/bar', '/equipment',
   '/finance', '/housekeeping', '/incidents', '/events', '/uploads', '/suggestions',
 ]

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Skeleton, EmptyState, Modal, useToastStore, ErrorBoundary } from '@shared'
+import { Skeleton, EmptyState, Modal, Button, Input, Select, FormField, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
 import { useKioskStore } from '../stores/kioskStore'
@@ -76,6 +76,13 @@ export default function CheckInScreen() {
   const user        = useAuthStore((s) => s.user)
   const activateKiosk = useKioskStore((s) => s.activateKiosk)
   const [tab,       setTab]       = useState<Tab>('arrivals')
+  // Deposit capture. Recording a deposit had NO UI anywhere in any of the three
+  // apps, so confirm always failed with "A deposit of X is required to confirm"
+  // and no booking could ever reach CHECKED_IN. POST /booking-payments existed the whole
+  // time (app/bookings/deposits.py).
+  const [depositFor, setDepositFor] = useState<Arrival | null>(null)
+  const [depositAmt, setDepositAmt] = useState('')
+  const [depositMethod, setDepositMethod] = useState('CASH')
   const [errorOpen, setErrorOpen] = useState(false)
   const [errorMsg,  setErrorMsg]  = useState('')
 
@@ -86,6 +93,54 @@ export default function CheckInScreen() {
   })
 
   const pendingIds = new Set((data?.pending_waivers ?? []).map((w) => w.booking_id))
+
+  /**
+   * HELD -> CONFIRMED. This step had NO caller in any of the three PWAs, which
+   * made front desk a dead end: a villa booking made through the app's own
+   * /villa screen lands HELD, VALID_BOOKING_TRANSITIONS
+   * (app/models/booking.py) only allows CHECKED_IN from CONFIRMED, and the only
+   * button offered here was "Check In" — so the backend correctly refused with
+   * "Cannot move booking from HELD to CHECKED_IN" and there was no way forward.
+   * POST /bookings/<id>/confirm existed the whole time (app/bookings/core.py).
+   */
+  const depositMutation = useMutation({
+    mutationFn: (v: { bookingId: string; amount: string; method: string }) =>
+      api.post('/booking-payments', {
+        booking_id: v.bookingId,
+        purpose: 'DEPOSIT',
+        method: v.method,
+        amount: v.amount,
+        idempotency_key: crypto.randomUUID(),
+      }).then((r) => r.data),
+    onSuccess: () => {
+      addToast({ type: 'success', message: 'Deposit recorded.' })
+      setDepositFor(null)
+      setDepositAmt('')
+      queryClient.invalidateQueries({ queryKey: ['front-desk-today'] })
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Could not record the deposit. Try again.'
+      setErrorMsg(msg)
+      setErrorOpen(true)
+    },
+  })
+
+  const confirmMutation = useMutation({
+    mutationFn: (bookingId: string) =>
+      api.post(`/bookings/${bookingId}/confirm`).then((r) => r.data),
+    onSuccess: (_, bookingId) => {
+      const guest = data?.arrivals.find((a) => a.booking_id === bookingId)?.guest_name ?? 'Guest'
+      addToast({ type: 'success', message: `${guest}'s booking confirmed. Ready to check in.` })
+      queryClient.invalidateQueries({ queryKey: ['front-desk-today'] })
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Could not confirm the booking. Try again.'
+      setErrorMsg(msg)
+      setErrorOpen(true)
+    },
+  })
 
   const checkInMutation = useMutation({
     mutationFn: (bookingId: string) =>
@@ -219,8 +274,10 @@ export default function CheckInScreen() {
                         <p className="text-xs text-ink-tertiary">{a.resource ?? 'No resource'}</p>
                       </div>
                       <button
-                        onClick={() => checkInMutation.mutate(a.booking_id)}
-                        disabled={waiverBlocked || checkInMutation.isPending}
+                        onClick={() => (a.status === 'HELD'
+                          ? confirmMutation.mutate(a.booking_id)
+                          : checkInMutation.mutate(a.booking_id))}
+                        disabled={waiverBlocked || checkInMutation.isPending || confirmMutation.isPending}
                         className={[
                           'shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark',
@@ -230,7 +287,11 @@ export default function CheckInScreen() {
                           'disabled:opacity-60',
                         ].join(' ')}
                       >
-                        {checkInMutation.isPending ? '…' : 'Check In'}
+                        {/* A HELD booking must be confirmed first — the state
+                            machine has no HELD -> CHECKED_IN edge. */}
+                        {checkInMutation.isPending || confirmMutation.isPending
+                          ? '…'
+                          : a.status === 'HELD' ? 'Confirm' : 'Check In'}
                       </button>
                     </div>
                     {waiverBlocked && (
@@ -257,6 +318,22 @@ export default function CheckInScreen() {
                       </div>
                     )}
                     <DepositBar paid={a.deposit_paid} required={a.deposit_required} />
+                    {parseFloat(a.deposit_paid) < parseFloat(a.deposit_required) && (
+                      <button
+                        onClick={() => {
+                          setDepositFor(a)
+                          // Pre-fill the outstanding balance — the common case.
+                          setDepositAmt(String(
+                            Math.max(0, parseFloat(a.deposit_required) - parseFloat(a.deposit_paid))
+                          ))
+                        }}
+                        className="mt-2 min-h-[44px] w-full rounded-xl px-4 py-2 text-sm font-semibold
+                          glass-card text-ink-primary hover:border-primary-main
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
+                      >
+                        Record deposit
+                      </button>
+                    )}
                   </div>
                 )
               })}
@@ -346,6 +423,51 @@ export default function CheckInScreen() {
       </div>
 
       {/* ── Error modal ──────────────────────────────────────────────────── */}
+      <Modal open={!!depositFor} onClose={() => setDepositFor(null)} title="Record deposit" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-ink-secondary">
+            {depositFor?.guest_name} — {depositFor?.resource ?? 'No resource'}
+          </p>
+          <FormField label="Amount (KSh)" htmlFor="deposit-amount" required>
+            <Input
+              id="deposit-amount"
+              type="number"
+              inputMode="decimal"
+              min="1"
+              value={depositAmt}
+              onChange={(e) => setDepositAmt(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Method" htmlFor="deposit-method" required>
+            <Select
+              id="deposit-method"
+              value={depositMethod}
+              onChange={(e) => setDepositMethod(e.target.value)}
+              options={[
+                { value: 'CASH',          label: 'Cash' },
+                { value: 'MPESA',         label: 'M-Pesa' },
+                { value: 'CARD',          label: 'Card' },
+                { value: 'BANK_TRANSFER', label: 'Bank transfer' },
+              ]}
+            />
+          </FormField>
+          <div className="flex gap-2 justify-end">
+            <Button variant="ghost" size="sm" onClick={() => setDepositFor(null)}>Cancel</Button>
+            <Button
+              variant="primary" size="sm"
+              loading={depositMutation.isPending}
+              onClick={() => depositFor && depositMutation.mutate({
+                bookingId: depositFor.booking_id,
+                amount: depositAmt,
+                method: depositMethod,
+              })}
+            >
+              Record
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       <Modal open={errorOpen} onClose={() => setErrorOpen(false)} title="Action failed">
         <p className="text-base text-ink-secondary mb-6">{errorMsg}</p>
         <button
