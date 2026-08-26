@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, EmptyState, SearchInput, Button, useToastStore, ErrorBoundary } from '@shared'
+import { Skeleton, EmptyState, SearchInput, Button, useToastStore, ErrorBoundary, resortToday, resortDatePlus } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 
@@ -49,8 +49,8 @@ export default function VillaScreen() {
   })
 
   // Availability check for today forward (7 days window)
-  const today = new Date().toISOString().slice(0, 10)
-  const weekLater = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10)
+  const today = resortToday()
+  const weekLater = resortDatePlus(7)
   const { data: resources = [], isLoading: resLoading, error: resError } = useQuery<VillaResource[]>({
     queryKey: ['villa-availability', today],
     queryFn: () => api.get<VillaResource[]>(

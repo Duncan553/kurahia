@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ResponsiveContainer, BarChart, Bar, Tooltip } from 'recharts'
 import { RequireRole } from '../components/AuthGate'
 import { useAuthStore } from '../stores/authStore'
-import { ErrorBoundary, Modal, Button, useToastStore } from '@shared'
+import { ErrorBoundary, Modal, Button, useToastStore, resortMonth } from '@shared'
 import api from '../lib/axios'
 
 const extractErr = (e: unknown) =>
@@ -112,7 +112,7 @@ export default function ManagerScreen() {
     queryFn: () => api.get('/auth/users/meta').then(r => r.data),
     staleTime: 5 * 60_000,
   })
-  const period = new Date().toISOString().slice(0, 7)
+  const period = resortMonth()
   const { data: budgetData } = useQuery<{ budgets: BudgetRow[] }>({
     queryKey: ['mgr-budgets', period],
     queryFn: () => api.get(`/finance/budgets/status?period=${period}`).then(r => r.data),

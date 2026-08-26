@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
-import { Skeleton, Button, useToastStore } from '@shared'
+import { Skeleton, Button, useToastStore, resortRecentMonths, resortToday } from '@shared'
 import api from '../lib/axios'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -41,11 +41,11 @@ const formatKsh = (v: string | number | undefined, compact = false): string => {
   return `KSh ${n.toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
 
-const now = new Date()
-const PERIODS = Array.from({ length: 3 }, (_, i) => {
-  const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-  return d.toISOString().slice(0, 7)
-})
+// Resort-local months. This used to be new Date(y, m-i, 1).toISOString(),
+// which took LOCAL midnight and converted it to UTC — in Africa/Nairobi (UTC+3)
+// that rolls back into the previous month, so the current month was missing
+// from the dropdown entirely and P&L defaulted to last month.
+const PERIODS = resortRecentMonths(3)
 
 /** Fetch a PDF from the backend using the JWT token, then trigger a browser download. */
 const downloadPdf = async (url: string, filename: string) => {
@@ -430,7 +430,7 @@ export default function FinanceScreen() {
 
   // Download today's daily summary PDF
   const handleDownloadSummary = useCallback(async () => {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = resortToday()
     setDownloading(true)
     try {
       await downloadPdf(`/reports/daily-summary?date=${today}`, `daily_summary_${today}.pdf`)

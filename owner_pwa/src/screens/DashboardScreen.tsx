@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts'
-import { Skeleton, StatusBadge, ErrorBoundary } from '@shared'
+import { Skeleton, StatusBadge, ErrorBoundary, resortMonth } from '@shared'
 import type { StatusValue } from '@shared'
 import api from '../lib/axios'
 
@@ -485,7 +485,7 @@ function PendingApprovalsTile() {
 }
 
 function BudgetBurnTile() {
-  const period = new Date().toISOString().slice(0, 7)
+  const period = resortMonth()
   const { data, isLoading, isError } = useQuery<{ budgets: BudgetRow[]; period: string }>({
     queryKey: ['dash-budgets', period],
     queryFn: () => api.get(`/finance/budgets/status?period=${period}`).then(r => r.data),
