@@ -8,21 +8,27 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
+    "@tanstack/react-query": "^5.102.5",
+    "axios": "^1.20.0",
     "framer-motion": ">=12.0.0",
     "react": ">=19.0.0",
-    "react-dom": ">=19.0.0"
+    "react-dom": ">=19.0.0",
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
+    "@tanstack/react-query": "^5.102.5",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "axios": "^1.20.0",
     "framer-motion": "^12.0.0",
     "happy-dom": "^17.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.2",
     "typescript": "~6.0.0",
     "vite": "^6.0.0",
     "vitest": "^3.0.0"
