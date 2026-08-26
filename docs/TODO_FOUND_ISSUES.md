@@ -435,6 +435,44 @@ in the seeded DB, which actually holds `amara.wanjiku`, `brian.mwangi`,
 
 ---
 
+## 11. The test suite littered the working tree — and 24 stubs are committed
+
+**Status:** ✅ root cause FIXED · ⏳ 24 tracked files await your call
+
+This solves the long-standing mystery of the untracked hash-named files in
+`employee_pwa/public/images/{menu,profiles,uploads}`.
+
+**Root cause.** `_upload_dir()` in `app/uploads/__init__.py` resolved to
+`<repo>/employee_pwa/public/images/<category>` with no override, so
+`tests/test_uploads.py` wrote real files into the developer's working tree on
+every run and never cleaned up.
+
+**Proven, not assumed:** one run of `test_uploads.py` took `menu/` from 54 files
+to 56. Every one of these files is **exactly 100 bytes** — a PNG magic header
+followed by 92 zero bytes — and **nothing references them**: 0 of 29 menu items
+have an `image_url`. 44 of the 54 accumulated during this session's own runs.
+
+**Fixed:** added an `UPLOAD_ROOT` config key; `TestingConfig` points it at a
+`tempfile.mkdtemp()`. Verified — `test_uploads.py` passes 10/10 and the file
+count no longer moves.
+
+**Cleanup done:** removed the 40 untracked stubs.
+
+**Still open — your decision.** **24 of these stub files are already COMMITTED**
+to the repo from earlier runs. They are provably junk by the same test (100
+bytes, identical PNG stub header, referenced by nothing), but removing tracked
+files is the owner's call, so they were left alone. To clear them:
+
+```bash
+find employee_pwa/public/images/{menu,profiles,uploads} -type f -size -101c -size +99c \
+  -exec git rm --cached {} +
+```
+
+Note the **real** menu photos are named (`grilled-tilapia.jpg`, `beef-burger.jpg`,
+16-23KB) and are unaffected by any size-based filter.
+
+---
+
 ## Not broken — done and verified 2026-08-26
 
 - **Emoji → icon sweep.** All raw emoji (`📍 👤 🔔 🔇 🎉`) and glyph-as-icon
