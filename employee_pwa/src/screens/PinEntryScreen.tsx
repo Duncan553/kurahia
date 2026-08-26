@@ -212,8 +212,11 @@ export default function PinEntryScreen() {
 
               {/* Switch to password */}
               <div className="text-center pt-1">
+                {/* Standalone escape hatch, not a link inside a sentence — so it
+                    gets a real 44px box. inline-flex + px-4 keeps it centred. */}
                 <button type="button" onClick={() => navigate('/login')}
-                  className="text-xs text-ink-primary/60 hover:text-ink-primary font-medium transition-colors
+                  className="inline-flex items-center min-h-[44px] px-4
+                    text-xs text-ink-primary/60 hover:text-ink-primary font-medium transition-colors
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded">
                   Use password instead &rarr;
                 </button>

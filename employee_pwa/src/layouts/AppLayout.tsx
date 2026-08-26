@@ -591,7 +591,11 @@ export default function AppLayout() {
           {visibleItems.map(({ id, path, label, Icon, badge }) => (
             <NavLink key={id} to={path} end={path === '/clock'}
               className={({ isActive }) => [
-                'flex items-center gap-3 px-3 lg:px-4 py-2.5 mx-1 rounded-lg transition-colors',
+                // min-h-[44px]: on the COLLAPSED tablet rail (sm..lg, w-16) this row
+                // was only 40px tall — a 20px icon plus py-2.5. The rail is the only
+                // navigation on a tablet, so it has to clear the 44px touch minimum.
+                // Nothing moves on desktop: the expanded row was already >44px.
+                'flex items-center gap-3 px-3 lg:px-4 py-2.5 mx-1 rounded-lg transition-colors min-h-[44px]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main',
                 isActive
                   ? 'bg-primary-main/10 text-[#ffb59f]'
@@ -617,7 +621,7 @@ export default function AppLayout() {
           {/* Station mode toggle — managers only, lets them convert any device to a work tablet */}
           {roleLevel >= 5 && (
             <button onClick={toggleStationMode}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg min-h-[44px]
                 text-[10px] font-medium transition-colors
                 text-ink-tertiary hover:text-ink-secondary hover:bg-white/5">
               <span className={`w-5 h-3 rounded-full border transition-colors ${stationMode ? 'bg-primary-main border-primary-main' : 'border-white/20'}`} />
@@ -646,10 +650,17 @@ export default function AppLayout() {
         <header className="sm:hidden h-14 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
           style={{ background: 'rgba(30, 16, 12, 0.9)' }}>
           <span className="text-lg font-bold font-serif text-ink-primary">Kurahia</span>
+          {/* Sign out. The button box is 44x44 (the touch minimum) but the orange
+              circle inside stays 32px, so the header looks identical — only the
+              tappable area grew. -mr-1.5 pulls the wider box back over the header's
+              px-4 padding so the circle sits on the same pixel it always did. */}
           <button onClick={signOut}
-            className="w-8 h-8 rounded-full bg-primary-main/20 flex items-center justify-center
-              text-primary-main text-sm font-bold" aria-label="Sign out">
-            {user?.username?.[0]?.toUpperCase() ?? '?'}
+            className="w-11 h-11 -mr-1.5 flex items-center justify-center rounded-full
+              shrink-0" aria-label="Sign out">
+            <span className="w-8 h-8 rounded-full bg-primary-main/20 flex items-center justify-center
+              text-primary-main text-sm font-bold" aria-hidden="true">
+              {user?.username?.[0]?.toUpperCase() ?? '?'}
+            </span>
           </button>
         </header>
 

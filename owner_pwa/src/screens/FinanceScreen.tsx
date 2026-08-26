@@ -308,7 +308,7 @@ function BudgetSection({ period }: { period: string }) {
         {(['month', 'year'] as const).map(g => (
           <button key={g} role="tab" aria-selected={granularity === g}
             onClick={() => setGranularity(g)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            className={`px-3 inline-flex items-center min-h-[44px] rounded-lg text-xs font-semibold transition-colors ${
               granularity === g ? 'bg-white/10 text-ink-primary' : 'text-ink-secondary hover:text-ink-primary'
             }`}>
             {g === 'month' ? `Monthly (${period})` : `Yearly (${period.slice(0, 4)})`}
@@ -453,7 +453,7 @@ export default function FinanceScreen() {
           <button
             onClick={handleDownloadSummary}
             disabled={downloading}
-            className="text-xs border border-white/10 bg-transparent rounded-lg px-3 py-1.5
+            className="text-xs border border-white/10 bg-transparent rounded-lg px-3 min-h-[44px]
               text-ink-secondary hover:bg-white/5 transition-colors
               focus:outline-none focus:ring-2 focus:ring-primary-main disabled:opacity-50"
           >
@@ -467,7 +467,7 @@ export default function FinanceScreen() {
             value={period}
             onChange={e => setPeriod(e.target.value)}
             aria-label="Select period"
-            className="text-xs border border-white/10 bg-transparent rounded-lg px-2 py-1.5
+            className="text-xs border border-white/10 bg-transparent rounded-lg px-2 min-h-[44px]
               text-ink-secondary focus:outline-none focus:ring-2 focus:ring-primary-main"
           >
             {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -484,7 +484,8 @@ export default function FinanceScreen() {
             aria-selected={section === key}
             onClick={() => setSection(key)}
             className={[
-              'flex-1 py-2 rounded-lg text-xs font-semibold transition-colors',
+              // min-h-[44px] — the section tabs were 32px tall.
+              'flex-1 min-h-[44px] rounded-lg text-xs font-semibold transition-colors',
               section === key ? 'bg-white/10 text-ink-primary' : 'text-ink-secondary hover:text-ink-primary',
             ].join(' ')}
           >

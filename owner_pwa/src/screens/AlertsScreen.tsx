@@ -182,7 +182,10 @@ export default function AlertsScreen() {
             key={key}
             onClick={() => setView(v => ({ ...v, filter: key }))}
             className={[
-              'px-3 py-1.5 min-h-[44px] rounded-full text-xs font-semibold transition-colors',
+              // min-w-[44px] as well as min-h: the short chips ("All") were only
+              // 38px wide, so they cleared the touch minimum vertically but not
+              // horizontally. Wider labels are unaffected.
+              'px-3 py-1.5 min-h-[44px] min-w-[44px] rounded-full text-xs font-semibold transition-colors',
               view.filter === key
                 ? 'bg-ink-primary text-cream-card'
                 : 'bg-white/5 text-ink-secondary hover:bg-cream-deep',

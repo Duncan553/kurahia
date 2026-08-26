@@ -335,7 +335,14 @@ function StationBoard({ station }: { station: Station }) {
             setAudioMuted(next)  // the call that was missing — this is what playOrderAlert() actually checks
             localStorage.setItem(MUTE_STORAGE_KEY, next ? '1' : '0')
           }}
-          className="p-2 rounded-lg glass-surface text-ink-tertiary hover:text-ink-primary"
+          // w-11 h-11: p-2 around a 20px icon gave a 38x42 box. The icon stays
+          // 20px — only the button grows to the 44px touch minimum. This is the
+          // mute for the kitchen/bar order chime, hit mid-service with wet hands.
+          // shrink-0 is load-bearing: it's a flex item next to the title + status
+          // badges, and without it flex-shrink squeezed the 44px back down to 38
+          // as soon as the badges appeared.
+          className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg
+            glass-surface text-ink-tertiary hover:text-ink-primary"
           aria-label={muted ? 'Unmute alerts' : 'Mute alerts'}
         >
           {/* aria-label already lives on the button, so the icon stays decorative */}
