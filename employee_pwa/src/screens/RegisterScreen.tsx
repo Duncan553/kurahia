@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Button, Input, Select, FormField, FormSection, HelpTooltip, Icon } from '@shared'
+import { Button, Input, Select, FormField, FormSection, Icon } from '@shared'
 import api from '../lib/axios'
 
 type FormErrors = Partial<Record<keyof FormData, string>>

@@ -63,7 +63,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MotionConfig reducedMotion="user">
       <QueryClientProvider client={queryClient}>
-        <ErrorBoundary level="page">
+        <ErrorBoundary level="screen">
           <RouterProvider router={router} />
         </ErrorBoundary>
         <ToastContainer />

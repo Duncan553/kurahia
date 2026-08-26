@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Drawer, Skeleton, EmptyState, useToastStore, Combobox, SearchInput, ErrorBoundary, HelpTooltip } from '@shared'
+import { Drawer, Skeleton, EmptyState, useToastStore, Combobox, SearchInput, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
 import { useAuthStore } from '../stores/authStore'

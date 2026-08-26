@@ -5,9 +5,7 @@ export { Input } from './components/Input'
 export type { InputProps } from './components/Input'
 
 export { Select } from './components/Select'
-// SelectOption was also re-exported here, but no such type has ever existed in
-// Select.tsx — Select takes plain <option> children. It was a phantom export.
-export type { SelectProps } from './components/Select'
+export type { SelectProps, SelectOption } from './components/Select'
 
 export { Toggle } from './components/Toggle'
 export type { ToggleProps } from './components/Toggle'

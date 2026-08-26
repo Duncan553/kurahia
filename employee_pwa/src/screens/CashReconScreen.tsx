@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Skeleton, EmptyState, StatusBadge, useToastStore, ErrorBoundary, HelpTooltip } from '@shared'
+import { Skeleton, EmptyState, StatusBadge, useToastStore, ErrorBoundary } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 import { timeAgo } from '../lib/format'
