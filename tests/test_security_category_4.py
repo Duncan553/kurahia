@@ -37,6 +37,7 @@ TIMING_GAP_THRESHOLD_MS = 50   # difference larger than this is a meaningful lea
 # 4.1  Username enumeration via login timing
 # ══════════════════════════════════════════════════════════════════════════════
 
+@pytest.mark.production_hashing  # measures REAL Argon2 timing — see conftest.py
 class TestUsernameEnumerationLogin:
     def _median_ms(self, client, url, payload, n=5) -> float:
         samples = []
@@ -94,6 +95,7 @@ class TestUsernameEnumerationLogin:
 # 4.2  PIN-login enumeration timing
 # ══════════════════════════════════════════════════════════════════════════════
 
+@pytest.mark.production_hashing  # measures REAL Argon2 timing — see conftest.py
 class TestPINLoginEnumeration:
     def _median_ms(self, client, url, payload, n=5) -> float:
         samples = []

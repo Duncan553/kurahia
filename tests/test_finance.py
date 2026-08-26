@@ -265,10 +265,43 @@ def test_owner_can_create_budget(client, owner_token, general_dept_id):
     assert Decimal(data["amount"]) == Decimal("100000")
 
 
-def test_manager_cannot_create_budget(client, manager_token, general_dept_id):
+def test_manager_can_create_budget_but_not_change_one(
+    client, manager_token, waiter_token, owner_token, general_dept_id
+):
+    """The budget authorization split, as implemented in app/finance/budgets.py.
+
+    This test previously asserted that a manager could NOT create a budget.
+    Commit dc203ed deliberately widened creation to manager+ ("manager can set
+    budgets"), leaving edit/disable/enable owner-only — changing or removing a
+    budget already in force is more sensitive than setting one for the first
+    time. The test was never updated, so it failed AND the real boundary
+    (manager blocked from EDITING) had no coverage at all. It does now.
+    """
+    # ── A manager CAN set a budget for the first time ──
     rv = client.post("/finance/budgets", json={
         "department_id": general_dept_id, "period": "2099-02", "amount": "50000",
     }, headers={"Authorization": f"Bearer {manager_token}"})
+    assert rv.status_code == 201
+    budget_id = rv.get_json()["id"]
+
+    # ── But a manager CANNOT change one that is already in force ──
+    for method, path in [
+        ("patch", f"/finance/budgets/{budget_id}"),
+        ("post",  f"/finance/budgets/{budget_id}/disable"),
+        ("post",  f"/finance/budgets/{budget_id}/enable"),
+    ]:
+        rv = getattr(client, method)(
+            path, json={"amount": "1"},
+            headers={"Authorization": f"Bearer {manager_token}"},
+        )
+        assert rv.status_code == 403, f"manager should be blocked from {method.upper()} {path}"
+        # Invariant 5: every error carries a plain-English message for the frontend
+        assert "error" in rv.get_json()
+
+    # ── Below manager level, creation is still refused ──
+    rv = client.post("/finance/budgets", json={
+        "department_id": general_dept_id, "period": "2099-09", "amount": "50000",
+    }, headers={"Authorization": f"Bearer {waiter_token}"})
     assert rv.status_code == 403
     assert "error" in rv.get_json()
 
