@@ -35,6 +35,15 @@ def create_app(config_name: str = None) -> Flask:
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config[config_name])
 
+    # Trust the reverse proxy's forwarded headers, but ONLY as many hops as the
+    # config declares. flask-limiter keys the login rate limit on the client IP
+    # via get_remote_address(), which reads the socket peer — behind Nginx that
+    # is always 127.0.0.1, so every member of staff would share one bucket.
+    hops = int(app.config.get("TRUSTED_PROXY_COUNT", 0))
+    if hops > 0:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=hops, x_proto=hops, x_host=hops)
+
     # Validate required prod config before going further
     if config_name == "production" and not app.config.get("SQLALCHEMY_DATABASE_URI"):
         raise RuntimeError("DATABASE_URL must be set in production")
