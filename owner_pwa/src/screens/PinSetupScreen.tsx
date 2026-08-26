@@ -5,7 +5,7 @@ import axios from 'axios'
 import axiosBase from 'axios'
 import { decodeJWT } from '../lib/jwt'
 import { useAuthStore } from '../stores/authStore'
-import { Button, Input } from '@shared'
+import { Button, Input, Icon } from '@shared'
 
 interface SetPinResponse { access_token: string; refresh_token: string }
 interface JWTClaims { sub: string; role_level: number }
@@ -22,7 +22,7 @@ function CriteriaRow({ met, label }: { met: boolean; label: string }) {
   return (
     <li className="flex items-center gap-2 text-sm">
       <span className={met ? 'text-status-paid' : 'text-ink-tertiary'}>
-        {met ? '✓' : '○'}
+        <Icon name={met ? 'check' : 'circle'} size={15} strokeWidth={2.5} />
       </span>
       <span className={met ? 'text-ink-primary' : 'text-ink-tertiary'}>{label}</span>
     </li>

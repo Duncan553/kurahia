@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Button, Input, Select, FormField, FormSection, HelpTooltip } from '@shared'
+import { Button, Input, Select, FormField, FormSection, HelpTooltip, Icon } from '@shared'
 import api from '../lib/axios'
 
 type FormErrors = Partial<Record<keyof FormData, string>>
@@ -124,7 +124,7 @@ export default function RegisterScreen() {
                   : s < step ? 'bg-primary-main/30 text-primary-light'
                   : 'bg-white/10 text-ink-tertiary'
               ].join(' ')}>
-                {s < step ? '✓' : s}
+                {s < step ? <Icon name="check" size={16} strokeWidth={2.5} label={`Step ${s} complete`} /> : s}
               </div>
               <span className={[
                 'text-xs hidden sm:block',
@@ -338,7 +338,7 @@ export default function RegisterScreen() {
           >
             <div className="w-20 h-20 rounded-full bg-status-paid/15 border border-status-paid/25
               flex items-center justify-center mx-auto">
-              <span className="text-4xl">🎉</span>
+              <Icon name="celebrate" size={40} strokeWidth={1.5} className="text-status-paid" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-ink-primary">Account Created!</h2>
