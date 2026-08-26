@@ -69,7 +69,10 @@ export default function LoginScreen() {
 
   return (
     /* Warm dark background with resort photo overlay */
-    <div className="relative min-h-screen bg-transparent flex items-center justify-center px-6">
+    /* overflow-x-hidden: the 480px ambient glow below is wider than a 390px
+       phone, so without this the whole page scrolled sideways. It is purely
+       decorative (pointer-events-none, 7% opacity) — clipping it costs nothing. */
+    <div className="relative min-h-screen bg-transparent flex items-center justify-center px-6 overflow-x-hidden">
 
       {/* Resort background photo with warm dark overlay */}
       <div className="absolute inset-0">
