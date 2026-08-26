@@ -11,6 +11,14 @@ load_dotenv()
 
 
 class BaseConfig:
+    # How many reverse-proxy hops to trust for the client IP. 0 = trust none.
+    #
+    # This must default to 0. Reading X-Forwarded-For when nothing is actually
+    # in front means any client can forge that header, and the login rate limit
+    # is keyed on the client IP — so trusting it blindly would let an attacker
+    # bypass brute-force protection entirely by rotating a fake header.
+    TRUSTED_PROXY_COUNT: int = int(os.getenv("TRUSTED_PROXY_COUNT", 0))
+
     # Flask secret for session signing (not JWT)
     SECRET_KEY = os.environ["SECRET_KEY"]
 
@@ -42,6 +50,13 @@ class ProductionConfig(BaseConfig):
     # Postgres required in prod; validated at app startup in create_app()
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "")
     DEBUG = False
+    # DEPLOY.md puts Nginx in front for TLS, and it already sets
+    # X-Forwarded-For / X-Real-IP. Without trusting exactly that one hop,
+    # get_remote_address() sees 127.0.0.1 for EVERY request and the whole
+    # resort shares a single "5 per minute" login bucket — a shift change with
+    # ten staff would lock the sixth one out. Override with TRUSTED_PROXY_COUNT
+    # if the deployment has a different number of hops (e.g. Cloudflare + Nginx).
+    TRUSTED_PROXY_COUNT: int = int(os.getenv("TRUSTED_PROXY_COUNT", 1))
 
 
 class TestingConfig(BaseConfig):
