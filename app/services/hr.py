@@ -263,9 +263,24 @@ def compute_performance(employee_id: str,
         min(round(attended / expected_shifts * 100, 1), 100)
     ))
 
+    # ── Resolve profile -> user id for the MONEY queries ──────────────────────
+    # `employee_id` is an EmployeeProfile.id (app/hr/performance.py passes
+    # profile_id). Shift/LeaveRequest/ClockEvent are all keyed by profile, so
+    # punctuality and attendance above are correct.
+    #
+    # But CashReconciliation.staff_id is a FK to users.id, and get_void_rates
+    # reports Order.created_by_id which is also users.id. Comparing those to a
+    # profile id NEVER matched, so short_count and void_rate_pct were always 0 —
+    # pinning cash_health and void_health to 100 for everyone. Together those
+    # carry 0.15 + 0.15 of SCORE_WEIGHTS, so 30% of every composite score was a
+    # constant, and a waiter with chronic shortfalls scored like a clean one.
+    from app.models.employee_profile import EmployeeProfile
+    profile = db.session.get(EmployeeProfile, employee_id)
+    actor_user_id = profile.user_id if profile else employee_id
+
     # Cash shortfalls
     short_count = db.session.query(CashReconciliation).filter(
-        CashReconciliation.staff_id == employee_id,
+        CashReconciliation.staff_id == actor_user_id,
         CashReconciliation.status == ReconciliationStatus.SHORT.value,
         CashReconciliation.period_end_utc >= period_start,
         CashReconciliation.period_end_utc < period_end,
@@ -276,7 +291,7 @@ def compute_performance(employee_id: str,
     void_rates = get_void_rates(period_start, period_end)
     void_rate_pct = Decimal("0")
     for row in void_rates:
-        if row["staff_id"] == employee_id:
+        if row["staff_id"] == actor_user_id:
             void_rate_pct = Decimal(str(row["void_rate_pct"]))
             break
     void_health = Decimal(str(max(Decimal("0"), Decimal("100") - void_rate_pct)))
