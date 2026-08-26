@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ReactNode } from 'react'
 
@@ -61,10 +61,30 @@ const desktopVariants = {
   exit:    { scale: 0.95, opacity: 0, transition: { duration: 0.2, ease: 'easeIn'  as const } },
 }
 
+/**
+ * Which layout to animate. Matches Tailwind's `md` breakpoint so the motion
+ * variant always agrees with the CSS that positions the panel.
+ */
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return isDesktop
+}
+
 export function Modal({ open, onClose, title, children, size = 'md', preventClose = false }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
+  const isDesktop = useIsDesktop()
   const triggerRef = useRef<HTMLElement | null>(null)
-  const titleId = 'modal-title'
+  // Was the hardcoded string 'modal-title'. Every Modal on a page therefore
+  // shared one id, so aria-labelledby could point at another modal's heading.
+  const titleId = useId()
 
   // Store the element that opened the modal so we can restore focus on close
   useEffect(() => {
@@ -108,43 +128,45 @@ export function Modal({ open, onClose, title, children, size = 'md', preventClos
             aria-hidden="true"
           />
 
-          {/* Mobile: bottom sheet */}
-          <motion.div
-            key="modal-mobile"
-            ref={dialogRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            variants={mobileVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className={[
-              'fixed bottom-0 left-0 right-0 z-50',
-              'bg-cream-card rounded-t-2xl shadow-xl',
-              'p-6 max-h-[90vh] overflow-y-auto',
-              'md:hidden',
-            ].join(' ')}
-          >
-            <h2 id={titleId} className="text-xl font-bold text-ink-primary mb-4">{title}</h2>
-            {children}
-          </motion.div>
+          {/* ONE dialog, positioned responsively.
 
-          {/* Desktop: centered modal */}
-          <div className="hidden md:flex fixed inset-0 z-50 items-center justify-center p-6">
+              This used to be two sibling subtrees — a `md:hidden` bottom sheet
+              and a `hidden md:flex` centred dialog — each rendering {children}.
+              Both were always in the DOM, so every modal duplicated its whole
+              contents: duplicate `id`s (a <label htmlFor> could bind to the
+              hidden copy), two elements with role="dialog" aria-modal="true" at
+              once, autoFocus on both, and any child effect running twice. It
+              also made `getByRole` ambiguous for tests.
+
+              The focus trap was attached to the mobile div only, which is
+              display:none on desktop — so desktop had NO working focus trap. */}
+          <div
+            className={[
+              'fixed inset-0 z-50 flex justify-center',
+              'items-end md:items-center',   // sheet on phones, centred on desktop
+              'md:p-6',
+            ].join(' ')}
+            onClick={preventClose ? undefined : onClose}
+          >
             <motion.div
-              key="modal-desktop"
+              key="modal-panel"
+              ref={dialogRef}
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
-              variants={desktopVariants}
+              // Variants follow the same breakpoint as the classes above, so the
+              // panel never slides up from the bottom while centred (or vice versa).
+              variants={isDesktop ? desktopVariants : mobileVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
+              // The wrapper closes on click; the panel must not.
+              onClick={(e) => e.stopPropagation()}
               className={[
-                'bg-cream-card rounded-2xl shadow-xl',
-                'p-6 w-full overflow-y-auto max-h-[90vh]',
-                SIZE[size],
+                'bg-cream-card shadow-xl overflow-y-auto',
+                'p-6 max-h-[90vh]',
+                'w-full rounded-t-2xl',        // phone: full-width sheet
+                `md:rounded-2xl ${SIZE[size]}`, // desktop: rounded card, size-capped
               ].join(' ')}
             >
               <h2 id={titleId} className="text-xl font-bold text-ink-primary mb-4">{title}</h2>
