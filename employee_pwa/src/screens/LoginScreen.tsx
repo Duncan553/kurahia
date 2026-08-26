@@ -36,7 +36,12 @@ export default function LoginScreen() {
         navigate('/pin/setup', { state: { username: cleanUsername } })
         return
       }
-      const claims = decodeJWT(res.data.access_token)
+      // decodeJWT is generic and defaults to Record<string, unknown>, so every
+      // claim came back as `unknown` and the setAuth call was 3 type errors.
+      // Naming the shape here is what makes the claims usable.
+      const claims = decodeJWT<{ sub: string; role_level: number; department?: string | null }>(
+        res.data.access_token
+      )
       setAuth({ id: claims.sub, username: cleanUsername, role_level: claims.role_level, department: claims.department ?? null }, res.data.access_token, res.data.refresh_token ?? '')
       navigate('/clock')
     } catch (err: any) {

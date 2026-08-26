@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuthStore } from '../stores/authStore'
-import { EmptyState } from '@shared'
+import { EmptyState, Icon } from '@shared'
 
 // No clock-status redirect here (unlike employee_pwa's AuthGate) — station_pwa's
 // login screen clocks the actor in as part of PIN login itself (see
@@ -18,7 +18,7 @@ export function RoleGate({ minLevel }: { minLevel: number }) {
   if (!user || user.role_level < minLevel) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-        <EmptyState title="Access restricted" description="You don't have permission to view this page." />
+        <EmptyState icon={<Icon name="alert" size={40} />} title="Access restricted" description="You don't have permission to view this page." />
       </div>
     )
   }
