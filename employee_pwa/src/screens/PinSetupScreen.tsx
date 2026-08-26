@@ -6,6 +6,7 @@ import axios from 'axios'
 import axiosBase from 'axios'
 import { decodeJWT } from '../lib/jwt'
 import { useAuthStore } from '../stores/authStore'
+import { Icon } from '@shared'
 
 interface SetPinResponse { access_token: string; refresh_token: string }
 interface JWTClaims extends Record<string, unknown> {
@@ -32,7 +33,8 @@ function CriteriaRow({ met, label }: { met: boolean; label: string }) {
         animate={{ color: met ? 'var(--color-status-paid)' : 'var(--color-ink-tertiary)' }}
         transition={{ duration: 0.2 }}
       >
-        {met ? '✓' : '○'}
+        {/* Icon inherits the animated colour above via currentColor */}
+        <Icon name={met ? 'check' : 'circle'} size={14} strokeWidth={2.5} />
       </motion.span>
       <span className={met ? 'text-ink-primary' : 'text-ink-tertiary'}>{label}</span>
     </li>

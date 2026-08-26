@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Skeleton, Modal, Button, useToastStore } from '@shared'
+import { Skeleton, Modal, Button, useToastStore, Icon } from '@shared'
 import api from '../lib/axios'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -140,7 +140,8 @@ export default function ReconciliationScreen() {
         <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
           data.balanced ? 'bg-status-paid/10 text-status-paid' : 'bg-status-failed/10 text-status-failed'
         }`}>
-          {data.balanced ? '✓ Balanced' : '✗ Imbalanced'}
+          <Icon name={data.balanced ? 'check' : 'x'} size={13} strokeWidth={2.5} />
+          {data.balanced ? 'Balanced' : 'Imbalanced'}
           {data.period_closed && <span className="ml-1 opacity-60">(period closed)</span>}
         </div>
       )}
@@ -286,8 +287,8 @@ export default function ReconciliationScreen() {
           )}
 
           {data.period_closed && (
-            <p className="text-xs text-status-paid font-semibold text-center py-2">
-              ✓ Period closed
+            <p className="flex items-center justify-center gap-1.5 text-xs text-status-paid font-semibold py-2">
+              <Icon name="check" size={13} strokeWidth={2.5} /> Period closed
             </p>
           )}
         </>

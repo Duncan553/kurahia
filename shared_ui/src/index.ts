@@ -5,7 +5,9 @@ export { Input } from './components/Input'
 export type { InputProps } from './components/Input'
 
 export { Select } from './components/Select'
-export type { SelectProps, SelectOption } from './components/Select'
+// SelectOption was also re-exported here, but no such type has ever existed in
+// Select.tsx — Select takes plain <option> children. It was a phantom export.
+export type { SelectProps } from './components/Select'
 
 export { Toggle } from './components/Toggle'
 export type { ToggleProps } from './components/Toggle'
@@ -49,6 +51,26 @@ export { SearchInput } from './components/SearchInput'
 export type { SearchInputProps } from './components/SearchInput'
 
 export { ErrorBoundary } from './components/ErrorBoundary'
+
+// ── Icon system (replaces raw emoji literals across all 3 PWAs) ──
+export { Icon } from './components/Icon'
+export type { IconProps, IconName } from './components/Icon'
+
+// ── Shared app plumbing (identical in employee_pwa + station_pwa, hoisted here) ──
+// owner_pwa deliberately keeps its OWN axios/authStore — those genuinely differ.
+export { default as api } from './lib/axios'
+export { useAuthStore } from './stores/authStore'
+export type { AuthUser } from './stores/authStore'
+export * from './lib/audio'
+
+// ── Shared screens ──
+// These three were byte-identical copies in employee_pwa and station_pwa. Each
+// app keeps a one-line re-export at its old path so routers didn't have to change.
+export { default as WaiterTabDetailScreen } from './screens/WaiterTabDetailScreen'
+export { default as IncidentScreen } from './screens/IncidentScreen'
+// StationQueues exports two named screens, not a default — one board component
+// parameterised by station, surfaced as Kitchen and Bar.
+export { KitchenQueueScreen, BarQueueScreen } from './screens/StationQueues'
 
 
 // ── Glass surfaces ──

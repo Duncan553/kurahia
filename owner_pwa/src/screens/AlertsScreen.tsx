@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Skeleton, EmptyState, Modal, Button, useToastStore, SearchInput } from '@shared'
+import { Skeleton, EmptyState, Modal, Button, useToastStore, SearchInput, Icon } from '@shared'
 import api from '../lib/axios'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -256,8 +256,8 @@ export default function AlertsScreen() {
                 </div>
                 {/* Acknowledge / done */}
                 {alert.status === 'ACKNOWLEDGED' ? (
-                  <span className="shrink-0 text-[10px] font-semibold text-status-paid bg-status-paid/10 px-2 py-0.5 rounded-full">
-                    ✓ Done
+                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-status-paid bg-status-paid/10 px-2 py-0.5 rounded-full">
+                    <Icon name="check" size={11} strokeWidth={2.5} /> Done
                   </span>
                 ) : (
                   <Button
