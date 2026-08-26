@@ -174,10 +174,19 @@ def send_order(order_id):
             )
             db.session.add(charge)
 
-            # Direct items (NONE) are immediately SERVED — no prep queue
+            # Direct items (NONE) are immediately SERVED — no prep queue.
+            #
+            # They must still consume their recipe HERE, because they never pass
+            # through READY, which is the only other place consume_order_item is
+            # called. Without this a spa treatment or a jet-ski ride deducted
+            # NOTHING from stock — and worse, the "no recipe -> alert the head
+            # chef" safety net inside consume_order_item never fired either, so
+            # the gap was silent. Kitchen and bar were tracked; every direct
+            # service department leaked.
             if oi.prep_station_snapshot == PrepStation.NONE.value:
                 oi.status    = OrderItemStatus.SERVED.value
                 oi.served_at = datetime.now(timezone.utc)
+                consume_order_item(oi, actor)
 
     AuditLog.log(actor=actor.username, action="order.send", target=order.id)
     db.session.commit()
@@ -343,7 +352,18 @@ def cancel_item(oi_id):
         if actor.role.level < MANAGER_LEVEL and (not oi.order or oi.order.created_by_id != actor.id):
             return jsonify({"error": "Only the waiter who took this order or a manager can cancel it."}), 403
     data = request.get_json(silent=True) or {}
-    was_ready = oi.ready_at is not None
+    # "Was this consumed?" — NOT "did it reach READY?".
+    #
+    # Prep items consume at READY, so ready_at is the right signal for them.
+    # Direct-service (NONE) items consume at SEND, when they are set SERVED, and
+    # never get a ready_at. Note the status check is essential: a NONE item that
+    # is still PENDING has NOT been consumed yet, and reversing it would invent
+    # stock that was never deducted.
+    was_ready = (
+        oi.ready_at is not None
+        or (oi.prep_station_snapshot == PrepStation.NONE.value
+            and oi.status == OrderItemStatus.SERVED.value)
+    )
     with db.session.begin_nested():
         oi.status        = OrderItemStatus.CANCELLED.value
         oi.cancelled_at  = datetime.now(timezone.utc)
