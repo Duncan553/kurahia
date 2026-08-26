@@ -13,7 +13,8 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": ["vitest/globals"]
+    // vite/client is needed for `import.meta.env` in src/lib/axios.ts
+    "types": ["vitest/globals", "vite/client"]
   },
   "include": ["src"]
 }
