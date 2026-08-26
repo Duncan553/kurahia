@@ -206,3 +206,107 @@ def test_direct_service_without_a_recipe_alerts_the_head_chef(app, client, waite
         "a sale with no recipe must raise a no-recipe notification so the gap is "
         "visible instead of silently untracked"
     )
+
+
+# ── DIRECT depletion: the "Tusker / apple" case ──────────────────────────────
+# A pass-through item IS an inventory item — selling one deducts exactly one
+# unit. This is the standard one-to-one depletion bar systems use for bottled
+# stock. Forcing a one-line "recipe" onto a beer is the wrong workflow, so
+# MenuItem.inventory_item_id links them directly.
+
+@pytest.fixture
+def bottled_beer(app):
+    """A Tusker: the menu item and the stock item are the same object."""
+    from app.models.department import Department
+    from app.models.user import User
+    dept = db.session.query(Department).filter_by(name="Bar").first()
+    owner_id = db.session.query(User).filter_by(username="owner1").first().id
+
+    stock = InventoryItem(
+        name="Tusker 500ml", unit="bottle", department_id=dept.id,
+        cost_per_unit=Decimal("180"), reorder_level=Decimal("24"),
+    )
+    db.session.add(stock)
+    db.session.flush()
+    db.session.add(StockMovement(
+        item_id=stock.id, change_amount=Decimal("100"),
+        reason=MovementReason.PURCHASE.value, actor_id=owner_id,
+        idempotency_key=str(uuid.uuid4()),
+    ))
+
+    item = MenuItem(
+        name="Tusker", price="350", category="Beer",
+        prep_station=PrepStation.NONE.value, department_id=dept.id,
+        inventory_item_id=stock.id,          # <- the direct link
+    )
+    db.session.add(item)
+    db.session.commit()
+    return {"menu_id": item.id, "stock_id": stock.id}
+
+
+def test_a_pass_through_item_deducts_one_unit_per_sale(app, client, waiter_token, bottled_beer):
+    before = get_current_stock(bottled_beer["stock_id"])
+
+    tab_id = _open_tab(client, waiter_token)
+    _order_and_send(client, waiter_token, tab_id, bottled_beer["menu_id"], qty=3)
+
+    assert get_current_stock(bottled_beer["stock_id"]) == before - Decimal("3"), (
+        "selling 3 Tuskers must take 3 bottles off the shelf — no recipe required"
+    )
+
+    move = db.session.query(StockMovement).filter_by(
+        item_id=bottled_beer["stock_id"], reason=MovementReason.SALE.value
+    ).one()
+    assert Decimal(str(move.change_amount)) == Decimal("-3")
+
+
+def test_a_pass_through_sale_raises_no_missing_recipe_warning(app, client, waiter_token, bottled_beer):
+    """A directly-linked item is fully tracked, so it must NOT be flagged."""
+    from app.models.notification import Notification
+    before = db.session.query(Notification).count()
+
+    tab_id = _open_tab(client, waiter_token)
+    _order_and_send(client, waiter_token, tab_id, bottled_beer["menu_id"])
+
+    assert db.session.query(Notification).count() == before, (
+        "a direct-linked item is tracked — warning about a missing recipe would "
+        "train staff to ignore the alert that matters"
+    )
+
+
+def test_a_recipe_wins_over_a_direct_link(app, client, waiter_token, bottled_beer):
+    """
+    If someone sets BOTH, the recipe is authoritative: it is the more specific
+    statement of what the sale consumes.
+    """
+    from app.models.department import Department
+    from app.models.user import User
+    dept = db.session.query(Department).filter_by(name="Bar").first()
+    owner_id = db.session.query(User).filter_by(username="owner1").first().id
+
+    garnish = InventoryItem(name="Lime Wedge", unit="piece", department_id=dept.id,
+                            cost_per_unit=Decimal("5"))
+    db.session.add(garnish)
+    db.session.flush()
+    db.session.add(StockMovement(
+        item_id=garnish.id, change_amount=Decimal("50"),
+        reason=MovementReason.PURCHASE.value, actor_id=owner_id,
+        idempotency_key=str(uuid.uuid4()),
+    ))
+    db.session.add(RecipeLine(
+        menu_item_id=bottled_beer["menu_id"], inventory_item_id=garnish.id,
+        quantity=Decimal("1"), unit="piece",
+    ))
+    db.session.commit()
+
+    bottles_before = get_current_stock(bottled_beer["stock_id"])
+    limes_before   = get_current_stock(garnish.id)
+
+    tab_id = _open_tab(client, waiter_token)
+    _order_and_send(client, waiter_token, tab_id, bottled_beer["menu_id"])
+
+    assert get_current_stock(garnish.id) == limes_before - Decimal("1")
+    assert get_current_stock(bottled_beer["stock_id"]) == bottles_before, (
+        "the recipe is the more specific statement; the direct link must not "
+        "double-deduct on top of it"
+    )
