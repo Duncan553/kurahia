@@ -37,7 +37,12 @@ def _allowed(filename: str) -> bool:
 
 
 def _upload_dir(category: str) -> Path:
-    base = Path(current_app.root_path).parent
+    # UPLOAD_ROOT lets the test config redirect writes to a tmp dir. Without it
+    # the path was always <repo>/employee_pwa/public/images/..., so every run of
+    # tests/test_uploads.py permanently littered the developer's working tree
+    # with stub images that nothing ever references — that is where the ~50
+    # untracked hash-named files in employee_pwa/public/images came from.
+    base = Path(current_app.config.get("UPLOAD_ROOT") or Path(current_app.root_path).parent)
     target = UPLOAD_TARGETS.get(category, UPLOAD_TARGETS["general"])
     path = base / target
     path.mkdir(parents=True, exist_ok=True)
