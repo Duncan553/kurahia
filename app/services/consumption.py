@@ -21,8 +21,43 @@ from app.extensions import db
 from app.models.stock_movement import StockMovement, MovementReason
 from app.models.recipe_line import RecipeLine
 from app.models.inventory_item import InventoryItem
+from app.models.menu_item import MenuItem
 from app.models.notification import Notification, NotificationStatus, NotificationReferenceType
 from app.services.stock import get_current_stock
+
+
+def _consume_direct(oi, actor) -> bool:
+    """
+    Deduct a pass-through menu item straight from its own inventory row.
+
+    Returns True if the item was direct-linked and the movement was written,
+    False if there is no link (so the caller can raise the untracked warning).
+    """
+    menu_item = db.session.get(MenuItem, oi.menu_item_id)
+    if not menu_item or not menu_item.inventory_item_id:
+        return False
+
+    inv_item = db.session.get(InventoryItem, menu_item.inventory_item_id)
+    if not inv_item:
+        return False
+
+    # One menu unit == one stock unit. That is what "pass-through" means: the
+    # thing on the menu and the thing on the shelf are the same object.
+    deduct = -Decimal(str(oi.quantity))
+    idem   = f"sale-{oi.id}-{inv_item.id}"
+    if db.session.query(StockMovement).filter_by(idempotency_key=idem).first():
+        return True   # already applied; still "handled"
+
+    db.session.add(StockMovement(
+        item_id=inv_item.id,
+        change_amount=deduct,
+        reason=MovementReason.SALE.value,
+        actor_id=actor.id,
+        idempotency_key=idem,
+        notes=f"direct sale: {menu_item.name} x{oi.quantity}",
+    ))
+    _check_low_stock(inv_item, actor)
+    return True
 
 
 def consume_order_item(oi, actor):
@@ -35,6 +70,14 @@ def consume_order_item(oi, actor):
     ).all()
 
     if not lines:
+        # DIRECT depletion — the "Tusker / apple" case. A pass-through item IS an
+        # inventory item, so selling N deducts N units of it. This is the standard
+        # one-to-one depletion bar systems use for bottled and canned stock;
+        # forcing a one-line "recipe" onto a beer is the wrong workflow.
+        if _consume_direct(oi, actor):
+            return
+        # Neither a recipe nor a direct link: the sale is UNTRACKED. Say so
+        # loudly rather than letting stock quietly drift.
         _notify_no_recipe(oi, actor)
         return
 

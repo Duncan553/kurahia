@@ -33,6 +33,24 @@ class MenuItem(db.Model):
     dietary_flags  = db.Column(db.String(200), nullable=True)   # comma-separated: "vegetarian, halal, vegan"
     is_active      = db.Column(db.Boolean, nullable=False, default=True)
 
+    # ── Direct depletion (the "Tusker / apple" case) ──────────────────────────
+    # A menu item is stock-tracked in one of two ways, which is the standard
+    # split in bar and restaurant systems:
+    #
+    #   RECIPE  — a composed item. A cocktail, a burger, or a spa treatment
+    #             ("back bar" usage) draws down several ingredients through
+    #             RecipeLine rows.
+    #   DIRECT  — a pass-through item. A bottled Tusker or an apple IS the
+    #             inventory item; selling one deducts exactly one unit of it.
+    #             Nobody should have to write a one-line "recipe" for a beer.
+    #
+    # Null on both means the item is UNTRACKED: it sells, but stock never moves.
+    # consume_order_item() raises a no-recipe notification in that case so the
+    # gap is visible rather than silent.
+    inventory_item_id = db.Column(
+        db.String(36), db.ForeignKey("inventory_items.id"), nullable=True, index=True
+    )
+
     department = db.relationship("Department", lazy="select")
 
     __table_args__ = (
