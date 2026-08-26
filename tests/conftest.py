@@ -3,12 +3,68 @@ conftest.py — pytest fixtures shared across all test files.
 Each test gets a fresh in-memory SQLite database — no state leaks between tests.
 """
 import pytest
+from argon2 import PasswordHasher
+
+import app.models.user as _user_model
 from app import create_app
 from app.extensions import db as _db
 from app.models.department import Department
 from app.models.role import Role
 from app.models.user import User
 from app.models.menu_item import MenuItem, PrepStation
+
+# ── Fast Argon2 for tests ONLY ───────────────────────────────────────────────
+# Argon2 is SUPPOSED to be slow — that slowness is the whole security property,
+# and production must keep the library defaults (t=3, 64MiB, p=4 → ~190ms/hash).
+#
+# But the `app` fixture below is function-scoped and seeds 9 password/PIN hashes
+# for EVERY test. At production cost that is ~1.7s of pure key derivation before
+# a single assertion runs: 770 tests x 1.7s ≈ 25 minutes, which was essentially
+# the entire suite runtime.
+#
+# We swap the module-level hasher for a deliberately weak one. This is safe
+# because it happens HERE, in the test harness — `app/models/user.py` is not
+# modified, so there is no code path by which these parameters can reach
+# production. Nothing in the suite asserts anything about KDF strength; the
+# tests care that the right password verifies and the wrong one doesn't, which
+# is unchanged.
+#
+# EXCEPT the timing-attack tests. test_security_category_4 proves you cannot
+# enumerate usernames by timing /auth/login: the "no such user" path runs a
+# DUMMY Argon2 verify so both paths cost the same, asserted within 30%. That
+# equalisation only holds while the hash DOMINATES the request — at ~210ms it
+# does; at ~1ms it does not, because DB lookup and Flask overhead become
+# comparable and swamp a 30% tolerance. Those tests must run at real cost.
+# Mark them @pytest.mark.production_hashing and this hook restores it.
+_FAST_PH = PasswordHasher(time_cost=1, memory_cost=8, parallelism=1)
+_PROD_PH = PasswordHasher()
+_user_model._ph = _FAST_PH
+
+
+def pytest_runtest_setup(item):
+    """Pick the hasher per-test, BEFORE any fixture runs.
+
+    This must be a hook, not a fixture: argon2 reads its cost parameters from
+    the stored hash string, not from the verifier. So the swap has to happen
+    before the `app` fixture seeds its users — otherwise verify() would replay
+    the cheap parameters baked into a weak seed hash and the timing test would
+    still measure ~1ms. A fixture cannot reliably order itself ahead of `app`;
+    pytest_runtest_setup always runs first.
+
+    These tests are also skipped under pytest-xdist. They MEASURE elapsed time,
+    and Argon2 runs at parallelism=4: with 4 xdist workers that is up to 16
+    threads competing for 8 cores, so the numbers become noise and the 30%
+    tolerance fails at random. Verified: `pytest -m production_hashing` passes
+    4/4 serially and fails 2/4 under `-n 4`, same code both times. Skipping is
+    honest — a timing assertion measured under contention proves nothing.
+    Run them in the serial pass; see pytest.ini for the two-command workflow.
+    """
+    if item.get_closest_marker("production_hashing"):
+        if hasattr(item.config, "workerinput"):   # set by xdist inside a worker
+            pytest.skip("timing-sensitive: run serially, not under xdist -n")
+        _user_model._ph = _PROD_PH
+    else:
+        _user_model._ph = _FAST_PH
 
 
 @pytest.fixture(scope="function")
