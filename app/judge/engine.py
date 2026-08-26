@@ -152,8 +152,14 @@ def _run_budget_exceeded() -> int:
     from app.models.budget import Budget
     from app.models.department import Department
 
+    from app.services.finance import get_budget_spend
+
     now = datetime.now(timezone.utc)
     period = f"{now.year}-{now.month:02d}"
+
+    # The window get_budget_spend sums over: this calendar month so far.
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    month_end = now
 
     budgets = db.session.query(Budget).filter_by(is_active=True).all()
     alerts_fired = 0
@@ -165,7 +171,13 @@ def _run_budget_exceeded() -> int:
             continue
 
         budget_amt = Decimal(str(b.amount))
-        spent = Decimal(str(b.spent)) if hasattr(b, 'spent') and b.spent else Decimal("0")
+
+        # Spend is DERIVED from the purchase ledger (invariant 2), never stored.
+        # This used to read `b.spent` behind a `hasattr(b, 'spent')` guard — but
+        # Budget has no `spent` column, so the guard was always False, `spent`
+        # was always 0, the `spent <= budget_amt` check below always continued,
+        # and this alert had never fired once since it was written.
+        spent = get_budget_spend(b.department_id, month_start, month_end)
 
         if spent <= budget_amt:
             continue
@@ -180,8 +192,8 @@ def _run_budget_exceeded() -> int:
             severity=AlertSeverity.HIGH if spent > budget_amt * Decimal("1.2") else AlertSeverity.MEDIUM,
             description=f"{dept_name} department has spent {pct}% of its monthly budget "
                         f"(KSh {spent:,.0f} of KSh {budget_amt:,.0f}).",
-            period_start=now.replace(day=1, hour=0, minute=0, second=0, microsecond=0),
-            period_end=now,
+            period_start=month_start,
+            period_end=month_end,
         )
         alerts_fired += 1
 
