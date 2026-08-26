@@ -75,6 +75,9 @@ export { KitchenQueueScreen, BarQueueScreen } from './screens/StationQueues'
 export { GlassCard } from './components/GlassCard'
 export type { GlassCardProps, GlassIntensity } from './components/GlassCard'
 
+// ── Hooks ──
+export { useIsDesktop } from './hooks/useIsDesktop'
+
 // ── Motion presets ──
 export { slideUp, fadeScale, slideFromRight } from './motion/presets'
 
