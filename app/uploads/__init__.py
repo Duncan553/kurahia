@@ -31,6 +31,28 @@ UPLOAD_TARGETS = {
     "general": "employee_pwa/public/images/uploads",
 }
 
+MANAGER_LEVEL = 5
+
+# Minimum role level per category. Invariant 7 says re-check role on EVERY
+# request — this endpoint had only @require_active_user and no role check at
+# all, so any level-1 staff member could overwrite the guest-facing menu
+# photos, or drop a file into the receipts directory that cash reconciliation
+# treats as evidence. The UI only offered menu uploads to managers, but the UI
+# is not the security boundary.
+#
+# `profile` stays open: a staff member uploading their OWN photo is the point.
+# `receipt` stays open because recording a purchase (which requires the receipt
+# photo, app/models/purchase.py) is a normal staff duty.
+UPLOAD_MIN_LEVEL = {
+    "menu":    MANAGER_LEVEL,   # guest-facing content
+    "villa":   MANAGER_LEVEL,   # guest-facing content
+    "spa":     MANAGER_LEVEL,   # guest-facing content
+    "water":   MANAGER_LEVEL,   # guest-facing content
+    "general": MANAGER_LEVEL,   # untyped dumping ground — keep it narrow
+    "profile": 0,
+    "receipt": 0,
+}
+
 
 def _allowed(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -59,6 +81,12 @@ def upload_file(category):
 
     if category not in UPLOAD_TARGETS:
         return jsonify({"error": f"Unknown category '{category}'. Use: {list(UPLOAD_TARGETS.keys())}"}), 400
+
+    min_level = UPLOAD_MIN_LEVEL.get(category, MANAGER_LEVEL)
+    if actor.role.level < min_level:
+        return jsonify({
+            "error": f"Manager or above required to upload {category} images."
+        }), 403
 
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded. Send as multipart/form-data with field name 'file'."}), 400

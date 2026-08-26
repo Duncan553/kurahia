@@ -146,3 +146,51 @@ def test_unauthenticated_upload_rejected(client):
         content_type="multipart/form-data",
     )
     assert rv.status_code == 401
+
+
+# ── Authorization (added 2026-08-26) ──────────────────────────────────────────
+# upload_file had @require_active_user and NO role check at all, so any level-1
+# staff member could overwrite guest-facing menu photos. Invariant 7 requires
+# re-checking role on every request; the UI-only restriction was not a boundary.
+
+def test_staff_cannot_upload_menu_images(client, waiter_token):
+    rv = client.post(
+        "/uploads/menu",
+        data={"file": fake_image("sneaky.png")},
+        content_type="multipart/form-data",
+        headers={"Authorization": f"Bearer {waiter_token}"},
+    )
+    assert rv.status_code == 403
+    assert "error" in rv.get_json()
+
+
+def test_manager_can_upload_menu_images(client, manager_token):
+    rv = client.post(
+        "/uploads/menu",
+        data={"file": fake_image("dish.png")},
+        content_type="multipart/form-data",
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 201, rv.get_json()
+
+
+def test_staff_can_still_upload_their_own_profile_photo(client, waiter_token):
+    """profile stays open on purpose — uploading your own photo is the point."""
+    rv = client.post(
+        "/uploads/profile",
+        data={"file": fake_image("me.png")},
+        content_type="multipart/form-data",
+        headers={"Authorization": f"Bearer {waiter_token}"},
+    )
+    assert rv.status_code == 201, rv.get_json()
+
+
+def test_staff_can_still_upload_receipts(client, waiter_token):
+    """Recording a purchase requires a receipt photo — a normal staff duty."""
+    rv = client.post(
+        "/uploads/receipt",
+        data={"file": fake_image("receipt.png")},
+        content_type="multipart/form-data",
+        headers={"Authorization": f"Bearer {waiter_token}"},
+    )
+    assert rv.status_code == 201, rv.get_json()
