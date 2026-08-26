@@ -3,6 +3,7 @@ config.py — All environment-aware settings live here.
 The app factory reads from this; nothing else touches env vars directly.
 """
 import os
+import tempfile
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -47,6 +48,10 @@ class TestingConfig(BaseConfig):
     TESTING = True
     # Fresh in-memory DB per test run; no filesystem state
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    # Uploads go to a throwaway dir, not employee_pwa/public/images. Without
+    # this, every test_uploads.py run left stub images in the working tree
+    # forever — see the note in app/uploads/__init__.py::_upload_dir.
+    UPLOAD_ROOT = tempfile.mkdtemp(prefix="kurahia-test-uploads-")
     # Use lower thresholds so lockout tests don't need 5 attempts
     FAILED_ATTEMPTS_LOCKOUT = 3
     LOCKOUT_MINUTES = 1
