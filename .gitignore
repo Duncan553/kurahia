@@ -14,10 +14,15 @@ build/
 # Dev-only seed scripts (contain plaintext passwords — never commit)
 test_setup.sh
 
-# PWA build artifacts
-employee_pwa/node_modules/
-employee_pwa/dist/
-employee_pwa/.vite/
-owner_pwa/node_modules/
-owner_pwa/dist/
-owner_pwa/.vite/
+# PWA build artifacts — global rules, NOT per-app.
+# The old list named employee_pwa and owner_pwa explicitly; shared_ui and
+# station_pwa were added to the project later and nobody appended them, so
+# 8,218 files of shared_ui/node_modules got committed. These match at any depth.
+node_modules/
+.vite/
+
+# Generated test output
+tests/playwright/sweep-results/
+tests/playwright/screenshots/
+playwright-report/
+test-results/
