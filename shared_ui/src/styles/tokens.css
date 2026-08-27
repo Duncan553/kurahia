@@ -22,7 +22,10 @@
   /* ── System palette ──────────────────────────────────────────── */
   --color-primary-main: #fa5c29;
   --color-primary-light: #ffb59f;
-  --color-primary-dark: #af3000;
+  /* #af3000 is 2.86:1 on the card surface — below even the 3:1 floor for large
+     text, and it is used 25 times as text-primary-dark. Lightened to clear AA
+     while staying the same hue family. */
+  --color-primary-dark: #e0693a;
   --color-cream-card: #1e100c;
   --color-cream-alt: rgba(43, 28, 24, 0.6);
   --color-cream-deep: rgba(66, 49, 44, 0.6);
@@ -30,7 +33,12 @@
   /* SHARP text: pure white primary for contrast */
   --color-ink-primary: #ffffff;
   --color-ink-secondary: rgba(255, 235, 225, 0.82);
-  --color-ink-tertiary: rgba(210, 180, 170, 0.55);
+  /* Was rgba(210,180,170,0.55) -> flattens to #816a63 = 3.68:1 on the card
+     surface, which FAILS WCAG AA for normal text. It is the most-used text
+     token in the whole codebase (650 uses, more than ink-primary) and most of
+     those are 9-12px labels, so no large-text exemption applies. Most of what
+     reads as "dull" is this one line. Now 7.0:1. */
+  --color-ink-tertiary: #bda49b;
 
   /* ── Ticket palette ──────────────────────────────────────────── */
   --color-ticket-paper: rgba(43, 28, 24, 0.8);
@@ -155,8 +163,16 @@ body::after {
     radial-gradient(ellipse 50% 60% at 20% 85%, rgba(198, 138, 40, 0.05) 0%, transparent 70%),
     /* Center: very faint sage */
     radial-gradient(ellipse 70% 70% at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 60%),
-    /* Base overlay */
-    linear-gradient(160deg, rgba(35, 18, 12, 0.76) 0%, rgba(18, 9, 6, 0.48) 45%, rgba(30, 15, 10, 0.70) 100%);
+    /* Base scrim.
+       The middle stop used to be 0.48 alpha, so halfway down every page the
+       resort photo came through at HALF strength — and that is precisely where
+       list content sits. Text over the dark roof read fine while the same text
+       over the green garden washed out: white swung between roughly 2.7:1 and
+       9.1:1 depending on nothing but scroll position.
+       No text colour can fix a target that moves that much, so the backdrop is
+       stabilised instead. The photo is still visible and still carries the
+       identity — it just stops competing with the words on top of it. */
+    linear-gradient(160deg, rgba(35, 18, 12, 0.90) 0%, rgba(20, 11, 8, 0.86) 45%, rgba(30, 15, 10, 0.90) 100%);
   pointer-events: none;
 }
 
@@ -164,8 +180,11 @@ body::after {
 .glass-card {
   contain: layout paint;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
-  backdrop-filter: blur(24px) saturate(180%) brightness(1.05);
-  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.05);
+  /* saturate(180%) was amplifying the olive cast of the resort photo behind the
+     glass, so cards picked up a competing colour and read muddy. 110% keeps the
+     glass alive without letting the backdrop tint it. */
+  backdrop-filter: blur(24px) saturate(110%) brightness(1.05);
+  -webkit-backdrop-filter: blur(24px) saturate(110%) brightness(1.05);
   border: 1px solid rgba(255, 255, 255, 0.20);
   border-top-color: rgba(255, 255, 255, 0.30);
   border-radius: 1rem;
