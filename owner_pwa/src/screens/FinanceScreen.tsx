@@ -421,7 +421,87 @@ function ReconStrip({ period }: { period: string }) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-type Section = 'revenue' | 'budget'
+type Section = 'revenue' | 'budget' | 'vat'
+
+/**
+ * VAT for a period — the figures whoever files the return needs.
+ *
+ * A bridge, not an eTIMS integration: filing is handled elsewhere, so what the
+ * system owes that person is an accurate, reproducible statement of what was
+ * sold and how much tax it contained. Every figure is derived from the charge
+ * ledger, so running the same period twice gives the same answer and it can
+ * never disagree with the receipts.
+ */
+function VatSection({ period }: { period: string }) {
+  // period is YYYY-MM; the endpoint wants day bounds.
+  const [y, m] = period.split('-').map(Number)
+  const from = `${period}-01`
+  const to = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10)  // last day of month
+
+  interface RateRow { rate_percent: string; charges: number; gross: string; net: string; tax: string }
+  interface Vat {
+    pricing: string
+    by_rate: RateRow[]
+    totals: { gross: string; net: string; tax: string }
+    untracked: { charges: number; gross: string; note: string }
+  }
+
+  const { data, isLoading, isError } = useQuery<Vat>({
+    queryKey: ['vat-summary', from, to],
+    queryFn: () => api.get<Vat>(`/finance/vat-summary?from=${from}&to=${to}`).then(r => r.data),
+    staleTime: 60_000,
+  })
+
+  const kes = (v: string) =>
+    `KSh ${parseFloat(v).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+  if (isLoading) return <div className="space-y-2">{[1,2].map(i => <Skeleton key={i} variant="card" />)}</div>
+  if (isError || !data) return <p className="text-sm text-status-failed py-6">Could not load VAT for {period}.</p>
+
+  return (
+    <div className="space-y-4">
+      <p className="text-[11px] text-ink-tertiary">{data.pricing}</p>
+
+      <div className="grid sm:grid-cols-3 gap-3">
+        {([['Gross', data.totals.gross], ['Net of VAT', data.totals.net], ['VAT', data.totals.tax]] as const)
+          .map(([label, value]) => (
+          <div key={label} className="glass-card rounded-2xl p-4">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary">{label}</p>
+            <p className="text-lg font-bold tabular-nums text-ink-primary mt-1">{kes(value)}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Grouped by the rate that applied AT THE TIME, so a period spanning a
+          statutory rate change reports both rather than blending them. */}
+      {data.by_rate.length > 0 && (
+        <div className="glass-card rounded-2xl p-4 space-y-2">
+          <p className="text-[10px] font-bold tracking-widest uppercase text-ink-secondary mb-1">By rate</p>
+          {data.by_rate.map(r => (
+            <div key={r.rate_percent} className="flex items-center justify-between py-1.5 border-b border-white/10 last:border-0">
+              <span className="text-sm text-ink-secondary">{r.rate_percent}% · {r.charges} charges</span>
+              <span className="text-sm font-semibold tabular-nums text-ink-primary">
+                {kes(r.tax)} <span className="text-xs text-ink-tertiary">of {kes(r.gross)}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Reported separately, never folded into the totals: their treatment is
+          unknown, and handing an accountant a number the resort cannot stand
+          behind is worse than showing the gap. */}
+      {data.untracked.charges > 0 && (
+        <div className="glass-card rounded-2xl p-4 border-l-4 border-l-status-pending">
+          <p className="text-sm font-semibold text-status-pending">
+            {data.untracked.charges} charges outside these totals — {kes(data.untracked.gross)}
+          </p>
+          <p className="text-xs text-ink-secondary mt-1">{data.untracked.note}</p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function FinanceScreen() {
   const [period, setPeriod] = useState(PERIODS[0])
@@ -477,7 +557,7 @@ export default function FinanceScreen() {
 
       {/* Section tabs */}
       <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-6" role="tablist">
-        {([['revenue', 'Revenue'], ['budget', 'Budget Burn']] as [Section, string][]).map(([key, label]) => (
+        {([['revenue', 'Revenue'], ['budget', 'Budget Burn'], ['vat', 'VAT']] as [Section, string][]).map(([key, label]) => (
           <button
             key={key}
             role="tab"
@@ -500,6 +580,7 @@ export default function FinanceScreen() {
       <div className="mt-4">
         {section === 'revenue' && <RevenueSection period={period} />}
         {section === 'budget'  && <BudgetSection  period={period} />}
+        {section === 'vat'     && <VatSection     period={period} />}
       </div>
     </div>
   )
