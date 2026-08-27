@@ -136,13 +136,24 @@ def edit_menu_item(item_id):
         return jsonify({"error": "Menu item not found."}), 404
 
     data = request.get_json(silent=True) or {}
+    # Capture what actually changed, so the audit log records old -> new rather
+    # than just "someone edited this". A price is the most sensitive field on a
+    # menu item: repricing is how margin quietly disappears, and "who dropped
+    # the Tilapia to 900 and when" is unanswerable without the old value.
+    changes: list[str] = []
+
     with db.session.begin_nested():
         if "name" in data:
-            item.name = data["name"].strip()
+            new_name = data["name"].strip()
+            if new_name != item.name:
+                changes.append(f"name {item.name!r} -> {new_name!r}")
+            item.name = new_name
         if "price" in data:
             new_price = Decimal(str(data["price"]))
             if new_price < 0:
                 return jsonify({"error": "Price cannot be negative."}), 400
+            if new_price != Decimal(str(item.price)):
+                changes.append(f"price {item.price} -> {new_price}")
             item.price = new_price
         if "category" in data:
             # Same normalization as create: strip + title-case
@@ -159,7 +170,8 @@ def edit_menu_item(item_id):
         if "dietary_flags" in data:
             item.dietary_flags = data["dietary_flags"]
 
-    AuditLog.log(actor=actor.username, action="menu.item.edit", target=item.name)
+    AuditLog.log(actor=actor.username, action="menu.item.edit", target=item.name,
+                 details="; ".join(changes) if changes else "no effective change")
     db.session.commit()
     return jsonify({"id": item.id, "name": item.name, "price": str(item.price)}), 200
 
