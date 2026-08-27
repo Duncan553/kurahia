@@ -1,0 +1,239 @@
+<!-- ══════════════ ACT 5 — THE DASHBOARDS ══════════════ -->
+<section>
+  <div class="act">
+    <div class="num">ACT 05</div>
+    <div>
+      <h2>Every dashboard, and the question it answers</h2>
+      <div class="sub">A screen that answers no question is a screen nobody opens</div>
+    </div>
+  </div>
+
+  <div class="col" style="display:flex; flex-direction:column; gap:22px;">
+    <p>
+      There are three separate apps, and which one a person gets is decided by their job,
+      not by a setting they can change. A waiter cannot reach the owner's app by typing a
+      different address — the system checks who they are on every single request, not just
+      when they log in.
+    </p>
+    <p>
+      That last point matters more than it sounds. If a person is dismissed at 2pm, their
+      access dies at 2pm, even if their phone still has them logged in.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>App</th><th>Who carries it</th><th>Runs on</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Station</strong></td><td>Tills, the gate, the kitchen pass, the spa desk</td><td>Fixed tablets on resort wifi</td></tr>
+          <tr><td><strong>Employee</strong></td><td>Every member of staff, and managers</td><td>Their own phone</td></tr>
+          <tr><td><strong>Owner</strong></td><td>The owner, and the manager for some screens</td><td>Phone or laptop, from anywhere</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ─── Owner ─── -->
+  <div class="col" style="display:flex; flex-direction:column; gap:18px; padding-top:40px;">
+    <h3>The owner's app</h3>
+    <p>Twelve screens. Each one exists to answer a question the owner would otherwise have to ask a person.</p>
+  </div>
+
+  <div class="plate" style="display:flex; flex-direction:column; gap:18px;">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Screen</th><th>The question it answers</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Dashboard</strong></td><td>Is today normal? Revenue, what needs approving, what is unreconciled — in one screen.</td><td><span class="pill ok">Live</span></td></tr>
+          <tr><td><strong>Finance</strong></td><td>What came in, by what method, and what has not yet been matched to a bank record.</td><td><span class="pill ok">Live</span></td></tr>
+          <tr><td><strong>Reconciliation</strong></td><td>Which cash drawers came up short, and whose shift it was.</td><td><span class="pill ok">Live</span></td></tr>
+          <tr><td><strong>Audit</strong></td><td>Who did that, and when? Every change ever made, in order, unalterable.</td><td><span class="pill ok">Live</span></td></tr>
+          <tr><td><strong>Menu profit</strong></td><td>Which dishes make money, which are popular but thin, which should go.</td><td><span class="pill wait">Needs costs</span></td></tr>
+          <tr><td><strong>Alerts</strong></td><td>What did the system notice on its own — spoilage spikes, budgets blown, odd patterns.</td><td><span class="pill ok">Live</span></td></tr>
+          <tr><td><strong>Payroll draft</strong></td><td>What is owed this period, worked out from clock-ins rather than from memory.</td><td><span class="pill ok">Live</span></td></tr>
+          <tr><td><strong>Purchase approvals</strong></td><td>What is staff asking to buy, and does it fit the budget?</td><td><span class="pill ok">Live</span></td></tr>
+          <tr><td><strong>Staff</strong></td><td>Who works here, at what level, in which department — and who to switch off.</td><td><span class="pill ok">Live</span></td></tr>
+          <tr><td><strong>Bookings</strong></td><td>Who is arriving, who is leaving, what is occupied.</td><td><span class="pill ok">Live</span></td></tr>
+          <tr><td><strong>Feedback</strong></td><td>What guests actually said, tied to the shift it happened on.</td><td><span class="pill ok">Live</span></td></tr>
+          <tr><td><strong>Settings</strong></td><td>The numbers the business runs on — kept in the system, changeable without a programmer.</td><td><span class="pill ok">Live</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!--IMG:owner-dashboard|The owner's opening screen. Every tile answers one question and links to the screen that explains it.-->
+    <!--ROW:owner-finance|Finance: money in, by method.::owner-reconciliation|Reconciliation: where the drawer disagreed with the ledger.-->
+    <!--ROW:owner-audit|The audit trail: every action, in order, chained so a deletion is detectable.::owner-menu-profit|Menu profit: dishes ranked by what they actually contribute.-->
+    <!--ROW:owner-alerts|Alerts the system raised on its own.::owner-payroll|Payroll worked out from real clock-ins.-->
+    <!--ROW:owner-purchase-approvals|Purchase requests waiting on the owner.::owner-staff|Staff, roles and levels.-->
+    <!--ROW:owner-bookings|Arrivals, departures, occupancy.::owner-feedback|Guest feedback tied to shifts.-->
+    <!--IMG:owner-settings|Settings. The VAT rate, the entry fee and the thresholds live here — in the system, not buried in code where only a programmer could change them.-->
+  </div>
+
+  <div class="col" style="display:flex; flex-direction:column; gap:18px; padding-top:20px;">
+    <div class="note cool">
+      <div class="label">The audit screen deserves a paragraph</div>
+      <p>
+        Every action writes a line, and each line carries a fingerprint of the line before
+        it. Remove or edit any entry and every fingerprint after it stops matching.
+      </p>
+      <p>
+        You cannot quietly delete an inconvenient row. You can only add. That is what makes
+        the answer to "who voided that order at 9pm?" worth having.
+      </p>
+      <p>
+        The captured screen holds <span class="val">1,510</span> entries and reads like a
+        diary of the day: <code>ivan.kipchoge order.send</code>,
+        <code>hassan.omondi gate.issue_band band=17</code>, three clock-ins with the tablet's
+        address, a login.
+      </p>
+      <p>
+        Follow that band number across this document. Here in the audit log,
+        <span class="val">band=17</span> is recorded as issued by hassan.omondi. On the gate
+        screen in Act 1, band <span class="val">#17</span> appears again in the recent list,
+        now showing <span class="val">KSh 4,200 owed</span> after the tilapia charged to it.
+      </p>
+      <p>
+        <strong>Two screens, written by different parts of the system, describing the same
+        wristband at two moments in its life.</strong> Nobody linked them. They agree because
+        neither is storing its own copy of the truth.
+      </p>
+    </div>
+  </div>
+
+  <!-- ─── Manager ─── -->
+  <div class="col" style="display:flex; flex-direction:column; gap:18px; padding-top:40px;">
+    <h3>The manager's screens</h3>
+    <p>
+      The manager runs the day. These screens sit inside the staff app, and open only for
+      people at manager level or above.
+    </p>
+  </div>
+
+  <div class="plate" style="display:flex; flex-direction:column; gap:18px;">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Screen</th><th>The question it answers</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Manager home</strong></td><td>What needs me right now?</td></tr>
+          <tr><td><strong>Cash</strong></td><td>Does the drawer match what the system says was taken?</td></tr>
+          <tr><td><strong>Staff</strong></td><td>Who is on the books, and what is each person allowed to do?</td></tr>
+          <tr><td><strong>Attendance</strong></td><td>Who actually turned up, and when?</td></tr>
+          <tr><td><strong>Shifts &amp; roster</strong></td><td>Who is meant to be working, and is anyone double-booked?</td></tr>
+          <tr><td><strong>Leave</strong></td><td>Who has asked for time off, and can the roster take it?</td></tr>
+          <tr><td><strong>Purchases</strong></td><td>What has been requested, and what has it cost against budget?</td></tr>
+          <tr><td><strong>Menu</strong></td><td>What is on sale, at what price, and what does it cost to make?</td></tr>
+          <tr><td><strong>Front desk</strong></td><td>Deposits, confirmations and check-ins waiting to be dealt with.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!--IMG:manager-home|The manager's home screen.-->
+    <!--ROW:manager-staff|Staff, with the role each person holds.::manager-attendance|Attendance from real clock-ins.-->
+    <!--ROW:manager-shifts|Shifts.::manager-roster|The roster.-->
+    <!--ROW:manager-menu|The menu, with cost and margin per dish.::manager-purchases|Purchase requests and budget.-->
+  </div>
+
+  <div class="col" style="display:flex; flex-direction:column; gap:18px; padding-top:20px;">
+    <div class="note">
+      <div class="label">Who is allowed to set a price</div>
+      <p>
+        The <strong>head chef</strong> owns recipes, ingredients, dishes and their prices —
+        for the kitchen <em>and</em> the bar, because a cocktail is a recipe like any other.
+      </p>
+      <p>
+        The <strong>manager</strong> owns the service catalogue and prices across every
+        department — the spa treatments, the boat rides, the day passes.
+      </p>
+      <p>
+        These do not overlap, and the boundary is enforced. A chef cannot reclassify a spa
+        treatment as a kitchen item in order to take control of it.
+      </p>
+    </div>
+  </div>
+
+  <!-- ─── Staff ─── -->
+  <div class="col" style="display:flex; flex-direction:column; gap:18px; padding-top:40px;">
+    <h3>What ordinary staff see</h3>
+    <p>
+      Four screens, deliberately. A waiter does not need a dashboard; they need to clock in,
+      see their shifts, read what they have been sent, and know how they are doing.
+    </p>
+  </div>
+
+  <div class="plate" style="display:flex; flex-direction:column; gap:18px;">
+    <!--ROW:staff-clock|Clock in and out. One tap, and the direction is decided by the system, not by the person tapping.::staff-notifications|The waiter's inbox — and a thread running through this whole document.-->
+
+    <div class="note cool">
+      <div class="label">Follow the fish one last time</div>
+      <p>
+        That inbox reads: <strong>"Order ready — Band #20. 1.00× Grilled Tilapia is ready for
+        pickup."</strong> And again for bands #19, #18 and #17.
+      </p>
+      <p>
+        Those are the same tilapia dishes that appear on band #20's bill in Act 2, that moved
+        0.35&nbsp;kg of fish out of the store room in Act 3, and that left band #17 owing
+        KSh&nbsp;4,200 on the gate screen in Act 1.
+      </p>
+      <p>
+        One chef tapping "ready" charged a guest, cleared a kitchen ticket, deducted stock,
+        wrote an audit line, and told the waiter to collect — and every screen in this
+        document is looking at that single event from a different chair.
+      </p>
+    </div>
+    <!--IMG:staff-access-restricted|What a waiter gets on typing the address of a manager screen.-->
+  </div>
+
+  <div class="col" style="display:flex; flex-direction:column; gap:18px; padding-top:20px;">
+    <div class="note cool">
+      <div class="label">Two doors, not one</div>
+      <p>
+        Look at the menu down the left of that screenshot: <strong>Clock, Alerts, Profile,
+        Calendar, Incident.</strong> That is everything this waiter can reach. There is no
+        Schedule, no Manager, no Finance — the menu shows only what the person can actually use.
+      </p>
+      <p>
+        The screenshot itself is the <em>second</em> door. It is what happens if someone
+        types the address anyway, or follows an old bookmark. The menu hides it; the guard
+        refuses it.
+      </p>
+      <p>
+        And it says so plainly — "You don't have permission to view this page" with a way
+        back. An earlier version showed a blank page or told people to check their internet
+        connection, which sent staff chasing a network fault that did not exist.
+      </p>
+    </div>
+  </div>
+
+  <div class="col" style="display:flex; flex-direction:column; gap:18px; padding-top:20px;">
+    <div class="note">
+      <div class="label">A bug worth remembering from the clock screen</div>
+      <p>
+        For a period, the "Clock Out" button clocked people <em>in</em>. The button knew what
+        it was called but the request underneath it was hard-wired the wrong way.
+      </p>
+      <p>
+        Nobody could end a shift, and because pay is worked out from these records, it was a
+        payroll problem rather than a cosmetic one. It is fixed — the direction is now decided
+        once, when the button is tapped, and carried through.
+      </p>
+    </div>
+  </div>
+
+  <!-- ─── Station ─── -->
+  <div class="col" style="display:flex; flex-direction:column; gap:18px; padding-top:40px;">
+    <h3>The station tablets</h3>
+    <p>
+      These are the fixed screens on the resort floor — the gate, the bar, the kitchen pass,
+      the spa desk, the front desk. They hold the fewest screens of the three apps on purpose.
+    </p>
+    <p>
+      The station app is not allowed to reach the finance screens at all. Not hidden from
+      them — <em>unable</em> to reach them. A till on a public counter is the easiest device
+      in the resort to walk up to, so it carries the least.
+    </p>
+  </div>
+
+  <div class="plate" style="display:flex; flex-direction:column; gap:18px;">
+    <!--ROW:manager-front-desk|Front desk: deposits, confirmations and check-ins.::manager-leave|Leave requests against the roster.-->
+    <!--IMG:chef-dashboard|The head chef's screen — recipes, ingredients, dishes and their prices, all in one place.-->
+  </div>
+</section>

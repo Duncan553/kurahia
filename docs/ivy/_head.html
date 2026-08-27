@@ -1,0 +1,239 @@
+<title>The Ivy Document</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  /* ── Tokens ────────────────────────────────────────────────────────────────
+     Taken from the resort app's own styles/tokens.css rather than invented, so
+     the screenshots below sit in the same world as the page around them. This
+     page commits to one dark treatment deliberately: every screenshot in it is
+     dark glass, and a light ground would make each figure look like a hole.
+     Every colour is therefore painted explicitly and none is theme-conditional. */
+  :root {
+    --ground:      #17100c;   /* warm near-black — the app's brown, not neutral */
+    --ground-deep: #100b08;
+    --surface:     #221610;
+    --surface-2:   #2b1c14;
+    --line:        #3a2a20;
+    --ink:         #f0e4de;
+    --ink-soft:    #bda49b;   /* the token corrected to 4.5:1 this session */
+    --ink-faint:   #8d7168;
+    --accent:      #e0693a;   /* corrected --color-primary-dark */
+    --accent-soft: #f0a883;
+    --lake:        #4a8b96;   /* cool counterpoint: verified, measured */
+    --ok:          #5fa878;
+    --wait:        #d19a3f;
+    --none:        #c9553d;
+
+    --measure: 68ch;
+    --plate:   min(1080px, 94vw);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    margin: 0;
+    /* A faint warm bloom from the top, echoing the app's glass over a photo. */
+    background-image:
+      radial-gradient(120% 60% at 50% -10%, rgba(224,105,58,0.10) 0%, transparent 60%);
+    background-attachment: fixed;
+  }
+
+  /* ── Layout ──────────────────────────────────────────────────────────────
+     One reading column. Figures opt out with .plate to break wider. Spacing is
+     owned by the flex container, never by per-element margins. */
+  main { display: flex; flex-direction: column; align-items: center; gap: 0; padding: 0 20px 120px; }
+  section { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 22px; }
+  .col   { width: 100%; max-width: var(--measure); }
+  .plate { width: 100%; max-width: var(--plate); }
+
+  h1, h2, h3 { font-family: Fraunces, Georgia, serif; text-wrap: balance; margin: 0; line-height: 1.15; }
+  p, ul, ol { margin: 0; }
+  ul, ol { padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; }
+  li::marker { color: var(--accent); }
+
+  /* ── Masthead ──────────────────────────────────────────────────────────── */
+  header {
+    width: 100%; display: flex; flex-direction: column; align-items: center;
+    gap: 26px; padding: 96px 20px 72px; text-align: center;
+    border-bottom: 1px solid var(--line);
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent);
+  }
+  header h1 { font-size: clamp(42px, 8vw, 78px); font-weight: 600; font-variation-settings: "opsz" 100; }
+  header .standfirst { max-width: 56ch; color: var(--ink-soft); font-size: 19px; }
+  .byline {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-faint);
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  }
+  .byline span { white-space: nowrap; }
+
+  /* ── Act headings — numbered because a guest's day IS a sequence ───────── */
+  .act { width: 100%; max-width: var(--measure); display: flex; gap: 20px; align-items: baseline;
+         padding-top: 84px; }
+  .act .num {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--accent);
+    letter-spacing: 0.14em; flex-shrink: 0; padding-top: 10px;
+  }
+  .act h2 { font-size: clamp(28px, 4.6vw, 40px); font-weight: 600; }
+  .act .sub { color: var(--ink-soft); font-size: 15px; margin-top: 6px; }
+
+  h3 { font-size: 22px; font-weight: 600; color: var(--ink); padding-top: 14px; }
+
+  /* ── Inline devices ──────────────────────────────────────────────────────
+     .val is a real observed number. Used ONLY for values a run actually
+     produced, so a reader can always tell evidence from prose. */
+  .val {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.9em; font-weight: 500;
+    background: rgba(74,139,150,0.16); color: #9fd4dd;
+    border: 1px solid rgba(74,139,150,0.35); border-radius: 5px; padding: 1px 6px;
+    white-space: nowrap;
+  }
+  code {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.88em;
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 5px; padding: 1px 5px; color: var(--accent-soft);
+  }
+  strong { color: #fff; font-weight: 600; }
+  em { color: var(--ink); font-style: italic; }
+
+  /* ── Callout ─────────────────────────────────────────────────────────── */
+  .note {
+    border-left: 3px solid var(--accent); background: var(--surface);
+    padding: 18px 22px; border-radius: 0 10px 10px 0;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .note .label {
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  .note.cool { border-left-color: var(--lake); }
+  .note.cool .label { color: var(--lake); }
+
+  /* ── Figures ─────────────────────────────────────────────────────────── */
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  figure img {
+    width: 100%; height: auto; display: block; border-radius: 10px;
+    border: 1px solid var(--line);
+  }
+  figcaption {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; line-height: 1.6;
+    color: var(--ink-faint); display: flex; gap: 10px; align-items: baseline;
+  }
+  figcaption .tag { color: var(--lake); flex-shrink: 0; }
+  .figrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 22px; }
+
+  /* ── Diagrams ────────────────────────────────────────────────────────── */
+  .diagram {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 26px 20px; overflow-x: auto;
+  }
+  .diagram pre.mermaid { margin: 0; background: none; border: none; }
+
+  /* ── Tables ──────────────────────────────────────────────────────────── */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 11px 15px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-faint); background: var(--surface);
+    font-weight: 500; white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Status pills — state readable at a glance, separate from the accent hue */
+  .pill {
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+    border: 1px solid currentColor;
+  }
+  .pill.ok   { color: var(--ok); }
+  .pill.wait { color: var(--wait); }
+  .pill.none { color: var(--none); }
+
+  footer {
+    width: 100%; max-width: var(--measure); padding-top: 80px; margin-top: 60px;
+    border-top: 1px solid var(--line); color: var(--ink-faint); font-size: 14px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  a { color: var(--accent-soft); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    figure, .diagram, .tablewrap { animation: rise .5s ease-out both; animation-timeline: view(); animation-range: entry 0% entry 40%; }
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  }
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .act { flex-direction: column; gap: 4px; padding-top: 64px; }
+    .act .num { padding-top: 0; }
+    header { padding: 64px 16px 52px; }
+  }
+</style>
+
+<header>
+  <div class="eyebrow">Waterfront Country Club &middot; Juja</div>
+  <h1>The Ivy Document</h1>
+  <p class="standfirst">
+    How money and stock actually move through the resort — followed from the barrier
+    to the store room, on a live system, with the screens as they really appeared.
+  </p>
+  <div class="byline">
+    <span>Written from a recorded run</span><span>&middot;</span>
+    <span>27 August 2026</span><span>&middot;</span>
+    <span>No screenshot posed</span>
+  </div>
+</header>
+
+<main>
+
+<!-- ══════════════ WHY ══════════════ -->
+<section>
+  <div class="col" style="padding-top:72px; display:flex; flex-direction:column; gap:22px;">
+    <h2 style="font-size:28px;">Read this if you work here</h2>
+    <p>
+      This is not a manual for programmers. It follows one guest through one day and
+      shows what the resort's system does at each step, and — just as important —
+      what it refuses to do.
+    </p>
+    <p>
+      Every screenshot was taken from the system while it was running. Nothing was
+      mocked up, staged, or drawn to look good. Where a screen did not work, this
+      document shows that too, because a picture book of only the working parts is
+      a brochure, not a record.
+    </p>
+
+    <div class="note cool">
+      <div class="label">The one idea worth understanding first</div>
+      <p>
+        The system never stores what you have. It stores <em>everything that happened</em>,
+        and works out what you have by adding it up.
+      </p>
+      <p>
+        A cash box does not remember its balance — you count it. This system is the same.
+        Stock is not a number someone types in; it is every delivery in and every sale out,
+        summed. A guest's bill is not a total that gets edited; it is every charge minus
+        every payment.
+      </p>
+      <p>
+        That sounds like a technical detail. It is the whole reason the numbers can be
+        trusted: <strong>there is no field anyone can overwrite.</strong> To change what the
+        stock says, you must add a movement — and a movement has a name and a time on it.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- FIGURES AND ACTS INSERTED HERE -->
+
+</main>

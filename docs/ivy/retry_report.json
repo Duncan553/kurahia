@@ -1,0 +1,47 @@
+[
+ {
+  "id": "manager-home",
+  "route": "/manager",
+  "user": "brian.mwangi",
+  "url": "http://localhost:5173/manager",
+  "bounced": false,
+  "chars": 1030,
+  "sample": "Kurahia Clock 8 Alerts Schedule Calendar Incident Inventory Restock Meals Service Disputes Performance Manager Personal mode B brian.mwangi Sign out Good morning, brian.mwangi Operations · Thursday, 27 August 0 Pending A"
+ },
+ {
+  "id": "staff-clock",
+  "route": "/clock",
+  "user": "ivan.kipchoge",
+  "url": "http://localhost:5173/clock",
+  "bounced": false,
+  "chars": 192,
+  "sample": "Kurahia Clock 2 Alerts Profile Calendar Incident I ivan.kipchoge Sign out THURSDAY, 27 AUGUST 09:37 CLOCK OUT SHIFT STATUS On duty: 3h 1m START TIME 06:36 SCHEDULE On Shift ASSIGNED TO Walk-in"
+ },
+ {
+  "id": "staff-schedule",
+  "route": "/schedule",
+  "user": "ivan.kipchoge",
+  "url": "http://localhost:5173/schedule",
+  "bounced": false,
+  "chars": 144,
+  "sample": "Kurahia Clock 2 Alerts Profile Calendar Incident I ivan.kipchoge Sign out Access restricted You don't have permission to view this page. Go back"
+ },
+ {
+  "id": "staff-performance",
+  "route": "/performance",
+  "user": "ivan.kipchoge",
+  "url": "http://localhost:5173/performance",
+  "bounced": false,
+  "chars": 144,
+  "sample": "Kurahia Clock 2 Alerts Profile Calendar Incident I ivan.kipchoge Sign out Access restricted You don't have permission to view this page. Go back"
+ },
+ {
+  "id": "inv-count-chef",
+  "route": "/inventory/count",
+  "user": "cynthia.achieng",
+  "url": "http://localhost:5173/inventory/count",
+  "bounced": false,
+  "chars": 144,
+  "sample": "Kurahia Clock Alerts Profile Calendar Incident C cynthia.achieng Sign out Access restricted You don't have permission to view this page. Go back"
+ }
+]
