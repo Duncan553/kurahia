@@ -471,3 +471,95 @@ def payroll():
         "period_end":   (period_end - timedelta(days=1)).strftime("%Y-%m-%d"),
         "employees":    rows,
     }), 200
+
+
+@reports_bp.get("/vat-summary")
+@require_active_user
+def vat_summary():
+    """VAT totals for a period — the figures an accountant needs to file.
+
+    This is deliberately a BRIDGE, not an eTIMS integration. Filing is handled
+    by someone else; what the system owes them is an accurate, reproducible
+    statement of what was sold and how much tax it contained.
+
+    Every figure is DERIVED from the charge ledger (invariant 2), so running the
+    same period twice always gives the same answer, and it can never disagree
+    with the receipts — the receipts are built from the same rows.
+
+    Prices are VAT-INCLUSIVE, so gross is what guests actually paid and the tax
+    sits inside it: tax = gross x rate / (1 + rate).
+    """
+    from collections import defaultdict
+    from decimal import Decimal
+    from datetime import datetime, timezone
+    from app.models.charge import Charge
+
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    def _day(param, end=False):
+        raw = (request.args.get(param) or "").strip()
+        if not raw:
+            return None
+        try:
+            d = datetime.strptime(raw, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            return "bad"
+        return d.replace(hour=23, minute=59, second=59) if end else d
+
+    start, end = _day("from"), _day("to", end=True)
+    if start == "bad" or end == "bad":
+        return jsonify({"error": "from and to must be YYYY-MM-DD."}), 400
+
+    q = db.session.query(Charge)
+    if start:
+        q = q.filter(Charge.created_at >= start)
+    if end:
+        q = q.filter(Charge.created_at <= end)
+
+    # Grouped by the rate that applied AT THE TIME, not today's — a period
+    # spanning a rate change must report both, which is exactly why the rate is
+    # snapshotted per charge.
+    by_rate = defaultdict(lambda: {"gross": Decimal("0"), "tax": Decimal("0"),
+                                   "net": Decimal("0"), "charges": 0})
+    untracked = {"gross": Decimal("0"), "charges": 0}
+
+    for c in q.all():
+        if c.tax_rate_snapshot is None:
+            # Predates VAT tracking. Reported separately rather than assumed to
+            # be zero-rated — quietly folding it into the totals would hand the
+            # accountant a number the resort cannot stand behind.
+            untracked["gross"] += Decimal(str(c.amount))
+            untracked["charges"] += 1
+            continue
+        key = str(c.tax_rate_snapshot)
+        bucket = by_rate[key]
+        bucket["gross"] += Decimal(str(c.amount))
+        bucket["tax"] += c.tax_amount
+        bucket["net"] += c.net_amount
+        bucket["charges"] += 1
+
+    return jsonify({
+        "from": request.args.get("from"),
+        "to": request.args.get("to"),
+        "pricing": "VAT-INCLUSIVE — gross is what the guest paid",
+        "by_rate": [{
+            "rate_percent": rate,
+            "charges": b["charges"],
+            "gross": str(b["gross"]),
+            "net": str(b["net"]),
+            "tax": str(b["tax"]),
+        } for rate, b in sorted(by_rate.items())],
+        "totals": {
+            "gross": str(sum((b["gross"] for b in by_rate.values()), Decimal("0"))),
+            "net":   str(sum((b["net"] for b in by_rate.values()), Decimal("0"))),
+            "tax":   str(sum((b["tax"] for b in by_rate.values()), Decimal("0"))),
+        },
+        "untracked": {
+            "charges": untracked["charges"],
+            "gross": str(untracked["gross"]),
+            "note": "Recorded before VAT tracking existed. Excluded from the "
+                    "totals above — confirm the treatment with your accountant.",
+        },
+    }), 200

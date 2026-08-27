@@ -30,6 +30,7 @@ from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.models.inventory_item import InventoryItem
 from app.services.consumption import consume_order_item, reverse_consumption
+from app.services.tax import rate_for_menu_item
 from app.services.tab import check_band_credit
 
 orders_bp = Blueprint("orders", __name__)
@@ -171,6 +172,9 @@ def send_order(order_id):
                 amount=charge_amount,
                 description=f"{oi.quantity}x {oi.menu_item.name if oi.menu_item else oi.menu_item_id}",
                 created_by_id=actor.id,
+                # Frozen per charge: rates change by statute, and a sale must
+                # keep computing with the rate that applied when it was made.
+                tax_rate_snapshot=rate_for_menu_item(oi.menu_item),
             )
             db.session.add(charge)
 
@@ -218,6 +222,10 @@ def _reverse_charge(oi: OrderItem, actor: User):
         amount=-original.amount,
         description=f"REVERSAL: {original.description}",
         created_by_id=actor.id,
+        # The SAME rate as the charge being reversed, not today's. A refund of a
+        # sale made at 16% removes 16% of tax even if the rate has since moved,
+        # otherwise the VAT return would not net back to zero.
+        tax_rate_snapshot=original.tax_rate_snapshot,
     ))
 
 
