@@ -229,3 +229,109 @@ def test_an_untracked_item_built_from_scratch_still_cannot_be_sold(cold_app, col
     rv = cold_client.post(f"/menu/items/{item_id}/enable", headers=_auth(token))
     assert rv.status_code == 400
     assert "stock tracking" in rv.get_json()["error"].lower()
+
+
+# ── Onboarding: register -> activate -> assign a real role ───────────────────
+
+def test_a_new_registrant_gets_the_named_staff_role_not_an_arbitrary_one(cold_app, cold_client):
+    """
+    Registration used to pick `Role.query.filter_by(level=1).first()` — "the
+    first row that happens to be level 1". There are now four level-1 roles
+    (waiter, housekeeping, grounds, staff), so which one a new employee got
+    depended on row order. It is chosen by NAME now.
+    """
+    _provision_roles_and_departments()
+    from app.models.department import Department
+    from app.models.user import User
+
+    dept = _db.session.query(Department).filter_by(name="Kitchen").first().id
+    rv = cold_client.post("/auth/register", json={
+        "username": "newhire", "password": "ColdStart1!",
+        "full_name": "New Hire", "phone": "+254700111222",
+        "department_id": dept, "pin": "4321",
+    })
+    assert rv.status_code in (200, 201), rv.get_json()
+
+    u = _db.session.query(User).filter_by(username="newhire").first()
+    assert u.role.name == "staff", (
+        f"a new registrant must get the generic 'staff' role, got {u.role.name!r} — "
+        f"guessing here hands out station permissions nobody granted"
+    )
+    assert u.is_active is False, "a new registrant must wait for approval"
+
+
+def test_a_manager_can_promote_a_new_hire_to_head_chef(cold_app, cold_client):
+    """
+    The whole point. Backend always supported PATCH /auth/users/<id> with
+    role_id; it was never reachable from any dashboard, so every employee was
+    stuck on the level-1 role registration handed out and a head chef could
+    never actually be made a head chef.
+    """
+    _provision_roles_and_departments()
+    _make_user("cold_mgr", "manager", "Management")
+    token = _login(cold_client, "cold_mgr")
+
+    from app.models.department import Department
+    from app.models.role import Role
+    from app.models.user import User
+
+    kitchen = _db.session.query(Department).filter_by(name="Kitchen").first().id
+    cold_client.post("/auth/register", json={
+        "username": "promote_me", "password": "ColdStart1!",
+        "full_name": "Promote Me", "phone": "+254700333444",
+        "department_id": kitchen, "pin": "5678",
+    })
+    target = _db.session.query(User).filter_by(username="promote_me").first()
+    chef_role = _db.session.query(Role).filter_by(name="head_chef").first()
+
+    rv = cold_client.patch(f"/auth/users/{target.id}",
+                           json={"role_id": chef_role.id},
+                           headers=_auth(token))
+    assert rv.status_code == 200, rv.get_json()
+
+    _db.session.refresh(target)
+    assert target.role.name == "head_chef"
+
+
+def test_a_manager_cannot_promote_someone_to_their_own_level_or_above(cold_app, cold_client):
+    """The escalation guard: a manager must not be able to mint another manager."""
+    _provision_roles_and_departments()
+    _make_user("cold_mgr2", "manager", "Management")
+    token = _login(cold_client, "cold_mgr2")
+
+    from app.models.department import Department
+    from app.models.role import Role
+    from app.models.user import User
+
+    dept = _db.session.query(Department).filter_by(name="Kitchen").first().id
+    cold_client.post("/auth/register", json={
+        "username": "climber", "password": "ColdStart1!",
+        "full_name": "Climber", "phone": "+254700555666",
+        "department_id": dept, "pin": "1122",
+    })
+    target = _db.session.query(User).filter_by(username="climber").first()
+
+    for role_name in ("manager", "owner"):
+        role = _db.session.query(Role).filter_by(name=role_name).first()
+        rv = cold_client.patch(f"/auth/users/{target.id}", json={"role_id": role.id},
+                               headers=_auth(token))
+        assert rv.status_code == 403, f"a manager must not be able to assign {role_name}"
+
+
+def test_the_assignable_role_list_never_offers_an_escalation(cold_app, cold_client):
+    """
+    /auth/users/meta drives the dropdown, so it must not even OFFER a role the
+    server would refuse — otherwise the UI invites an action that always fails.
+    """
+    _provision_roles_and_departments()
+    _make_user("cold_mgr3", "manager", "Management")
+    token = _login(cold_client, "cold_mgr3")
+
+    rv = cold_client.get("/auth/users/meta", headers=_auth(token))
+    assert rv.status_code == 200
+    names = {r["name"] for r in rv.get_json()["roles"]}
+
+    assert "head_chef" in names, "a manager must be able to appoint a head chef"
+    assert "manager" not in names and "owner" not in names, (
+        "the dropdown must not offer roles at or above the actor's own level"
+    )
