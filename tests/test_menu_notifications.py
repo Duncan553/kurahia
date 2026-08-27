@@ -69,6 +69,12 @@ def test_enable_menu_item_notifies_owner(app, client, manager_token, dept_id):
         db.session.query(Notification).delete()
         db.session.commit()
 
+    # An item may not go back on sale until someone has said how it moves stock.
+    # This one consumes nothing, and SERVICE is how a person states that on
+    # purpose — as opposed to UNTRACKED, which means nobody has decided.
+    client.patch(f"/menu/items/{item_id}", json={"stock_tracking": "SERVICE"},
+                 headers={"Authorization": f"Bearer {manager_token}"})
+
     rv = client.post(f"/menu/items/{item_id}/enable",
                      headers={"Authorization": f"Bearer {manager_token}"})
     assert rv.status_code == 200

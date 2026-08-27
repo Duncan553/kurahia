@@ -15,7 +15,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
 from app.extensions import db
-from app.models.menu_item import MenuItem, PrepStation
+from app.models.menu_item import MenuItem, PrepStation, StockTracking
 from app.models.recipe_line import RecipeLine
 from app.models.inventory_item import InventoryItem
 from app.models.department import Department
@@ -48,26 +48,56 @@ def _notify_owner_menu_change(actor_name: str, verb: str, item_name: str):
     ))
 
 
-# The head chef owns the menu: the dishes, what goes into them, and what they
-# cost. That includes the BAR menu — cocktails and juices are recipes like any
-# other, and they are authored from the same dashboard.
+# WHO OWNS WHAT
+#
+# The split follows what the item IS, not which screen it lives on:
+#
+#   head chef -> what the resort MAKES in house. Kitchen dishes, and bar
+#                cocktails and juices, with their recipes, ingredients and
+#                prices. These are the things with a yield and a food cost, so
+#                the person who designs them is the person who should price them.
+#
+#   manager   -> what the resort OFFERS as a service. Spa treatments, the pool
+#                day pass, jet ski hire, guided walks — every department's
+#                catalogue and its prices.
 #
 # This is a ROLE check, not a level check. head_chef sits at level 3, and so do
-# front_desk and gate_lead — a plain `level >= 3` gate would hand the menu and
-# its pricing to the gate staff.
+# front_desk and gate_lead — a plain `level >= 3` gate would hand menu pricing
+# to the gate staff.
 MENU_AUTHOR_ROLES = {"head_chef"}
 
+# The stations the head chef makes things at.
+CHEF_STATIONS = {PrepStation.KITCHEN.value, PrepStation.BAR.value}
 
-def _can_manage_menu(actor) -> bool:
-    return actor.role.level >= MANAGER_LEVEL or actor.role.name in MENU_AUTHOR_ROLES
+
+def _can_manage_menu(actor, prep_station: str | None = None) -> bool:
+    """May this person author this item?
+
+    Manager and owner: anything. Head chef: only what is cooked or poured —
+    a spa treatment is a service the manager sells, not a dish.
+
+    prep_station None means "not station-specific" (e.g. listing), which the
+    head chef is allowed to do.
+    """
+    if actor.role.level >= MANAGER_LEVEL:
+        return True
+    if actor.role.name not in MENU_AUTHOR_ROLES:
+        return False
+    return prep_station is None or str(prep_station).upper() in CHEF_STATIONS
 
 
-def _require_manager(actor):
+def _require_manager(actor, prep_station: str | None = None):
     """Kept under its original name so every call site reads the same.
 
-    Now means "may author the menu": a manager, an owner, or the head chef.
+    Means "may author this item": a manager or owner for anything, the head chef
+    for kitchen and bar.
     """
-    if not _can_manage_menu(actor):
+    if not _can_manage_menu(actor, prep_station):
+        if actor.role.name in MENU_AUTHOR_ROLES:
+            return jsonify({
+                "error": "The head chef manages kitchen and bar items. "
+                         "Spa, water and other services are set by a manager."
+            }), 403
         return jsonify({
             "error": "Only the head chef, a manager or the owner can manage menu items."
         }), 403
@@ -78,10 +108,12 @@ def _require_manager(actor):
 @require_active_user
 def create_menu_item():
     actor = db.session.get(User, get_jwt_identity())
-    if (err := _require_manager(actor)):
+    data = request.get_json(silent=True) or {}
+    # Authorised per station: the head chef makes kitchen and bar items, the
+    # manager sells services. Checked after parsing because the station decides.
+    if (err := _require_manager(actor, (data.get("prep_station") or PrepStation.NONE.value))):
         return err
 
-    data = request.get_json(silent=True) or {}
     name         = (data.get("name") or "").strip()
     raw_price    = data.get("price")
     # Normalize category: strip whitespace + title-case so "mains", "MAINS", "Mains" are identical
@@ -129,11 +161,15 @@ def create_menu_item():
 @require_active_user
 def edit_menu_item(item_id):
     actor = db.session.get(User, get_jwt_identity())
-    if (err := _require_manager(actor)):
-        return err
     item = db.session.get(MenuItem, item_id)
     if not item:
         return jsonify({"error": "Menu item not found."}), 404
+    # Gate on what this item IS, and on where it is being moved TO, so a chef
+    # cannot reclassify a spa service into the kitchen to gain control of it.
+    data_peek = request.get_json(silent=True) or {}
+    for station in {item.prep_station, (data_peek.get("prep_station") or item.prep_station)}:
+        if (err := _require_manager(actor, station)):
+            return err
 
     data = request.get_json(silent=True) or {}
     # Capture what actually changed, so the audit log records old -> new rather
@@ -161,6 +197,26 @@ def edit_menu_item(item_id):
             item.category = _raw_cat.title() if _raw_cat else None
         if "prep_station" in data:
             item.prep_station = data["prep_station"].upper()
+        if "stock_tracking" in data:
+            want = str(data["stock_tracking"]).upper()
+            if want not in StockTracking.__members__:
+                return jsonify({
+                    "error": f"stock_tracking must be one of "
+                             f"{[m.value for m in StockTracking]}."
+                }), 400
+            # DIRECT is a claim about data, so it has to be true.
+            if want == StockTracking.DIRECT.value and not (
+                data.get("inventory_item_id") or item.inventory_item_id
+            ):
+                return jsonify({
+                    "error": "DIRECT tracking needs inventory_item_id — the stock "
+                             "item this sale draws down."
+                }), 400
+            if want != item.stock_tracking:
+                changes.append(f"tracking {item.stock_tracking} -> {want}")
+            item.stock_tracking = want
+        if "inventory_item_id" in data:
+            item.inventory_item_id = data["inventory_item_id"] or None
         if "description" in data:
             item.description = data["description"]
         if "image_path" in data:
@@ -193,6 +249,27 @@ def disable_menu_item(item_id):
     return jsonify({"id": item.id, "is_active": False}), 200
 
 
+def _reject_if_untracked(item):
+    """An item may not go on sale until someone has said how it moves stock.
+
+    UNTRACKED is not "consumes nothing" — it is "nobody has decided". SERVICE is
+    the way to say a pool day pass legitimately consumes nothing, and it is a
+    positive statement a person makes. Blocking only UNTRACKED is what keeps the
+    rule enforceable: without the distinction this check would fire on every
+    genuine service, staff would learn to route around it, and the real gaps
+    (a jet ski that actually burns fuel) would leak behind the noise.
+    """
+    if item.stock_tracking == StockTracking.UNTRACKED.value:
+        return jsonify({
+            "error": (
+                f"'{item.name}' has no stock tracking set, so selling it would not "
+                f"move inventory. Set a recipe, link it to a stock item, or mark it "
+                f"as a service that consumes nothing."
+            )
+        }), 400
+    return None
+
+
 @menu_bp.post("/<item_id>/enable")
 @require_active_user
 def enable_menu_item(item_id):
@@ -202,6 +279,8 @@ def enable_menu_item(item_id):
     item = db.session.get(MenuItem, item_id)
     if not item:
         return jsonify({"error": "Menu item not found."}), 404
+    if (err := _reject_if_untracked(item)):
+        return err
     with db.session.begin_nested():
         item.is_active = True
     AuditLog.log(actor=actor.username, action="menu.item.enable", target=item.name)

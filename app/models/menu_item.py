@@ -18,6 +18,28 @@ class PrepStation(str, enum.Enum):
     NONE    = "NONE"
 
 
+class StockTracking(str, enum.Enum):
+    """How a menu item's sale is expected to move stock.
+
+    The point of this field is to separate two things that used to look
+    identical, because both were stored as ABSENCE:
+
+      "this deliberately consumes nothing"   (a swimming pool day pass)
+      "nobody has configured this yet"       (a jet ski that really burns fuel)
+
+    While those were indistinguishable, the leak could not be enforced: a hard
+    block would have fired on the pool pass, staff would have learned the warning
+    was noise, and the genuine gaps would have kept leaking behind it.
+
+    UNTRACKED is therefore the only problem state, and it is the one an item may
+    not go live in.
+    """
+    RECIPE    = "RECIPE"      # composed: draws down ingredients via RecipeLine
+    DIRECT    = "DIRECT"      # pass-through: IS an inventory item (a Tusker, an apple)
+    SERVICE   = "SERVICE"     # consumes no stock, and someone SAID SO on purpose
+    UNTRACKED = "UNTRACKED"   # nobody has decided yet — not sellable
+
+
 class MenuItem(db.Model):
     __tablename__ = "menu_items"
 
@@ -49,6 +71,11 @@ class MenuItem(db.Model):
     # gap is visible rather than silent.
     inventory_item_id = db.Column(
         db.String(36), db.ForeignKey("inventory_items.id"), nullable=True, index=True
+    )
+
+    # Declared intent, not inference. See StockTracking above.
+    stock_tracking = db.Column(
+        db.String(12), nullable=False, default=StockTracking.UNTRACKED.value
     )
 
     department = db.relationship("Department", lazy="select")

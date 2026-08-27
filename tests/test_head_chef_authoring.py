@@ -216,3 +216,120 @@ def test_an_edit_that_changes_nothing_says_so(app, client, chef_token, general_d
              .filter_by(action="menu.item.edit")
              .order_by(AuditLog.id.desc()).first())
     assert "no effective change" in entry.details
+
+
+# ── Ownership split: chef makes, manager sells ───────────────────────────────
+
+def test_head_chef_cannot_create_a_SPA_service(app, client, chef_token, general_dept):
+    """
+    The split follows what the item IS. A spa treatment is a service the resort
+    OFFERS — the manager's catalogue — not something the kitchen makes.
+    """
+    rv = client.post("/menu/items", json={
+        "name": "Chef Should Not Sell Massages", "price": "4500", "category": "Spa",
+        "prep_station": "NONE", "department_id": general_dept,
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(chef_token))
+    assert rv.status_code == 403
+    assert "manager" in rv.get_json()["error"].lower()
+
+
+def test_manager_can_create_a_service_in_any_department(app, client, manager_token, general_dept):
+    rv = client.post("/menu/items", json={
+        "name": "Sunrise Yoga Session", "price": "1200", "category": "Spa",
+        "prep_station": "NONE", "department_id": general_dept,
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(manager_token))
+    assert rv.status_code == 201, rv.get_json()
+
+
+def test_head_chef_cannot_reclassify_a_service_into_the_kitchen(app, client,
+                                                                chef_token, manager_token,
+                                                                general_dept):
+    """
+    The obvious way around the split: move a spa item to prep_station KITCHEN
+    and then own it. The edit gate checks the station the item IS and the one it
+    is being moved TO, so this is refused.
+    """
+    rv = client.post("/menu/items", json={
+        "name": "Manager Owned Service", "price": "2000", "category": "Spa",
+        "prep_station": "NONE", "department_id": general_dept,
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(manager_token))
+    item_id = rv.get_json()["id"]
+
+    rv = client.patch(f"/menu/items/{item_id}", json={"prep_station": "KITCHEN"},
+                      headers=_auth(chef_token))
+    assert rv.status_code == 403
+
+
+# ── The block: nothing sells until someone says how it tracks ────────────────
+
+def test_an_untracked_item_cannot_be_put_on_sale(app, client, manager_token, general_dept):
+    rv = client.post("/menu/items", json={
+        "name": "Unclassified Thing", "price": "700", "category": "Spa",
+        "prep_station": "NONE", "department_id": general_dept,
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(manager_token))
+    item_id = rv.get_json()["id"]
+    client.post(f"/menu/items/{item_id}/disable", headers=_auth(manager_token))
+
+    rv = client.post(f"/menu/items/{item_id}/enable", headers=_auth(manager_token))
+    assert rv.status_code == 400
+    assert "stock tracking" in rv.get_json()["error"].lower()
+
+
+def test_marking_it_a_SERVICE_lets_it_sell(app, client, manager_token, general_dept):
+    """
+    SERVICE is the positive statement "this consumes nothing", made by a person.
+    That is exactly what UNTRACKED is not, and why blocking only UNTRACKED keeps
+    the rule enforceable instead of firing on every legitimate pool day pass.
+    """
+    rv = client.post("/menu/items", json={
+        "name": "Pool Day Pass Test", "price": "1000", "category": "Water",
+        "prep_station": "NONE", "department_id": general_dept,
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(manager_token))
+    item_id = rv.get_json()["id"]
+    client.post(f"/menu/items/{item_id}/disable", headers=_auth(manager_token))
+
+    rv = client.patch(f"/menu/items/{item_id}", json={"stock_tracking": "SERVICE"},
+                      headers=_auth(manager_token))
+    assert rv.status_code == 200
+
+    rv = client.post(f"/menu/items/{item_id}/enable", headers=_auth(manager_token))
+    assert rv.status_code == 200, rv.get_json()
+
+
+def test_DIRECT_tracking_must_name_the_stock_item_it_draws_down(app, client,
+                                                                manager_token, general_dept):
+    """DIRECT is a claim about data, so it has to be true."""
+    rv = client.post("/menu/items", json={
+        "name": "Claims To Be Direct", "price": "350", "category": "Beer",
+        "prep_station": "NONE", "department_id": general_dept,
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(manager_token))
+    item_id = rv.get_json()["id"]
+
+    rv = client.patch(f"/menu/items/{item_id}", json={"stock_tracking": "DIRECT"},
+                      headers=_auth(manager_token))
+    assert rv.status_code == 400
+    assert "inventory_item_id" in rv.get_json()["error"]
+
+
+def test_a_tracking_change_is_audited(app, client, manager_token, general_dept):
+    from app.models.audit_log import AuditLog
+
+    rv = client.post("/menu/items", json={
+        "name": "Tracking Audit Test", "price": "800", "category": "Water",
+        "prep_station": "NONE", "department_id": general_dept,
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(manager_token))
+    item_id = rv.get_json()["id"]
+
+    client.patch(f"/menu/items/{item_id}", json={"stock_tracking": "SERVICE"},
+                 headers=_auth(manager_token))
+
+    entry = (db.session.query(AuditLog).filter_by(action="menu.item.edit")
+             .order_by(AuditLog.id.desc()).first())
+    assert "UNTRACKED -> SERVICE" in entry.details
