@@ -563,3 +563,139 @@ def vat_summary():
                     "totals above — confirm the treatment with your accountant.",
         },
     }), 200
+
+
+@reports_bp.get("/menu-engineering")
+@require_active_user
+def menu_engineering():
+    """Classify every menu item by popularity and contribution margin.
+
+    The Kasavana-Smith matrix (Michigan State, 1980s) — still the standard tool
+    for menu profitability. Each item is measured on two axes against the MENU'S
+    OWN AVERAGE, not an industry benchmark:
+
+        popular + profitable      STAR       protect it
+        popular + unprofitable    PLOWHORSE  fix the cost or nudge the price
+        unpopular + profitable    PUZZLE     promote it
+        unpopular + unprofitable  DOG        take it off
+
+    The axis is CONTRIBUTION MARGIN in shillings, not food-cost percentage. A
+    dish at 20% food cost sounds better than one at 40%, but if the first sells
+    for 300 and the second for 1,800 the second puts far more money in the bank.
+    Percentage describes a dish; contribution margin describes the business.
+
+    Items with no recipe are NOT classified and are returned separately. Their
+    food cost is unknown, so any margin for them would be invented — and an
+    invented number here would drive a real decision to delist a dish.
+    """
+    from collections import defaultdict
+    from decimal import Decimal
+    from datetime import datetime, timezone
+    from sqlalchemy import func
+    from app.models.menu_item import MenuItem
+    from app.models.order_item import OrderItem, OrderItemStatus
+    from app.pos.menu import _compute_menu_item_cost_fields
+
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    def _day(param, end=False):
+        raw = (request.args.get(param) or "").strip()
+        if not raw:
+            return None
+        try:
+            d = datetime.strptime(raw, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            return "bad"
+        return d.replace(hour=23, minute=59, second=59) if end else d
+
+    start, end = _day("from"), _day("to", end=True)
+    if start == "bad" or end == "bad":
+        return jsonify({"error": "from and to must be YYYY-MM-DD."}), 400
+
+    # Units actually SERVED — not ordered. A cancelled plate is not a sale, and
+    # counting it would make a dish look more popular than it is.
+    sold_q = (db.session.query(OrderItem.menu_item_id,
+                               func.sum(OrderItem.quantity).label("units"))
+              .filter(OrderItem.status == OrderItemStatus.SERVED.value))
+    if start:
+        sold_q = sold_q.filter(OrderItem.served_at >= start)
+    if end:
+        sold_q = sold_q.filter(OrderItem.served_at <= end)
+    sold = {mid: Decimal(str(u or 0)) for mid, u in sold_q.group_by(OrderItem.menu_item_id).all()}
+
+    classified, unknown_cost = [], []
+    for item in db.session.query(MenuItem).filter_by(is_active=True).all():
+        econ = _compute_menu_item_cost_fields(item)
+        units = sold.get(item.id, Decimal("0"))
+        row = {
+            "id": item.id,
+            "name": item.name,
+            "category": item.category,
+            "prep_station": item.prep_station,
+            "stock_tracking": item.stock_tracking,
+            "price": str(item.price),
+            "units_sold": str(units),
+        }
+        if econ.get("food_cost") is None:
+            row["reason"] = ("No recipe, so the food cost is unknown. Any margin "
+                             "shown here would be invented.")
+            unknown_cost.append(row)
+            continue
+        food_cost = Decimal(str(econ["food_cost"]))
+        contribution = Decimal(str(item.price)) - food_cost
+        row.update({
+            "food_cost": str(food_cost),
+            "contribution_margin": str(contribution),
+            "food_cost_pct": econ.get("food_cost_pct") and str(econ["food_cost_pct"]),
+            "total_contribution": str(contribution * units),
+        })
+        classified.append((row, units, contribution))
+
+    # Thresholds are the menu's OWN averages — the matrix is relative by design,
+    # because "profitable" means profitable for THIS menu.
+    if classified:
+        avg_units = sum((u for _, u, _ in classified), Decimal("0")) / len(classified)
+        avg_margin = sum((c for _, _, c in classified), Decimal("0")) / len(classified)
+    else:
+        avg_units = avg_margin = Decimal("0")
+
+    ACTIONS = {
+        "STAR":      "Protect it. Keep quality and availability steady; it anchors the menu.",
+        "PLOWHORSE": "Popular but thin. Cut the cost or raise the price a little — people already want it.",
+        "PUZZLE":    "Profitable but overlooked. Promote it, move it up the menu, or rename it.",
+        "DOG":       "Neither selling nor earning. Take it off unless it exists for a reason.",
+    }
+
+    buckets = defaultdict(list)
+    for row, units, contribution in classified:
+        popular = units >= avg_units
+        profitable = contribution >= avg_margin
+        kind = ("STAR" if popular and profitable else
+                "PLOWHORSE" if popular else
+                "PUZZLE" if profitable else "DOG")
+        row["classification"] = kind
+        row["action"] = ACTIONS[kind]
+        buckets[kind].append(row)
+
+    return jsonify({
+        "from": request.args.get("from"),
+        "to": request.args.get("to"),
+        "method": "Kasavana-Smith matrix — popularity vs contribution margin, "
+                  "measured against this menu's own averages",
+        "thresholds": {
+            "avg_units_sold": str(avg_units),
+            "avg_contribution_margin": str(avg_margin),
+        },
+        "items": {k: sorted(v, key=lambda r: Decimal(r["total_contribution"]), reverse=True)
+                  for k, v in buckets.items()},
+        "counts": {k: len(v) for k, v in buckets.items()},
+        "unclassified": {
+            "count": len(unknown_cost),
+            "items": unknown_cost,
+            "note": "These have no recipe, so their profitability cannot be "
+                    "measured. Classifying them on a guessed cost would drive a "
+                    "real decision to keep or delist a dish.",
+        },
+    }), 200
