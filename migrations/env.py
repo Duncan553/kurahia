@@ -96,6 +96,26 @@ def run_migrations_online():
 
     connectable = get_engine()
 
+    def include_object(object_, name, type_, reflected, compare_to):
+        """Keep `flask db migrate` honest on SQLite.
+
+        SQLite cannot ALTER a foreign key into an existing table, so two of our
+        migrations add their FKs only on Postgres (see the notes in
+        58f3f4bd1ebc and 7c1d4e2f9a30). The constraints therefore genuinely do
+        not exist in a dev SQLite file, and autogenerate would report them as
+        drift on EVERY run, forever.
+
+        Permanent false positives are worse than no check at all: once the
+        output always says "2 changes detected", nobody reads it, and the next
+        REAL drift hides in the noise. Production is Postgres, where these are
+        compared normally.
+        """
+        if type_ == "foreign_key_constraint" and connectable.dialect.name == "sqlite":
+            return False
+        return True
+
+    conf_args.setdefault("include_object", include_object)
+
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
