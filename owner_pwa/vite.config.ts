@@ -25,7 +25,7 @@ const PROXIED_PATHS = [
   '/menu', '/equipment', '/dashboard', '/judge', '/admin', '/health',
   '/calendar', '/disputes', '/events', '/event-types', '/guest-records',
   '/housekeeping', '/incidents', '/lost-found', '/reports', '/suppliers', '/uploads',
-  '/feedback', '/front-desk',
+  '/feedback', '/front-desk', '/audit',
 ]
 
 const proxyConfig = Object.fromEntries(

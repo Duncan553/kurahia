@@ -55,6 +55,12 @@ function ReconIcon() {
     <path d="M5 10h3M9 10h6M5 13h4M11 13h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 }
+function AuditIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M8 12a3 3 0 010-4l1.5-1.5a3 3 0 014 4L12.5 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M12 8a3 3 0 010 4l-1.5 1.5a3 3 0 01-4-4L7.5 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+}
 function SettingsIcon() {
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
     <circle cx="10" cy="10" r="3" stroke="currentColor" strokeWidth="1.5" />
@@ -103,6 +109,7 @@ const SIDEBAR_ITEMS: NavItem[] = [
   { path: '/staff',               label: 'Staff',     Icon: StaffIcon      },
   { path: '/feedback',            label: 'Feedback',  Icon: FeedbackIcon   },
   { path: '/bookings',            label: 'Bookings',  Icon: BookingsIcon   },
+  { path: '/audit',               label: 'Audit',     Icon: AuditIcon      },
   { path: '/settings',            label: 'Settings',  Icon: SettingsIcon   },
 ]
 
