@@ -199,8 +199,20 @@ def list_items():
     if not include_disabled:
         query = query.filter_by(is_active=True)
 
-    # Managers see their own department; owners see everything
-    if actor.role.level < 10 and actor.department_id:
+    # Department scoping.
+    #
+    # Below manager, staff see only their own department's stock — a barman has
+    # no reason to browse kitchen ingredients.
+    #
+    # Manager and above see everything, because managing stock across the resort
+    # IS the job: they approve purchases, run counts and chase variances in
+    # departments they do not personally belong to. The old rule scoped everyone
+    # below OWNER, so a manager assigned to "Management" (which holds no stock)
+    # saw an empty inventory and could not do any of it. That also made the
+    # catalogue look empty when it was not — 33 items were there the whole time.
+    #
+    # `?department=` still narrows the view for anyone who can see more than one.
+    if actor.role.level < MANAGER_LEVEL and actor.department_id:
         query = query.filter_by(department_id=actor.department_id)
     elif dept_filter:
         query = query.filter_by(department_id=dept_filter)

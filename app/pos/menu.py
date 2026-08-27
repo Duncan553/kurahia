@@ -457,20 +457,24 @@ def get_recipe(item_id):
 @menu_bp.post("/<item_id>/recipe")
 @require_active_user
 def set_recipe(item_id):
-    """
-    Set/replace a menu item's recipe. Deactivates all previous lines and creates new ones.
-    Auth: manager (level >= 5) OR head chef (level >= 5, dept=KITCHEN).
-    Both map to role.level >= 5 — the head chef distinction is structural, not a separate check.
+    """Set/replace a menu item's recipe, deactivating the previous lines.
+
+    Recipes are the head chef's core job — a recipe is what makes a sale deduct
+    the right stock, so the person who designs the dish writes it. But the same
+    ownership split applies as everywhere else: the head chef owns what is
+    COOKED or POURED, and a manager owns the service catalogue.
     """
     actor = db.session.get(User, get_jwt_identity())
-    # Recipes are the head chef's core job — this is what makes a sale
-    # deduct the right stock, so the person who designs the dish writes it.
-    if not _can_manage_menu(actor):
-        return jsonify({"error": "Manager or head chef required."}), 403
 
     item = db.session.get(MenuItem, item_id)
     if not item:
         return jsonify({"error": "Menu item not found."}), 404
+
+    # Gated on the ITEM's station, not just the role. Checking the role alone
+    # was looser here than on create and edit, which would have let the head
+    # chef write recipes for spa and water services they cannot otherwise touch.
+    if (err := _require_manager(actor, item.prep_station)):
+        return err
 
     data = request.get_json(silent=True) or {}
     lines_data = data.get("lines", [])

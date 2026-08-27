@@ -333,3 +333,40 @@ def test_a_tracking_change_is_audited(app, client, manager_token, general_dept):
     entry = (db.session.query(AuditLog).filter_by(action="menu.item.edit")
              .order_by(AuditLog.id.desc()).first())
     assert "UNTRACKED -> SERVICE" in entry.details
+
+
+def test_head_chef_cannot_write_a_recipe_for_a_service_either(app, client, chef_token,
+                                                              manager_token, general_dept):
+    """
+    The recipe gate was looser than create and edit — it checked the role but
+    not the item's station, so a head chef could have written recipes for spa
+    and water services they cannot otherwise touch. Recipes decide what a sale
+    deducts, so that was the more consequential of the two.
+    """
+    from app.models.inventory_item import InventoryItem
+    from decimal import Decimal
+
+    rv = client.post("/menu/items", json={
+        "name": "Manager Service For Recipe Test", "price": "3500", "category": "Water",
+        "prep_station": "NONE", "department_id": general_dept,
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(manager_token))
+    item_id = rv.get_json()["id"]
+
+    ing = InventoryItem(name="Recipe Gate Test Fuel", unit="litre",
+                        department_id=general_dept, cost_per_unit=Decimal("200"))
+    db.session.add(ing)
+    db.session.commit()
+
+    rv = client.post(f"/menu/items/{item_id}/recipe", json={
+        "lines": [{"inventory_item_id": ing.id, "quantity": "1"}],
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(chef_token))
+    assert rv.status_code == 403
+
+    # the manager who owns the service can
+    rv = client.post(f"/menu/items/{item_id}/recipe", json={
+        "lines": [{"inventory_item_id": ing.id, "quantity": "1"}],
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(manager_token))
+    assert rv.status_code in (200, 201), rv.get_json()
