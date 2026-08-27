@@ -20,6 +20,7 @@ import DashboardScreen       from './screens/DashboardScreen'
 
 // Code splitting: dashboard is the landing screen, the rest load on demand
 const FinanceScreen            = lazy(() => import('./screens/FinanceScreen'))
+const AuditScreen = lazy(() => import('./screens/AuditScreen'))
 const AlertsScreen             = lazy(() => import('./screens/AlertsScreen'))
 const PayrollDraftScreen       = lazy(() => import('./screens/PayrollDraftScreen'))
 const ReconciliationScreen     = lazy(() => import('./screens/ReconciliationScreen'))
@@ -54,6 +55,7 @@ const router = createBrowserRouter([
         { path: '/staff',            element: <StaffScreen />          },
         { path: '/bookings',              element: <BookingsScreen />            },
         { path: '/settings',              element: <SettingsScreen />            },
+        { path: '/audit',                 element: <AuditScreen />               },
         { path: '/purchase-approvals',    element: <PurchaseApprovalsScreen />  },
         { path: '/feedback',               element: <FeedbackScreen />           },
       ],
