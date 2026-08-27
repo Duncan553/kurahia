@@ -217,6 +217,16 @@ def edit_menu_item(item_id):
             item.stock_tracking = want
         if "inventory_item_id" in data:
             item.inventory_item_id = data["inventory_item_id"] or None
+            # Linking a stock item is itself a statement of how this deducts,
+            # unless a recipe already says something more specific.
+            if item.inventory_item_id and "stock_tracking" not in data:
+                has_recipe = db.session.query(RecipeLine).filter_by(
+                    menu_item_id=item.id, is_active=True
+                ).first() is not None
+                if not has_recipe:
+                    if item.stock_tracking != StockTracking.DIRECT.value:
+                        changes.append(f"tracking {item.stock_tracking} -> DIRECT")
+                    item.stock_tracking = StockTracking.DIRECT.value
         if "description" in data:
             item.description = data["description"]
         if "image_path" in data:
@@ -500,6 +510,19 @@ def set_recipe(item_id):
             )
             db.session.add(line)
             new_lines.append(line)
+
+        # Writing a recipe IS the act of saying how this item moves stock, so the
+        # tracking state must follow it. Without this, a correctly configured
+        # item stayed UNTRACKED and the "untracked cannot be sold" block refused
+        # to let it go live — every newly built item blocked despite being right.
+        # Clearing the recipe hands it back to UNTRACKED unless a direct link
+        # takes over, because at that point nobody has said how it deducts again.
+        if new_lines:
+            item.stock_tracking = StockTracking.RECIPE.value
+        elif item.inventory_item_id:
+            item.stock_tracking = StockTracking.DIRECT.value
+        else:
+            item.stock_tracking = StockTracking.UNTRACKED.value
 
     AuditLog.log(
         actor=actor.username,
