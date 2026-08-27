@@ -18,34 +18,65 @@ from app.models.audit_log import AuditLog
 seed_bp = Blueprint("seed", __name__)
 
 
-@seed_bp.cli.command("roles-depts")
-def seed_roles_departments():
-    """Create default roles (owner/manager/staff) and departments."""
-    # Roles: level=10 owner, level=5 manager, level=1 staff
-    default_roles = [
-        {"name": "owner",   "level": 10},
-        {"name": "manager", "level": 5},
-        {"name": "staff",   "level": 1},
-    ]
-    for r in default_roles:
+# The provisioning DATA lives here, not inside the click command, so the same
+# definitions can be exercised by tests without a CLI context. A copy in a test
+# would only ever prove the copy works.
+
+DEFAULT_ROLES = [
+    {"name": "owner",         "level": 10},
+    {"name": "manager",       "level": 5},
+    # Level 3 — department leads. head_chef is matched BY NAME in
+    # app/pos/menu.py (MENU_AUTHOR_ROLES), so its absence made the agreed
+    # ownership split impossible to express on a fresh install.
+    {"name": "head_chef",     "level": 3},
+    {"name": "bar_lead",      "level": 3},
+    {"name": "front_desk",    "level": 3},
+    {"name": "gate_lead",     "level": 3},
+    # Level 2 — service leads.
+    {"name": "spa_attendant", "level": 2},
+    {"name": "water_lead",    "level": 2},
+    # Level 1 — floor staff.
+    {"name": "waiter",        "level": 1},
+    {"name": "housekeeping",  "level": 1},
+    {"name": "grounds",       "level": 1},
+    {"name": "staff",         "level": 1},
+]
+
+# Department names are NOT cosmetic: _can_operate_station() compares
+# actor.department.name.upper() against an item's prep station, so "Kitchen" and
+# "Bar" must exist and must be spelled this way. Spa and Gate were missing
+# entirely, so a therapist or gate attendant could not be given a department
+# matching the work they actually do.
+DEFAULT_DEPARTMENTS = [
+    "General", "Kitchen", "Bar", "Restaurant", "Front-of-House", "Finance",
+    "Spa & Gym", "Water Activities", "Gate",
+    "Housekeeping", "Grounds", "Maintenance", "Management",
+]
+
+
+def provision_roles_and_departments(echo=lambda _m: None) -> None:
+    """Idempotent: safe to re-run after an upgrade adds a new role."""
+    for r in DEFAULT_ROLES:
         if not db.session.query(Role).filter_by(name=r["name"]).first():
             db.session.add(Role(name=r["name"], level=r["level"]))
-            click.echo(f"  Created role: {r['name']} (level {r['level']})")
+            echo(f"  Created role: {r['name']} (level {r['level']})")
         else:
-            click.echo(f"  Role already exists: {r['name']}")
+            echo(f"  Role already exists: {r['name']}")
 
-    default_departments = [
-        "General", "Kitchen", "Bar", "Front-of-House", "Finance",
-        "Pool & Water Activities", "Housekeeping", "Maintenance",
-    ]
-    for d in default_departments:
+    for d in DEFAULT_DEPARTMENTS:
         if not db.session.query(Department).filter_by(name=d).first():
             db.session.add(Department(name=d))
-            click.echo(f"  Created department: {d}")
+            echo(f"  Created department: {d}")
         else:
-            click.echo(f"  Department already exists: {d}")
+            echo(f"  Department already exists: {d}")
 
     db.session.commit()
+
+
+@seed_bp.cli.command("roles-depts")
+def seed_roles_departments():
+    """Create the roles and departments the application logic depends on."""
+    provision_roles_and_departments(echo=click.echo)
     click.echo("Done.")
 
 
