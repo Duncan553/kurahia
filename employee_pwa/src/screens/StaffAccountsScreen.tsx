@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RequireRole } from '../components/AuthGate'
-import { Button, SearchInput, ErrorBoundary } from '@shared'
+import { Button, SearchInput, ErrorBoundary, useToastStore } from '@shared'
 import api from '../lib/axios'
 
 interface StaffUser { id: string; username: string; role: string; department: string | null; is_active: boolean; pin_set: boolean }
@@ -18,6 +18,7 @@ const LBL = ({ children }: { children: React.ReactNode }) => (
 
 export default function StaffAccountsScreen() {
   const qc = useQueryClient()
+  const addToast = useToastStore(s => s.addToast)
   const [searchQ, setSearchQ] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [step, setStep] = useState<1|2>(1)
@@ -48,6 +49,26 @@ export default function StaffAccountsScreen() {
     mutationFn: (b: object) => api.post('/auth/users', b).then(r => r.data),
     onSuccess: (data: {id:string}) => { setUid(data.id); setStep(2); setErr('') },
     onError: (e) => setErr(extractErr(e)),
+  })
+
+  /**
+   * Assign a role / department.
+   *
+   * The backend has always supported this (PATCH /auth/users/<id> with role_id),
+   * and /auth/users/meta already returns only the roles BELOW the actor's own
+   * level so the escalation guard holds on the list as well as the write. It was
+   * simply never wired to a control — which meant every employee was stuck on
+   * the level-1 role registration hands out, forever. A head chef could never
+   * actually be made a head chef.
+   */
+  const assignMut = useMutation({
+    mutationFn: (v: { id: string; body: Record<string, string> }) =>
+      api.patch(`/auth/users/${v.id}`, v.body).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['staff'] })
+      addToast({ type: 'success', message: 'Role updated.' })
+    },
+    onError: (e) => addToast({ type: 'error', message: extractErr(e) }),
   })
 
   const toggleMut = useMutation({
@@ -217,6 +238,45 @@ export default function StaffAccountsScreen() {
                   <p className="text-xs text-ink-secondary">{u.role}{u.department ? ` · ${u.department}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {/* Role + department, editable in place. Only roles strictly
+                      below this manager's own level are offered — the server
+                      enforces the same rule, this just avoids showing options
+                      that would be rejected. */}
+                  <select
+                    aria-label={`Role for ${u.username}`}
+                    value={meta?.roles.find(r => r.name === u.role)?.id ?? ''}
+                    disabled={assignMut.isPending}
+                    onChange={e => e.target.value &&
+                      assignMut.mutate({ id: u.id, body: { role_id: e.target.value } })}
+                    style={{ colorScheme: 'dark' }}
+                    className="min-h-[44px] rounded-xl px-2 py-1.5 text-xs glass-card
+                      bg-transparent text-ink-primary focus:outline-none focus:border-primary-main"
+                  >
+                    {/* An empty option only while the current role is above what
+                        this manager may assign — otherwise the box would look
+                        blank for no visible reason. */}
+                    {!meta?.roles.some(r => r.name === u.role) && (
+                      <option value="">{u.role} (cannot change)</option>
+                    )}
+                    {meta?.roles.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label={`Department for ${u.username}`}
+                    value={meta?.departments.find(d => d.name === u.department)?.id ?? ''}
+                    disabled={assignMut.isPending}
+                    onChange={e => e.target.value &&
+                      assignMut.mutate({ id: u.id, body: { department_id: e.target.value } })}
+                    style={{ colorScheme: 'dark' }}
+                    className="min-h-[44px] rounded-xl px-2 py-1.5 text-xs glass-card
+                      bg-transparent text-ink-primary focus:outline-none focus:border-primary-main"
+                  >
+                    <option value="">No department</option>
+                    {meta?.departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
                   <div className="flex flex-col items-end gap-1">
                     {!hasProfile.has(u.id) && <span className="text-[10px] font-semibold tracking-wide text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">No profile</span>}
                     {!u.pin_set && <span className="text-[10px] font-semibold tracking-wide text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">PIN not set</span>}

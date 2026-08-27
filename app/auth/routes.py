@@ -397,9 +397,20 @@ def register():
     if not dept:
         return jsonify({"error": "Department not found."}), 404
 
-    staff_role = Role.query.filter_by(level=1).first()
+    # By NAME, not "the first row that happens to be level 1". There are several
+    # level-1 roles (waiter, housekeeping, grounds, staff), so the old query
+    # handed a new registrant whichever one the database returned first — an
+    # arbitrary result that depended on row order.
+    #
+    # A new registrant gets the generic "staff" role deliberately: they arrive
+    # inactive and unassigned, and a manager gives them their real role on the
+    # staff screen. Guessing here would hand out station permissions nobody
+    # granted.
+    staff_role = db.session.query(Role).filter_by(name="staff").first()
     if not staff_role:
-        return jsonify({"error": "Default staff role not found."}), 500
+        return jsonify({
+            "error": "The default 'staff' role is missing. Run `flask seed roles-depts`."
+        }), 500
 
     with db.session.begin_nested():
         user = User(
