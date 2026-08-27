@@ -147,6 +147,11 @@ def create_app(config_name: str = None) -> Flask:
     from app.finance.card_gateway import card_gateway_bp
     app.register_blueprint(card_gateway_bp)
 
+    # Read access to the hash-chained trail. Owner-only and strictly read-only —
+    # see the note in app/audit/__init__.py.
+    from app.audit import audit_bp
+    app.register_blueprint(audit_bp)
+
     from app.hr import (profiles_bp, wifi_bp, shifts_bp, clock_bp,
                         leave_bp, absence_bp, attendance_bp, performance_bp, roster_bp)
     app.register_blueprint(profiles_bp)

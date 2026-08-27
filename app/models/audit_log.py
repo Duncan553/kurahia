@@ -65,8 +65,27 @@ class AuditLog(db.Model):
         Append a new audit entry. Must be called inside an active db session.
         Automatically fetches the last entry_hash to form the chain link.
         """
-        # Get the hash of the most recent entry (chain tail)
-        last = db.session.query(cls).order_by(cls.timestamp.desc()).first()
+        # Read the chain tail UNDER A LOCK.
+        #
+        # Without with_for_update() two concurrent requests both read the same
+        # "latest" row and both chain off it, so one entry silently skips its
+        # predecessor and verify_chain() then reports the history as BROKEN
+        # forever — from ordinary traffic, not tampering. Observed on the dev
+        # database: two order_item.receive entries 6.6ms apart, the second
+        # chained off the row before the first.
+        #
+        # That is worse than having no chain: an alarm that is always sounding
+        # cannot distinguish a real rewrite from a busy Saturday. This is the
+        # same serialisation the codebase already uses for wristband numbering
+        # (app/services/gate.py) — the identical "append to a sequence" problem.
+        #
+        # with_for_update() is a no-op on SQLite, which has no row locks; dev is
+        # single-writer so it does not bite there, and production is Postgres
+        # where the lock is real.
+        last = (db.session.query(cls)
+                .order_by(cls.timestamp.desc())
+                .with_for_update()
+                .first())
         prev_hash = last.entry_hash if last else None
 
         now = datetime.now(timezone.utc)
