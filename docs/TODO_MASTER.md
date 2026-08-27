@@ -202,9 +202,67 @@ Backend **810 passing / 5 skipped**, all three apps `tsc -b` clean and building,
 
 ---
 
+---
+
+## Corrections to this document
+
+Two P1 entries above were WRONG when written, and are corrected here rather than
+quietly edited, because the mistake is instructive.
+
+**"Zero ingredients exist"** and **"`GET /equipment` returns `[]`"** — both were
+measurement errors, not missing data. There are **33 ingredients and 6
+equipment records**. The inventory list was scoped to the actor's own department
+for everyone below owner, and it was read as a manager assigned to "Management",
+which owns no stock. A permissions artifact was reported as an empty database.
+The scoping is now manager-and-above (fixed 2026-08-27), because approving
+purchases and chasing variance across departments IS the manager's job.
+
+The real gap was never missing ingredients. It is that **only one purchase has
+ever been recorded**, and `cost_per_unit` is derived from purchases as a
+weighted average — so 32 of 33 ingredients have no cost, and almost nothing can
+show a margin. Record purchases and the whole chain lights up.
+
+Same lesson as the UI sweep earlier in the session: check whether the
+measurement is wrong before concluding the system is.
+
 ## A note on how to read this
 
 Three findings this session were **my tooling being wrong, not your app** — the
 responsive sweep reported ~1,800 false positives across two iterations before the
 detector was right. Anything above was verified against running code or live data
 before it was written down. Where something is unproven it says so.
+
+---
+
+## Status at end of session, 2026-08-27
+
+**876 backend tests passing, 5 skipped. All three apps `tsc -b` clean and
+building. shared_ui 62/62.**
+
+Every P0 is closed. Every backend built this session has a screen: audit trail,
+menu profit, VAT, stock tracking, movement ledger, role assignment.
+
+**What is left is not code.**
+
+1. Classify 22 menu items and record some purchases (~1 hour of data entry).
+   Until then most of the menu cannot be sold and 27 dishes read "cannot be
+   measured" — not because anything is broken, but because the system will not
+   invent numbers it does not have. Industry research names menu build errors as
+   the single most common cause of POS launch failures, so this is the real risk.
+
+2. Confirm with the accountant: are menu prices VAT-inclusive, and which items
+   are exempt or zero-rated? Built inclusive at 16% as the Kenyan norm, but that
+   is a tax position this system is not qualified to hold.
+
+3. Run one real service — one department, real staff, old system still running
+   in parallel per GO_LIVE_PLAN.md step 12. Nothing here has been tested under
+   real load, on real tablets, with real staff. That is the only test that counts
+   and it is the one that could not be run from here.
+
+Three gaps in GO_LIVE_PLAN.md worth closing before that service:
+  - no "it died mid-service" card for staff (keep a numbered paper ticket, do
+    not guess, hand it to the manager at close)
+  - no hypercare window — decide who staff phone at 8pm, and tell them
+  - reconciliation is strict by design, which punishes untrained staff hardest
+    in week one
+
