@@ -473,6 +473,109 @@ Note the **real** menu photos are named (`grilled-tilapia.jpg`, `beef-burger.jpg
 
 ---
 
+## 12. `tsc --noEmit` was checking NOTHING — and it hid a broken screen
+
+**Status:** ✅ FIXED (21 errors → 0) · **Severity:** HIGH — this is the most
+important finding of the session
+
+### The measurement was broken
+
+Every app's root `tsconfig.json` is:
+
+```json
+{ "files": [], "references": [{ "path": "./tsconfig.app.json" }, ...] }
+```
+
+`files: []` plus project references means **plain `npx tsc --noEmit` type-checks
+zero files and exits 0.** It is not a weak check — it is *no* check. The real
+build runs `tsc -b` (see `package.json`: `"build": "tsc -b && vite build"`).
+
+`vite build` doesn't cover for it either: Vite uses esbuild, which strips types
+without checking them. So a green build and a green `tsc --noEmit` together
+proved nothing.
+
+**Use `npx tsc -b --force`.** Under it: employee 16 errors, owner 4, station 1.
+
+### What it was hiding: `/inventory/quick-entry` was unusable
+
+The FormField refactor removed `label` and `options` from `Input`/`Select`, but
+**never migrated the call sites**. React silently drops an unknown prop on a
+component, so:
+
+- `<Select options={...}>` → options ignored → **a dropdown with ZERO options**
+- `<Input label="...">` → spread onto the DOM as `<input label="Item *">`, an
+  invalid attribute → **no visible label, nothing linked for a screen reader**
+
+Proven in a real browser before fixing:
+
+```
+{ optionCount: 0, options: [], hasLabelAttr: true, labelAttr: "Item *", labelledBy: false }
+```
+
+**Zero options.** Nobody could pick an item, so stock could not be logged at all.
+Six dropdowns were affected across 5 files (`WaiverScreen` in both employee and
+station — the duplicate problem from #4 again), plus 18 `label` sites in 7 files.
+
+**Fix:** restored `options` and `label` on `Select`/`Input` centrally rather than
+rewriting 18 call sites — and `label` now renders a real `<label htmlFor>` wired
+to a `useId()`, so the markup is *better* than before it broke. Re-verified:
+
+```
+{ optionCount: 1, first3: ["Select item…"], strayLabelAttr: false, realLabel: "Item *" }
+```
+
+(Only the placeholder shows because `GET /inventory/items` genuinely returns
+`[]` — **no inventory items are seeded**. That is a seed-data gap, not a bug.)
+
+`SelectOption` — removed earlier in this session as a "phantom export" — is real
+again and exported.
+
+### Also hidden: the "Access restricted" screen was a dead end
+
+`RoleGate` in all three apps passed `message=` and `action={{label,onClick}}` to
+`EmptyState`, whose props are `icon`/`title`/`description`/`actionLabel`/
+`onAction`. Both were silently dropped, and required `icon` was missing entirely.
+A user hitting a page above their role saw the words "Access restricted" with **no
+explanation and no way back**. Fixed in all three apps.
+
+### Also hidden
+
+- `employee/LoginScreen.tsx:40` — `decodeJWT` is generic defaulting to
+  `Record<string, unknown>`, so every claim was `unknown`: 3 errors in one
+  `setAuth` call. Now instantiated with a real claim shape.
+- `station/main.tsx` passed `level="page"` to `ErrorBoundary`, which accepts
+  only `'screen' | 'tile'`.
+- Four unused imports.
+
+**Recommendation:** change the `build` script or CI to fail on `tsc -b`, and stop
+trusting `tsc --noEmit` in this repo.
+
+---
+
+## 13. station_pwa is not actually a PWA
+
+**Status:** open · **Severity:** medium (offline is exactly what tablets need)
+
+`station_pwa/tsconfig.app.json` referenced `vite-plugin-pwa/client` types, but:
+
+- `vite-plugin-pwa` is **not** in `station_pwa/package.json`
+- `station_pwa/vite.config.ts` never imports `VitePWA`
+- `station_pwa/dist/sw.js` **does not exist**, while `employee_pwa/dist/sw.js`
+  and `owner_pwa/dist/sw.js` both do
+
+So the station app has no service worker, no manifest, no offline caching and is
+not installable — despite the name. The stale `types` entry (scaffolding copied
+from the other apps) was removed so the app typechecks; **adding real PWA support
+is left as a product decision**, since it needs a manifest, icons and a caching
+strategy.
+
+This matters more here than anywhere else: the station tablets are the POS and
+kitchen displays running on the resort LAN, which is precisely where a dropped
+connection should not stop service. `employee_pwa` even has an offline clock-in
+queue (`ClockScreen.tsx` `enqueueClockEvent`) — station has nothing equivalent.
+
+---
+
 ## Not broken — done and verified 2026-08-26
 
 - **Emoji → icon sweep.** All raw emoji (`📍 👤 🔔 🔇 🎉`) and glyph-as-icon
