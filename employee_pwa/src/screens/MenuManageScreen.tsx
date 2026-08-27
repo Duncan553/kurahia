@@ -14,6 +14,8 @@ interface MenuItem {
   food_cost: string | null; gross_margin: string | null
   food_cost_pct: string | null; in_stock: boolean | null
   image_path: string | null
+  stock_tracking: 'RECIPE' | 'DIRECT' | 'SERVICE' | 'UNTRACKED'
+  inventory_item_id: string | null
 }
 interface InvItem {
   id: string; name: string; unit: string; cost_per_unit: string | null
@@ -180,6 +182,25 @@ export default function MenuManageScreen() {
     onSuccess: (_d, it) => ok(
       it.is_active ? 'Item removed from sale. Owner notified.' : 'Item back on sale. Owner notified.'
     ),
+    onError: fail,
+  })
+
+  /**
+   * Set how an item's sale moves stock.
+   *
+   * This is the control that unblocks selling. An UNTRACKED item cannot be put
+   * on sale at all — deliberately, because it would take money without moving
+   * inventory — and until now there was no way to classify one from the UI, so
+   * the block had no escape hatch.
+   *
+   * RECIPE and DIRECT are set implicitly by writing a recipe or linking a stock
+   * item, so the only thing worth choosing by hand is SERVICE: "this genuinely
+   * consumes nothing", which is a statement a person makes, not a default.
+   */
+  const trackingMut = useMutation({
+    mutationFn: (v: { id: string; value: string }) =>
+      api.patch(`/menu/items/${v.id}`, { stock_tracking: v.value }).then(r => r.data),
+    onSuccess: () => ok('Stock tracking updated.'),
     onError: fail,
   })
 
@@ -395,6 +416,22 @@ export default function MenuManageScreen() {
                         {parseFloat(it.food_cost_pct).toFixed(0)}% cost
                       </span>
                     )}
+                    {/* Why this item can or cannot be sold. UNTRACKED is the
+                        only blocking state and says so plainly — "not tracked"
+                        alone would leave the manager guessing what to do. */}
+                    {it.stock_tracking === 'UNTRACKED' ? (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide
+                        bg-status-failed/10 text-status-failed rounded-full px-1.5 py-0.5">
+                        not tracked — cannot sell
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide
+                        bg-status-paid/10 text-status-paid rounded-full px-1.5 py-0.5">
+                        {it.stock_tracking === 'RECIPE' ? 'recipe'
+                          : it.stock_tracking === 'DIRECT' ? 'direct stock'
+                          : 'service'}
+                      </span>
+                    )}
                     {it.in_stock === false && (
                       <span className="text-[10px] font-semibold uppercase tracking-wide
                         bg-status-failed/10 text-status-failed rounded-full px-1.5 py-0.5">
@@ -403,6 +440,25 @@ export default function MenuManageScreen() {
                     )}
                   </div>
                 </div>
+
+                {/* "Consumes nothing" — the one tracking state a human sets by
+                    hand. RECIPE and DIRECT follow automatically from writing a
+                    recipe or linking a stock item, so offering those here would
+                    invite a claim the data does not support. Shown only while
+                    the item is blocked, so it does not clutter settled rows. */}
+                {it.stock_tracking === 'UNTRACKED' && (
+                  <button
+                    onClick={() => trackingMut.mutate({ id: it.id, value: 'SERVICE' })}
+                    disabled={trackingMut.isPending}
+                    aria-label={`Mark ${it.name} as consuming no stock`}
+                    className="shrink-0 min-h-[44px] px-3 rounded-xl text-xs font-semibold
+                      glass-card text-ink-primary hover:border-primary-main
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main
+                      disabled:opacity-50 whitespace-nowrap"
+                  >
+                    Consumes nothing
+                  </button>
+                )}
 
                 {/* Recipe button — only for kitchen/bar items */}
                 {it.prep_station !== 'NONE' && (

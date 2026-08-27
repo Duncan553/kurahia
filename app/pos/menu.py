@@ -334,6 +334,11 @@ def list_menu_items():
             "image_path":     i.image_path,
             "allergens":      i.allergens,
             "dietary_flags":  i.dietary_flags,
+            # How this item's sale moves stock. Without it in the list response
+            # the manager cannot see WHY an item is blocked from sale, only that
+            # it is — and the fix is on this screen.
+            "stock_tracking":    i.stock_tracking,
+            "inventory_item_id": i.inventory_item_id,
             **_compute_menu_item_cost_fields(i),
         })
     return jsonify(result), 200
