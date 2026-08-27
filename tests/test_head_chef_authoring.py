@@ -165,3 +165,54 @@ def test_a_waiter_still_cannot_reprice_anything(app, client, waiter_token, gener
         "idempotency_key": str(uuid.uuid4()),
     }, headers=_auth(waiter_token))
     assert rv.status_code == 403
+
+
+# ── Price changes must be answerable after the fact ──────────────────────────
+
+def test_a_price_change_records_the_old_and_new_value(app, client, chef_token, general_dept):
+    """
+    The audit log used to record only the item NAME on an edit, so you could see
+    THAT someone changed something but never what it was before. Repricing is
+    how margin quietly disappears — "who dropped the Tilapia to 900, and from
+    what" has to be answerable.
+    """
+    from app.models.audit_log import AuditLog
+
+    rv = client.post("/menu/items", json={
+        "name": "Audited Dish", "price": "1800", "category": "Mains",
+        "prep_station": "KITCHEN", "department_id": general_dept,
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(chef_token))
+    item_id = rv.get_json()["id"]
+
+    rv = client.patch(f"/menu/items/{item_id}", json={"price": "900"},
+                      headers=_auth(chef_token))
+    assert rv.status_code == 200
+
+    entry = (db.session.query(AuditLog)
+             .filter_by(action="menu.item.edit")
+             .order_by(AuditLog.id.desc()).first())
+    assert entry is not None
+    assert "1800" in entry.details and "900" in entry.details, (
+        f"the audit entry must carry old -> new, got: {entry.details!r}"
+    )
+    assert entry.actor == "chef_test"
+
+
+def test_an_edit_that_changes_nothing_says_so(app, client, chef_token, general_dept):
+    """A no-op edit must not look like a price change in the trail."""
+    from app.models.audit_log import AuditLog
+
+    rv = client.post("/menu/items", json={
+        "name": "No Op Dish", "price": "500", "category": "Mains",
+        "prep_station": "KITCHEN", "department_id": general_dept,
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=_auth(chef_token))
+    item_id = rv.get_json()["id"]
+
+    client.patch(f"/menu/items/{item_id}", json={"price": "500"}, headers=_auth(chef_token))
+
+    entry = (db.session.query(AuditLog)
+             .filter_by(action="menu.item.edit")
+             .order_by(AuditLog.id.desc()).first())
+    assert "no effective change" in entry.details
