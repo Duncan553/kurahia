@@ -1,0 +1,276 @@
+<!-- ══════════════ ACT 6 — WHAT IS REAL ══════════════ -->
+<section>
+  <div class="act">
+    <div class="num">ACT 06</div>
+    <div>
+      <h2>What is real, and what is waiting</h2>
+      <div class="sub">The part most documents like this leave out</div>
+    </div>
+  </div>
+
+  <div class="col" style="display:flex; flex-direction:column; gap:22px;">
+    <p>
+      Everything above works. But a system that works and a system that is <em>ready</em> are
+      different things, and the gap is not code — it is information only the resort has.
+    </p>
+
+    <h3>The menu is mostly undecided</h3>
+    <p>
+      Of <span class="val">29</span> sellable items, only <span class="val">13</span> have been
+      classified. The other <span class="val">16</span> are still UNTRACKED, which means the
+      system will refuse to sell them.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Kind</th><th>Count</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill ok">RECIPE</span></td><td class="num">5</td><td>Deducts each ingredient in its recipe</td></tr>
+          <tr><td><span class="pill ok">DIRECT</span></td><td class="num">2</td><td>Deducts one of itself — a bottle, a can</td></tr>
+          <tr><td><span class="pill ok">SERVICE</span></td><td class="num">6</td><td>Someone confirmed it consumes nothing</td></tr>
+          <tr><td><span class="pill none">UNTRACKED</span></td><td class="num">16</td><td>Nobody has decided yet — cannot be sold</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      This is not a fault to be fixed by a programmer. It is roughly an hour of decisions
+      that only the head chef and the manager can make: how much fuel a boat trip burns,
+      how much oil a massage uses, what goes into each dish.
+    </p>
+
+    <h3>Almost nothing has a cost yet</h3>
+    <p>
+      There are <span class="val">33</span> ingredients on the system and exactly
+      <span class="val">1</span> of them knows what it costs — because exactly
+      <span class="val">1</span> purchase has ever been recorded.
+    </p>
+    <p>
+      Cost is not typed in; it is worked out from what was actually paid for deliveries.
+      That is the right design — nobody can inflate a cost to hide a margin — but it means
+      the profit screens stay blank until real purchases go in. Record a few weeks of
+      deliveries and the entire menu-profit picture lights up on its own.
+    </p>
+
+    <div class="note">
+      <div class="label">Why the screens say "cannot be measured" instead of guessing</div>
+      <p>
+        A dish with no ingredient costs could be shown with an assumed margin. It would look
+        better and it would be a lie — and someone would eventually drop a profitable dish
+        because of it.
+      </p>
+      <p>
+        The system says it does not know. That is a feature, and it is the same instinct
+        behind refusing to sell an unclassified item.
+      </p>
+    </div>
+
+    <h3>Three things deliberately not built</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Not built</th><th>Why not</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Tax invoices (eTIMS)</strong></td>
+            <td>A tax invoice needs a serial number and identifiers issued once that must never change. The format is the accountant's decision. Choosing one now and changing it later would mean reissuing every invoice already handed to a guest.</td>
+          </tr>
+          <tr>
+            <td><strong>Offline tills</strong></td>
+            <td>If two tablets take an order for the same table while the network is down, one of them has to lose. Who wins, and what the waiter sees, are decisions about how the floor runs — not something to guess at. Built on a guess, it would look like it worked and quietly lose orders.</td>
+          </tr>
+          <tr>
+            <td><strong>Spoilage sensitivity</strong></td>
+            <td>The alert currently treats 10 litres of milk the same as 10 grams of saffron. Fixing it properly needs real volume history, which arrives with the purchase records above.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>VAT is built, but unconfirmed</h3>
+    <p>
+      Prices are treated as <strong>including</strong> 16% VAT, which is the Kenyan hospitality
+      norm. The rate is stored as a setting rather than written into the software, so it can
+      be changed when the law changes without anyone touching code — and each sale keeps a
+      copy of the rate that applied on the day.
+    </p>
+    <p>
+      That last detail matters: when the rate changes, last year's receipts must still show
+      last year's rate. They do.
+    </p>
+    <p>
+      What remains is a question for the accountant, not the system: are these prices really
+      VAT-inclusive, and which items are exempt or zero-rated?
+    </p>
+  </div>
+</section>
+
+<!-- ══════════════ HOW THIS WAS MADE ══════════════ -->
+<section>
+  <div class="act">
+    <div class="num">METHOD</div>
+    <div>
+      <h2>How this document was made</h2>
+      <div class="sub">So you can judge whether to believe it</div>
+    </div>
+  </div>
+
+  <div class="col" style="display:flex; flex-direction:column; gap:22px;">
+    <p>
+      Every screenshot here came from the system running on a real machine, driven
+      automatically, one screen at a time. Nothing was drawn or arranged.
+    </p>
+    <p>
+      There was an earlier attempt at this. It produced forty screenshots, and eight of them
+      were the same image — the login screen — saved under eight different names:
+      "manager cash", "manager menu", "manager staff", and five more. That run had navigated
+      without ever logging in, and photographed whatever happened to be on the screen.
+    </p>
+
+    <div class="note cool">
+      <div class="label">The rule that came out of it</div>
+      <p>
+        The capture used for this document <strong>proves it is on the right screen before it
+        takes the picture</strong>. If it cannot find something that belongs to that screen, it
+        records a failure and moves on.
+      </p>
+      <p>
+        A missing screenshot is honest. A wrong screenshot with a confident caption is worse
+        than nothing, because it is the kind of mistake nobody catches by reading.
+      </p>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>The capture run</th><th>Count</th></tr></thead>
+        <tbody>
+          <tr><td>Screens attempted</td><td class="num">41</td></tr>
+          <tr><td>Verified and photographed</td><td class="num">39</td></tr>
+          <tr><td>Distinct images (no screen photographed twice)</td><td class="num">39</td></tr>
+          <tr><td>Reported as failures on the first pass</td><td class="num">7</td></tr>
+          <tr><td>Still genuinely uncaptured after checking</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>What those seven "failures" turned out to be</h3>
+    <p>
+      This is the interesting part, and it is the same lesson twice over: the tool doing the
+      measuring is often the thing that is wrong.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Reported as failed</th><th>What it actually was</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Manager home</strong><br>and <strong>Clock</strong></td>
+            <td>Fine. The capture was looking for wording that does not appear on those screens. Photographed successfully on a second pass and both are in this document.</td>
+          </tr>
+          <tr>
+            <td><strong>Schedule</strong>, <strong>Performance</strong>, <strong>Stock count</strong></td>
+            <td>Working exactly as designed. All three are manager-level screens, and the accounts used were a waiter and the head chef. They showed "Access restricted" — the correct answer, not a fault.</td>
+          </tr>
+          <tr>
+            <td><strong>Band issue</strong></td>
+            <td>A real fault, and the best thing this exercise found. The station app has no such page, and answers any address it does not recognise with a login screen instead of "page not found" — see Act 1.</td>
+          </tr>
+          <tr>
+            <td><strong>Tab detail</strong></td>
+            <td>Slow to appear on the first attempt; captured on a later one. It is in this document.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <div class="label">Two screenshots came out identical, and one was deleted</div>
+      <p>
+        "Schedule" and "Performance" produced <em>byte-for-byte the same picture</em> — because
+        for a waiter they genuinely are the same screen: the access-restricted notice.
+      </p>
+      <p>
+        That is honest, but captioning one image as two different screens is exactly the
+        mistake this document was written to avoid. One was deleted. It appears once, labelled
+        as what it is.
+      </p>
+    </div>
+
+    <h3>The stock deduction was not taken on trust either</h3>
+    <p>
+      The capture recorded stock before and after but never actually sold anything in between,
+      so both readings were identical — which proves nothing in either direction.
+    </p>
+    <p>
+      So one Grilled Tilapia was put through the live system by hand: ordered, sent, and marked
+      ready by the head chef. The tilapia fillet fell from <span class="val">7.2000 kg</span> to
+      <span class="val">6.8500 kg</span>. That is <span class="val">0.3500 kg</span> — the recipe
+      line exactly. Those are the figures in Act 3, and they were produced that way.
+    </p>
+
+    <h3>Found along the way</h3>
+    <p>
+      Photographing a system turns out to be a decent way of testing it. Three things surfaced
+      that no test had asked about:
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Finding</th><th>Why it matters</th><th>Weight</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>The station tablets answered any unknown address with a <strong>login screen</strong></td>
+            <td>A typo or an old bookmark looked like being signed out, sending staff after a problem that was not there. It is also how a previous run produced eight login screens filed as eight dashboards. Now says "Page not found", keeps you signed in, and offers a way back — with a test holding both that and the signed-out case in place.</td>
+            <td><span class="pill ok">Fixed</span></td>
+          </tr>
+          <tr>
+            <td>The <strong>notifications screen had no title</strong></td>
+            <td>Every other screen names itself. This one opened straight into a list, so there was nothing to orient a new member of staff — and nothing on the page to identify it in a screenshot. It now names itself and shows the unread count.</td>
+            <td><span class="pill ok">Fixed</span></td>
+          </tr>
+          <tr>
+            <td>The station's <strong>"Access restricted" screen was a dead end</strong></td>
+            <td>Found while fixing the above: it offered no way back. On a wall-mounted tablet with no browser buttons, the only escape was signing out. The staff app had already been fixed; the tablets had not.</td>
+            <td><span class="pill ok">Fixed</span></td>
+          </tr>
+          <tr>
+            <td>Staff land on <strong>the screen they need</strong>, by department</td>
+            <td>Not a fault — a good detail worth knowing. Kitchen staff open the kitchen queue, bar staff the bar, gate staff the gate. Nobody is asked to navigate to their own job.</td>
+            <td><span class="pill ok">Working</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <div class="label">This document has already been corrected once</div>
+      <p>
+        The first published version explained the missing band-issue screenshot as a security
+        measure — that staff must enter a PIN to start a shift before they can hand out
+        wristbands. It read well and it was <strong>wrong</strong>.
+      </p>
+      <p>
+        There is no such rule. The page simply does not exist on that tablet, and the login
+        screen is what the app shows for anything it does not recognise. The invented
+        explanation was more flattering than the truth, which is exactly why it needed
+        checking.
+      </p>
+      <p>
+        Corrected here rather than quietly edited out, because a document about not trusting
+        confident captions should show its own.
+      </p>
+    </div>
+
+    <p>
+      The same principle applies to the numbers. Anything shown in
+      <span class="val">this style</span> was read from the running system, not written from
+      memory.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <p><strong>The Ivy Document</strong> — Waterfront Country Club, Juja.</p>
+  <p>
+    Written 27 August 2026 from a recorded run of the live system. Where this document and
+    the system disagree, the system is right and this document is out of date.
+  </p>
+</footer>

@@ -1,0 +1,9 @@
+{
+ "dish": "Grilled Tilapia",
+ "ingredient": "Tilapia Fillet",
+ "before": "7.2000",
+ "after": "6.8500",
+ "moved": "0.3500",
+ "expected": "0.3500",
+ "correct": true
+}
