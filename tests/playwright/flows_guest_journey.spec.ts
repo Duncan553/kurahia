@@ -102,6 +102,10 @@ test.describe.configure({ mode: 'serial' })
  * timing out. The limiter is correct; the test just has to live with it.
  */
 test.beforeAll(async () => {
+  // The hook needs its OWN budget: test.setTimeout() at module scope does not
+  // apply to hooks, so the 60s default was killing the warmup mid-backoff.
+  // Six logins against a "5 per minute" limiter can legitimately take minutes.
+  test.setTimeout(300_000)
   for (const who of [GATE, WAITER, CHEF, BARMAN, MANAGER, OWNER]) {
     await tokenFor(who)
   }
