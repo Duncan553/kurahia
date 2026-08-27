@@ -192,3 +192,166 @@ def log_sent_back():
     db.session.commit()
 
     return jsonify({"movement_id": movement.id, "item": item.name, "quantity": str(qty)}), 201
+
+
+# ── Reading the ledger ────────────────────────────────────────────────────────
+# Only POST routes existed here (spoilage, staff-meal, sent-back), so stock
+# LEVEL was readable but the history behind it was not. That makes variance
+# unanswerable: the count says 40 litres and the ledger says 47, and nobody can
+# see the seven movements in between. A number you cannot explain is a number
+# nobody trusts, and the judge's whole theft-detection story rests on this.
+
+MANAGER_LEVEL = 5
+MAX_PAGE = 200
+
+
+@movements_bp.get("")
+@require_active_user
+def list_movements():
+    """The movement ledger for an item or a period — newest first.
+
+    Stock is DERIVED as the sum of these rows (invariant 2), so this endpoint is
+    the audit trail for inventory in the same way /audit/logs is for actions:
+    it does not compute a level, it shows the arithmetic that produced one.
+    """
+    from datetime import datetime, timezone
+
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    q = db.session.query(StockMovement)
+
+    item_id = (request.args.get("item_id") or "").strip()
+    if item_id:
+        q = q.filter(StockMovement.item_id == item_id)
+
+    reason = (request.args.get("reason") or "").strip().upper()
+    if reason:
+        if reason not in MovementReason.__members__:
+            return jsonify({
+                "error": f"reason must be one of {[m.value for m in MovementReason]}."
+            }), 400
+        q = q.filter(StockMovement.reason == reason)
+
+    for param, is_end in (("from", False), ("to", True)):
+        raw = (request.args.get(param) or "").strip()
+        if not raw:
+            continue
+        try:
+            d = datetime.strptime(raw, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            return jsonify({"error": f"{param} must be YYYY-MM-DD."}), 400
+        q = (q.filter(StockMovement.timestamp_utc <= d.replace(hour=23, minute=59, second=59))
+             if is_end else q.filter(StockMovement.timestamp_utc >= d))
+
+    total = q.count()
+    try:
+        limit = min(int(request.args.get("limit", 50)), MAX_PAGE)
+        offset = max(int(request.args.get("offset", 0)), 0)
+    except ValueError:
+        return jsonify({"error": "limit and offset must be whole numbers."}), 400
+
+    rows = (q.order_by(StockMovement.timestamp_utc.desc())
+             .limit(limit).offset(offset).all())
+
+    # Running balance is only meaningful for ONE item — summing movements across
+    # different items would add litres to kilograms. Offered only when the
+    # caller has narrowed to a single item, rather than printing a number that
+    # looks authoritative and means nothing.
+    running = None
+    if item_id:
+        from app.services.stock import get_current_stock
+        running = get_current_stock(item_id)
+
+    out = []
+    for m in rows:
+        item = db.session.get(InventoryItem, m.item_id)
+        who = db.session.get(User, m.actor_id)
+        out.append({
+            "id": m.id,
+            "item_id": m.item_id,
+            "item_name": item.name if item else None,
+            "unit": item.unit if item else None,
+            "change_amount": str(m.change_amount),
+            # Sign is the whole story: what came in vs what went out.
+            "direction": "IN" if m.change_amount > 0 else "OUT",
+            "reason": m.reason,
+            "actor": who.username if who else None,
+            "notes": m.notes,
+            "timestamp": m.timestamp_utc.isoformat(),
+        })
+
+    return jsonify({
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "current_stock": str(running) if running is not None else None,
+        "movements": out,
+    }), 200
+
+
+@movements_bp.get("/summary")
+@require_active_user
+def movement_summary():
+    """Totals per reason for one item — where the stock actually went.
+
+    This is the shape a variance conversation needs. "You are 7 litres short" is
+    an accusation; "12 in from purchases, 4 out to sales, 3 to spoilage" is a
+    conversation, and the judge's spoilage and ratio checks read the same rows.
+    """
+    from decimal import Decimal
+    from collections import defaultdict
+    from datetime import datetime, timezone
+
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    item_id = (request.args.get("item_id") or "").strip()
+    if not item_id:
+        return jsonify({"error": "item_id is required — a summary across different units is meaningless."}), 400
+
+    item = db.session.get(InventoryItem, item_id)
+    if not item:
+        return jsonify({"error": "Inventory item not found."}), 404
+
+    q = db.session.query(StockMovement).filter_by(item_id=item_id)
+    for param, is_end in (("from", False), ("to", True)):
+        raw = (request.args.get(param) or "").strip()
+        if not raw:
+            continue
+        try:
+            d = datetime.strptime(raw, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            return jsonify({"error": f"{param} must be YYYY-MM-DD."}), 400
+        q = (q.filter(StockMovement.timestamp_utc <= d.replace(hour=23, minute=59, second=59))
+             if is_end else q.filter(StockMovement.timestamp_utc >= d))
+
+    by_reason = defaultdict(lambda: {"in": Decimal("0"), "out": Decimal("0"), "count": 0})
+    for m in q.all():
+        amt = Decimal(str(m.change_amount))
+        b = by_reason[m.reason]
+        b["in" if amt > 0 else "out"] += abs(amt)
+        b["count"] += 1
+
+    total_in = sum((b["in"] for b in by_reason.values()), Decimal("0"))
+    total_out = sum((b["out"] for b in by_reason.values()), Decimal("0"))
+
+    return jsonify({
+        "item_id": item_id,
+        "item_name": item.name,
+        "unit": item.unit,
+        "by_reason": [{
+            "reason": r,
+            "in": str(b["in"]),
+            "out": str(b["out"]),
+            "net": str(b["in"] - b["out"]),
+            "movements": b["count"],
+        } for r, b in sorted(by_reason.items())],
+        "totals": {
+            "in": str(total_in),
+            "out": str(total_out),
+            "net": str(total_in - total_out),
+        },
+    }), 200
