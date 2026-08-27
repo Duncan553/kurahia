@@ -27,16 +27,21 @@ const PASSWORD = process.env.SEED_PASSWORD ?? 'Kurahia1!'
 const tokens = new Map<string, { access_token: string; refresh_token: string }>()
 
 async function tokenFor(username: string) {
-  if (!tokens.has(username)) {
+  if (tokens.has(username)) return tokens.get(username)!
+  for (let attempt = 0; attempt < 5; attempt++) {
     const res = await fetch(`${API}/auth/login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password: PASSWORD }),
     })
     const body = await res.json() as any
-    if (!body.access_token) throw new Error(`login failed for ${username}: ${JSON.stringify(body)}`)
-    tokens.set(username, body)
+    if (body.access_token) { tokens.set(username, body); return tokens.get(username)! }
+    // /auth/login is limited to "5 per minute" per client IP. These specs need
+    // several different people from one machine, so tripping it is the limiter
+    // working correctly — wait it out rather than weakening the protection.
+    if (res.status !== 429) throw new Error(`login failed for ${username}: ${JSON.stringify(body)}`)
+    await new Promise(r => setTimeout(r, 20_000))
   }
-  return tokens.get(username)!
+  throw new Error(`login for ${username} stayed rate-limited after backoff`)
 }
 
 async function api(method: string, path: string, username: string, body?: unknown) {
@@ -72,6 +77,14 @@ const OWNER   = 'amara.wanjiku'   // owner, level 10 — runs the EOD forfeit sw
 const uid = () => `pw-gate-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`
 
 test.describe.configure({ mode: 'serial' })
+
+// Pay the rate limiter ONCE, in a hook with its own budget, instead of letting
+// a random later step inherit the wait and time out. test.setTimeout() at module
+// scope does not apply to hooks, so the timeout is set inside it.
+test.beforeAll(async () => {
+  test.setTimeout(300_000)
+  for (const who of [GATE, MANAGER, OWNER]) await tokenFor(who)
+})
 
 /* ═══════════ 1. ISSUE — a guest pays at the barrier ═══════════════════════ */
 

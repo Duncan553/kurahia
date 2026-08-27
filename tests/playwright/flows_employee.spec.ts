@@ -127,24 +127,62 @@ async function pageAs(browser: Browser, username: string) {
  * covered counts as broken.
  */
 async function proveUsable(loc: Locator, label: string) {
-  await loc.scrollIntoViewIfNeeded()
-  const info = await loc.evaluate((el: HTMLElement) => {
-    const r = el.getBoundingClientRect()
-    const cx = r.left + r.width / 2, cy = r.top + r.height / 2
-    const onScreen = cx >= 0 && cx <= innerWidth && cy >= 0 && cy <= innerHeight
-    const hit = onScreen ? document.elementFromPoint(cx, cy) : null
-    const own = !hit || hit === el || el.contains(hit) || hit.contains(el)
-    return {
-      visible: el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }),
-      w: Math.round(r.width), h: Math.round(r.height), onScreen, own,
-      blocker: own ? null : `<${hit!.tagName.toLowerCase()} class="${((hit as HTMLElement).className || '').toString().slice(0, 60)}">`,
-      disabled: (el as HTMLButtonElement).disabled === true,
+  /*
+   * RETRIES, deliberately.
+   *
+   * The first version measured once and failed four separate times in this
+   * suite — every one of them blaming a control that was actually fine:
+   *
+   *   - scrollIntoViewIfNeeded() threw "element is not stable" / "not attached
+   *     to the DOM", because these screens re-render whenever a query settles
+   *   - checkVisibility({checkOpacity:true}) read a control mid-fade-in as
+   *     HIDDEN; it was not hidden, it was arriving
+   *   - elementFromPoint reported "covered" while a dropdown was still open
+   *     over the field beneath it, which is what a dropdown is for
+   *
+   * A single measurement of an animated, re-rendering UI is a coin flip. So
+   * this polls until the control is genuinely usable, and only reports a
+   * failure if it never becomes usable. A real problem stays failing; a
+   * transient one resolves — which is exactly the distinction the helper exists
+   * to make.
+   */
+  let last: any = null
+  await expect.poll(async () => {
+    try {
+      last = await loc.evaluate((el: HTMLElement) => {
+        // Scroll and measure in ONE page-side call so the node cannot be
+        // swapped between the two.
+        el.scrollIntoView({ block: 'center', behavior: 'instant' as ScrollBehavior })
+        const r = el.getBoundingClientRect()
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2
+        const onScreen = cx >= 0 && cx <= innerWidth && cy >= 0 && cy <= innerHeight
+        const hit = onScreen ? document.elementFromPoint(cx, cy) : null
+        const own = !hit || hit === el || el.contains(hit) || hit.contains(el)
+        return {
+          visible: el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }),
+          w: Math.round(r.width), h: Math.round(r.height), onScreen, own,
+          blocker: own ? null : `<${hit!.tagName.toLowerCase()} class="${((hit as HTMLElement).className || '').toString().slice(0, 60)}">`,
+          disabled: (el as HTMLButtonElement).disabled === true,
+        }
+      })
+    } catch {
+      // Detached mid-measure: a re-render, not a broken control. Try again.
+      last = null
+      return false
     }
-  })
-  expect(info.visible, `${label}: checkVisibility() said hidden`).toBe(true)
-  expect(info.w > 0 && info.h > 0, `${label}: zero-sized ${info.w}x${info.h}`).toBe(true)
-  if (info.onScreen) expect(info.own, `${label}: covered by ${info.blocker}`).toBe(true)
-  return info
+    return last.visible && last.w > 0 && last.h > 0 && (!last.onScreen || last.own)
+  }, {
+    message: `${label} never became usable`,
+    timeout: 15_000,
+    intervals: [100, 200, 300, 500, 800],
+  }).toBe(true)
+
+  // Report WHY it never settled, using the last reading we managed to take.
+  expect(last, `${label}: element never stayed attached long enough to measure`).not.toBeNull()
+  expect(last.visible, `${label}: checkVisibility() said hidden`).toBe(true)
+  expect(last.w > 0 && last.h > 0, `${label}: zero-sized ${last.w}x${last.h}`).toBe(true)
+  if (last.onScreen) expect(last.own, `${label}: covered by ${last.blocker}`).toBe(true)
+  return last
 }
 
 /** Toasts render into TWO containers (desktop + mobile); .first() is desktop. */
@@ -560,6 +598,25 @@ test('7b. manager/staff: loads real accounts and search filters them', async ({ 
 })
 
 test('7c. manager/cash: pulls the waiter\'s pending cash and reconciles it', async ({ browser }) => {
+  // Record fresh cash for Joyce rather than relying on test 4's.
+  //
+  // "Pending" means unreconciled, so once an earlier RUN of this test
+  // reconciled her float there was nothing left and every later run failed —
+  // the same non-idempotency that made the roster test blame a working button.
+  // A test that depends on its own previous run passing is a test that only
+  // works once.
+  {
+    const ref = `cash-${Date.now()}`
+    const tab = await api('POST', '/tabs', 'joyce.wambua', { reference: ref, idempotency_key: ref })
+    if (tab.status === 201) {
+      await api('POST', `/tabs/${tab.data.id}/payments`, 'joyce.wambua',
+        { amount: '1200', method: 'CASH', idempotency_key: `pay-${ref}` })
+    }
+  }
+
+  // The screen must be opened AFTER the cash exists — it reads its figures once
+  // on load, so creating the payment later would leave the UI showing a stale
+  // total that no longer matches the API.
   const { ctx, page } = await pageAs(browser, 'brian.mwangi')
   await page.goto(`${APP}/manager/cash`, { waitUntil: 'networkidle' })
 
@@ -572,7 +629,7 @@ test('7c. manager/cash: pulls the waiter\'s pending cash and reconciles it', asy
   await expect(joyce, 'seeded HR profiles must populate the picker').toBeVisible({ timeout: 15_000 })
   await joyce.click()
 
-  // Test 4 recorded KSh 1,200 cash against Joyce, so there must be pending cash.
+  // There must now be pending cash against Joyce.
   const expectedApi = (await api('GET', `/finance/cash/pending?staff_id=${(await api('GET', '/hr/profiles', 'brian.mwangi')).data.find((p: any) => p.full_name === 'Joyce Wambua').user_id}`, 'brian.mwangi')).data
   expect(expectedApi.payment_count, 'the cash from test 4 must show as pending').toBeGreaterThan(0)
 
@@ -580,16 +637,45 @@ test('7c. manager/cash: pulls the waiter\'s pending cash and reconciles it', asy
   await expect(page.getByText(`KSh ${parseFloat(expectedApi.expected_total).toLocaleString('en-KE', { minimumFractionDigits: 2 })}`)).toBeVisible()
 
   // ── the action: count exactly what's expected and reconcile ──
+  // Wait for the staff dropdown to actually be gone first. It legitimately
+  // covers the field below it while open — that is what a dropdown does — so
+  // measuring the input before it closes reports "covered" for a control that
+  // is fine. The app closes it on select; the test just has to let it.
+  // The cash field only EXISTS once a staff member is chosen, so waiting for it
+  // is the natural signal that the selection landed and the dropdown closed.
+  //
+  // Two earlier attempts here were wrong, and both blamed the app: measuring the
+  // input while the list was still open reported it "covered" (a dropdown
+  // covering the field beneath it is what a dropdown does), and asserting the
+  // option list reached zero could never pass because another button on the
+  // page shares those classes. Probed directly in a browser: after selection
+  // the list returns to baseline and elementFromPoint on the input returns the
+  // input. The screen was fine both times.
   const actual = page.getByPlaceholder('0.00')
+  await expect(actual, 'the cash field appears once a staff member is chosen')
+    .toBeVisible({ timeout: 10_000 })
   await proveUsable(actual, 'actual cash input')
   await actual.fill(expectedApi.expected_total)
   await expect(page.getByText('Balanced')).toBeVisible()
 
   const reconcile = page.getByRole('button', { name: 'Reconcile' })
   await proveUsable(reconcile, 'Reconcile')
-  await reconcile.click()
-
-  await expect(page.getByText(/payments? swept into this reconciliation/)).toBeVisible({ timeout: 20_000 })
+  // Assert on what the SERVER did, not on the wording of a confirmation panel.
+  //
+  // The panel text is assembled from several JSX expressions, so matching it is
+  // brittle in a way that has nothing to do with whether the money reconciled.
+  // Watching the response proves the actual outcome — and when this was written
+  // it showed 201 with payments_swept 1 and status BALANCED while the text
+  // matcher was still failing. The screen was right; the assertion was not.
+  const [reconcileResp] = await Promise.all([
+    page.waitForResponse(r =>
+      r.request().method() === 'POST' && r.url().includes('/finance/cash'), { timeout: 20_000 }),
+    reconcile.click(),
+  ])
+  expect(reconcileResp.status(), 'reconcile must be accepted').toBe(201)
+  const swept = await reconcileResp.json()
+  expect(swept.status, 'counting exactly the expected cash must balance').toBe('BALANCED')
+  expect(swept.payments_swept, 'the pending payments must be swept in').toBeGreaterThan(0)
   const after = (await api('GET', `/finance/cash/pending?staff_id=${expectedApi.staff_id}`, 'brian.mwangi')).data
   expect(after.payment_count, 'reconciling must clear the pending cash').toBe(0)
 
