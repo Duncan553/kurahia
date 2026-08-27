@@ -82,6 +82,27 @@ def list_tabs():
     ]), 200
 
 
+def _normalise_reference(raw: str | None) -> str | None:
+    """Tidy a tab reference so the same table cannot become two.
+
+    The reference is deliberately POLYMORPHIC — on the live database it holds
+    "Band #12" (auto-generated at the gate), "Villa 6 / Wanjiru Kamau",
+    "Table 2 — breakfast" and "Spa — Full Body Massage". A Table model would be
+    the wrong shape for that; only a minority of tabs are dining tables at all.
+
+    What free text does cost is consistency, so this collapses internal runs of
+    whitespace and trims the ends. "Table  5" and "Table 5" are the same table
+    and must not become separate rows in every report that groups by reference.
+
+    Case is left alone on purpose: "Villa 6 / Wanjiru Kamau" contains a guest's
+    name, and title-casing or lower-casing someone's name to tidy a key is not
+    a trade worth making.
+    """
+    if not raw:
+        return None
+    return " ".join(str(raw).split())[:200] or None
+
+
 @tabs_bp.post("")
 @require_active_user
 @require_clocked_in
@@ -89,7 +110,7 @@ def open_tab():
     actor = db.session.get(User, get_jwt_identity())
     data      = request.get_json(silent=True) or {}
     tab_type  = (data.get("tab_type") or TabType.WALK_IN.value).upper()
-    reference = (data.get("reference") or "").strip()[:200] or None
+    reference = _normalise_reference(data.get("reference"))
 
     if tab_type not in TabType.__members__:
         return jsonify({"error": f"tab_type must be one of {list(TabType.__members__)}."}), 400
@@ -215,3 +236,37 @@ def close_tab(tab_id):
     AuditLog.log(actor=actor.username, action="tab.close", target=tab_id)
     db.session.commit()
     return jsonify({"id": tab.id, "status": tab.status}), 200
+
+
+@tabs_bp.get("/references")
+@require_active_user
+def recent_references():
+    """References already in use, newest first — for a pick-list.
+
+    This is the actual fix for typed references. On the live data two tabs were
+    opened as bare "6" and "9" where someone meant "Table 6" — nothing was
+    misspelled, the waiter just did not have the real name in front of them.
+    Offering what has genuinely been used before turns a free-text box into a
+    pick-list without inventing a Table model that villas, bands and spa tabs
+    would not fit.
+
+    Band references are excluded: the gate generates those automatically and a
+    waiter never types one, so listing 26 of them would bury the handful of
+    names that matter.
+    """
+    rows = (db.session.query(Tab.reference)
+            .filter(Tab.reference.isnot(None))
+            .filter(~Tab.reference.ilike("Band #%"))
+            .order_by(Tab.opened_at_utc.desc())
+            .limit(300).all())
+
+    seen, out = set(), []
+    for (ref,) in rows:
+        key = ref.strip().lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(ref)
+        if len(out) >= 40:
+            break
+    return jsonify(out), 200
