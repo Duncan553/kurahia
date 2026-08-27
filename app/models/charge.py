@@ -29,6 +29,20 @@ class Charge(db.Model):
     amount        = db.Column(db.Numeric(14, 2), nullable=False)
     description   = db.Column(db.String(200), nullable=False)
     created_by_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+
+    # ── VAT, frozen at write time (invariant 3) ───────────────────────────────
+    # `amount` is the GROSS the guest pays. Kenya hospitality quotes VAT
+    # inclusive, so the tax is carried INSIDE that figure rather than added on
+    # top — changing `amount` would silently reprice everything already sold.
+    #
+    # The rate is snapshotted per charge because rates change by statute, and a
+    # sale from last year must keep computing with the rate that applied then.
+    # Deriving it from today's setting would quietly rewrite history the moment
+    # the rate moved — which is exactly what invariant 3 exists to prevent.
+    #
+    # NULL means "recorded before VAT tracking existed", and is reported
+    # separately rather than assumed to be zero-rated.
+    tax_rate_snapshot = db.Column(db.Numeric(5, 2), nullable=True)
     created_at    = db.Column(
         db.DateTime(timezone=True), nullable=False,
         default=lambda: datetime.now(timezone.utc),
@@ -42,6 +56,32 @@ class Charge(db.Model):
         # Negative rows are legal (cancel reversals); zero rows never are
         db.CheckConstraint("amount != 0", name="ck_charge_amount_nonzero"),
     )
+
+
+    @property
+    def tax_amount(self):
+        """The VAT contained in `amount`. DERIVED, never stored.
+
+        Inclusive maths: gross = net x (1 + rate), so tax = gross x rate / (1 + rate).
+        Storing this as its own column would let it drift out of step with
+        `amount` after a correction; deriving it means it cannot.
+        """
+        from decimal import Decimal, ROUND_HALF_UP
+        if self.tax_rate_snapshot is None:
+            return None
+        rate = Decimal(str(self.tax_rate_snapshot)) / Decimal("100")
+        gross = Decimal(str(self.amount))
+        return (gross * rate / (Decimal("1") + rate)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @property
+    def net_amount(self):
+        """`amount` minus the VAT it contains."""
+        from decimal import Decimal
+        tax = self.tax_amount
+        if tax is None:
+            return None
+        return Decimal(str(self.amount)) - tax
 
     def __repr__(self):
         return f"<Charge {self.amount} tab={self.tab_id}>"

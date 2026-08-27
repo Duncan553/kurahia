@@ -440,6 +440,7 @@ def book_water_session(booking_id):
     Blocked if no active WATER_ACTIVITY waiver exists for this booking.
     """
     from app.models.charge import Charge
+    from app.services.tax import get_vat_rate
     from app.services.booking import has_active_waiver
     from decimal import Decimal
 
@@ -488,6 +489,7 @@ def book_water_session(booking_id):
         amount=amount,
         description=description,
         created_by_id=actor.id,
+        tax_rate_snapshot=get_vat_rate(),
     )
     db.session.add(charge)
     db.session.flush()
