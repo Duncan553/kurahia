@@ -31,10 +31,27 @@ CATEGORY_PACK_DEFAULTS = {
 MANAGER_LEVEL = 5
 
 
+# The head chef defines ingredients, because a recipe cannot be written without
+# them — "add 50ml of massage oil" is meaningless until the oil exists as a
+# stock item. Same ROLE (not level) reasoning as app/pos/menu.py: head_chef is
+# level 3 alongside front_desk and gate_lead, who have no business here.
+#
+# Note this governs the CATALOGUE only — what an item IS. Purchases, counts and
+# write-offs keep their own separate checks, so defining an ingredient never
+# implies the right to change how much of it the resort owns.
+INGREDIENT_AUTHOR_ROLES = {"head_chef"}
+
+
 def _require_manager(actor: User):
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
-    return None
+    """Kept under its original name so every call site reads the same.
+
+    Now means "may edit the stock catalogue": a manager, an owner, or the head chef.
+    """
+    if actor.role.level >= MANAGER_LEVEL or actor.role.name in INGREDIENT_AUTHOR_ROLES:
+        return None
+    return jsonify({
+        "error": "Only the head chef, a manager or the owner can manage inventory items."
+    }), 403
 
 
 def _notify_owner_catalog_change(actor_name: str, verb: str, item_name: str, dept_name: str):
