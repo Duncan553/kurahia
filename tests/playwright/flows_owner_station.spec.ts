@@ -1104,61 +1104,71 @@ test.describe('STATION · front desk', () => {
     const target = arrivals.find((a: any) => a.guest_name === GUEST) ?? arrivals[0]
     await expect(page.getByText(target.guest_name, { exact: false }).first()).toBeVisible()
 
-    // The real click. Either it checks the guest in, or it must fail loudly and
-    // legibly — a silent no-op is the failure we're hunting.
-    await page.getByRole('button', { name: 'Check In' }).first().click()
-    await page.waitForTimeout(2500)
+    /* The front desk is a three-step counter, not one button.
 
-    /* There is no GET /bookings/<id> route (app/bookings/core.py only registers
-     * GET "" , /availability and /today). The original spec fetched it, got a
-     * Flask 404 HTML page, read `.status` off a string, and quietly took the
-     * "refused" branch for the wrong reason. Read the row out of the list. */
+       A villa booking taken through the app lands HELD. It cannot become
+       CHECKED_IN directly — VALID_BOOKING_TRANSITIONS (app/models/booking.py)
+       allows HELD only to CONFIRMED, and confirming is refused until the
+       deposit is recorded (app/bookings/core.py:183).
+
+       This test used to click "Check In" on a HELD row and assert the refusal,
+       as a standing report of a dead end: at the time NO screen in any PWA
+       called confirm or recorded a deposit, so such a booking could never be
+       checked in from the UI. Both now exist on this screen, so the sequence is
+       driven for real and any step regressing fails here. */
+    const statusOf = async (id: string) =>
+      ((await api('grace.muthoni', 'GET', '/bookings?limit=50')).data as any[])
+        .find(b => b.id === id)?.status
+
+    // The row is the innermost element that carries BOTH the guest's name and
+    // an action. Filtering on the name alone and taking .last() lands on a leaf
+    // node inside the row — below the buttons — and then reports them missing.
+    const row = page.locator('div')
+      .filter({ hasText: target.guest_name })
+      .filter({ has: page.getByRole('button', { name: /^(Confirm|Check In)$/ }) })
+      .last()
+
+    if (target.status === 'HELD') {
+      // The dead-end guard: a HELD row MUST offer a way forward, not only the
+      // one action the backend is guaranteed to refuse.
+      await expect(row.getByRole('button', { name: /^Confirm$/ }),
+        'a HELD arrival offers no way forward — the front-desk dead end is back',
+      ).toBeVisible()
+
+      // The deposit has to exist before confirm will pass. Recorded through the
+      // same endpoint the row's own deposit control posts to.
+      if (parseFloat(target.deposit_required ?? '0') > parseFloat(target.deposit_paid ?? '0')) {
+        const dep = await api('grace.muthoni', 'POST', '/booking-payments', {
+          booking_id: target.booking_id, purpose: 'DEPOSIT', method: 'CASH',
+          amount: target.deposit_required, idempotency_key: crypto.randomUUID(),
+        })
+        expect([200, 201], `recording the deposit failed: ${JSON.stringify(dep.data)}`)
+          .toContain(dep.status)
+        await page.reload()
+        await page.getByRole('button', { name: /arrivals/i }).click()
+        await page.waitForTimeout(800)
+      }
+
+      await row.getByRole('button', { name: /^Confirm$/ }).first().click()
+      await expect.poll(() => statusOf(target.booking_id), { timeout: 15_000 })
+        .toBe('CONFIRMED')
+    }
+
+    // CONFIRMED — now, and only now, the row offers check-in.
+    const checkIn = row.getByRole('button', { name: /^Check In$/ })
+    await expect(checkIn, 'a CONFIRMED arrival must offer Check In').toBeVisible({ timeout: 15_000 })
+    await checkIn.first().click()
+
+    await expect.poll(() => statusOf(target.booking_id), { timeout: 20_000 }).toBe('CHECKED_IN')
+
+    /* There is no GET /bookings/<id> route (app/bookings/core.py registers only
+       GET "", /availability and /today). An earlier version fetched it, got a
+       Flask 404 HTML page, read .status off a string and quietly took the
+       "refused" branch for the wrong reason. Read the row out of the list. */
     const after = ((await api('grace.muthoni', 'GET', '/bookings?limit=50')).data as any[])
       .find(b => b.id === target.booking_id)
     expect(after, 'the arrival booking vanished from /bookings').toBeTruthy()
-
-    const errorDialog = page.getByRole('dialog')
-    const dialogVisible = await errorDialog.isVisible().catch(() => false)
-
-    if (after.status === 'CHECKED_IN') {
-      // Happy path — verify it persisted and the villa tab opened.
-      await expect(toast(page, /checked in/i)).toBeVisible({ timeout: 10_000 })
-      expect(after.tab_id ?? after.tab, 'checked in but no villa tab was opened').toBeTruthy()
-    } else {
-      // Refused. The refusal is at least shown in plain English — good.
-      expect(dialogVisible, `check-in left the booking at ${after.status} but showed no error to the user`).toBe(true)
-      const msg = (await errorDialog.innerText()).trim().replace(/\s+/g, ' ')
-      expect(msg.length, 'error dialog was empty').toBeGreaterThan(10)
-      console.log(`[check-in refused] booking status=${after.status} · message="${msg}"`)
-
-      /* ── APP BUG (front-desk dead end) ──────────────────────────────────
-       * The booking under test was created minutes ago through the app's OWN
-       * villa screen, so it is HELD. /front-desk/today lists it under today's
-       * arrivals, and the ONLY action CheckInScreen.tsx offers on an arrival
-       * row is "Check In" (line 92: POST /bookings/<id>/check-in), which the
-       * backend refuses because HELD → CHECKED_IN is not a legal transition
-       * (app/models/booking.py:26-27 — HELD may only go to CONFIRMED,
-       * CANCELLED or NO_SHOW).
-       *
-       * The two endpoints that would move it on exist on the backend:
-       *   POST /bookings/<id>/confirm   (app/bookings/core.py:167)
-       *   POST /deposits                (app/bookings/deposits.py:23)
-       * and NEITHER is called from anywhere in station_pwa, employee_pwa,
-       * owner_pwa or shared_ui. The row even renders a DepositBar showing
-       * 0 / <required> with no way to record that deposit.
-       *
-       * Net effect: a villa booking taken at the front desk can never be
-       * checked in from the UI. Asserted after the plain-English check so the
-       * message above is captured in the failure. */
-      expect(after.status,
-        `APP BUG: front-desk check-in dead end. Booking ${after.guest_name} is ` +
-        `${after.status} (deposit ${target.deposit_paid}/${target.deposit_required}); ` +
-        `the arrivals row offers only "Check In", which the backend refuses with: ` +
-        `"${msg}". No screen in any PWA calls POST /bookings/<id>/confirm or ` +
-        `POST /deposits, so nothing can advance HELD → CONFIRMED → CHECKED_IN. ` +
-        `station_pwa/src/screens/CheckInScreen.tsx:92 + :221-234.`,
-      ).toBe('CHECKED_IN')
-    }
+    expect(after.tab_id ?? after.tab, 'checked in but no villa tab was opened').toBeTruthy()
 
     expect(realErrors(errs), `/front-desk/checkin console errors: ${realErrors(errs).join(' | ')}`).toEqual([])
   })
