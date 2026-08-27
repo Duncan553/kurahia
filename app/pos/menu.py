@@ -48,9 +48,29 @@ def _notify_owner_menu_change(actor_name: str, verb: str, item_name: str):
     ))
 
 
+# The head chef owns the menu: the dishes, what goes into them, and what they
+# cost. That includes the BAR menu — cocktails and juices are recipes like any
+# other, and they are authored from the same dashboard.
+#
+# This is a ROLE check, not a level check. head_chef sits at level 3, and so do
+# front_desk and gate_lead — a plain `level >= 3` gate would hand the menu and
+# its pricing to the gate staff.
+MENU_AUTHOR_ROLES = {"head_chef"}
+
+
+def _can_manage_menu(actor) -> bool:
+    return actor.role.level >= MANAGER_LEVEL or actor.role.name in MENU_AUTHOR_ROLES
+
+
 def _require_manager(actor):
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Only a manager or above can manage menu items."}), 403
+    """Kept under its original name so every call site reads the same.
+
+    Now means "may author the menu": a manager, an owner, or the head chef.
+    """
+    if not _can_manage_menu(actor):
+        return jsonify({
+            "error": "Only the head chef, a manager or the owner can manage menu items."
+        }), 403
     return None
 
 
@@ -337,7 +357,9 @@ def set_recipe(item_id):
     Both map to role.level >= 5 — the head chef distinction is structural, not a separate check.
     """
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
+    # Recipes are the head chef's core job — this is what makes a sale
+    # deduct the right stock, so the person who designs the dish writes it.
+    if not _can_manage_menu(actor):
         return jsonify({"error": "Manager or head chef required."}), 403
 
     item = db.session.get(MenuItem, item_id)
