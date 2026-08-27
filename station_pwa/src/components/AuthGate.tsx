@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import { EmptyState, Icon } from '@shared'
@@ -14,11 +14,21 @@ export function AuthGate() {
 }
 
 export function RoleGate({ minLevel }: { minLevel: number }) {
+  const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   if (!user || user.role_level < minLevel) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-        <EmptyState icon={<Icon name="alert" size={40} />} title="Access restricted" description="You don't have permission to view this page." />
+        {/* Same dead end employee_pwa already fixed: without actionLabel/onAction
+            this screen offered no way out, which on a fixed tablet with no
+            browser chrome means the only escape is signing out. */}
+        <EmptyState
+          icon={<Icon name="alert" size={40} />}
+          title="Access restricted"
+          description="You don't have permission to view this page."
+          actionLabel="Go back"
+          onAction={() => navigate(-1)}
+        />
       </div>
     )
   }

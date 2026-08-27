@@ -23,6 +23,7 @@ import GateHubScreen from './screens/GateHubScreen'
 import CheckInScreen from './screens/CheckInScreen'
 import BandLookupScreen from './screens/BandLookupScreen'
 import IncidentScreen from './screens/IncidentScreen'
+import NotFoundScreen from './screens/NotFoundScreen'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -52,11 +53,17 @@ const router = createBrowserRouter([
           { path: '/front-desk/checkin', element: <CheckInScreen /> },
           { path: '/gate/band-lookup', element: <BandLookupScreen /> },
           { path: '/incidents', element: <IncidentScreen /> },
+          // Unknown address, but signed in: say so. This lives INSIDE AuthGate
+          // and AppLayout on purpose — AuthGate still sends anyone not signed in
+          // to /login, so the only people who reach this are the ones who
+          // mistyped or followed a stale link. It used to render the login
+          // screen from outside the gate, which told signed-in staff they had
+          // been signed out.
+          { path: '*', element: <NotFoundScreen /> },
         ],
       },
     ],
   },
-  { path: '*', element: <StationLoginScreen /> },
 ])
 
 createRoot(document.getElementById('root')!).render(

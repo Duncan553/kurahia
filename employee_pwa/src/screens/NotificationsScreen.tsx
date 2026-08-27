@@ -122,6 +122,15 @@ export default function NotificationsScreen() {
   // ── SUCCESS ──────────────────────────────────────────────────────────────────
   return (
     <ErrorBoundary level="tile">
+      {/* Every other screen names itself; this one opened straight into a list,
+          so there was nothing to tell a new member of staff what they were
+          looking at — and nothing on the page to identify it in a screenshot. */}
+      <div className="px-4 pt-4 pb-3">
+        <h1 className="text-2xl font-bold text-ink-primary font-serif">Notifications</h1>
+        <p className="text-xs text-ink-secondary mt-0.5">
+          {notifications.length} unread · tap one to open what it refers to
+        </p>
+      </div>
       <motion.div
         className="divide-y divide-white/10"
         initial="hidden"
