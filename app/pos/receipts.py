@@ -64,9 +64,33 @@ def list_receipts():
 @receipts_bp.get("/<tab_id>")
 @require_active_user
 def get_receipt(tab_id):
+    """One tab's full bill.
+
+    The SEARCH above requires front desk (3); this did not require anything
+    beyond a live session, which is the wrong way round — a search result is a
+    one-line summary, while this is every item consumed, every payment method
+    and every M-Pesa code. A villa folio is a guest's whole stay.
+
+    So: front desk and above may open any bill, because settling other people's
+    accounts is their job. Below that, you may open a tab you are working —
+    assigned to you, or opened by you. A waiter closing their own table needs
+    this; a groundskeeper walking tab IDs does not.
+
+    Same scoping rule as list_tabs() in pos/tabs.py, deliberately — one idea of
+    "a tab that is mine" rather than two that can drift apart.
+    """
+    actor = db.session.get(User, get_jwt_identity())
     tab = db.session.get(Tab, tab_id)
     if not tab:
         return jsonify({"error": "Tab not found."}), 404
+
+    if actor.role.level < FRONT_DESK_LEVEL:
+        is_mine = (tab.assigned_to_id == actor.id) or (tab.opened_by_id == actor.id)
+        if not is_mine:
+            return jsonify({
+                "error": "You can only open a bill for a table you are serving. "
+                         "Ask front desk or a manager for anything else."
+            }), 403
 
     charges  = db.session.query(Charge).filter_by(tab_id=tab_id).order_by(Charge.created_at).all()
     payments = db.session.query(Payment).filter_by(tab_id=tab_id).order_by(Payment.created_at_utc).all()

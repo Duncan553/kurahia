@@ -55,6 +55,18 @@ class MenuItem(db.Model):
     dietary_flags  = db.Column(db.String(200), nullable=True)   # comma-separated: "vegetarian, halal, vegan"
     is_active      = db.Column(db.Boolean, nullable=False, default=True)
 
+    # ── Who may author this item ──────────────────────────────────────────────
+    # The head chef writes the FOOD and the JUICES — what the kitchen cooks and
+    # what the bar squeezes. Alcohol is not theirs: a drinks list is a licensed,
+    # excised, management-priced thing in every hotel, and the person who
+    # designs a dish is not the person who signs for the liquor.
+    #
+    # This is a COLUMN and not a match on category, because `category` is
+    # free text the owner edits in the admin panel ("Beer", "Beers", "Draught").
+    # A permission boundary that breaks when somebody renames a category is not
+    # a boundary. Engineering invariant 10: configuration through data.
+    is_alcoholic = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
     # ── Direct depletion (the "Tusker / apple" case) ──────────────────────────
     # A menu item is stock-tracked in one of two ways, which is the standard
     # split in bar and restaurant systems:

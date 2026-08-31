@@ -4,7 +4,7 @@ POST   /menu/items
 PATCH  /menu/items/:id
 POST   /menu/items/:id/disable
 POST   /menu/items/:id/enable
-GET    /menu/items
+GET    /menu/items          (?station=KITCHEN,BAR scopes to a station's catalogue)
 GET    /menu/items/:id/recipe
 POST   /menu/items/:id/recipe  (set/replace)
 """
@@ -52,14 +52,21 @@ def _notify_owner_menu_change(actor_name: str, verb: str, item_name: str):
 #
 # The split follows what the item IS, not which screen it lives on:
 #
-#   head chef -> what the resort MAKES in house. Kitchen dishes, and bar
-#                cocktails and juices, with their recipes, ingredients and
-#                prices. These are the things with a yield and a food cost, so
-#                the person who designs them is the person who should price them.
+#   head chef -> the FOOD and the JUICES. Kitchen dishes, and the bar's
+#                non-alcoholic side, with their recipes, ingredients and prices.
+#                These are the things with a yield and a food cost, so the
+#                person who designs them is the person who should price them.
 #
-#   manager   -> what the resort OFFERS as a service. Spa treatments, the pool
-#                day pass, jet ski hire, guided walks — every department's
-#                catalogue and its prices.
+#   manager   -> ALCOHOL, and every SERVICE. Beer, wine and cocktails are a
+#                licensed, excised list that management prices and signs for —
+#                designing a dish and answering for the liquor are different
+#                jobs. Plus spa treatments, the pool day pass, jet ski hire,
+#                guided walks: every department's catalogue and its prices.
+#
+# Note this is about AUTHORING, not about who makes the drink. A juice is
+# written by the chef and poured at the bar: prep_station routes the ORDER,
+# is_alcoholic gates the MENU. Bar orders go to the bar queue either way —
+# the chef never sees them (see pos/queues.py).
 #
 # This is a ROLE check, not a level check. head_chef sits at level 3, and so do
 # front_desk and gate_lead — a plain `level >= 3` gate would hand menu pricing
@@ -70,11 +77,20 @@ MENU_AUTHOR_ROLES = {"head_chef"}
 CHEF_STATIONS = {PrepStation.KITCHEN.value, PrepStation.BAR.value}
 
 
-def _can_manage_menu(actor, prep_station: str | None = None) -> bool:
+def _can_manage_menu(actor, prep_station: str | None = None,
+                     is_alcoholic: bool = False) -> bool:
     """May this person author this item?
 
-    Manager and owner: anything. Head chef: only what is cooked or poured —
-    a spa treatment is a service the manager sells, not a dish.
+    Manager and owner: anything.
+
+    Head chef: the FOOD and the JUICES. Everything the kitchen cooks, and the
+    non-alcoholic side of the bar — a fresh juice is squeezed to a recipe the
+    same way a dish is plated to one.
+
+    NOT the head chef: alcohol. Beer, wine and cocktails are a licensed and
+    excised list that management prices and signs for; the person who designs
+    a dish is not the person who answers for the liquor. Nor services — a spa
+    treatment is something the manager sells, not something anyone cooks.
 
     prep_station None means "not station-specific" (e.g. listing), which the
     head chef is allowed to do.
@@ -83,19 +99,27 @@ def _can_manage_menu(actor, prep_station: str | None = None) -> bool:
         return True
     if actor.role.name not in MENU_AUTHOR_ROLES:
         return False
+    if is_alcoholic:
+        return False
     return prep_station is None or str(prep_station).upper() in CHEF_STATIONS
 
 
-def _require_manager(actor, prep_station: str | None = None):
+def _require_manager(actor, prep_station: str | None = None,
+                     is_alcoholic: bool = False):
     """Kept under its original name so every call site reads the same.
 
     Means "may author this item": a manager or owner for anything, the head chef
-    for kitchen and bar.
+    for the food and the juices.
     """
-    if not _can_manage_menu(actor, prep_station):
+    if not _can_manage_menu(actor, prep_station, is_alcoholic):
         if actor.role.name in MENU_AUTHOR_ROLES:
+            if is_alcoholic:
+                return jsonify({
+                    "error": "Beer, wine and cocktails are priced by a manager. "
+                             "The head chef manages the food and the juices."
+                }), 403
             return jsonify({
-                "error": "The head chef manages kitchen and bar items. "
+                "error": "The head chef manages the food and the juices. "
                          "Spa, water and other services are set by a manager."
             }), 403
         return jsonify({
@@ -111,7 +135,8 @@ def create_menu_item():
     data = request.get_json(silent=True) or {}
     # Authorised per station: the head chef makes kitchen and bar items, the
     # manager sells services. Checked after parsing because the station decides.
-    if (err := _require_manager(actor, (data.get("prep_station") or PrepStation.NONE.value))):
+    if (err := _require_manager(actor, (data.get("prep_station") or PrepStation.NONE.value),
+                                bool(data.get("is_alcoholic")))):
         return err
 
     name         = (data.get("name") or "").strip()
@@ -147,6 +172,7 @@ def create_menu_item():
     with db.session.begin_nested():
         item = MenuItem(name=name, price=price, category=category,
                         prep_station=station, department_id=dept_id,
+                        is_alcoholic=bool(data.get("is_alcoholic")),
                         description=description, image_path=image_path,
                         allergens=allergens, dietary_flags=dietary_flags)
         db.session.add(item)
@@ -167,8 +193,9 @@ def edit_menu_item(item_id):
     # Gate on what this item IS, and on where it is being moved TO, so a chef
     # cannot reclassify a spa service into the kitchen to gain control of it.
     data_peek = request.get_json(silent=True) or {}
+    _alc = item.is_alcoholic or bool(data_peek.get("is_alcoholic"))
     for station in {item.prep_station, (data_peek.get("prep_station") or item.prep_station)}:
-        if (err := _require_manager(actor, station)):
+        if (err := _require_manager(actor, station, _alc)):
             return err
 
     data = request.get_json(silent=True) or {}
@@ -197,6 +224,8 @@ def edit_menu_item(item_id):
             item.category = _raw_cat.title() if _raw_cat else None
         if "prep_station" in data:
             item.prep_station = data["prep_station"].upper()
+        if "is_alcoholic" in data:
+            item.is_alcoholic = bool(data["is_alcoholic"])
         if "stock_tracking" in data:
             want = str(data["stock_tracking"]).upper()
             if want not in StockTracking.__members__:
@@ -308,11 +337,27 @@ def list_menu_items():
 
     q = (request.args.get("q") or "").strip()
 
+    # Station scoping. A station tablet asks for the stations it actually
+    # serves ("KITCHEN,BAR" for a waiter, "BAR" for the bar screen) and gets
+    # nothing else — spa treatments and jet ski hire never leave the server
+    # for a POS device. The SCREEN names its stations rather than the server
+    # guessing them from the caller's department: departments are owner-editable
+    # free text (invariant 10), so mapping "Bar" -> BAR here would hardcode a
+    # naming convention the owner is free to break in the admin panel.
+    stations = [s.strip().upper() for s in (request.args.get("station") or "").split(",") if s.strip()]
+    for s in stations:
+        if s not in PrepStation.__members__:
+            return jsonify({
+                "error": f"'{s}' is not a station. Use one of: {', '.join(PrepStation.__members__)}."
+            }), 400
+
     query = db.session.query(MenuItem)
     if q:
         query = query.filter(MenuItem.name.ilike(f"%{q}%"))
     if not include_disabled:
         query = query.filter_by(is_active=True)
+    if stations:
+        query = query.filter(MenuItem.prep_station.in_(stations))
     if dept_filter:
         query = query.filter_by(department_id=dept_filter)
     if dept_name_filter:
@@ -329,6 +374,7 @@ def list_menu_items():
             "price":         str(i.price),
             "category":      i.category,
             "prep_station":  i.prep_station,
+            "is_alcoholic":  i.is_alcoholic,
             "department_id": i.department_id,
             "is_active":      i.is_active,
             "image_path":     i.image_path,
@@ -473,7 +519,7 @@ def set_recipe(item_id):
     # Gated on the ITEM's station, not just the role. Checking the role alone
     # was looser here than on create and edit, which would have let the head
     # chef write recipes for spa and water services they cannot otherwise touch.
-    if (err := _require_manager(actor, item.prep_station)):
+    if (err := _require_manager(actor, item.prep_station, item.is_alcoholic)):
         return err
 
     data = request.get_json(silent=True) or {}
