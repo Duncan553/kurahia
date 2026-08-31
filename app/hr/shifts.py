@@ -11,6 +11,7 @@ from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile
+from app.models.department import Department
 from app.models.shift import Shift, ShiftStatus
 from app.models.audit_log import AuditLog
 
@@ -72,6 +73,18 @@ def create_shift():
     if not profile or not profile.is_active:
         return jsonify({"error": "Employee profile not found or disabled."}), 404
 
+    # A department is OPTIONAL on a shift, but if one is named it has to be a
+    # real, active one. Copying the raw string onto the row meant a typo either
+    # blew up as a bare FOREIGN KEY error (a 500 with no readable reason) or —
+    # where the FK is not enforced — landed a shift pointing at nothing, which
+    # then vanishes from GET /hr/attendance/today?department_id=... Same rule
+    # POST /hr/roster already applies; checked here so the two agree.
+    department_id = data.get("department_id")
+    if department_id:
+        dept = db.session.get(Department, department_id)
+        if not dept or not dept.is_active:
+            return jsonify({"error": "Department not found or disabled."}), 404
+
     # Idempotency
     existing = db.session.query(Shift).filter_by(idempotency_key=idem_key).first()
     if existing:
@@ -88,7 +101,7 @@ def create_shift():
         scheduled_start_utc=start,
         scheduled_end_utc=end,
         role_on_shift=data.get("role_on_shift"),
-        department_id=data.get("department_id"),
+        department_id=department_id,
         created_by_id=actor.id,
         idempotency_key=idem_key,
     )

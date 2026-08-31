@@ -17,7 +17,9 @@ MANAGER_LEVEL = 5
 
 
 def _parse_period(start_str: str | None, end_str: str | None) -> tuple:
-    """Return (period_start datetime, period_end datetime) defaulting to current month."""
+    """Return (period_start, period_end, error_message), defaulting to the current
+    month. period_end is EXCLUSIVE — one day past end_str — so the whole end day
+    counts. error_message is None when the period is usable."""
     today = datetime.now(timezone.utc).date()
     start_s = start_str or today.replace(day=1).isoformat()
     end_s   = end_str   or today.isoformat()
@@ -25,8 +27,14 @@ def _parse_period(start_str: str | None, end_str: str | None) -> tuple:
         period_start = datetime.strptime(start_s, "%Y-%m-%d")
         period_end   = datetime.strptime(end_s,   "%Y-%m-%d") + timedelta(days=1)
     except ValueError:
-        return None, None
-    return period_start, period_end
+        return None, None, "start_date and end_date must be YYYY-MM-DD."
+    # An inverted range is a typo, not an empty period. Left unchecked it returns
+    # 200 with everyone on 0.0 hours, which a payroll clerk reads as "nobody
+    # worked" — a silent wrong answer on the one screen that must never give one.
+    # Shifts and leave both refuse an inverted range already; so does this now.
+    if period_end <= period_start:
+        return None, None, "end_date must be on or after start_date."
+    return period_start, period_end, None
 
 
 @performance_bp.get("/performance/<profile_id>")
@@ -40,12 +48,12 @@ def staff_performance(profile_id):
     if not profile:
         return jsonify({"error": "Employee profile not found."}), 404
 
-    period_start, period_end = _parse_period(
+    period_start, period_end, err = _parse_period(
         request.args.get("start_date"),
         request.args.get("end_date"),
     )
-    if period_start is None:
-        return jsonify({"error": "start_date and end_date must be YYYY-MM-DD."}), 400
+    if err:
+        return jsonify({"error": err}), 400
 
     scores = compute_performance(profile_id, period_start, period_end)
     return jsonify({
@@ -68,12 +76,12 @@ def payroll_draft():
     if actor.role.level < MANAGER_LEVEL:
         return jsonify({"error": "Manager or above required."}), 403
 
-    period_start, period_end = _parse_period(
+    period_start, period_end, err = _parse_period(
         request.args.get("start_date"),
         request.args.get("end_date"),
     )
-    if period_start is None:
-        return jsonify({"error": "start_date and end_date must be YYYY-MM-DD."}), 400
+    if err:
+        return jsonify({"error": err}), 400
 
     profiles = db.session.query(EmployeeProfile).filter_by(is_active=True).all()
     rows = []
