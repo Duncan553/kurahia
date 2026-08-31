@@ -47,6 +47,11 @@ def record_payment(tab_id):
     # M-Pesa: capture code but do NOT verify (reconciliation is Chunk 5)
     mpesa_code = data.get("mpesa_code") if method == PaymentMethod.MPESA.value else None
     card_ref   = data.get("card_ref")   if method == PaymentMethod.CARD.value  else None
+    # Payment.bank_ref existed as a column but was never read here, so a bank
+    # transfer's reference was silently dropped — and that reference is the only
+    # thing /finance/bank/reconcile has to match a payment against a statement
+    # line. Captured on the same terms as the other two.
+    bank_ref   = data.get("bank_ref")   if method == PaymentMethod.BANK_TRANSFER.value else None
 
     # Idempotency — silent duplicate suppression
     existing = db.session.query(Payment).filter_by(idempotency_key=idem_key).first()
@@ -60,6 +65,7 @@ def record_payment(tab_id):
             method=method,
             mpesa_code=mpesa_code,
             card_ref=card_ref,
+            bank_ref=bank_ref,
             received_by_id=actor.id,
             idempotency_key=idem_key,
         )
