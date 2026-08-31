@@ -23,6 +23,9 @@ const PROXIED_PATHS = [
   '/bookable-resources', '/booking-payments', '/front-desk', '/waivers', '/tabs', '/orders',
   '/order-items', '/receipts', '/menu', '/kitchen', '/bar', '/equipment',
   '/finance', '/housekeeping', '/incidents', '/events', '/uploads', '/suggestions',
+  // Needed by the work screens moved here off the employee phone:
+  // /admin (InventoryCount), /calendar (Calendar), /event-types (Events).
+  '/admin', '/calendar', '/event-types', '/audit', '/reports', '/suppliers',
 ]
 
 const proxyConfig = Object.fromEntries(

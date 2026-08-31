@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Skeleton, EmptyState, Modal, Button, Input, Select, FormField, useToastStore, ErrorBoundary } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
-import { useKioskStore } from '../stores/kioskStore'
 import { useAuthStore } from '../stores/authStore'
 
 interface Arrival {
@@ -20,6 +19,7 @@ interface Departure {
   booking_id: string
   guest_name: string
   resource: string | null
+  tab_id: string | null
   tab_balance: string
 }
 
@@ -74,7 +74,6 @@ export default function CheckInScreen() {
   const addToast    = useToastStore((s) => s.addToast)
   const navigate    = useNavigate()
   const user        = useAuthStore((s) => s.user)
-  const activateKiosk = useKioskStore((s) => s.activateKiosk)
   const [tab,       setTab]       = useState<Tab>('arrivals')
   // Deposit capture. Recording a deposit had NO UI anywhere in any of the three
   // apps, so confirm always failed with "A deposit of X is required to confirm"
@@ -83,6 +82,14 @@ export default function CheckInScreen() {
   const [depositFor, setDepositFor] = useState<Arrival | null>(null)
   const [depositAmt, setDepositAmt] = useState('')
   const [depositMethod, setDepositMethod] = useState('CASH')
+  // The guest register. Booking holds ONE name plus number_of_guests as an
+  // integer, so everyone else in the villa was part of a number. This is where
+  // they get names — and where charging rights are granted deliberately rather
+  // than by being in the room.
+  const [guestsFor, setGuestsFor] = useState<Occupant | null>(null)
+  const [newName, setNewName] = useState('')
+  const [newId, setNewId] = useState('')
+
   const [errorOpen, setErrorOpen] = useState(false)
   const [errorMsg,  setErrorMsg]  = useState('')
 
@@ -93,6 +100,38 @@ export default function CheckInScreen() {
   })
 
   const pendingIds = new Set((data?.pending_waivers ?? []).map((w) => w.booking_id))
+
+  const { data: register } = useQuery<{
+    lead_guest: string; lead_id_number: string | null; number_of_guests: number
+    unnamed_count: number
+    occupants: { id: string; full_name: string; id_number: string | null; may_charge: boolean }[]
+  }>({
+    queryKey: ['occupants', guestsFor?.booking_id],
+    queryFn: () => api.get(`/bookings/${guestsFor!.booking_id}/occupants`).then(r => r.data),
+    enabled: !!guestsFor,
+  })
+
+  const addOccupant = useMutation({
+    mutationFn: () => api.post(`/bookings/${guestsFor!.booking_id}/occupants`, {
+      full_name: newName.trim(),
+      id_number: newId.trim() || null,
+    }),
+    onSuccess: () => {
+      addToast({ type: 'success', message: 'Added to the register.' })
+      setNewName(''); setNewId('')
+      queryClient.invalidateQueries({ queryKey: ['occupants', guestsFor?.booking_id] })
+    },
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error
+      addToast({ type: 'error', message: msg ?? 'Could not add that person.' })
+    },
+  })
+
+  const setMayCharge = useMutation({
+    mutationFn: (v: { id: string; may_charge: boolean }) =>
+      api.patch(`/bookings/${guestsFor!.booking_id}/occupants/${v.id}`, { may_charge: v.may_charge }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['occupants', guestsFor?.booking_id] }),
+  })
 
   /**
    * HELD -> CONFIRMED. This step had NO caller anywhere in any of the three
@@ -222,7 +261,18 @@ export default function CheckInScreen() {
 
         {/* ── Header ───────────────────────────────────────────────── */}
         <div>
-          <h1 className="text-2xl font-bold text-ink-primary font-serif">Front Desk</h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-2xl font-bold text-ink-primary font-serif">Front Desk</h1>
+            {/* Where front desk adds a guest. Until now the only booking form
+                lived on the villa/housekeeping screen. */}
+            <button onClick={() => navigate('/front-desk/new-booking')}
+              className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold
+                bg-primary-main text-white hover:opacity-90 active:scale-[0.98]
+                transition-all focus-visible:outline-none focus-visible:ring-2
+                focus-visible:ring-primary-dark">
+              + New booking
+            </button>
+          </div>
           <p className="text-xs text-ink-tertiary mt-0.5">Booking check-in and admission</p>
         </div>
 
@@ -305,8 +355,15 @@ export default function CheckInScreen() {
                         <button
                           onClick={() => {
                             if (!user?.username) return
-                            activateKiosk(user.username)
-                            navigate(`/kiosk/waiver/${a.booking_id}`)
+                            // Used to activateKiosk() then navigate to
+                            // /kiosk/waiver/:bookingId — a route that exists in
+                            // employee_pwa but NOT here. So the tablet locked
+                            // itself into kiosk mode (PIN required to leave) and
+                            // then rendered Not Found: staff were stranded on a
+                            // dead screen they could not back out of.
+                            // Goes to this app's own waiver form instead, with
+                            // the booking already filled in.
+                            navigate(`/gate/waiver?booking=${encodeURIComponent(a.booking_id)}`)
                           }}
                           className="w-full min-h-[44px] rounded-xl border border-primary-main
                             text-primary-dark text-sm font-semibold
@@ -369,6 +426,20 @@ export default function CheckInScreen() {
                           </p>
                         )}
                       </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                      {/* The bill, at the moment they ask for it. Check-out is
+                          blocked while a balance stands, so front desk needs to
+                          show the guest WHAT they owe, not just that they do. */}
+                      {d.tab_id && (
+                        <button
+                          onClick={() => navigate(`/folio/${d.tab_id}`)}
+                          className="shrink-0 px-3 py-2 rounded-xl text-sm font-semibold
+                            text-primary-dark border border-primary-main/30
+                            hover:bg-primary-main/5 active:scale-[0.98] transition-all
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark">
+                          Bill
+                        </button>
+                      )}
                       <button
                         onClick={() => checkOutMutation.mutate(d.booking_id)}
                         disabled={checkOutMutation.isPending}
@@ -383,6 +454,7 @@ export default function CheckInScreen() {
                       >
                         {checkOutMutation.isPending ? '…' : 'Check Out'}
                       </button>
+                      </div>
                     </div>
                   </div>
                 )
@@ -405,15 +477,50 @@ export default function CheckInScreen() {
             <div className="space-y-4">
               {occupancy.map((o) => (
                 <div key={o.booking_id}
-                  className="flex items-center justify-between
-                    rounded-xl bg-white/4 glass-card px-4 py-3">
-                  <div>
-                    <p className="font-medium text-ink-primary">{o.guest_name}</p>
-                    <p className="text-xs text-ink-tertiary">{o.resource ?? '—'}</p>
+                  className="rounded-xl bg-white/4 glass-card px-4 py-3 flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-ink-primary truncate">{o.guest_name}</p>
+                      <p className="text-xs text-ink-tertiary">{o.resource ?? '—'}</p>
+                    </div>
+                    <span className="text-sm tabular-nums text-ink-secondary font-medium shrink-0">
+                      KSh {parseFloat(o.tab_balance).toLocaleString()} on tab
+                    </span>
                   </div>
-                  <span className="text-sm tabular-nums text-ink-secondary font-medium">
-                    KSh {parseFloat(o.tab_balance).toLocaleString()} on tab
-                  </span>
+
+                  {/* Occupancy is where a live guest IS. Departures only lists
+                      bookings whose PLANNED checkout is today, so a guest
+                      leaving early never showed up anywhere actionable. These
+                      are the same three steps, on the row that always exists. */}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setGuestsFor(o)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold
+                        text-ink-secondary border border-white/15
+                        hover:text-ink-primary active:scale-[0.98] transition-all
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-tertiary">
+                      Who's staying
+                    </button>
+                    {o.tab_id && (
+                      <button
+                        onClick={() => navigate(`/folio/${o.tab_id}`)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold
+                          text-primary-dark border border-primary-main/30
+                          hover:bg-primary-main/5 active:scale-[0.98] transition-all
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark">
+                        Bill &amp; pay
+                      </button>
+                    )}
+                    <button
+                      onClick={() => checkOutMutation.mutate(o.booking_id)}
+                      disabled={checkOutMutation.isPending}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold
+                        text-ink-primary border border-ink-tertiary/20
+                        hover:opacity-80 active:scale-[0.98] disabled:opacity-50 transition-all
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-tertiary">
+                      Check out
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -421,6 +528,65 @@ export default function CheckInScreen() {
         )}
 
       </div>
+
+      {/* ── Guest register ─────────────────────────────────────────── */}
+      <Modal open={!!guestsFor} onClose={() => setGuestsFor(null)}
+        title={`Who's staying — ${guestsFor?.resource ?? ''}`} size="sm">
+        <div className="flex flex-col gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">Lead guest</p>
+            <p className="text-sm font-semibold text-ink-primary">{register?.lead_guest}</p>
+            <p className="text-xs text-ink-tertiary">
+              {register?.lead_id_number ? `ID ${register.lead_id_number}` : 'No ID on file'}
+              {' · liable for the bill'}
+            </p>
+          </div>
+
+          {register && register.unnamed_count > 0 && (
+            <div className="rounded-xl px-3 py-2 bg-status-pending/10 border border-status-pending/25">
+              <p className="text-xs text-status-pending">
+                Booked for {register.number_of_guests} — <strong>{register.unnamed_count} still
+                unnamed</strong>. Anyone unnamed cannot be checked against this villa.
+              </p>
+            </div>
+          )}
+
+          {(register?.occupants ?? []).length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {register!.occupants.map(o => (
+                <li key={o.id} className="flex items-center justify-between gap-2
+                  rounded-xl bg-white/4 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-ink-primary truncate">{o.full_name}</p>
+                    <p className="text-[10px] text-ink-tertiary">
+                      {o.id_number ? `ID ${o.id_number}` : 'no ID'}
+                    </p>
+                  </div>
+                  {/* Charging rights are granted deliberately, never by being
+                      listed — the lead guest is the one liable by default. */}
+                  <label className="flex items-center gap-1.5 text-[11px] text-ink-secondary shrink-0">
+                    <input type="checkbox" checked={o.may_charge}
+                      onChange={e => setMayCharge.mutate({ id: o.id, may_charge: e.target.checked })}
+                      className="w-4 h-4 accent-primary-main" />
+                    may charge
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form onSubmit={e => { e.preventDefault(); addOccupant.mutate() }}
+            className="flex flex-col gap-2 pt-2 border-t border-white/10">
+            <Input aria-label="Full name" placeholder="Full name"
+              value={newName} onChange={e => setNewName(e.target.value)} />
+            <Input aria-label="ID number" placeholder="ID number (optional)"
+              value={newId} onChange={e => setNewId(e.target.value)} />
+            <Button type="submit" disabled={!newName.trim()} loading={addOccupant.isPending}>
+              Add to register
+            </Button>
+          </form>
+        </div>
+      </Modal>
 
       {/* ── Error modal ──────────────────────────────────────────────────── */}
       <Modal open={!!depositFor} onClose={() => setDepositFor(null)} title="Record deposit" size="sm">

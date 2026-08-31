@@ -121,6 +121,33 @@ const NAV_ITEMS: NavItem[] = [
     visible: (_l, d) => deptIs(d, 'gate', 'front desk', 'front-desk') },
   { id: 'incident', path: '/incidents', label: 'Incident', Icon: IncidentIcon,
     visible: () => true },
+
+  // ── Work that moved off the employee's personal phone ───────────────
+  // Everything above is gated by DEPARTMENT — which post you are on today.
+  // These are gated by ROLE instead, because a manager's post is the whole
+  // property and the head chef's is the kitchen whatever the roster says.
+  //
+  // Deliberately only the two hubs: Manager links on to purchases, menu,
+  // staff accounts and stock count, and the chef's screen links to the menu
+  // and stock count, so those get no tile of their own. A station tablet's
+  // bottom bar is a handful of buttons, not a sitemap.
+  // Kitchen only. The bar runs its own POS and its own queue — bar orders go
+  // to the bar, never through the chef. (An earlier version of this line said
+  // deptIs(d, 'kitchen', 'bar'), which put the chef's hub on the bar tablet.)
+  { id: 'chef', path: '/chef', label: 'Chef', Icon: KitchenIcon,
+    visible: (l, d) => deptIs(d, 'kitchen') && l >= 3 },
+  { id: 'cash', path: '/manager/cash', label: 'Cash', Icon: CheckInIcon,
+    visible: (l, d) => deptIs(d, 'front desk', 'front-desk') || l >= 5 },
+  { id: 'manager', path: '/manager', label: 'Manage', Icon: SafetyIcon,
+    visible: (l) => l >= 5 },
+
+  // Events and Calendar sit in BOTH apps on purpose — what is on today is
+  // worth checking on your own phone before the shift and again at the post
+  // during it.
+  { id: 'events', path: '/events', label: 'Events', Icon: VillaIcon,
+    visible: () => true },
+  { id: 'calendar', path: '/calendar', label: 'Calendar', Icon: CheckInIcon,
+    visible: () => true },
 ]
 
 // ── Landing redirect: send whoever just logged in to their department's
@@ -161,7 +188,7 @@ export default function AppLayout() {
     <div className="h-screen flex flex-col">
       {/* Top bar */}
       <header className="h-14 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
-        style={{ background: 'rgba(30, 16, 12, 0.95)' }}>
+        style={{ background: 'var(--color-chrome-95)' }}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-lg font-bold font-serif text-ink-primary shrink-0">Kurahia</span>
           {department && (
@@ -196,7 +223,7 @@ export default function AppLayout() {
       </main>
 
       {/* Bottom nav — this station's tool(s) + Incident, always */}
-      <nav className="shrink-0 flex border-t border-white/5" style={{ background: 'rgba(30, 16, 12, 0.95)' }}
+      <nav className="shrink-0 flex border-t border-white/5" style={{ background: 'var(--color-chrome-95)' }}
         aria-label="Main navigation">
         {visibleItems.map(({ id, path, label, Icon }) => (
           <NavLink key={id} to={path} end
