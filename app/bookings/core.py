@@ -8,6 +8,7 @@ from decimal import Decimal
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
+from app.utils.money import parse_amount
 from app.extensions import db
 from app.models.user import User
 from app.models.booking import Booking, BookingStatus
@@ -471,13 +472,9 @@ def book_water_session(booking_id):
     if resource_id and (not resource or not resource.is_active):
         return jsonify({"error": "Water-activity resource not found or disabled."}), 404
 
-    amount = resource.base_price if resource else data.get("amount")
-    if amount is None:
+    raw_amount = resource.base_price if resource else data.get("amount")
+    if raw_amount is None:
         return jsonify({"error": "resource_id or amount is required."}), 400
-    try:
-        amount = Decimal(str(amount))
-    except Exception:
-        return jsonify({"error": "amount must be a number."}), 400
 
     # A charge may not be negative. models/charge.py states the invariant
     # outright: "No API accepts an arbitrary negative amount — that would be the
@@ -491,14 +488,25 @@ def book_water_session(booking_id):
     # Corrections go through the reversal path, which mirrors an EXISTING charge
     # and keeps its tax_rate_snapshot. They are never free-typed.
     #
-    # is_finite() comes FIRST because Decimal('NaN') <= 0 does not return False,
-    # it raises InvalidOperation — an unhandled 500 instead of a plain-English
-    # 400. Same order as app/pos/payments.py:43, which had it right already.
-    if not amount.is_finite() or amount <= 0:
-        return jsonify({
-            "error": "A session charge must be a positive amount. "
-                     "To correct or refund a charge, reverse the original."
-        }), 400
+    # parse_amount (app/utils/money.py) enforces all of it in the right order:
+    # finite BEFORE any comparison (Decimal('NaN') <= 0 raises rather than
+    # returning False), positive, and within what Numeric(14,2) can hold — the
+    # last one closing a separate hole where amount='1e15' overflowed the column
+    # into a 500 on PostgreSQL and a trillion-shilling balance on SQLite.
+    amount, err = parse_amount(raw_amount, "A session charge")
+    if err:
+        return jsonify({"error": err + " To correct or refund a charge, "
+                                       "reverse the original."}), 400
+
+    # Idempotency (invariant 4). A tablet on a slow connection gets double
+    # tapped, and this endpoint had no key at all — so "Add jetski" pressed
+    # twice billed the guest for two rides they took once, with no way to tell
+    # that from two genuine rides.
+    idem_key = data.get("idempotency_key") or str(uuid.uuid4())
+    existing = db.session.query(Charge).filter_by(idempotency_key=idem_key).first()
+    if existing:
+        return jsonify({"charge_id": existing.id, "amount": str(existing.amount),
+                        "duplicate": True}), 200
 
     # Band-tab credit ceiling: block if this charge would exceed 2× the entry fee
     ok, credit_err = check_band_credit(booking.tab_id, amount)
@@ -511,6 +519,7 @@ def book_water_session(booking_id):
         description=description,
         created_by_id=actor.id,
         tax_rate_snapshot=get_vat_rate(),
+        idempotency_key=idem_key,
     )
     db.session.add(charge)
     db.session.flush()

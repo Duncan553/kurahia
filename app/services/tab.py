@@ -73,8 +73,17 @@ def is_tab_closable(tab_id: str) -> tuple[bool, str]:
     if balance > Decimal("0"):
         return False, f"This tab still has an outstanding balance of {balance}. Collect payment first."
 
-    # Check for unresolved order items
-    terminal = {OrderItemStatus.SERVED.value, OrderItemStatus.CANCELLED.value}
+    # Check for unresolved order items.
+    #
+    # REFUNDED belongs here and was missing. It is terminal in VALID_TRANSITIONS
+    # (app/models/order_item.py:41) and terminal in _maybe_complete_order, but
+    # this set listed only SERVED and CANCELLED — so refunding a served item
+    # trapped the tab forever: "Order item X is still REFUNDED", with no
+    # transition left that could clear it. The guest walks out and the table
+    # stays open for good, which is exactly the state a refund is meant to end.
+    terminal = {OrderItemStatus.SERVED.value,
+                OrderItemStatus.CANCELLED.value,
+                OrderItemStatus.REFUNDED.value}
     open_orders = db.session.query(Order).filter_by(tab_id=tab_id).all()
     for order in open_orders:
         for item in order.items:

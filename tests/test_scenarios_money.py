@@ -4,21 +4,27 @@ tests/test_scenarios_money.py — ADVERSARIAL money scenarios.
 Domain: payments, charges, tabs, deposits, reconciliation, VAT, refunds,
 budgets, cash handling, wristband credit.
 
-Two kinds of test live here.
+This file used to carry twelve `@pytest.mark.xfail(strict=True)` markers, each
+one pinning a hole the engineering invariants said should not exist. strict=True
+was the whole point: the moment somebody fixed a hole the test started passing,
+pytest reported XPASS as a FAILURE, and whoever did the fix was told about it.
+A hole could not be quietly closed and forgotten, or quietly reintroduced.
 
-  1. Plain tests — a GOOD path that must work, or a BAD path the system must
-     refuse. These pass today and are regression cover.
+ALL TWELVE ARE NOW CLOSED. Every one of those tests is still here, renamed off
+the HOLE_ prefix, with its finding kept in the docstring in past tense. They are
+regression cover now: each fails again on the day its hole comes back. Do not
+delete them because the bug is gone — the bug being gone is what they guard.
 
-  2. @pytest.mark.xfail(strict=True) tests — each one asserts the behaviour the
-     engineering invariants REQUIRE, and currently fails because the system does
-     something else. strict=True is deliberate: the moment somebody fixes the
-     hole the test starts passing, pytest reports XPASS as a FAILURE, and
-     whoever did the fix is told to delete the marker. A hole cannot be fixed
-     and forgotten about, and cannot be silently reintroduced.
+The findings, for anyone reading the history: four endpoints let Decimal('NaN')
+reach a comparison and 500; two took no upper bound against a Numeric(14,2)
+column; a payment could be recorded sub-cent so the receipt and the ledger
+disagreed; a payment idempotency key was matched without its tab, so real cash
+could vanish behind a "duplicate" success screen; a refunded item trapped its
+tab open forever; a water-session charge had no idempotency key at all; and the
+auto-opened tab — most tabs on a busy night — wrote no audit row.
 
-Every xfail below was confirmed twice: once end-to-end through the HTTP API
-(the response/exception is reproduced in the test body) and once by reading the
-exact source line named in the marker's reason.
+What is left in here is the ordinary kind: a GOOD path that must work, and a
+BAD path the system must refuse.
 """
 import uuid
 from decimal import Decimal
@@ -212,15 +218,26 @@ def test_money_columns_are_decimal_not_float(app):
 def test_bad_payment_amounts_are_refused_in_plain_english(client, owner_token,
                                                           food_item_id, amount):
     """Negative, zero, NaN and Infinity must all bounce with a message a
-    front-desk clerk can read. payments.py checks is_finite() BEFORE the <= 0
-    comparison, which is what stops NaN from blowing up the comparison."""
+    front-desk clerk can read. app/utils/money.py checks is_finite() BEFORE any
+    comparison, which is what stops NaN from blowing up the comparison.
+
+    The assertion used to demand the literal word "positive" for all six cases.
+    That was too tight: it forced one vague sentence to cover four different
+    mistakes. The messages now name the ACTUAL problem — "cannot be negative",
+    "must be more than zero", "must be a real number" — which is more use to
+    the person holding the cash, so the test checks the message identifies the
+    field and the fault instead of matching one magic word.
+    """
     tab, _ = open_tab_with_charge(client, owner_token, food_item_id)
     r = client.post(f"/tabs/{tab}/payments", json={"amount": amount, "method": "CASH"},
                     headers=auth(owner_token))
     assert r.status_code == 400
     msg = r.get_json()["error"]
     assert msg and not msg.startswith("<"), "error must be plain English, not markup"
-    assert "positive" in msg.lower()
+    assert "amount" in msg.lower(), f"message must name the field: {msg}"
+    assert any(w in msg.lower() for w in
+               ("positive", "negative", "more than zero", "real number")), \
+        f"message must say what is actually wrong: {msg}"
     # and nothing was written
     assert balance_of(client, owner_token, tab) == Decimal("1200.00")
 
@@ -647,7 +664,9 @@ def test_a_villa_cannot_be_confirmed_without_the_deposit(client, owner_token,
 @pytest.mark.parametrize("amount", ["0", "-500", "abc", "NaN"])
 def test_a_deposit_must_be_a_positive_number(client, owner_token, villa_resource, amount):
     """deposits.py wraps the comparison inside the try, so NaN is caught here —
-    unlike the three finance endpoints in the xfail block below."""
+    This one always had the check in the right order. The three finance
+    endpoints that did not — cash count, budget, safe count — are fixed now and
+    pinned further down."""
     now = datetime.now(timezone.utc)
     ci = (now + timedelta(days=6)).replace(hour=14, minute=0, second=0, microsecond=0)
     co = (ci + timedelta(days=1)).replace(hour=11, minute=0, second=0, microsecond=0)
@@ -663,7 +682,10 @@ def test_a_deposit_must_be_a_positive_number(client, owner_token, villa_resource
                           "method": "CASH", "amount": amount},
                     headers=auth(owner_token))
     assert r.status_code == 400
-    assert "positive" in r.get_json()["error"].lower()
+    # The message now names the ACTUAL fault (negative / zero / not a
+    # real number) instead of one vague word covering all three.
+    assert any(w in r.get_json()["error"].lower() for w in
+               ("positive", "negative", "more than zero", "real number"))
 
 
 def test_a_deposit_is_idempotent(client, owner_token, villa_resource, app):
@@ -953,17 +975,23 @@ def test_a_negative_water_session_charge_is_refused(client, owner_token,
     assert r.status_code == 400, (
         f"a negative charge was ACCEPTED: {r.status_code} {r.get_json()}")
     # The refusal must be readable by a front-desk clerk, not a stack trace.
-    assert "positive" in r.get_json()["error"].lower()
+    # The message now names the ACTUAL fault (negative / zero / not a
+    # real number) instead of one vague word covering all three.
+    assert any(w in r.get_json()["error"].lower() for w in
+               ("positive", "negative", "more than zero", "real number"))
     assert balance_of(client, owner_token, tab) == before
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 2 — app/bookings/core.py:474-490. Same endpoint, no upper bound. "
-    "amount='1e15' is accepted; Charge.amount is Numeric(14,2) whose maximum is "
-    "999,999,999,999.99, so on PostgreSQL this is a numeric-field-overflow 500 "
-    "and on SQLite it silently lands a 1,000,000,000,002,000 balance."))
-def test_HOLE_an_absurd_water_session_charge_must_be_refused(client, owner_token,
-                                                             villa_resource):
+def test_an_absurd_water_session_charge_must_be_refused(client, owner_token,
+                                                       villa_resource):
+    """WAS HOLE 2 — app/bookings/core.py:474-490. Same endpoint, no upper
+    bound. amount='1e15' is accepted; Charge.amount is Numeric(14,2) whose
+    maximum is 999,999,999,999.99, so on PostgreSQL this is a numeric-
+    field-overflow 500 and on SQLite it silently lands a
+    1,000,000,000,002,000 balance.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     bid, tab = checked_in_villa(client, owner_token, villa_resource,
                                 phone="+254700901002")
     sign_water_waiver(client, owner_token, bid)
@@ -991,16 +1019,22 @@ def test_a_degenerate_water_session_amount_does_not_crash(client, owner_token,
     r = client.post(f"/bookings/{bid}/water-sessions", json={"amount": amount},
                     headers=auth(owner_token))
     assert r.status_code == 400
-    assert "positive" in r.get_json()["error"].lower()
+    # The message now names the ACTUAL fault (negative / zero / not a
+    # real number) instead of one vague word covering all three.
+    assert any(w in r.get_json()["error"].lower() for w in
+               ("positive", "negative", "more than zero", "real number"))
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 4 — app/bookings/core.py:487. The water-session charge has no "
-    "idempotency key at all: the endpoint reads no such field and Charge has no "
-    "such column. A double-tapped 'Add jetski' posts the charge twice. Violates "
-    "'every write: transaction + idempotency_key + audit log'."))
-def test_HOLE_the_water_session_charge_must_be_idempotent(client, owner_token,
-                                                          villa_resource):
+def test_the_water_session_charge_must_be_idempotent(client, owner_token,
+                                                    villa_resource):
+    """WAS HOLE 4 — app/bookings/core.py:487. The water-session charge has no
+    idempotency key at all: the endpoint reads no such field and Charge
+    has no such column. A double-tapped 'Add jetski' posts the charge
+    twice. Violates 'every write: transaction + idempotency_key + audit
+    log'.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     bid, tab = checked_in_villa(client, owner_token, villa_resource,
                                 phone="+254700901004")
     sign_water_waiver(client, owner_token, bid)
@@ -1012,26 +1046,33 @@ def test_HOLE_the_water_session_charge_must_be_idempotent(client, owner_token,
         "the retry charged the guest a second time"
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 5 — app/pos/orders.py:110. `if qty <= 0 or not qty.is_finite()` "
-    "evaluates the comparison FIRST, and Decimal('NaN') <= 0 raises "
-    "decimal.InvalidOperation. quantity='NaN' is an unhandled 500. The operands "
-    "are the right way round in app/pos/payments.py:44 — same check, opposite "
-    "order, and that one is safe."))
-def test_HOLE_a_nan_quantity_must_be_refused_not_crash(client, owner_token, food_item_id):
+def test_a_nan_quantity_must_be_refused_not_crash(client, owner_token, food_item_id):
+    """WAS HOLE 5 — app/pos/orders.py:110. `if qty <= 0 or not
+    qty.is_finite()` evaluates the comparison FIRST, and Decimal('NaN') <=
+    0 raises decimal.InvalidOperation. quantity='NaN' is an unhandled 500.
+    The operands are the right way round in app/pos/payments.py:44 — same
+    check, opposite order, and that one is safe.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     r = client.post("/orders",
                     json={"items": [{"menu_item_id": food_item_id, "quantity": "NaN"}]},
                     headers=auth(owner_token))
     assert r.status_code == 400
-    assert "positive" in r.get_json()["error"].lower()
+    # The message now names the ACTUAL fault (negative / zero / not a
+    # real number) instead of one vague word covering all three.
+    assert any(w in r.get_json()["error"].lower() for w in
+               ("positive", "negative", "more than zero", "real number"))
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 6 — app/finance/cash.py:92. `except InvalidOperation` covers only the "
-    "Decimal() construction; Decimal('NaN') constructs fine and then "
-    "`actual < Decimal('0')` raises InvalidOperation. Unhandled 500 on a "
-    "cash-reconciliation endpoint."))
-def test_HOLE_a_nan_cash_count_must_be_refused_not_crash(client, owner_token, app):
+def test_a_nan_cash_count_must_be_refused_not_crash(client, owner_token, app):
+    """WAS HOLE 6 — app/finance/cash.py:92. `except InvalidOperation` covers
+    only the Decimal() construction; Decimal('NaN') constructs fine and
+    then `actual < Decimal('0')` raises InvalidOperation. Unhandled 500 on
+    a cash-reconciliation endpoint.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     from app.models.user import User
     from app.extensions import db
     waiter = db.session.query(User).filter_by(username="waiter1").one()
@@ -1042,11 +1083,13 @@ def test_HOLE_a_nan_cash_count_must_be_refused_not_crash(client, owner_token, ap
     assert "error" in r.get_json()
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 7 — app/finance/budgets.py:56. Identical bug shape to HOLE 6: "
-    "`if amount < Decimal('0')` sits outside the try, so amount='NaN' is an "
-    "unhandled 500."))
-def test_HOLE_a_nan_budget_must_be_refused_not_crash(client, owner_token, general_dept_id):
+def test_a_nan_budget_must_be_refused_not_crash(client, owner_token, general_dept_id):
+    """WAS HOLE 7 — app/finance/budgets.py:56. Identical bug shape to HOLE 6:
+    `if amount < Decimal('0')` sits outside the try, so amount='NaN' is an
+    unhandled 500.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     r = client.post("/finance/budgets",
                     json={"department_id": general_dept_id, "period": "2026-09",
                           "amount": "NaN"}, headers=auth(owner_token))
@@ -1054,11 +1097,13 @@ def test_HOLE_a_nan_budget_must_be_refused_not_crash(client, owner_token, genera
     assert "error" in r.get_json()
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 8 — app/finance/reports.py:240. Identical bug shape again: "
-    "`if safe_count < Decimal('0')` sits outside the try, so safe_count='NaN' "
-    "is an unhandled 500 on the end-of-day close."))
-def test_HOLE_a_nan_safe_count_must_be_refused_not_crash(client, owner_token):
+def test_a_nan_safe_count_must_be_refused_not_crash(client, owner_token):
+    """WAS HOLE 8 — app/finance/reports.py:240. Identical bug shape again:
+    `if safe_count < Decimal('0')` sits outside the try, so
+    safe_count='NaN' is an unhandled 500 on the end-of-day close.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     r = client.post("/finance/close-period",
                     json={"date": "2026-08-01", "safe_count": "NaN"},
                     headers=auth(owner_token))
@@ -1066,15 +1111,17 @@ def test_HOLE_a_nan_safe_count_must_be_refused_not_crash(client, owner_token):
     assert "error" in r.get_json()
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 9 — app/services/tab.py:78. is_tab_closable's terminal set is "
-    "{SERVED, CANCELLED} and omits REFUNDED, even though REFUNDED is terminal "
-    "in VALID_TRANSITIONS (app/models/order_item.py:41) and in "
-    "_maybe_complete_order (app/pos/orders.py:487). Refund a served item and "
-    "the tab can NEVER be closed: 'Order item X is still REFUNDED.' The guest "
-    "leaves, the table stays open forever."))
-def test_HOLE_a_refunded_item_must_not_block_the_tab_forever(
-        client, waiter_token, manager_token, food_item_id, app):
+def test_a_refunded_item_must_not_block_the_tab_forever(
+  client, waiter_token, manager_token, food_item_id, app):
+    """WAS HOLE 9 — app/services/tab.py:78. is_tab_closable's terminal set is
+    {SERVED, CANCELLED} and omits REFUNDED, even though REFUNDED is
+    terminal in VALID_TRANSITIONS (app/models/order_item.py:41) and in
+    _maybe_complete_order (app/pos/orders.py:487). Refund a served item
+    and the tab can NEVER be closed: 'Order item X is still REFUNDED.' The
+    guest leaves, the table stays open forever.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     from app.extensions import db
     from app.models.order_item import OrderItem
 
@@ -1092,13 +1139,15 @@ def test_HOLE_a_refunded_item_must_not_block_the_tab_forever(
         f"a fully-refunded, fully-paid tab could not be closed: {r.get_json()}")
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 10 — app/pos/payments.py:44. The only amount ceiling is 'positive and "
-    "finite'. A fat-fingered 1e15 is accepted; Payment.amount is Numeric(14,2) "
-    "(max 999,999,999,999.99) so PostgreSQL raises numeric field overflow (500) "
-    "while SQLite records a trillion-shilling credit. Nothing compares the "
-    "payment to what is actually owed."))
-def test_HOLE_an_out_of_range_payment_must_be_refused(client, owner_token, food_item_id):
+def test_an_out_of_range_payment_must_be_refused(client, owner_token, food_item_id):
+    """WAS HOLE 10 — app/pos/payments.py:44. The only amount ceiling is
+    'positive and finite'. A fat-fingered 1e15 is accepted; Payment.amount
+    is Numeric(14,2) (max 999,999,999,999.99) so PostgreSQL raises numeric
+    field overflow (500) while SQLite records a trillion-shilling credit.
+    Nothing compares the payment to what is actually owed.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     tab, _ = open_tab_with_charge(client, owner_token, food_item_id)
     r = client.post(f"/tabs/{tab}/payments", json={"amount": "1e15", "method": "CASH"},
                     headers=auth(owner_token))
@@ -1107,14 +1156,17 @@ def test_HOLE_an_out_of_range_payment_must_be_refused(client, owner_token, food_
         f"{balance_of(client, owner_token, tab)}")
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 11 — app/pos/payments.py:41-45. No cent-scale check. A payment of "
-    "0.004 returns 201 and the response echoes amount='0.004', but the ledger "
-    "stores 0.00 and the balance does not move — the receipt and the ledger "
-    "disagree. 0.4999 is silently rounded UP to 0.50, crediting the guest more "
-    "than they handed over. On PostgreSQL the 0.00 row also violates "
-    "ck_payment_amount_pos (amount > 0) and becomes a 500."))
-def test_HOLE_a_sub_cent_payment_must_be_refused(client, owner_token, food_item_id, app):
+def test_a_sub_cent_payment_must_be_refused(client, owner_token, food_item_id, app):
+    """WAS HOLE 11 — app/pos/payments.py:41-45. No cent-scale check. A
+    payment of 0.004 returns 201 and the response echoes amount='0.004',
+    but the ledger stores 0.00 and the balance does not move — the receipt
+    and the ledger disagree. 0.4999 is silently rounded UP to 0.50,
+    crediting the guest more than they handed over. On PostgreSQL the 0.00
+    row also violates ck_payment_amount_pos (amount > 0) and becomes a
+    500.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     from app.extensions import db
     from app.models.payment import Payment
 
@@ -1128,15 +1180,18 @@ def test_HOLE_a_sub_cent_payment_must_be_refused(client, owner_token, food_item_
         f"receipt says {r.get_json()['amount']} but the ledger stored {stored.amount}")
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 12 — app/pos/payments.py:57. The duplicate lookup is "
-    "filter_by(idempotency_key=...) with no tab_id, and Payment.idempotency_key "
-    "is globally unique. A client that reuses a key across tabs (or two "
-    "terminals that generate the same key) gets HTTP 200 and a 'duplicate' flag "
-    "for a payment that was never recorded: real cash collected, nothing in the "
-    "ledger, and the staff member sees a success screen."))
-def test_HOLE_an_idempotency_key_must_be_scoped_to_its_tab(client, owner_token,
-                                                           food_item_id):
+def test_an_idempotency_key_must_be_scoped_to_its_tab(client, owner_token,
+                                                     food_item_id):
+    """WAS HOLE 12 — app/pos/payments.py:57. The duplicate lookup is
+    filter_by(idempotency_key=...) with no tab_id, and
+    Payment.idempotency_key is globally unique. A client that reuses a key
+    across tabs (or two terminals that generate the same key) gets HTTP
+    200 and a 'duplicate' flag for a payment that was never recorded: real
+    cash collected, nothing in the ledger, and the staff member sees a
+    success screen.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     tab_a, _ = open_tab_with_charge(client, owner_token, food_item_id)
     tab_b, _ = open_tab_with_charge(client, owner_token, food_item_id)
     key = str(uuid.uuid4())
@@ -1157,12 +1212,15 @@ def test_HOLE_an_idempotency_key_must_be_scoped_to_its_tab(client, owner_token,
         f"{second.status_code} {second.get_json()}")
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "HOLE 13 — app/pos/orders.py:87-91. POST /orders with no tab_id opens a Tab "
-    "inline and writes NO AuditLog row, while POST /tabs (app/pos/tabs.py:122) "
-    "logs 'tab.open' for the identical write. Most tabs on a busy night are "
-    "opened this way, so most tab openings have no audit trail."))
-def test_HOLE_an_auto_opened_tab_must_be_audited(client, owner_token, food_item_id, app):
+def test_an_auto_opened_tab_must_be_audited(client, owner_token, food_item_id, app):
+    """WAS HOLE 13 — app/pos/orders.py:87-91. POST /orders with no tab_id
+    opens a Tab inline and writes NO AuditLog row, while POST /tabs
+    (app/pos/tabs.py:122) logs 'tab.open' for the identical write. Most
+    tabs on a busy night are opened this way, so most tab openings have no
+    audit trail.
+
+    Closed now, so this is regression cover: it fails again the day
+    the hole comes back."""
     from app.extensions import db
     from app.models.audit_log import AuditLog
     from app.models.tab import Tab

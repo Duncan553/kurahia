@@ -13,6 +13,7 @@ from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
+from app.utils.money import parse_amount, parse_quantity
 from app.extensions import db
 from app.models.user import User
 from app.models.budget import Budget
@@ -49,12 +50,10 @@ def create_budget():
     except ValueError:
         return jsonify({"error": "period must be in YYYY-MM format, e.g. 2026-05."}), 400
 
-    try:
-        amount = Decimal(str(raw_amt))
-    except InvalidOperation:
-        return jsonify({"error": "amount must be a number."}), 400
-    if amount < Decimal("0"):
-        return jsonify({"error": "Budget amount cannot be negative."}), 400
+    # A zero budget is meaningful — it says "spend nothing here this month".
+    amount, err = parse_amount(raw_amt, "Budget amount", allow_zero=True)
+    if err:
+        return jsonify({"error": err}), 400
 
     dept = db.session.get(Department, dept_id)
     if not dept:

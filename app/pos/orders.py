@@ -20,6 +20,7 @@ from decimal import Decimal
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user, require_clocked_in
+from app.utils.money import parse_amount, parse_quantity
 from app.extensions import db
 from app.models.menu_item import MenuItem, PrepStation
 from app.models.tab import Tab, TabStatus
@@ -89,6 +90,13 @@ def create_order():
             db.session.add(tab)
         db.session.flush()
         tab_id = tab.id
+        # Audited on the same terms as POST /tabs (app/pos/tabs.py), which logs
+        # "tab.open" for the identical write. This path had no audit row at all
+        # — and on a busy night MOST tabs are opened here, by a waiter starting
+        # an order rather than opening a tab first. So most tab openings had no
+        # trail, which is the opposite of how it looked.
+        AuditLog.log(actor=actor.username, action="tab.open", target=tab.id,
+                     details=f"ref={reference} (auto-opened with an order)")
     else:
         tab = db.session.get(Tab, tab_id)
         if not tab:
@@ -103,12 +111,12 @@ def create_order():
 
         for line in items:
             mi_id = line.get("menu_item_id")
-            try:
-                qty = Decimal(str(line.get("quantity", 1)))
-            except Exception:
-                return jsonify({"error": "Quantity must be a valid number."}), 400
-            if qty <= 0 or not qty.is_finite():
-                return jsonify({"error": "Quantity must be a positive number."}), 400
+            # `qty <= 0 or not qty.is_finite()` read fine and was wrong: the
+            # comparison runs FIRST and Decimal('NaN') <= 0 raises, so a NaN
+            # quantity was an unhandled 500. parse_quantity checks finite first.
+            qty, err = parse_quantity(line.get("quantity", 1), "Quantity")
+            if err:
+                return jsonify({"error": err}), 400
             mi    = db.session.get(MenuItem, mi_id)
             if not mi:
                 return jsonify({"error": f"Menu item '{mi_id}' not found."}), 404

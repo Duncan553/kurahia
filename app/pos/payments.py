@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user, require_clocked_in
+from app.utils.money import parse_amount, parse_quantity
 from app.extensions import db
 from app.models.tab import Tab, TabStatus
 from app.models.payment import Payment, PaymentMethod
@@ -35,14 +36,12 @@ def record_payment(tab_id):
 
     if not method or method not in PaymentMethod.__members__:
         return jsonify({"error": f"Payment method must be one of {list(PaymentMethod.__members__)}."}), 400
-    if raw_amt is None:
-        return jsonify({"error": "amount is required."}), 400
-    try:
-        amount = Decimal(str(raw_amt))
-    except (InvalidOperation, ValueError):
-        return jsonify({"error": "amount must be a valid number."}), 400
-    if not amount.is_finite() or amount <= 0:
-        return jsonify({"error": "Payment amount must be a positive number."}), 400
+    # parse_amount closes three holes that all lived on these lines: NaN
+    # reaching a comparison, no upper bound against Numeric(14,2), and sub-cent
+    # amounts that the receipt echoed but the ledger rounded away.
+    amount, err = parse_amount(raw_amt, "Payment amount")
+    if err:
+        return jsonify({"error": err}), 400
 
     # M-Pesa: capture code but do NOT verify (reconciliation is Chunk 5)
     mpesa_code = data.get("mpesa_code") if method == PaymentMethod.MPESA.value else None
@@ -53,10 +52,29 @@ def record_payment(tab_id):
     # line. Captured on the same terms as the other two.
     bank_ref   = data.get("bank_ref")   if method == PaymentMethod.BANK_TRANSFER.value else None
 
-    # Idempotency — silent duplicate suppression
-    existing = db.session.query(Payment).filter_by(idempotency_key=idem_key).first()
+    # Idempotency — silent duplicate suppression, SCOPED TO THIS TAB.
+    #
+    # The lookup used to match on the key alone. Payment.idempotency_key is
+    # globally unique, so a client that reused a key across tabs — or two
+    # terminals that generated the same one — got HTTP 200 and a "duplicate"
+    # flag for a payment that was never recorded against THIS tab. Real cash
+    # collected, nothing in the ledger, and a success screen for the cashier.
+    #
+    # Matching the tab too means a genuine retry on the same tab is still
+    # suppressed, while a key collision across tabs falls through to the
+    # column's UNIQUE constraint instead of silently swallowing money.
+    existing = db.session.query(Payment).filter_by(
+        idempotency_key=idem_key, tab_id=tab_id).first()
     if existing:
         return jsonify({"id": existing.id, "duplicate": True, "amount": str(existing.amount)}), 200
+
+    # A key that exists on a DIFFERENT tab is a collision, not a retry. Say so
+    # rather than letting the UNIQUE constraint surface as a 500.
+    clash = db.session.query(Payment).filter_by(idempotency_key=idem_key).first()
+    if clash:
+        return jsonify({"error": "This payment reference has already been used on "
+                                 "another tab. Start the payment again to get a "
+                                 "fresh reference."}), 409
 
     with db.session.begin_nested():
         payment = Payment(
