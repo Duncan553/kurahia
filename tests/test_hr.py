@@ -223,7 +223,15 @@ class TestClockInOut:
         assert rv.status_code == 201
         assert rv.get_json()["event_type"] == "CLOCK_IN"
 
-    def test_clock_in_blocked_off_wifi(self, client, waiter_token, waiter_profile):
+    def test_clock_in_blocked_off_wifi(self, client, waiter_token, waiter_profile, wifi_allowed):
+        """Off the network, with a network configured.
+
+        This used to omit the `wifi_allowed` fixture, so it ran against an EMPTY
+        allow-list and passed because nothing was configured — not because
+        8.8.8.8 was outside a real range. Those are different failures with
+        different fixes, and only one of them is what this test's name claims.
+        The fixture makes it test what it says.
+        """
         rv = client.post("/hr/clock-in",
                          json={},
                          headers=auth(waiter_token),
@@ -453,3 +461,48 @@ class TestPayrollDraft:
     def test_staff_cannot_see_payroll(self, client, waiter_token, waiter_profile):
         rv = client.get("/hr/payroll-draft", headers=auth(waiter_token))
         assert rv.status_code == 403
+
+
+class TestWiFiUnconfiguredIsNamedHonestly:
+    """An EMPTY allow-list and a WRONG network are the same 403 but not the
+    same problem, and they are not fixed by the same person.
+
+    is_ip_allowed() has no empty-list fallback (deliberate — see the module
+    docstring), and @require_clocked_in guards 11 POS endpoints. So an empty
+    list means nobody clocks in, which means no tabs, no orders and no
+    payments. Telling that room to "connect to the staff network" sends a whole
+    shift to look at a router while the actual fix is one owner-only row.
+    """
+
+    def _clear_allow_list(self, app):
+        from app.extensions import db as _db
+        from app.models.wifi_allow_list import WiFiAllowList
+        with app.app_context():
+            for w in _db.session.query(WiFiAllowList).all():
+                _db.session.delete(w)
+            _db.session.commit()
+
+    def test_empty_list_says_nothing_is_configured(self, client, waiter_token, app):
+        self._clear_allow_list(app)
+        rv = client.post("/hr/clock-in", json={},
+                         headers={"Authorization": f"Bearer {waiter_token}"})
+        assert rv.status_code == 403
+        msg = rv.get_json()["error"]
+        # Must name the real cause and who fixes it...
+        assert "owner" in msg.lower()
+        # ...and must NOT send them to the router.
+        assert "connect to the staff network" not in msg.lower()
+
+    def test_configured_but_wrong_network_still_says_connect(self, client, waiter_token, app):
+        """With a network on file, the original message is the correct one."""
+        from app.extensions import db as _db
+        from app.models.wifi_allow_list import WiFiAllowList
+        self._clear_allow_list(app)
+        with app.app_context():
+            # A range the test client's 127.0.0.1 is NOT in.
+            _db.session.add(WiFiAllowList(ssid="Kurahia-Staff", ip_cidr="10.99.0.0/24", label="Resort staff"))
+            _db.session.commit()
+        rv = client.post("/hr/clock-in", json={},
+                         headers={"Authorization": f"Bearer {waiter_token}"})
+        assert rv.status_code == 403
+        assert "staff network" in rv.get_json()["error"].lower()

@@ -67,12 +67,24 @@ def attendance_today():
             ClockEvent.occurred_at_utc < day_end,
         ).first()
 
-        if clocked_in:
-            status = "clocked_in"
-            late = is_late(clocked_in.occurred_at_utc, s)
-        elif has_approved_leave(emp_id, today):
+        on_leave = has_approved_leave(emp_id, today)
+
+        # Approved leave OUTRANKS a clock event, and that ordering is deliberate.
+        # Leave is a decision a manager signed off on; a clock-in is an event
+        # anyone standing on the staff WiFi can produce. Checking the clock first
+        # meant an approved leave day silently read as a normal working day.
+        #
+        # Clock-in is NOT blocked during leave (see app/hr/clock.py) — someone on
+        # leave covering a gap is ordinary here, and barring the door strands a
+        # person who is standing at the post ready to work. So both states really
+        # can exist, and the manager needs to SEE that rather than have it
+        # swallowed: leave sets the status, the flag below raises the clash.
+        if on_leave:
             status = "approved_leave"
             late = None
+        elif clocked_in:
+            status = "clocked_in"
+            late = is_late(clocked_in.occurred_at_utc, s)
         elif has_absence_notice(emp_id, s.id, today):
             status = "absent_with_notice"
             late = None
@@ -88,6 +100,9 @@ def attendance_today():
             "shift_end":     s.scheduled_end_utc.isoformat(),
             "status":        status,
             "late":          late,
+            # True only in the contradictory case: on approved leave yet a clock
+            # event exists for today. Surfaces the anomaly instead of hiding it.
+            "clocked_in_while_on_leave": bool(on_leave and clocked_in),
         })
 
     return jsonify(rows), 200

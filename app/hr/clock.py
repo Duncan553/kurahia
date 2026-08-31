@@ -28,6 +28,24 @@ WIFI_REJECT_MSG = (
     "Please connect to the staff network and try again."
 )
 
+# Same refusal, different cause. If NO network has been configured, telling
+# someone to "connect to the staff network" sends the whole shift to stare at a
+# router while the actual problem is that the allow-list is empty — which only
+# the owner can fix. Naming the real cause is the difference between a five
+# minute fix and a lost morning.
+WIFI_UNCONFIGURED_MSG = (
+    "No staff network has been set up yet, so clock-in cannot verify anyone is "
+    "on site. The owner needs to add the resort's network before anyone can "
+    "clock in. (Run `flask system status` to confirm.)"
+)
+
+
+def _wifi_error():
+    """Refusal message matched to WHY the IP was refused."""
+    from app.models.wifi_allow_list import WiFiAllowList
+    configured = db.session.query(WiFiAllowList).filter_by(is_active=True).count()
+    return WIFI_UNCONFIGURED_MSG if configured == 0 else WIFI_REJECT_MSG
+
 
 def _get_own_profile(user_id: str) -> EmployeeProfile | None:
     return db.session.query(EmployeeProfile).filter_by(user_id=user_id, is_active=True).first()
@@ -75,7 +93,23 @@ def clock_in():
 
     source_ip = request.remote_addr
     if not is_ip_allowed(source_ip):
-        return jsonify({"error": WIFI_REJECT_MSG}), 403
+        return jsonify({"error": _wifi_error()}), 403
+
+    # NOT blocked when the person is on approved leave, deliberately.
+    #
+    # "On approved leave" and "clocked in" do contradict each other, and the
+    # attendance board resolves that by letting leave win for the STATUS
+    # (app/hr/attendance.py) and raising `clocked_in_while_on_leave` so the
+    # contradiction is visible instead of swallowed.
+    #
+    # Refusing the clock-in was the wrong lever. Someone on leave coming in to
+    # cover a gap is ordinary here, and a 403 at 6am with no manager on site
+    # strands a person who is standing at the post, ready to work. The manager
+    # override exists but only helps if a manager is reachable.
+    #
+    # So: let them clock in, flag the row, pay the hours (attendance/summary
+    # still counts a genuine clock-in), and let a manager reconcile it later.
+    # The flag is the fix; the block was overreach.
 
     data     = request.get_json(silent=True) or {}
     ssid     = data.get("ssid")
@@ -110,7 +144,7 @@ def clock_out():
 
     source_ip = request.remote_addr
     if not is_ip_allowed(source_ip):
-        return jsonify({"error": WIFI_REJECT_MSG}), 403
+        return jsonify({"error": _wifi_error()}), 403
 
     data     = request.get_json(silent=True) or {}
     ssid     = data.get("ssid")
