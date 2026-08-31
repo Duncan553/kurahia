@@ -374,8 +374,18 @@ def occupancy_pdf():
     villa_revenue: dict[str, Decimal] = {v.id: Decimal("0") for v in villas}
 
     for b in bookings:
+        # SQLite hands these back NAIVE while from_date/to_date (and therefore
+        # every entry in `dates`) are tz-aware, so the comparison below raised
+        # TypeError and the whole report 500'd the moment ANY booking fell in
+        # range. It only ever passed on an empty range. Everything in this
+        # system is stored UTC (invariant 8), so stamping UTC on a naive value
+        # is a re-labelling, not a conversion.
         checkin = b.check_in_planned_utc
         checkout = b.check_out_planned_utc
+        if checkin.tzinfo is None:
+            checkin = checkin.replace(tzinfo=timezone.utc)
+        if checkout.tzinfo is None:
+            checkout = checkout.replace(tzinfo=timezone.utc)
         for d in dates:
             day_end = d + timedelta(days=1)
             # Booking overlaps this day if check_in < day_end AND check_out > day_start
