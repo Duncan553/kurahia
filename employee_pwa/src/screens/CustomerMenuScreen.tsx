@@ -79,7 +79,7 @@ export default function CustomerMenuScreen() {
                         </svg>
                       )}
                       {soldOut && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-[rgba(30,16,12,0.6)]">
+                        <div className="absolute inset-0 flex items-center justify-center bg-[var(--color-chrome-60)]">
                           <span className="text-xs font-bold text-ink-primary/70 uppercase">Sold Out</span>
                         </div>
                       )}

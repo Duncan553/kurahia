@@ -576,7 +576,7 @@ export default function AppLayout() {
 
       {/* ── Left Nav Rail (sm+) ─────────────────────────────────── */}
       <aside className="hidden sm:flex flex-col w-16 lg:w-52 shrink-0 border-r border-white/5"
-        style={{ background: 'rgba(30, 16, 12, 0.95)', backdropFilter: 'blur(20px)' }}>
+        style={{ background: 'var(--color-chrome-95)', backdropFilter: 'blur(20px)' }}>
 
         {/* Logo */}
         <div className="h-14 flex items-center justify-center lg:justify-start lg:px-4 border-b border-white/5">
@@ -648,7 +648,7 @@ export default function AppLayout() {
 
         {/* Mobile top bar (sm: hidden since sidebar has logo) */}
         <header className="sm:hidden h-14 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
-          style={{ background: 'rgba(30, 16, 12, 0.9)' }}>
+          style={{ background: 'var(--color-chrome-90)' }}>
           <span className="text-lg font-bold font-serif text-ink-primary">Kurahia</span>
           {/* Sign out. The button box is 44x44 (the touch minimum) but the orange
               circle inside stays 32px, so the header looks identical — only the
@@ -695,7 +695,7 @@ export default function AppLayout() {
 
         {/* Mobile bottom nav (sm: hidden since sidebar replaces it) */}
         <nav className="sm:hidden shrink-0 flex border-t border-white/5"
-          style={{ background: 'rgba(30, 16, 12, 0.95)' }}
+          style={{ background: 'var(--color-chrome-95)' }}
           aria-label="Main navigation">
           {visibleItems.slice(0, 5).map(({ id, path, label, Icon, badge }) => (
             <NavLink key={id} to={path} end={path === '/clock'}

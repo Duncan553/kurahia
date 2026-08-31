@@ -280,7 +280,7 @@ function HeroSection() {
                     <Area type="monotone" dataKey="rev" stroke="#fa5c29" strokeWidth={2}
                       fill="url(#revGrad)" />
                     <Tooltip
-                      contentStyle={{ background: '#1e100c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11 }}
+                      contentStyle={{ background: 'var(--color-cream-card)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11 }}
                       labelStyle={{ color: '#f9dcd5' }}
                       formatter={(v: unknown) => [formatKsh(v as number), 'Revenue']}
                       labelFormatter={(label: unknown) => String(label)}

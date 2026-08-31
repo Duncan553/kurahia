@@ -101,7 +101,7 @@ export default function PinSetupScreen() {
       >
         <img src={HERO_URL} alt="" aria-hidden="true"
           className="w-full h-full object-cover object-center" />
-        <div className="absolute inset-0" style={{ background: 'rgba(30, 16, 12, 0.75)' }} />
+        <div className="absolute inset-0" style={{ background: 'var(--color-chrome-75)' }} />
       </motion.div>
 
       {/* ── Wordmark bottom-right (desktop) ───────────────────────── */}

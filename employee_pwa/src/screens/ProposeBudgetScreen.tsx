@@ -33,7 +33,7 @@ function statusValue(s: string): StatusValue {
 
 function genKey() { return crypto.randomUUID() }
 
-export default function PurchaseReqScreen() {
+export default function ProposeBudgetScreen() {
   const addToast    = useToastStore((s) => s.addToast)
   const queryClient = useQueryClient()
 

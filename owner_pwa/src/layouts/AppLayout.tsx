@@ -170,7 +170,7 @@ export default function AppLayout() {
 
       {/* ── Sidebar — hidden on mobile, icons-only on tablet, full on desktop ── */}
       <aside className="hidden sm:flex flex-col w-16 lg:w-56 shrink-0 border-r border-white/5"
-        style={{ background: 'rgba(30, 16, 12, 0.95)', backdropFilter: 'blur(20px)' }}>
+        style={{ background: 'var(--color-chrome-95)', backdropFilter: 'blur(20px)' }}>
 
         {/* Logo — matches Stitch: circle icon + "Kurahia" + "WATERFRONT CLUB" */}
         <div className="p-4 lg:p-5 border-b border-white/5">
@@ -214,7 +214,7 @@ export default function AppLayout() {
 
         {/* Top bar */}
         <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
-          style={{ background: 'rgba(30, 16, 12, 0.9)', backdropFilter: 'blur(16px)' }}>
+          style={{ background: 'var(--color-chrome-90)', backdropFilter: 'blur(16px)' }}>
           <div className="flex items-center gap-1">
             <span className="sm:hidden text-base font-bold font-serif text-ink-primary">Kurahia</span>
             <span className="hidden sm:block text-sm font-medium text-ink-primary">Kurahia Dashboard</span>
@@ -291,7 +291,7 @@ export default function AppLayout() {
             pattern already used elsewhere in the app (e.g. category chips
             in WaiterTabDetailScreen). */}
         <nav className="sm:hidden shrink-0 flex overflow-x-auto scrollbar-hide border-t border-white/5"
-          style={{ background: 'rgba(30, 16, 12, 0.95)' }}
+          style={{ background: 'var(--color-chrome-95)' }}
           aria-label="Owner navigation">
           {SIDEBAR_ITEMS.map(({ path, label, Icon }) => (
             <NavLink

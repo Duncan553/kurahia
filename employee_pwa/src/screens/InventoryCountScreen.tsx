@@ -394,9 +394,9 @@ export default function InventoryCountScreen() {
                   text-sm text-ink-primary bg-transparent
                   focus:outline-none focus:ring-2 focus:ring-[#fa5c29]/40"
               >
-                <option value="" className="bg-[#1e100c]">Select department...</option>
+                <option value="" className="bg-[var(--color-cream-card)]">Select department...</option>
                 {departments?.map((d) => (
-                  <option key={d.id} value={d.id} className="bg-[#1e100c]">{d.name}</option>
+                  <option key={d.id} value={d.id} className="bg-[var(--color-cream-card)]">{d.name}</option>
                 ))}
               </select>
               {!selectedDeptId && (

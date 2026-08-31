@@ -61,7 +61,7 @@ const SafetyCheckScreen = lazy(() => import('./screens/SafetyCheckScreen'))
 const MaintenanceLogScreen = lazy(() => import('./screens/MaintenanceLogScreen'))
 const ManagerScreen = lazy(() => import('./screens/ManagerScreen'))
 const InventoryCountScreen = lazy(() => import('./screens/InventoryCountScreen'))
-const PurchaseRequestScreen = lazy(() => import('./screens/PurchaseRequestScreen'))
+const RequestStockScreen = lazy(() => import('./screens/RequestStockScreen'))
 const QuickEntryScreen = lazy(() => import('./screens/QuickEntryScreen'))
 const StaffAccountsScreen = lazy(() => import('./screens/StaffAccountsScreen'))
 const MenuManageScreen = lazy(() => import('./screens/MenuManageScreen'))
@@ -70,8 +70,7 @@ const LeaveApprovalScreen = lazy(() => import('./screens/LeaveApprovalScreen'))
 const ShiftScreen = lazy(() => import('./screens/ShiftScreen'))
 const AttendanceScreen = lazy(() => import('./screens/AttendanceScreen'))
 const RosterScreen = lazy(() => import('./screens/RosterScreen'))
-const PurchaseReqScreen = lazy(() => import('./screens/PurchaseReqScreen'))
-const FrontDeskScreen = lazy(() => import('./screens/FrontDeskScreen'))
+const ProposeBudgetScreen = lazy(() => import('./screens/ProposeBudgetScreen'))
 const HeadChefScreen = lazy(() => import('./screens/HeadChefScreen'))
 const WaiterTabsScreen = lazy(() => import('./screens/WaiterTabsScreen'))
 const WaiterTabDetailScreen = lazy(() => import('./screens/WaiterTabDetailScreen'))
@@ -230,7 +229,7 @@ const router = createBrowserRouter([
             // "Access restricted."
             { path: '/schedule',                   element: <ScheduleScreen />        },
             { path: '/inventory/count',            element: <InventoryCountScreen />  },
-            { path: '/inventory/purchase-request', element: <PurchaseRequestScreen /> },
+            { path: '/inventory/purchase-request', element: <RequestStockScreen /> },
             { path: '/equipment/maintenance',      element: <MaintenanceLogScreen />  },
             // F-11: Manager sub-screens
             { path: '/manager/staff',      element: <StaffAccountsScreen /> },
@@ -239,8 +238,11 @@ const router = createBrowserRouter([
             { path: '/manager/leave',      element: <LeaveApprovalScreen /> },
             { path: '/manager/shifts',     element: <ShiftScreen />         },
             { path: '/manager/attendance', element: <AttendanceScreen />    },
-            { path: '/manager/purchases',  element: <PurchaseReqScreen />   },
-            { path: '/manager/front-desk', element: <FrontDeskScreen />     },
+            { path: '/manager/purchases',  element: <ProposeBudgetScreen /> },
+            // FrontDeskScreen deleted: 381 read-only lines over the same
+            // GET /front-desk/today that CheckInScreen already renders — and
+            // CheckInScreen can confirm, check in/out and take deposits.
+            { path: '/manager/front-desk', element: <CheckInScreen />     },
             { path: '/manager/roster',     element: <RosterScreen />        },
           ],
         },
