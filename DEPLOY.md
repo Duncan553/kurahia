@@ -130,9 +130,19 @@ No silent failures: each command exits non-zero on error, which cron mails to th
 # Fail: no-shows stay as HELD; owner won't see them in no-show report until next run.
 0 23 * * *    cd /opt/kurahia && /opt/kurahia/.venv/bin/flask bookings flag-no-shows
 
-# 00:00 — Dispatch all QUEUED notifications past their scheduled send time.
-# Fail: staff notifications delayed until next run; idempotent so re-running is safe.
-0 0 * * *     cd /opt/kurahia && /opt/kurahia/.venv/bin/flask events deliver-due
+# EVERY 15 MIN — Dispatch all QUEUED notifications past their scheduled send time.
+#
+# This ran at 00:00 daily, which silently broke half the event alert cascade.
+# ALERT_OFFSETS (app/services/events.py:26) queues four warnings per assignment:
+# 7 days, 3 days, tomorrow, and 2 HOURS before the event starts. A once-a-day
+# sweep can never deliver a 2-hour warning on time — an event at 14:00 queues
+# its alert for 12:00 and the next run is midnight, ten hours after the event
+# finished. The "tomorrow" tier drifted by up to 24h for the same reason.
+#
+# So the two alerts that actually get staff to an event were the two that could
+# not arrive. The cascade was written correctly; only the schedule was wrong.
+# Idempotent (idempotency_key per alert), so frequent runs are safe and cheap.
+*/15 * * * *  cd /opt/kurahia && /opt/kurahia/.venv/bin/flask events deliver-due
 
 # 00:05 — Spoilage spike + watch-list check; writes JudgeAlerts to dashboard.
 # Fail: no alerts generated for that day; silent theft detection has a gap.
@@ -144,7 +154,7 @@ No silent failures: each command exits non-zero on error, which cron mails to th
 
 # 03:00 — Backup: SQLite copy or pg_dump to /opt/kurahia/backups/.
 # Fail: no backup written for that day; previous backup still intact.
-0 3 * * *     cd /opt/kurahia && /opt/kurahia/.venv/bin/flask system backup
+0 3 * * *     cd /opt/kurahia && /opt/kurahia/.venv/bin/flask system_cli backup
 ```
 
 ### How to install these cron entries
@@ -160,7 +170,7 @@ sudo systemctl status cron   # confirm cron daemon is running
 - [x] Secrets in env, not code (`grep -r "SECRET\|PASSWORD\|KEY" app/ --include="*.py"` should return nothing sensitive)
 - [x] JWT short-lived (30 min access / 30 day refresh)
 - [x] Login rate limiting via `FAILED_ATTEMPTS_LOCKOUT` / `LOCKOUT_MINUTES` env vars
-- [x] Audit log hash-chained — verify daily with `flask audit verify-chain`
+- [x] Audit log hash-chained — verify daily with `flask audit_cli verify-chain`
 - [x] No db.session.delete() on business entities
 - [x] OWNER_PRIVATE rows structurally invisible to manager sessions
 

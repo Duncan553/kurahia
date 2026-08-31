@@ -11,7 +11,7 @@ flask db upgrade              # apply all pending migrations
 ## Inventory
 ```bash
 flask inventory seed-items    # seed sample inventory items
-flask inventory seed-movements # seed sample stock movements
+flask inventory auto-draft    # DRAFT purchase requests for items below reorder
 ```
 
 ## POS
@@ -26,7 +26,7 @@ flask finance seed-budgets    # seed monthly department budgets
 
 ## HR
 ```bash
-flask hr seed-employees       # seed sample employee profiles + shifts
+flask hr seed-shifts          # morning + evening shifts for every active employee
 ```
 
 ## Bookings
@@ -56,7 +56,7 @@ flask events flag-incomplete  # flag IN_PROGRESS events past their end time
 ```bash
 flask conduct seed-rules      # seed 8-point default code of conduct
 flask calendar seed-kenya-holidays  # seed Kenyan public holidays (next 12 months)
-flask feedback seed-sample    # seed sample guest feedback
+flask feedback_cli seed-sample # seed sample guest feedback
 ```
 
 ## Judge (Silent Variance Brain)
@@ -67,8 +67,8 @@ flask judge run-daily              # spoilage spike + watch-list check
 
 ## System
 ```bash
-flask system status           # DB health, pending notifications, open alerts
-flask system backup [--dest ./backups]  # SQLite copy or pg_dump
-flask system check-alerts     # sweep actionable conditions → create JudgeAlerts
-flask audit verify-chain      # walk audit-log hash chain, assert integrity
+flask system_cli status           # DB health, pending notifications, open alerts
+flask system_cli backup [--dest ./backups]  # SQLite copy or pg_dump
+flask system_cli check-alerts     # sweep actionable conditions → create JudgeAlerts
+flask audit_cli verify-chain      # walk audit-log hash chain, assert integrity
 ```

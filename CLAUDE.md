@@ -212,9 +212,9 @@ flask db migrate -m "..."               # new migration
 flask db upgrade                        # apply pending migrations
 
 # Health + ops
-flask system status                     # quick health check
-flask system backup                     # backup
-flask audit verify-chain                # verify hash chain integrity
+flask system_cli status                     # quick health check
+flask system_cli backup                     # backup
+flask audit_cli verify-chain                # verify hash chain integrity
 flask judge run-daily / run-weekly      # judge analysis
 flask events deliver-due                # dispatch QUEUED notifications
 flask gate close-day                    # EOD: forfeit unused band credits
