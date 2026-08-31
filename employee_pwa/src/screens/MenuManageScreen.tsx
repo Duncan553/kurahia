@@ -28,7 +28,10 @@ interface RecipeLine {
 interface DraftLine { invItemId: string; invItemName: string; unit: string; quantity: string }
 interface Meta { departments: { id: string; name: string }[] }
 
-const BLANK = { name: '', price: '', category: '', station: 'KITCHEN', deptId: '' }
+// `image` holds the file the user picked BEFORE the item exists. The picture is
+// what a guest actually chooses from, so it belongs in the act of creating the
+// item — not as a second trip back through the list afterwards.
+const BLANK = { name: '', price: '', category: '', station: 'KITCHEN', deptId: '', isAlcoholic: false }
 const STATIONS = [
   { value: 'KITCHEN', label: 'Kitchen (food queue)' },
   { value: 'BAR',     label: 'Bar (drinks queue)' },
@@ -166,13 +169,33 @@ export default function MenuManageScreen() {
   const ok   = (msg: string) => { invalidate(); addToast({ type: 'success', message: msg }) }
   const fail = (e: unknown)  => addToast({ type: 'error', message: extractErr(e) })
 
+  // Picked in the create form, uploaded as part of creating the item.
+  const [newImage, setNewImage] = useState<File | null>(null)
+
   const createMut = useMutation({
-    mutationFn: () => api.post('/menu/items', {
-      name: f.name.trim(), price: f.price,
-      category: f.category.trim() || null,
-      prep_station: f.station, department_id: f.deptId,
-    }),
-    onSuccess: () => { ok('Item added to the menu. Owner notified.'); setF(BLANK); setAdding(false) },
+    // Upload FIRST, then create with the path already attached, so an item is
+    // never born without its picture. If the upload fails the item is not
+    // created at all — better than a half-made row nobody goes back to fix.
+    mutationFn: async () => {
+      let image_path: string | null = null
+      if (newImage) {
+        const form = new FormData()
+        form.append('file', newImage)
+        const { data } = await api.post<{ path: string }>('/uploads/menu', form)
+        image_path = data.path
+      }
+      return api.post('/menu/items', {
+        name: f.name.trim(), price: f.price,
+        category: f.category.trim() || null,
+        prep_station: f.station, department_id: f.deptId,
+        is_alcoholic: f.isAlcoholic,
+        image_path,
+      })
+    },
+    onSuccess: () => {
+      ok('Item added to the menu. Owner notified.')
+      setF(BLANK); setNewImage(null); setAdding(false)
+    },
     onError: fail,
   })
 
@@ -340,11 +363,56 @@ export default function MenuManageScreen() {
                 focus:outline-none focus:border-primary-main"
             />
           </div>
+          {/* Picture — first-class, not an afterthought. This is the thing a
+              guest actually picks from, so it sits in the create form beside
+              name and price rather than behind a second visit to the list. */}
+          <div className="flex items-center gap-3">
+            {newImage ? (
+              <img
+                src={URL.createObjectURL(newImage)} alt=""
+                className="w-16 h-16 rounded-xl object-cover shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-xl glass-surface shrink-0 flex items-center
+                justify-center text-[10px] text-ink-tertiary text-center px-1">
+                No photo
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <label
+                htmlFor="menu-item-image"
+                className="inline-block px-3 py-2 rounded-xl glass-card text-xs font-semibold
+                  cursor-pointer hover:border-primary-main"
+              >
+                {newImage ? 'Change photo' : 'Add photo'}
+              </label>
+              <input
+                id="menu-item-image" type="file" accept="image/*" className="sr-only"
+                onChange={e => setNewImage(e.target.files?.[0] ?? null)}
+              />
+              <p className="mt-1 text-[10px] text-ink-tertiary truncate">
+                {newImage ? newImage.name : 'Guests choose from the picture.'}
+              </p>
+            </div>
+          </div>
+
           <Select
             label="Routes to" required value={f.station}
             onChange={e => setF({ ...f, station: e.target.value })}
             options={STATIONS}
           />
+
+          {/* Alcohol is a manager-only list on the backend (pos/menu.py). Shown
+              to everyone so the rule is visible, and the 403 explains itself if
+              a chef tries. */}
+          <label className="flex items-center gap-2 px-1 text-sm cursor-pointer">
+            <input
+              type="checkbox" checked={f.isAlcoholic}
+              onChange={e => setF({ ...f, isAlcoholic: e.target.checked })}
+              className="w-4 h-4 accent-primary-main"
+            />
+            <span>Contains alcohol — beer, wine or a cocktail</span>
+          </label>
           <Select
             label="Department" required value={f.deptId}
             onChange={e => setF({ ...f, deptId: e.target.value })}

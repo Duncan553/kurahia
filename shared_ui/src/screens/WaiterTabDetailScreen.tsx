@@ -344,7 +344,7 @@ export default function WaiterTabDetailScreen() {
                       </svg>
                     )}
                     {soldOut && (
-                      <div className="absolute inset-0 bg-[rgba(30,16,12,0.6)] flex items-center justify-center">
+                      <div className="absolute inset-0 bg-[var(--color-chrome-60)] flex items-center justify-center">
                         <span className="text-xs font-bold text-ink-primary/80 uppercase tracking-wider">Sold Out</span>
                       </div>
                     )}
@@ -710,7 +710,7 @@ export default function WaiterTabDetailScreen() {
       <ErrorBoundary level="tile">
       {/* Back + header (always visible) */}
       <div className="shrink-0 px-4 py-3 flex items-center gap-3 border-b border-white/10"
-        style={{ background: 'rgba(30, 16, 12, 0.85)', backdropFilter: 'blur(12px)' }}>
+        style={{ background: 'var(--color-chrome-85)', backdropFilter: 'blur(12px)' }}>
         <button onClick={() => navigate('/pos/tabs')}
           aria-label="Back to tables"
           className="text-ink-tertiary hover:text-ink-primary text-sm transition-colors">

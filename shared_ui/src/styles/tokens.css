@@ -24,39 +24,71 @@
   --color-primary-light: #ffb59f;
   /* #af3000 is 2.86:1 on the card surface — below even the 3:1 floor for large
      text, and it is used 25 times as text-primary-dark. Lightened to clear AA
-     while staying the same hue family. */
-  --color-primary-dark: #e0693a;
-  --color-cream-card: #1e100c;
-  --color-cream-alt: rgba(43, 28, 24, 0.6);
-  --color-cream-deep: rgba(66, 49, 44, 0.6);
+     while staying the same hue family. Lightened again for the cool ground:
+     #e0693a measured 3.04:1 on a card over a bright patch. */
+  --color-primary-dark: #F08A5D;
+  /* ── The ground is COOL, and that is the whole point ──────────────
+     It used to be #1e100c: R30 G16 B12, hue 13deg. --color-primary-main
+     is #fa5c29, hue 15deg. The background and the accent were the SAME
+     HUE at different lightness, so the entire interface was monochrome
+     orange and the accent had nothing to sit against. Every previous
+     "dullness" fix removed colour to rescue contrast (see the saturate
+     110% note below, and the scrim note further down), which pushed it
+     further the same way.
+     Swinging the ground to deep petrol-teal puts ~180deg between ground
+     and accent. Lightness is deliberately unchanged, so every contrast
+     ratio this file fought for still holds — only the hue moved. */
+  --color-cream-card: #0e1a1f;
+  --color-cream-alt: rgba(22, 42, 50, 0.6);
+  --color-cream-deep: rgba(38, 66, 76, 0.6);
 
   /* SHARP text: pure white primary for contrast */
   --color-ink-primary: #ffffff;
-  --color-ink-secondary: rgba(255, 235, 225, 0.82);
+  --color-ink-secondary: rgba(226, 240, 244, 0.86);
   /* Was rgba(210,180,170,0.55) -> flattens to #816a63 = 3.68:1 on the card
      surface, which FAILS WCAG AA for normal text. It is the most-used text
      token in the whole codebase (650 uses, more than ink-primary) and most of
      those are 9-12px labels, so no large-text exemption applies. Most of what
      reads as "dull" is this one line. Now 7.0:1. */
-  --color-ink-tertiary: #bda49b;
+  --color-ink-tertiary: #9db4bd;
+
+  /* ── Chrome: headers, navs, modal scrims, login overlays ──────────
+     These existed only as `rgba(30, 16, 12, x)` typed inline in 20 places
+     across the three apps, which is why every previous palette fix failed —
+     the tokens governed the content area while the entire frame around it
+     was hardcoded and unreachable. Tokenised at the alphas actually in use. */
+  --color-chrome-95: rgba(11, 26, 33, 0.95);
+  --color-chrome-90: rgba(11, 26, 33, 0.90);
+  --color-chrome-85: rgba(11, 26, 33, 0.85);
+  --color-chrome-75: rgba(11, 26, 33, 0.75);
+  --color-chrome-60: rgba(11, 26, 33, 0.60);
 
   /* ── Ticket palette ──────────────────────────────────────────── */
-  --color-ticket-paper: rgba(43, 28, 24, 0.8);
-  --color-ticket-alt: rgba(43, 28, 24, 0.6);
+  --color-ticket-paper: rgba(22, 42, 50, 0.8);
+  --color-ticket-alt: rgba(22, 42, 50, 0.6);
   --color-ticket-ink: #f1f5f9;
   --color-stamp-red: #ef4444;
   --color-leaf-green: #10b981;
   --color-tea-brown: #d97706;
 
-  /* ── Status palette ──────────────────────────────────────────── */
-  --color-status-paid: #10b981;
-  --color-status-pending: #f59e0b;
-  --color-status-failed: #ef4444;
-  --color-status-neutral: #4A7889;
+  /* ── Status palette ──────────────────────────────────────────────
+     These were the saturated mid-tones you would pick on a WHITE page. As
+     FILLS on a dark ground they were fine; as WORDS they were not — measured
+     on a card sitting over a sunlit patch of the backdrop photo:
+       failed  #ef4444 -> 2.72:1   (this is ERROR text — the most important
+                                    words in the app were the least legible)
+       paid    #10b981 -> 4.03:1
+       pending #f59e0b -> 3.93:1
+     Lightened until each clears AA as small text while still reading as its
+     own colour. A dark theme wants lighter status hues than a light one. */
+  --color-status-paid: #3DDCA4;
+  --color-status-pending: #FFC24D;
+  --color-status-failed: #FF8F85;
+  --color-status-neutral: #7FB4C6;   /* was #4A7889 — 1.75:1 on a card, unreadable */
 
   /* ── Data-viz accent ─────────────────────────────────────────── */
-  --color-honey: #C68A28;
-  --color-accent-cool: #C68A28;
+  --color-honey: #E5AC4F;   /* was #C68A28 — 3.44:1 as text */
+  --color-accent-cool: #E5AC4F;
 
   /* ── Font families ───────────────────────────────────────────── */
   --font-sans: 'Hanken Grotesk', sans-serif;
@@ -157,12 +189,16 @@ body::after {
   inset: 0;
   z-index: -1;
   background:
-    /* Top-right: deep teal glow */
-    radial-gradient(ellipse 60% 50% at 75% 15%, rgba(74, 120, 137, 0.07) 0%, transparent 70%),
-    /* Bottom-left: warm amber glow */
-    radial-gradient(ellipse 50% 60% at 20% 85%, rgba(198, 138, 40, 0.05) 0%, transparent 70%),
-    /* Center: very faint sage */
-    radial-gradient(ellipse 70% 70% at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 60%),
+    /* These three glows were at 0.03-0.07 alpha — under a 0.90 scrim that is
+       mathematically invisible. They were decoration that never rendered.
+       Raised to where they actually model the space: a lit horizon top-right,
+       warm lamplight bottom-left. This is the depth the flat ground was missing. */
+    /* Top-right: lake horizon */
+    radial-gradient(ellipse 60% 50% at 75% 15%, rgba(86, 166, 190, 0.20) 0%, transparent 70%),
+    /* Bottom-left: warm lamplight — the one warm note, opposite the accent */
+    radial-gradient(ellipse 50% 60% at 20% 85%, rgba(212, 132, 58, 0.13) 0%, transparent 70%),
+    /* Center: faint sage lift so the middle of the page is not a dead zone */
+    radial-gradient(ellipse 70% 70% at 50% 50%, rgba(45, 190, 160, 0.07) 0%, transparent 60%),
     /* Base scrim.
        The middle stop used to be 0.48 alpha, so halfway down every page the
        resort photo came through at HALF strength — and that is precisely where
@@ -171,20 +207,37 @@ body::after {
        9.1:1 depending on nothing but scroll position.
        No text colour can fix a target that moves that much, so the backdrop is
        stabilised instead. The photo is still visible and still carries the
-       identity — it just stops competing with the words on top of it. */
-    linear-gradient(160deg, rgba(35, 18, 12, 0.90) 0%, rgba(20, 11, 8, 0.86) 45%, rgba(30, 15, 10, 0.90) 100%);
+       identity — it just stops competing with the words on top of it.
+
+       Alpha therefore stays high and STABLE — the change here is hue, not
+       transparency. Cool petrol instead of brown-black, so the photo reads as
+       dusk on water rather than mud. */
+    linear-gradient(160deg, rgba(14, 32, 40, 0.90) 0%, rgba(9, 22, 28, 0.87) 45%, rgba(12, 28, 35, 0.90) 100%);
   pointer-events: none;
 }
 
 /* ── SHARP Glass panels ────────────────────────────────────────── */
 .glass-card {
   contain: layout paint;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
-  /* saturate(180%) was amplifying the olive cast of the resort photo behind the
-     glass, so cards picked up a competing colour and read muddy. 110% keeps the
-     glass alive without letting the backdrop tint it. */
-  backdrop-filter: blur(24px) saturate(110%) brightness(1.05);
-  -webkit-backdrop-filter: blur(24px) saturate(110%) brightness(1.05);
+  /* Every surface used to land within a few percent of the same luminance, so
+     nothing advanced and nothing receded — flat is dull even at good contrast.
+     The top stop is lifted so a card genuinely sits ABOVE the ground. */
+  /* A card is WHERE TEXT LIVES, so the photo must not reach it. Previously the
+     card was pure translucent white over the page scrim, which meant a card
+     drifting over a sunlit patch of resort-bg.jpg lightened underneath its own
+     text: ink-tertiary fell to 3.9:1, the accent to 2.7:1 and error red to
+     2.2:1 — measured, not guessed.
+     The page scrim was stabilised for exactly this reason; cards never were.
+     This petrol base is that same fix applied where the words are. The page
+     ground still shows the photograph; the cards no longer do. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%),
+    linear-gradient(0deg, rgba(12, 28, 35, 0.82), rgba(12, 28, 35, 0.82));
+  /* saturate was cut to 110% because the brown ground let the resort photo's
+     olive cast through and cards read muddy. With a cool petrol ground the
+     backdrop no longer fights the glass, so saturation can come back up. */
+  backdrop-filter: blur(24px) saturate(145%) brightness(1.06);
+  -webkit-backdrop-filter: blur(24px) saturate(145%) brightness(1.06);
   border: 1px solid rgba(255, 255, 255, 0.20);
   border-top-color: rgba(255, 255, 255, 0.30);
   border-radius: 1rem;
@@ -207,7 +260,9 @@ body::after {
 
 .glass-card-sage {
   contain: layout paint;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%),
+    linear-gradient(0deg, rgba(12, 28, 35, 0.82), rgba(12, 28, 35, 0.82));
   backdrop-filter: blur(20px) saturate(160%) brightness(1.03);
   -webkit-backdrop-filter: blur(20px) saturate(160%) brightness(1.03);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -222,7 +277,9 @@ body::after {
 
 .glass-surface {
   contain: layout paint;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.04) 100%);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.04) 100%),
+    linear-gradient(0deg, rgba(12, 28, 35, 0.82), rgba(12, 28, 35, 0.82));
   backdrop-filter: blur(16px) saturate(150%) brightness(1.02);
   -webkit-backdrop-filter: blur(16px) saturate(150%) brightness(1.02);
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -272,7 +329,7 @@ body::after {
   100% { background-position: 200% 0; }
 }
 .animate-pulse {
-  background: linear-gradient(90deg, rgba(43, 28, 24, 0.5) 25%, rgba(66, 49, 44, 0.3) 50%, rgba(43, 28, 24, 0.5) 75%);
+  background: linear-gradient(90deg, rgba(22, 42, 50, 0.5) 25%, rgba(38, 66, 76, 0.35) 50%, rgba(22, 42, 50, 0.5) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }

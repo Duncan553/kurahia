@@ -273,7 +273,7 @@ export default function ManagerScreen() {
                         <BarChart data={chartData}>
                           <Bar dataKey="stock" fill="rgba(16,185,129,0.4)" radius={[4,4,0,0]} />
                           <Bar dataKey="reorder" fill="rgba(239,68,68,0.2)" radius={[4,4,0,0]} />
-                          <Tooltip contentStyle={{ background: '#1e100c', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, fontSize: 11, color: '#f9dcd5' }} />
+                          <Tooltip contentStyle={{ background: 'var(--color-cream-card)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, fontSize: 11, color: '#f9dcd5' }} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>

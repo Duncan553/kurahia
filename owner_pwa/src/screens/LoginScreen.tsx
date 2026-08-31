@@ -78,7 +78,7 @@ export default function LoginScreen() {
       <div className="absolute inset-0">
         <img src="/images/resort-bg.jpg" alt="" aria-hidden="true"
           className="w-full h-full object-cover" />
-        <div className="absolute inset-0" style={{ background: 'rgba(30, 16, 12, 0.75)' }} />
+        <div className="absolute inset-0" style={{ background: 'var(--color-chrome-75)' }} />
       </div>
 
       {/* Ambient glow — faint orange radial behind the card for depth */}
