@@ -53,9 +53,18 @@ def _can_operate_station(actor: User, station: str) -> bool:
 @require_clocked_in
 def create_order():
     actor = db.session.get(User, get_jwt_identity())
-    # Prep-station staff (departments matching a PrepStation value) cannot create orders
+    # Prep-station staff cannot create orders — they MAKE things, they don't sell
+    # them. The separation is what stops the person cooking a dish from also
+    # being the person who says it was ordered.
+    #
+    # Gated on the DEPARTMENT plus an explicit exemption for waiters, because
+    # department alone was wrong: peter.mwendwa is a waiter assigned to the Bar,
+    # which is an entirely normal posting, and he could not take a drinks order
+    # at the bar he works at. A waiter is a waiter wherever they are standing.
+    SERVING_ROLES = {"waiter"}
     prep_stations = {ps.value for ps in PrepStation if ps != PrepStation.NONE}
     if (actor.department and actor.department.name.upper() in prep_stations
+            and actor.role.name not in SERVING_ROLES
             and actor.role.level < MANAGER_LEVEL):
         return jsonify({"error": "Kitchen and bar staff cannot create customer orders. Ask a waiter."}), 403
 

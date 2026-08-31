@@ -39,9 +39,35 @@ def system_status():
         status=AlertStatus.OPEN.value
     ).count()
 
+    # ── WiFi allow-list: the row that can take the whole resort offline ──────
+    #
+    # Clock-in is gated on the caller's IP being inside an active CIDR here
+    # (app/hr/clock.py:77). is_ip_allowed() has no empty-list fallback — no
+    # match means 403 — and @require_clocked_in guards 11 POS endpoints across
+    # orders, tabs and payments. So a list that is empty, or that only contains
+    # a dev entry, means: nobody clocks in -> nobody is clocked in -> no tabs,
+    # no orders, no payments. The resort cannot sell anything.
+    #
+    # It fails saying "connect to the staff network", which sends everyone to
+    # look at the router while the real problem is one database row. Surfacing
+    # it here is the cheapest possible way to catch that before a shift starts,
+    # not during one.
+    from app.models.wifi_allow_list import WiFiAllowList
+    wifi_entries = db.session.query(WiFiAllowList).filter_by(is_active=True).all()
+    non_local = [w for w in wifi_entries
+                 if not w.ip_cidr.startswith(("127.", "::1"))]
+    if not wifi_entries:
+        wifi_status = "EMPTY — NOBODY CAN CLOCK IN, SO NOBODY CAN SELL"
+    elif not non_local:
+        wifi_status = (f"{len(wifi_entries)} entry, LOCALHOST ONLY — staff on the "
+                       f"resort network will be refused clock-in")
+    else:
+        wifi_status = f"{len(non_local)} network(s): " + ", ".join(w.ip_cidr for w in non_local)
+
     click.echo(f"Database:             {db_ok}")
     click.echo(f"Pending notifications: {pending_notifs}")
     click.echo(f"Open alerts:           {open_alerts}")
+    click.echo(f"WiFi allow-list:       {wifi_status}")
     click.echo(f"Timestamp (UTC):       {datetime.now(timezone.utc).isoformat()}")
 
 

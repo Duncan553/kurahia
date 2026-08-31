@@ -21,6 +21,11 @@ from app.services.tab import get_tab_balance, is_tab_closable
 tabs_bp = Blueprint("tabs", __name__, url_prefix="/tabs")
 
 MANAGER_LEVEL = 5
+# Front desk settles other people's accounts, so they may open any tab. Below
+# that you get the tables you are actually working. Same threshold and same
+# rule as pos/receipts.py — one idea of "a tab that is mine", not two that can
+# drift apart.
+FRONT_DESK_LEVEL = 3
 
 
 @tabs_bp.get("")
@@ -134,9 +139,32 @@ def open_tab():
 @tabs_bp.get("/<tab_id>")
 @require_active_user
 def get_tab(tab_id):
+    """One tab in full: charges, payments, orders, balance.
+
+    Scoped the SAME way as GET /receipts/:tab_id, and it has to be. That
+    endpoint restricts a folio because "a villa folio is a guest's whole stay" —
+    but this one returned the same charges and payments (plus the order lines,
+    the payment method and who took it) with no check at all, and GET /tabs
+    hands out the ids. The restriction over there was decorative while this door
+    stood open beside it.
+
+    Front desk and above may open any tab, because settling other people's
+    accounts is their job. Below that, only a tab you are working: assigned to
+    you, or opened by you. Waiters legitimately need their own tables, which is
+    why this is an is-mine rule rather than a level gate.
+    """
+    actor = db.session.get(User, get_jwt_identity())
     tab = db.session.get(Tab, tab_id)
     if not tab:
         return jsonify({"error": "Tab not found."}), 404
+
+    if actor.role.level < FRONT_DESK_LEVEL:
+        is_mine = (tab.assigned_to_id == actor.id) or (tab.opened_by_id == actor.id)
+        if not is_mine:
+            return jsonify({
+                "error": "You can only open a table you are serving. "
+                         "Ask front desk or a manager for anything else."
+            }), 403
 
     balance = get_tab_balance(tab_id)
 
@@ -233,6 +261,22 @@ def close_tab(tab_id):
         tab.closed_at_utc = datetime.now(timezone.utc)
         tab.closed_by_id  = actor.id
 
+        # A settled band is a guest who has left. Nothing linked the two, so a
+        # wristband stayed ACTIVE after its account was closed and paid — it
+        # still appeared in /gate/active-bands, still counted toward headcount,
+        # and the EOD forfeit sweep would process an account that owed nothing.
+        # Closing the account is the moment the band stops being live.
+        if tab.tab_type == TabType.BAND.value:
+            from app.models.wristband import Wristband, WristbandStatus
+            band = db.session.query(Wristband).filter_by(
+                tab_id=tab.id, status=WristbandStatus.ACTIVE.value
+            ).first()
+            if band:
+                band.status = WristbandStatus.DEACTIVATED.value
+                AuditLog.log(actor=actor.username, action="gate.band.deactivate",
+                             target=str(band.band_number),
+                             details="account settled and closed")
+
     AuditLog.log(actor=actor.username, action="tab.close", target=tab_id)
     db.session.commit()
     return jsonify({"id": tab.id, "status": tab.status}), 200
@@ -270,3 +314,89 @@ def recent_references():
         if len(out) >= 40:
             break
     return jsonify(out), 200
+
+
+@tabs_bp.get("/by-room/<path:room>")
+@require_active_user
+def tab_by_room(room):
+    """Find the open villa account for a room, and say who may charge to it.
+
+    A wristband has had a lookup since Chunk 7 — GET /gate/bands/<number>, scan
+    and go. A villa had nothing, so a guest saying "put it on Villa 6" left the
+    waiter scrolling every open villa tab on the property, matching on a text
+    reference. That is slow at a busy bar and it is guesswork.
+
+    It returns the register with the tab on purpose. The tab alone answers
+    "where does this go"; only the register answers "should it", and those two
+    questions are asked in the same breath by the same person.
+    """
+    from app.models.booking import Booking
+    from app.models.booking_occupant import BookingOccupant
+
+    # Matching must never be "close enough". A substring search for "Villa 1"
+    # also matches Villa 14 and Villa 15, and .first() would silently pick one —
+    # so a waiter typing a real room number could charge a different guest's
+    # account. References are stored as "<resource> / <guest>", so an exact
+    # match on the part before the slash is the only unambiguous answer.
+    needle = room.strip().lower()
+    candidates = (
+        db.session.query(Tab)
+        .filter(Tab.tab_type == TabType.VILLA.value,
+                Tab.status == TabStatus.OPEN.value,
+                Tab.reference.ilike(f"%{needle}%"))
+        .all()
+    )
+
+    def room_part(ref: str) -> str:
+        return (ref or "").split("/")[0].strip().lower()
+
+    exact = [t for t in candidates if room_part(t.reference) == needle]
+
+    if len(exact) == 1:
+        tab = exact[0]
+    elif len(exact) > 1:
+        # Two open accounts for one room should not happen, but if it does, the
+        # POS must not guess which one the drink belongs to.
+        return jsonify({
+            "error": f"More than one open account for '{room}'. Ask front desk.",
+            "candidates": [{"tab_id": t.id, "reference": t.reference} for t in exact],
+        }), 409
+    elif len(candidates) == 1:
+        tab = candidates[0]
+    elif len(candidates) > 1:
+        # "Villa 1" typed, "Villa 1" / "Villa 14" / "Villa 15" all open. Hand
+        # back the list and let the person choose rather than pick for them.
+        return jsonify({
+            "error": f"'{room}' matches more than one room. Pick the exact one.",
+            "candidates": [{"tab_id": t.id, "reference": t.reference} for t in candidates],
+        }), 409
+    else:
+        return jsonify({
+            "error": f"No open villa account matches '{room}'. "
+                     f"Check the room number, or the guest may not be checked in yet."
+        }), 404
+
+    booking = db.session.query(Booking).filter_by(tab_id=tab.id).first()
+    occupants = []
+    if booking:
+        occupants = db.session.query(BookingOccupant).filter_by(
+            booking_id=booking.id, checked_out_utc=None
+        ).all()
+
+    return jsonify({
+        "tab_id":    tab.id,
+        "reference": tab.reference,
+        "balance":   str(get_tab_balance(tab.id)),
+        "booking_id": booking.id if booking else None,
+        # The lead guest is liable for the bill, so they may always charge.
+        "lead_guest": booking.guest_name if booking else None,
+        # Everyone else must have been granted it deliberately at check-in.
+        "may_charge": (
+            ([booking.guest_name] if booking else [])
+            + [o.full_name for o in occupants if o.may_charge]
+        ),
+        "also_staying": [o.full_name for o in occupants if not o.may_charge],
+        "unnamed_count": max(
+            0, (booking.number_of_guests or 1) - 1 - len(occupants)
+        ) if booking else 0,
+    }), 200

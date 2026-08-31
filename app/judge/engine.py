@@ -391,6 +391,63 @@ def _check_ghost_tickets(period_start: datetime, period_end: datetime) -> int:
     return alerts_fired
 
 
+def _check_borrowed_accounts(period_start: datetime, period_end: datetime) -> int:
+    """A manager reset a subordinate's password, and that account then traded.
+
+    THE HOLE THIS WATCHES. A manager may reset any subordinate's password —
+    they have to, people forget them. But the API accepts password login, and a
+    PIN only guards the station's login SCREEN, not the endpoints under it. So
+    a manager who resets a waiter's password can sign in as that waiter, sell,
+    take cash, and every charge lands on the waiter's name.
+
+    It cannot be forbidden without breaking real password resets, so it is
+    watched instead. A reset is ordinary. A reset followed within hours by that
+    account taking money is a pattern worth a human looking at — which is
+    exactly what this engine is for.
+
+    This does NOT accuse anyone. It says: these two things happened close
+    together, go and check. The reset is on the hash-chained audit log and
+    cannot be removed after the fact.
+    """
+    from app.models.payment import Payment
+    from app.models.user import User
+
+    resets = db.session.query(AuditLog).filter(
+        AuditLog.action == "user.password_reset",
+        AuditLog.timestamp >= period_start,
+        AuditLog.timestamp < period_end,
+    ).all()
+
+    fired = 0
+    for reset in resets:
+        target_username = reset.target
+        if not target_username or target_username == reset.actor:
+            continue   # resetting your own password is not this pattern
+
+        target = db.session.query(User).filter_by(username=target_username).first()
+        if not target:
+            continue
+
+        # Money taken ON that account AFTER the reset, inside the period.
+        took = db.session.query(Payment).filter(
+            Payment.received_by_id == target.id,
+            Payment.created_at_utc >= reset.timestamp,
+            Payment.created_at_utc < period_end,
+        ).all()
+        if not took:
+            continue
+
+        total = sum((p.amount for p in took), Decimal("0"))
+        desc = (f"{target_username}: password reset by {reset.actor}, then "
+                f"{len(took)} payment(s) totalling {total} were taken on that "
+                f"account. Confirm {target_username} was the person working.")
+        _fire_alert(None, "BORROWED_ACCOUNT", AlertSeverity.HIGH,
+                    desc, period_start, period_end)
+        fired += 1
+
+    return fired
+
+
 def run_daily(date: datetime) -> int:
     """
     Daily job: watch-list items + spoilage spike + portion variance + ghost tickets.
@@ -423,6 +480,9 @@ def run_daily(date: datetime) -> int:
 
     # Ghost tickets: food made then cancelled — possible theft
     alerts_fired += _check_ghost_tickets(period_start, period_end)
+
+    # Borrowed accounts: password reset, then that account took money
+    alerts_fired += _check_borrowed_accounts(period_start, period_end)
 
     if alerts_fired:
         db.session.flush()
