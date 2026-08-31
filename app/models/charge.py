@@ -48,6 +48,18 @@ class Charge(db.Model):
         default=lambda: datetime.now(timezone.utc),
     )
 
+    # ── Idempotency (invariant 4: every write carries one) ────────────────────
+    # Charges written from an endpoint a person can double-tap need this. The
+    # water-session charge had no key and no column, so a double-tapped
+    # "Add jetski" on a tablet with a slow connection posted the charge twice
+    # and billed the guest for two rides they took once.
+    #
+    # NULLABLE because most charges do not come from a tap: an order item's
+    # charge is already guarded by the order's own key, and a reversal mirrors
+    # an existing row. UNIQUE still holds across the rows that do set it —
+    # NULLs do not collide in either SQLite or PostgreSQL.
+    idempotency_key = db.Column(db.String(64), nullable=True, unique=True)
+
     tab        = db.relationship("Tab",       lazy="select")
     order_item = db.relationship("OrderItem", lazy="select")
     created_by = db.relationship("User",      foreign_keys=[created_by_id], lazy="select")

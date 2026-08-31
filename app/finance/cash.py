@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
+from app.utils.money import parse_amount, parse_quantity
 from app.extensions import db
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile
@@ -83,14 +84,11 @@ def reconcile_cash():
     staff = db.session.get(User, staff_id)
     if not staff:
         return jsonify({"error": "Staff member not found."}), 404
-    if raw_amt is None:
-        return jsonify({"error": "actual_amount is required."}), 400
-    try:
-        actual = Decimal(str(raw_amt))
-    except InvalidOperation:
-        return jsonify({"error": "actual_amount must be a number."}), 400
-    if actual < Decimal("0"):
-        return jsonify({"error": "actual_amount cannot be negative."}), 400
+    # A cash count of zero is a real answer — the drawer was empty — so zero is
+    # allowed here where a payment of zero is not.
+    actual, err = parse_amount(raw_amt, "actual_amount", allow_zero=True)
+    if err:
+        return jsonify({"error": err}), 400
 
     # Idempotency
     existing = db.session.query(CashReconciliation).filter_by(idempotency_key=idem_key).first()

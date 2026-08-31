@@ -759,7 +759,11 @@ def test_water_session_refuses_a_negative_amount_regression(client, manager_toke
                      json={"amount": "-14000", "description": "adjustment"},
                      headers=auth(manager_token))
     assert rv.status_code == 400
-    assert "positive amount" in rv.get_json()["error"]
+    # Names the actual fault rather than one vague word — the guard now tells
+    # negative apart from zero and from NaN (app/utils/money.py).
+    err = rv.get_json()["error"]
+    assert "cannot be negative" in err, err
+    assert "reverse the original" in err, "must also say how to correct it"
 
     # Nothing was written: same balance, still only the deposit payment.
     balance = client.get(f"/tabs/{tab_id}", headers=auth(manager_token)).get_json()["balance"]

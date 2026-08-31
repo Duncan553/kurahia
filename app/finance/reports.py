@@ -12,6 +12,7 @@ from sqlalchemy import func
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
+from app.utils.money import parse_amount, parse_quantity
 from app.extensions import db
 from app.models.user import User
 from app.models.payment import Payment, PaymentMethod
@@ -231,14 +232,10 @@ def close_period():
         period_start, period_end = parse_date_bounds(date_str)
     except ValueError:
         return jsonify({"error": "Invalid date. Use YYYY-MM-DD."}), 400
-    if raw_safe is None:
-        return jsonify({"error": "safe_count is required."}), 400
-    try:
-        safe_count = Decimal(str(raw_safe))
-    except InvalidOperation:
-        return jsonify({"error": "safe_count must be a number."}), 400
-    if safe_count < Decimal("0"):
-        return jsonify({"error": "safe_count cannot be negative."}), 400
+    # An empty safe counts as zero, not as a missing answer.
+    safe_count, err = parse_amount(raw_safe, "safe_count", allow_zero=True)
+    if err:
+        return jsonify({"error": err}), 400
 
     # Idempotency
     existing = db.session.query(PeriodClose).filter_by(idempotency_key=idem_key).first()
