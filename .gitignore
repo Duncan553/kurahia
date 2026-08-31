@@ -26,3 +26,12 @@ tests/playwright/sweep-results/
 tests/playwright/screenshots/
 playwright-report/
 test-results/
+
+# Working documents — kept on disk, not in the repo.
+# One-off audits, session logs, research notes and the Ivy Document's 15MB of
+# screenshots. They are useful locally and were noise in the history: 121 files
+# nobody reads from GitHub. Untracked with `git rm --cached`, so every file is
+# still sitting in docs/ on this machine.
+#
+# To bring one back: git add -f docs/THE_FILE.md
+docs/
