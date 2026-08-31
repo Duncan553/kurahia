@@ -269,6 +269,15 @@ def scenario_permissions(app, desks):
                                   "idempotency_key": str(uuid.uuid4())})
     expect(r.status_code == 201, s, "head chef may add a juice")
 
+    # Retire it again — same rule as the test villa above (invariant 6: disable,
+    # never delete). Without this the driver leaves a permanent junk item on the
+    # menu EVERY run: 16 dead "Juice XXXXX" rows had already accumulated, which
+    # is the sort of litter that turns a real menu into a guessing game on the
+    # day real data goes in.
+    if r.status_code == 201:
+        expect(chef.post(f"/menu/items/{r.get_json()['id']}/disable").status_code == 200,
+               s, "the test juice is retired, not left on the menu")
+
     r = chef.post("/menu/items", {"name": uniq("Cocktail"), "price": "900", "category": "Cocktails",
                                   "prep_station": "BAR", "department_id": dept.id,
                                   "is_alcoholic": True, "idempotency_key": str(uuid.uuid4())})
