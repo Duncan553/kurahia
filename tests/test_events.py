@@ -662,3 +662,26 @@ class TestAssignments:
         with app.app_context():
             count = db.session.query(Notification).filter_by(reference_id=eid).count()
         assert count == 4
+
+
+def test_two_hour_alert_is_deliverable_within_a_quarter_hour(app):
+    """The 2-hour and 'tomorrow' tiers only work if delivery runs often.
+
+    ALERT_OFFSETS promises a warning 2 hours before an event. That warning is
+    queued for start-2h and sits QUEUED until `flask events deliver-due` runs.
+    While that cron was daily (DEPLOY.md), the alert could be delivered up to
+    24h late — i.e. after the event was over. This pins the requirement so the
+    schedule cannot silently regress: the tightest offset must be much larger
+    than the delivery interval.
+    """
+    from datetime import timedelta
+    from app.services.events import ALERT_OFFSETS
+
+    DELIVERY_INTERVAL = timedelta(minutes=15)   # */15 in DEPLOY.md
+    tightest = min(offset for offset, _label in ALERT_OFFSETS)
+
+    assert tightest > DELIVERY_INTERVAL * 4, (
+        f"Tightest alert is {tightest} but notifications are only dispatched every "
+        f"{DELIVERY_INTERVAL}. Either widen the offset or run deliver-due more often "
+        f"— otherwise that alert arrives after the event it was warning about."
+    )
