@@ -285,17 +285,38 @@ def manager_profile(app):
 
 @pytest.fixture
 def sample_shift(app, waiter_profile):
-    """A SCHEDULED shift for waiter_profile starting 1 hour from now."""
+    """A SCHEDULED shift for waiter_profile on TODAY'S business day.
+
+    It used to be flatly "now + 1 hour", which was a time bomb. The attendance
+    board lists shifts whose START falls inside today's business-day window, so
+    for the last hour before the rollover "now + 1 hour" landed in TOMORROW and
+    the shift disappeared off the board. Three attendance tests failed every
+    night for that one hour and passed the other twenty-three — the kind of red
+    that gets blamed on whatever was committed most recently.
+
+    Still upcoming when there is room for it, because "rostered but not yet
+    clocked in" is what absent_no_notice means. Pulled back inside the window
+    when there is not.
+    """
     import uuid
     from datetime import datetime, timezone, timedelta
     from app.models.shift import Shift, ShiftStatus
     from app.models.user import User
+    from app.services.business_day import business_day_bounds_today
+
     now = datetime.now(timezone.utc).replace(tzinfo=None)
+    _day_start, day_end = business_day_bounds_today()
+    day_end = day_end.replace(tzinfo=None)
+
+    start = now + timedelta(hours=1)
+    if start >= day_end:                 # too close to the rollover
+        start = now - timedelta(hours=1)  # already begun, still today
+
     creator = _db.session.query(User).filter_by(username="manager1").first()
     shift = Shift(
         employee_id=waiter_profile.id,
-        scheduled_start_utc=now + timedelta(hours=1),
-        scheduled_end_utc=now + timedelta(hours=9),
+        scheduled_start_utc=start,
+        scheduled_end_utc=start + timedelta(hours=8),
         status=ShiftStatus.SCHEDULED.value,
         created_by_id=creator.id,
         idempotency_key=str(uuid.uuid4()),

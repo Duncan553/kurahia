@@ -11,6 +11,7 @@ rows when activated — the manual flow is the day-one fallback.
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from app.utils.auth_decorators import require_active_user
+from app.services.payment_attach import attach_payment_to_tab
 from app.extensions import db
 from app.models.user import User
 from app.models.payment import Payment, PaymentMethod
@@ -110,6 +111,15 @@ def bank_reconcile():
             return jsonify({"error": f"Payment {payment_id} not found."}), 404
         if payment.method != PaymentMethod.BANK_TRANSFER.value:
             return jsonify({"error": f"Payment {payment_id} is not a bank transfer."}), 400
+
+        # Money that arrived on its own (C2B / bank SMS) has no tab. This is
+        # where a human says which bill it belongs to — see
+        # app/services/payment_attach.py for why it cannot be guessed.
+        want_tab = entry.get("tab_id")
+        if want_tab:
+            ok, why = attach_payment_to_tab(payment, want_tab)
+            if not ok:
+                return jsonify({"error": why}), 400
 
         recon = db.session.query(PaymentReconciliation).filter_by(
             payment_id=payment_id

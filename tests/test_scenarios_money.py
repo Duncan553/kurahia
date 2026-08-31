@@ -1272,3 +1272,121 @@ def test_a_deposit_is_counted_once_in_revenue_regression(
     deposits = [p for p in rows if Decimal(str(p.amount)) == Decimal("3000")]
     assert len(deposits) == 1, f"expected one 3,000 payment on the tab, got {len(deposits)}"
     assert deposits[0].method == "CASH"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Every payment point must be able to settle a room bill
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_every_role_can_take_a_payment_on_a_villa_tab(client, owner_token,
+                                                      villa_resource, app):
+    """The room bill must be settleable from ANY till, not just the front desk.
+
+    A guest checks out at the gate, or hands cash to whoever is at the counter.
+    If only one role could take that payment, the bill would be stuck whenever
+    that person was off shift.
+    """
+    from app.models.user import User
+    from app.extensions import db
+    from flask_jwt_extended import create_access_token
+
+    _bid, tab = checked_in_villa(client, owner_token, villa_resource,
+                                 phone="+254700900201")
+    refused = []
+    for username in ("grace.muthoni", "brian.mwangi", "peter.mwendwa",
+                     "david.otieno", "hassan.omondi"):
+        u = db.session.query(User).filter_by(username=username).first()
+        if not u:
+            continue
+        h = {"Authorization": f"Bearer {create_access_token(identity=u.id)}"}
+        client.post("/hr/clock-in", json={}, headers=h,
+                    environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        r = client.post(f"/tabs/{tab}/payments", json={"amount": "1", "method": "CASH"},
+                        headers=h, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        if r.status_code not in (200, 201):
+            refused.append(f"{username}: {r.status_code} {r.get_json()}")
+    assert not refused, "these tills cannot settle a room bill: " + "; ".join(refused)
+
+
+def test_a_bank_transfer_can_be_matched_to_the_room_bill(client, owner_token,
+                                                         villa_resource, app):
+    """WAS A HOLE: money that arrived on its own could never settle a bill.
+
+    M-Pesa C2B and the bank SMS forwarder write a Payment with tab_id=NULL —
+    an SMS cannot say whose money it is, and guessing would be worse than not
+    trying. But reconcile could only flip MATCHED/FLAGGED, never attach the
+    payment, so a guest who paid their villa by transfer still showed the full
+    room outstanding and was refused check-out while their money sat in the
+    ledger counting towards revenue.
+
+    Reconcile now takes an optional tab_id: the human who knows which guest
+    paid is the one who says so.
+    """
+    from app.extensions import db
+    from app.models.payment import Payment, PaymentMethod
+    from app.services.tab import get_tab_balance
+
+    _bid, tab = checked_in_villa(client, owner_token, villa_resource,
+                                 phone="+254700900202")
+    owed = get_tab_balance(tab)
+    assert owed > 0
+
+    # The forwarder's write: real money, no idea whose.
+    p = Payment(method=PaymentMethod.BANK_TRANSFER.value, amount=owed,
+                bank_ref=f"FT{uuid.uuid4().hex[:8].upper()}", received_by_id=None,
+                idempotency_key=f"banksms-{uuid.uuid4().hex[:10]}",
+                description="Auto-received via SMS forwarder")
+    db.session.add(p)
+    db.session.commit()
+    assert p.tab_id is None
+    assert get_tab_balance(tab) == owed, "an unattached payment must not move a bill"
+
+    r = client.post("/finance/bank/reconcile", json={"entries": [
+        {"payment_id": p.id, "action": "MATCH", "tab_id": tab,
+         "statement_ref": p.bank_ref}]}, headers=auth(owner_token))
+    assert r.status_code == 200, r.get_data(as_text=True)
+
+    db.session.refresh(p)
+    assert p.tab_id == tab
+    assert get_tab_balance(tab) == Decimal("0"), "matching must settle the bill"
+
+
+def test_a_matched_payment_is_never_stolen_from_another_bill(client, owner_token,
+                                                             villa_resource, app):
+    """Attaching fills a NULL. It must never MOVE money already on a bill —
+    that would silently change two balances, and whoever reads the second one
+    has no way of knowing why it moved."""
+    from app.extensions import db
+    from app.models.payment import Payment, PaymentMethod
+    from app.models.bookable_resource import BookableResource, ResourceType
+    from app.services.tab import get_tab_balance
+
+    # Two GUESTS need two VILLAS — one villa refuses a second booking over the
+    # same nights, which is the double-booking guard doing its job.
+    second = BookableResource(name="Scenario Villa B", capacity=4,
+                              resource_type=ResourceType.VILLA.value,
+                              base_price="10000")
+    db.session.add(second)
+    db.session.commit()
+
+    _b1, tab_a = checked_in_villa(client, owner_token, villa_resource,
+                                  phone="+254700900203")
+    _b2, tab_b = checked_in_villa(client, owner_token, second,
+                                  phone="+254700900204")
+    p = Payment(tab_id=tab_a, method=PaymentMethod.BANK_TRANSFER.value, amount="500",
+                bank_ref=f"FT{uuid.uuid4().hex[:8].upper()}", received_by_id=None,
+                idempotency_key=f"banksms-{uuid.uuid4().hex[:10]}")
+    db.session.add(p)
+    db.session.commit()
+    before_a, before_b = get_tab_balance(tab_a), get_tab_balance(tab_b)
+
+    r = client.post("/finance/bank/reconcile", json={"entries": [
+        {"payment_id": p.id, "action": "MATCH", "tab_id": tab_b}]},
+        headers=auth(owner_token))
+    assert r.status_code == 400
+    assert "already settled against another bill" in r.get_json()["error"]
+
+    db.session.refresh(p)
+    assert p.tab_id == tab_a
+    assert get_tab_balance(tab_a) == before_a
+    assert get_tab_balance(tab_b) == before_b
