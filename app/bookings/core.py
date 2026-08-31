@@ -479,6 +479,27 @@ def book_water_session(booking_id):
     except Exception:
         return jsonify({"error": "amount must be a number."}), 400
 
+    # A charge may not be negative. models/charge.py states the invariant
+    # outright: "No API accepts an arbitrary negative amount — that would be the
+    # skim vector the judge watches." This endpoint took the amount straight
+    # from the request body and only checked that it parsed, so a single call
+    # with {"amount": "-14000"} wiped a guest's outstanding balance to zero —
+    # with NO Payment row written, so cash reconciliation saw nothing missing
+    # and check-out then succeeded. Reachable at front-desk level: an insider
+    # vector, which is exactly the kind this system exists to close.
+    #
+    # Corrections go through the reversal path, which mirrors an EXISTING charge
+    # and keeps its tax_rate_snapshot. They are never free-typed.
+    #
+    # is_finite() comes FIRST because Decimal('NaN') <= 0 does not return False,
+    # it raises InvalidOperation — an unhandled 500 instead of a plain-English
+    # 400. Same order as app/pos/payments.py:43, which had it right already.
+    if not amount.is_finite() or amount <= 0:
+        return jsonify({
+            "error": "A session charge must be a positive amount. "
+                     "To correct or refund a charge, reverse the original."
+        }), 400
+
     # Band-tab credit ceiling: block if this charge would exceed 2× the entry fee
     ok, credit_err = check_band_credit(booking.tab_id, amount)
     if not ok:
@@ -497,3 +518,127 @@ def book_water_session(booking_id):
                  target=booking_id, details=f"amount={amount}")
     db.session.commit()
     return jsonify({"charge_id": charge.id, "amount": str(amount)}), 201
+
+
+# ── Occupants: who else is actually in the villa ─────────────────────────────
+#
+# Booking stores one name and number_of_guests as an integer, so five of the six
+# people in Villa 6 existed only as part of that number. These endpoints give
+# them names, and give front desk a way to answer "may this person charge here?"
+
+from app.models.booking_occupant import BookingOccupant
+
+
+def _occupant_dict(o: BookingOccupant) -> dict:
+    return {
+        "id":         o.id,
+        "full_name":  o.full_name,
+        "id_number":  o.id_number,
+        "phone":      o.phone,
+        "is_adult":   o.is_adult,
+        "may_charge": o.may_charge,
+        "checked_out_utc": o.checked_out_utc.isoformat() if o.checked_out_utc else None,
+    }
+
+
+@bookings_bp.get("/<booking_id>/occupants")
+@require_active_user
+def list_occupants(booking_id):
+    """Everyone on file for this booking. Any staff member serving the guest may
+    read this — it is how a waiter checks whether the person at the bar is
+    entitled to charge the villa."""
+    booking = db.session.get(Booking, booking_id)
+    if not booking:
+        return jsonify({"error": "Booking not found."}), 404
+    rows = db.session.query(BookingOccupant).filter_by(booking_id=booking_id).all()
+    return jsonify({
+        "booking_id":       booking.id,
+        "lead_guest":       booking.guest_name,
+        "lead_id_number":   booking.guest_id_number,
+        "number_of_guests": booking.number_of_guests,
+        "occupants":        [_occupant_dict(o) for o in rows],
+        # The number on the booking vs the names actually recorded. Front desk
+        # can see at a glance that four people are unaccounted for.
+        "unnamed_count":    max(0, (booking.number_of_guests or 1) - 1 - len(rows)),
+    }), 200
+
+
+@bookings_bp.post("/<booking_id>/occupants")
+@require_active_user
+def add_occupant(booking_id):
+    """Record a companion. Front desk and above — this is check-in work."""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < FRONT_DESK_LEVEL:
+        return jsonify({"error": "Front desk or above required to register a guest."}), 403
+
+    booking = db.session.get(Booking, booking_id)
+    if not booking:
+        return jsonify({"error": "Booking not found."}), 404
+
+    data = request.get_json(silent=True) or {}
+    full_name = (data.get("full_name") or "").strip()
+    if not full_name:
+        return jsonify({"error": "A name is required — that is the point of the register."}), 400
+
+    # Guard against listing more people than the villa was booked for. The
+    # capacity check on the booking already happened; this keeps the register
+    # honest against it rather than silently exceeding it.
+    already = db.session.query(BookingOccupant).filter_by(booking_id=booking_id).count()
+    if already + 1 >= (booking.number_of_guests or 1) + 1:
+        return jsonify({
+            "error": f"This booking is for {booking.number_of_guests} guest(s), "
+                     f"including {booking.guest_name}. Raise the guest count on the "
+                     f"booking before adding more people."
+        }), 400
+
+    occupant = BookingOccupant(
+        booking_id=booking_id,
+        full_name=full_name,
+        id_number=(data.get("id_number") or "").strip() or None,
+        phone=(data.get("phone") or "").strip() or None,
+        is_adult=bool(data.get("is_adult", True)),
+        may_charge=bool(data.get("may_charge", False)),
+    )
+    db.session.add(occupant)
+    db.session.flush()
+    AuditLog.log(actor=actor.username, action="booking.occupant.add",
+                 target=booking_id, details=f"{full_name}"
+                 + (" (may charge)" if occupant.may_charge else ""))
+    db.session.commit()
+    return jsonify(_occupant_dict(occupant)), 201
+
+
+@bookings_bp.patch("/<booking_id>/occupants/<occupant_id>")
+@require_active_user
+def edit_occupant(booking_id, occupant_id):
+    """Correct a name, add an ID that was fetched from the car, or grant/revoke
+    charging rights. Charging rights are the sensitive part, so they are logged
+    explicitly rather than as a generic edit."""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < FRONT_DESK_LEVEL:
+        return jsonify({"error": "Front desk or above required."}), 403
+
+    o = db.session.get(BookingOccupant, occupant_id)
+    if not o or o.booking_id != booking_id:
+        return jsonify({"error": "Occupant not found on this booking."}), 404
+
+    data = request.get_json(silent=True) or {}
+    changes = []
+    if "full_name" in data and data["full_name"].strip():
+        changes.append(f"name {o.full_name!r} -> {data['full_name'].strip()!r}")
+        o.full_name = data["full_name"].strip()
+    if "id_number" in data:
+        o.id_number = (data["id_number"] or "").strip() or None
+        changes.append("id_number recorded" if o.id_number else "id_number cleared")
+    if "phone" in data:
+        o.phone = (data["phone"] or "").strip() or None
+    if "may_charge" in data:
+        new_val = bool(data["may_charge"])
+        if new_val != o.may_charge:
+            changes.append(f"may_charge {o.may_charge} -> {new_val}")
+        o.may_charge = new_val
+
+    AuditLog.log(actor=actor.username, action="booking.occupant.edit",
+                 target=occupant_id, details="; ".join(changes) or "no effective change")
+    db.session.commit()
+    return jsonify(_occupant_dict(o)), 200
