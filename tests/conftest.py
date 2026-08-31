@@ -120,7 +120,19 @@ def _seed_test_db(app):
     waiter.set_password("WaiterPass1!")
     waiter.set_pin("5555")
 
-    _db.session.add_all([owner, manager, staff, kitchen_staff, waiter])
+    # Head chef — authors the food and the juices. Role NAME matters here:
+    # menu.py gates on MENU_AUTHOR_ROLES = {"head_chef"}, not on level, because
+    # front_desk and gate_lead share level 3 and must not price the menu.
+    chef_role = _db.session.query(Role).filter_by(name="head_chef").first()
+    if not chef_role:
+        chef_role = Role(name="head_chef", level=3)
+        _db.session.add(chef_role)
+        _db.session.flush()
+    chef = User(username="chef1", role_id=chef_role.id, department_id=kitchen_dept.id)
+    chef.set_password("ChefPass1!")
+    chef.set_pin("6666")
+
+    _db.session.add_all([owner, manager, staff, kitchen_staff, waiter, chef])
     _db.session.flush()
 
     # Seed representative menu items
@@ -199,6 +211,14 @@ def kitchen_token(client):
     rv = client.post("/auth/login", json={"username": "kitchen1", "password": "KitchenPass1!"})
     token = rv.get_json()["access_token"]
     _clock_in(_get_or_create_profile("kitchen1", "Test Kitchen", "+254700000003"))
+    return token
+
+
+@pytest.fixture
+def chef_token(client):
+    rv = client.post("/auth/login", json={"username": "chef1", "password": "ChefPass1!"})
+    token = rv.get_json()["access_token"]
+    _clock_in(_get_or_create_profile("chef1", "Test Chef", "+254700000006"))
     return token
 
 

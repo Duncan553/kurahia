@@ -456,3 +456,317 @@ def test_send_back_reverses_charge_too(client, waiter_token, manager_token, food
                      headers={"Authorization": f"Bearer {manager_token}"})
     assert rv.status_code == 200
     assert client.get(f"/tabs/{tab_id}", headers=wh).get_json()["balance"] == "0.00"
+
+
+# ── Menu station scoping ──────────────────────────────────────────────────────
+# A station tablet must only ever receive the catalogue it serves. Before this,
+# GET /menu/items shipped every row — spa treatments, villa charges, jet ski
+# hire — to every POS device, and the station apps filtered client-side.
+
+def test_menu_scopes_to_one_station(client, waiter_token, food_item_id, drink_item_id, service_item_id):
+    """?station=KITCHEN returns kitchen items only — no drinks, no services."""
+    rv = client.get("/menu/items?station=KITCHEN",
+                    headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code == 200
+    ids = {i["id"] for i in rv.get_json()}
+    assert food_item_id in ids
+    assert drink_item_id not in ids
+    assert service_item_id not in ids
+
+
+def test_menu_scopes_to_several_stations(client, waiter_token, food_item_id, drink_item_id, service_item_id):
+    """A waiter takes food AND drink, so their screen asks for both — and still
+    must not see the spa/pool catalogue a manager sells."""
+    rv = client.get("/menu/items?station=KITCHEN,BAR",
+                    headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code == 200
+    ids = {i["id"] for i in rv.get_json()}
+    assert {food_item_id, drink_item_id} <= ids
+    assert service_item_id not in ids
+
+
+def test_menu_without_station_is_unchanged(client, waiter_token, food_item_id, service_item_id):
+    """No station param = the full catalogue, exactly as before. The owner's
+    menu-management screens depend on this."""
+    rv = client.get("/menu/items", headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code == 200
+    ids = {i["id"] for i in rv.get_json()}
+    assert {food_item_id, service_item_id} <= ids
+
+
+def test_menu_rejects_unknown_station_in_plain_english(client, waiter_token):
+    """Invariant 5: every error carries a message a human can act on."""
+    rv = client.get("/menu/items?station=PIZZA_OVEN",
+                    headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code == 400
+    assert "PIZZA_OVEN" in rv.get_json()["error"]
+    assert "KITCHEN" in rv.get_json()["error"]
+
+
+# ── Menu authoring: chef owns the food and the juices, not the liquor ─────────
+
+def test_chef_can_create_a_juice(client, chef_token, general_dept_id):
+    """Non-alcoholic bar item — squeezed to a recipe like a dish is plated to one."""
+    rv = client.post("/menu/items", json={
+        "name": "Passion Juice", "price": "400", "category": "Soft Drinks",
+        "prep_station": "BAR", "department_id": general_dept_id,
+    }, headers={"Authorization": f"Bearer {chef_token}"})
+    assert rv.status_code == 201, rv.get_json()
+
+
+def test_chef_cannot_create_alcohol(client, chef_token, general_dept_id):
+    """Beer, wine and cocktails are a licensed list a manager signs for."""
+    rv = client.post("/menu/items", json={
+        "name": "House Negroni", "price": "900", "category": "Cocktails",
+        "prep_station": "BAR", "department_id": general_dept_id,
+        "is_alcoholic": True,
+    }, headers={"Authorization": f"Bearer {chef_token}"})
+    assert rv.status_code == 403
+    assert "manager" in rv.get_json()["error"].lower()
+
+
+def test_chef_cannot_reprice_existing_alcohol(client, chef_token, manager_token, general_dept_id):
+    """The gate reads the STORED flag, not just what the request claims."""
+    made = client.post("/menu/items", json={
+        "name": "Reserve Whisky", "price": "1200", "category": "Spirits",
+        "prep_station": "BAR", "department_id": general_dept_id, "is_alcoholic": True,
+    }, headers={"Authorization": f"Bearer {manager_token}"})
+    assert made.status_code == 201
+    item_id = made.get_json()["id"]
+
+    rv = client.patch(f"/menu/items/{item_id}", json={"price": "200"},
+                      headers={"Authorization": f"Bearer {chef_token}"})
+    assert rv.status_code == 403
+
+
+def test_chef_cannot_relabel_a_dish_into_a_drink(client, chef_token, food_item_id):
+    """Closing the back door: setting is_alcoholic is itself a manager action."""
+    rv = client.patch(f"/menu/items/{food_item_id}", json={"is_alcoholic": True},
+                      headers={"Authorization": f"Bearer {chef_token}"})
+    assert rv.status_code == 403
+
+
+# ── Receipt visibility ────────────────────────────────────────────────────────
+# GET /receipts (search) required front desk; GET /receipts/:id (the full bill)
+# required nothing. The search returns one summary line per tab; the detail
+# returns every item consumed, every payment method and every M-Pesa code.
+# The weaker gate was on the stronger data.
+
+def test_waiter_can_open_their_own_tabs_bill(client, waiter_token, food_item_id):
+    """A waiter closing their own table needs the bill."""
+    tab_id = _open_tab(client, waiter_token)
+    rv = client.get(f"/receipts/{tab_id}", headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code == 200
+    assert rv.get_json()["tab_id"] == tab_id
+
+
+def test_waiter_cannot_open_someone_elses_bill(client, waiter_token, manager_token):
+    """A tab opened by someone else is not theirs to read."""
+    other_tab = _open_tab(client, manager_token, reference="Villa 2 / Guest")
+    rv = client.get(f"/receipts/{other_tab}", headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code == 403
+    assert "serving" in rv.get_json()["error"].lower()
+
+
+def test_front_desk_can_open_any_bill(client, manager_token, waiter_token):
+    """Settling other people's accounts is the job — a villa folio at check-out
+    is never a tab front desk opened themselves."""
+    waiters_tab = _open_tab(client, waiter_token)
+    rv = client.get(f"/receipts/{waiters_tab}", headers={"Authorization": f"Bearer {manager_token}"})
+    assert rv.status_code == 200
+
+
+# ── Credential seizure: manager resets a password, then trades on the account ──
+#
+# A manager may reset any subordinate's password — people forget them. But the
+# API accepts password login, and a PIN only guards the station's login SCREEN,
+# not the endpoints under it. So the reset is enough to act as that person, and
+# every charge lands on their name. It cannot be forbidden; it is made loud.
+
+def test_password_reset_is_logged_as_its_own_action(client, owner_token, app):
+    """It used to log action='user.edit' with no details — indistinguishable
+    from a department change. A tilapia's price was better audited."""
+    from app.extensions import db as _db
+    from app.models.user import User
+    from app.models.audit_log import AuditLog
+
+    with app.app_context():
+        waiter = _db.session.query(User).filter_by(username="waiter1").first()
+        waiter_id = waiter.id
+
+    rv = client.patch(f"/auth/users/{waiter_id}", json={"password": "TempPass123!"},
+                      headers={"Authorization": f"Bearer {owner_token}"})
+    assert rv.status_code == 200
+
+    with app.app_context():
+        entry = _db.session.query(AuditLog).filter_by(action="user.password_reset").first()
+        assert entry is not None, "a password reset must be its own audit action"
+        assert "PASSWORD RESET" in (entry.details or "")
+        assert entry.target == "waiter1"
+        # The password itself must never reach the log.
+        assert "TempPass123!" not in (entry.details or "")
+
+
+def test_password_reset_notifies_the_owner(client, owner_token, app):
+    """menu.py pings the owner when a price moves. Seizing a colleague's
+    credentials warrants at least the same."""
+    from app.extensions import db as _db
+    from app.models.user import User
+    from app.models.notification import Notification
+
+    with app.app_context():
+        waiter = _db.session.query(User).filter_by(username="waiter1").first()
+        waiter_id = waiter.id
+
+    client.patch(f"/auth/users/{waiter_id}", json={"password": "TempPass123!"},
+                 headers={"Authorization": f"Bearer {owner_token}"})
+
+    with app.app_context():
+        note = _db.session.query(Notification).filter(
+            Notification.subject.like("Password reset%")
+        ).first()
+        assert note is not None, "the owner must be told a password was reset"
+        assert "waiter1" in note.body
+        assert "TempPass123!" not in note.body
+
+
+def test_department_change_is_not_flagged_as_a_reset(client, owner_token, app, general_dept_id):
+    """The point is to tell the two APART — a routine edit must stay routine."""
+    from app.extensions import db as _db
+    from app.models.user import User
+    from app.models.audit_log import AuditLog
+
+    with app.app_context():
+        waiter = _db.session.query(User).filter_by(username="waiter1").first()
+        waiter_id = waiter.id
+
+    rv = client.patch(f"/auth/users/{waiter_id}", json={"department_id": general_dept_id},
+                      headers={"Authorization": f"Bearer {owner_token}"})
+    assert rv.status_code == 200
+
+    with app.app_context():
+        assert _db.session.query(AuditLog).filter_by(action="user.password_reset").count() == 0
+        edit = _db.session.query(AuditLog).filter_by(action="user.edit").first()
+        assert edit is not None and "department" in (edit.details or "")
+
+
+def test_bank_transfer_reference_is_stored(client, owner_token, food_item_id, app):
+    """Payment.bank_ref was a column nothing wrote to, so a bank transfer's
+    reference vanished — and it is the only handle /finance/bank/reconcile has
+    to match that payment to a statement line."""
+    from app.extensions import db as _db
+    from app.models.payment import Payment
+
+    tab_id = _open_tab(client, owner_token)
+    rv = client.post(f"/tabs/{tab_id}/payments", json={
+        "method": "BANK_TRANSFER", "amount": "500",
+        "bank_ref": "EQ-88231", "idempotency_key": str(uuid.uuid4()),
+    }, headers={"Authorization": f"Bearer {owner_token}"})
+    assert rv.status_code in (200, 201), rv.get_json()
+
+    with app.app_context():
+        p = _db.session.query(Payment).filter_by(tab_id=tab_id, method="BANK_TRANSFER").first()
+        assert p is not None
+        assert p.bank_ref == "EQ-88231", "bank reference must survive to reconciliation"
+
+
+# ── Charging to a room ────────────────────────────────────────────────────────
+
+def _open_villa_tab(app, reference: str) -> str:
+    """A VILLA tab, made directly. The endpoint filters on tab_type, and the
+    real path to one is booking -> deposit -> confirm -> check-in, which is a
+    different test's job."""
+    from app.extensions import db as _db
+    from app.models.tab import Tab, TabType, TabStatus
+    from app.models.user import User
+    with app.app_context():
+        owner = _db.session.query(User).filter_by(username="owner1").first()
+        tab = Tab(tab_type=TabType.VILLA.value, reference=reference,
+                  opened_by_id=owner.id, status=TabStatus.OPEN.value)
+        _db.session.add(tab)
+        _db.session.commit()
+        return tab.id
+
+
+def test_room_lookup_finds_the_villa_account(client, waiter_token, app):
+    """A wristband has had a lookup since Chunk 7; a villa had none, so
+    "put it on Villa 6" left the waiter scrolling every open villa tab."""
+    tab_id = _open_villa_tab(app, "Villa 7 / Test Guest")
+    rv = client.get("/tabs/by-room/Villa 7", headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code == 200, rv.get_json()
+    body = rv.get_json()
+    assert body["tab_id"] == tab_id
+    # The register travels with the tab: "where does this go" and "should it"
+    # are asked in the same breath by the same person.
+    assert "may_charge" in body
+
+
+def test_room_lookup_never_guesses_between_rooms(client, waiter_token, app):
+    """'Villa 3' substring-matches Villa 3 AND Villa 31. Picking one silently
+    would charge a different guest's account."""
+    _open_villa_tab(app, "Villa 3 / Guest A")
+    _open_villa_tab(app, "Villa 31 / Guest B")
+    rv = client.get("/tabs/by-room/Villa 3", headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code in (200, 409)
+    if rv.status_code == 200:
+        assert rv.get_json()["reference"].startswith("Villa 3 /"), "must not resolve to Villa 31"
+    else:
+        assert len(rv.get_json()["candidates"]) > 1
+
+
+def test_room_lookup_404s_for_an_unknown_room(client, waiter_token):
+    rv = client.get("/tabs/by-room/Villa 999", headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code == 404
+    assert "Villa 999" in rv.get_json()["error"]
+
+
+def test_bar_posted_waiter_can_still_take_orders(client, app, food_item_id, wifi_allowed):
+    """The prep-staff block gated on DEPARTMENT, so a waiter posted to the Bar
+    — an entirely normal posting — could not take a drinks order at the bar
+    they work at. A waiter is a waiter wherever they are standing."""
+    from app.extensions import db as _db
+    from app.models.user import User
+    from app.models.role import Role
+    from app.models.department import Department
+
+    with app.app_context():
+        role = _db.session.query(Role).filter_by(name="waiter").first()
+        if not role:
+            role = Role(name="waiter", level=1)
+            _db.session.add(role); _db.session.flush()
+        bar = _db.session.query(Department).filter_by(name="Bar").first()
+        if not bar:
+            bar = Department(name="Bar")
+            _db.session.add(bar); _db.session.flush()
+        u = _db.session.query(User).filter_by(username="barwaiter1").first()
+        if not u:
+            u = User(username="barwaiter1", role_id=role.id, department_id=bar.id)
+            u.set_password("BarPass1!")
+            _db.session.add(u)
+        else:
+            u.role_id, u.department_id = role.id, bar.id
+        _db.session.commit()
+
+    token = client.post("/auth/login", json={"username": "barwaiter1", "password": "BarPass1!"}) \
+                  .get_json()["access_token"]
+    # Clock in through the real endpoint — create_order is @require_clocked_in.
+    with app.app_context():
+        from app.models.employee_profile import EmployeeProfile
+        u = _db.session.query(User).filter_by(username="barwaiter1").first()
+        if not _db.session.query(EmployeeProfile).filter_by(user_id=u.id).first():
+            _db.session.add(EmployeeProfile(user_id=u.id, full_name="Bar Waiter",
+                                            phone="+254700000099"))
+            _db.session.commit()
+    client.post("/hr/clock-in", json={}, headers={"Authorization": f"Bearer {token}"},
+                environ_base={"REMOTE_ADDR": "127.0.0.1"})
+
+    rv = client.post("/tabs", json={"reference": "Bar stool 1", "idempotency_key": str(uuid.uuid4())},
+                     headers={"Authorization": f"Bearer {token}"})
+    assert rv.status_code in (200, 201), rv.get_json()
+
+    tab_id = rv.get_json()["id"]
+    rv = client.post("/orders", json={"tab_id": tab_id,
+                                      "items": [{"menu_item_id": food_item_id, "quantity": 1}],
+                                      "idempotency_key": str(uuid.uuid4())},
+                     headers={"Authorization": f"Bearer {token}"})
+    assert rv.status_code in (200, 201), rv.get_json()
