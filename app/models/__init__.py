@@ -31,6 +31,7 @@ from .absence_notice import AbsenceNotice, NoticeType
 from .wifi_allow_list import WiFiAllowList
 from .bookable_resource import BookableResource, ResourceType
 from .guest_record import GuestRecord
+from .booking_occupant import BookingOccupant
 from .booking import Booking, BookingStatus, VALID_BOOKING_TRANSITIONS
 from .booking_payment import BookingPayment, BookingPaymentPurpose
 from .waiver import Waiver, WaiverActivityType

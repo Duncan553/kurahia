@@ -10,7 +10,7 @@ from app.extensions import db
 from app.models.booking import Booking, BookingStatus, VALID_BOOKING_TRANSITIONS
 from app.models.bookable_resource import ResourceType
 from app.models.booking_payment import BookingPayment, BookingPaymentPurpose
-from app.models.payment import Payment, PaymentMethod
+from app.models.payment import Payment
 from app.models.tab import Tab, TabType, TabStatus
 from app.models.waiver import Waiver, WaiverActivityType
 from app.models.guest_record import GuestRecord
@@ -49,6 +49,38 @@ def check_resource_availability(resource_id: str, check_in: datetime, check_out:
         query = query.filter(Booking.id != exclude_booking_id)
 
     conflict = query.first()
+
+    # ── Anyone still physically in the room blocks it, whatever the calendar says.
+    #
+    # The overlap test above compares PLANNED dates. A guest who was due out on
+    # the 28th but has not checked out is CHECKED_IN with a planned check-out in
+    # the past, so they fall outside every future window and the villa reads as
+    # free. Front desk could then sell an occupied room — found live: Villa 4
+    # held two open accounts at once, PW Guest 96604 (due out 28 Aug, never
+    # checked out) and a new arrival.
+    #
+    # A room is free when the person has LEFT, not when the diary says they
+    # should have. Overstays are ordinary — late flights, extended stays — so
+    # this is not an edge case.
+    if not conflict:
+        conflict = (
+            db.session.query(Booking)
+            .filter(Booking.resource_id == resource_id,
+                    Booking.status == BookingStatus.CHECKED_IN.value,
+                    Booking.check_out_actual_utc.is_(None),
+                    Booking.check_out_planned_utc <= check_out)
+            .filter(Booking.id != exclude_booking_id if exclude_booking_id else True)
+            .first()
+        )
+        if conflict:
+            from app.models.bookable_resource import BookableResource
+            resource = db.session.get(BookableResource, resource_id)
+            name = resource.name if resource else resource_id
+            return False, (
+                f"{name} is still occupied — {conflict.guest_name} was due out on "
+                f"{conflict.check_out_planned_utc.strftime('%d %b %Y')} and has not "
+                f"checked out. Check them out first, or extend their booking."
+            )
     if conflict:
         fmt = "%d %b %Y"
         from app.models.bookable_resource import BookableResource
@@ -120,32 +152,121 @@ def get_deposit_total(booking_id: str) -> Decimal:
     return total
 
 
-def transfer_deposit_to_tab(booking: Booking, tab: Tab, actor_id: str) -> None:
+def transfer_deposit_to_tab(booking: Booking, tab: Tab, _actor_id: str) -> None:
     """
-    Creates a credit Payment on the villa tab for the total deposits collected.
-    Append-only: original BookingPayment records are unchanged.
-    """
-    total = get_deposit_total(booking.id)
-    if total <= Decimal("0"):
-        return
+    Attach the deposit the guest ALREADY paid to the villa tab, so it counts
+    against the room charge.
 
-    # A credit payment: the guest already paid this; it reduces the tab balance.
-    credit = Payment(
-        tab_id=tab.id,
-        amount=total,
-        method=PaymentMethod.CASH.value,   # generic — actual method is on the original Payment
-        description=f"Deposit transferred from booking {booking.id[:8]}",
-        received_by_id=actor_id,
-        idempotency_key=f"deposit-transfer-{booking.id}",
-    )
-    db.session.add(credit)
+    This does NOT create a new Payment. It re-points the existing deposit
+    Payment rows at the tab.
+
+    WHY (this used to be a real double-count). The deposit is collected at
+    booking time, before any tab exists, so its Payment lands with tab_id=NULL.
+    The old code then wrote a SECOND Payment for the same money to get it onto
+    the tab. Tab balance was right, but every revenue reader sums Payment rows
+    with no filter (app/services/finance.py:get_period_revenue_by_method, the
+    daily-summary PDF, app/finance/reports.py) — so one KSh 6,000 deposit was
+    reported as KSh 12,000 taken that day.
+
+    One movement of money, one row. No amount, method, or timestamp is ever
+    rewritten — only a foreign key that was NULL because the tab did not exist
+    yet. Balances stay derived; the ledger stays append-only where it counts.
+
+    Bonus: the real payment method (M-PESA, card) now survives onto the tab.
+    The old credit row hard-coded CASH, which quietly skewed revenue-by-method.
+    """
+    # The DEPOSIT BookingPayment rows for this booking, and the Payments behind them.
+    bps = db.session.query(BookingPayment).filter_by(
+        booking_id=booking.id,
+        purpose=BookingPaymentPurpose.DEPOSIT.value,
+    ).all()
+
+    for bp in bps:
+        payment = db.session.get(Payment, bp.payment_id)
+        if payment is None:
+            continue
+        # Already on this tab: a re-run must not move anything. Naturally
+        # idempotent — no key needed, unlike the old insert.
+        if payment.tab_id == tab.id:
+            continue
+        # Attached to some OTHER tab: never silently steal it. Should be
+        # unreachable (a deposit belongs to one booking, which owns one tab).
+        if payment.tab_id is not None:
+            continue
+        payment.tab_id = tab.id
+
     db.session.flush()
 
 
 # ── Check-in / check-out ──────────────────────────────────────────────────────
 
+def charge_accommodation_to_tab(booking: Booking, tab: Tab, actor_id: str) -> None:
+    """Put the ROOM on the villa tab.
+
+    THE HOLE THIS CLOSES. base_total is computed at booking time and stored on
+    the BOOKING. Nothing ever wrote it to the tab, so a villa tab was only ever
+    an incidentals account: it received the deposit as a credit and the guest's
+    drinks as charges, and the accommodation itself — the entire reason they are
+    here — was invisible to it.
+
+    Measured on a real booking before this existed:
+
+        room               KSh 200,000
+        deposit collected  KSh  60,000
+        bar                KSh   2,500
+        tab balance        KSh -57,500   -> read as CREDIT
+        is_tab_closable    True          -> CHECK-OUT ALLOWED
+
+    So a guest paid 30% and could walk out owing 142,500 with the door held
+    open, while reports/routes.py counted the full 200,000 as villa revenue.
+    Two wrong numbers pointing opposite ways, neither visibly contradicting the
+    other.
+
+    Charged at CHECK-IN, not at booking: a HELD booking that never arrives must
+    not leave a charge behind. Append-only and idempotent on the booking id, so
+    a repeated check-in cannot double-charge the room.
+    """
+    from app.models.charge import Charge
+    from app.services.tax import rate_for_menu_item
+
+    total = Decimal(str(booking.base_total or 0))
+    if total <= Decimal("0"):
+        return
+
+    # Charge has no idempotency_key column, so the guard is a lookup for an
+    # accommodation line already on this tab. One villa tab belongs to exactly
+    # one booking, so that is sufficient — and the booking state machine already
+    # refuses a second CHECKED_IN transition. Belt and braces, cheaply.
+    already = (
+        db.session.query(Charge)
+        .filter(Charge.tab_id == tab.id,
+                Charge.description.like("Accommodation —%"))
+        .first()
+    )
+    if already:
+        return
+
+    nights = 0
+    if booking.check_in_planned_utc and booking.check_out_planned_utc:
+        nights = max(1, (booking.check_out_planned_utc.date()
+                         - booking.check_in_planned_utc.date()).days)
+    resource_name = booking.resource.name if booking.resource else "Villa"
+
+    db.session.add(Charge(
+        tab_id=tab.id,
+        amount=total,
+        description=(f"Accommodation — {resource_name}"
+                     + (f", {nights} night{'s' if nights != 1 else ''}" if nights else "")),
+        created_by_id=actor_id,
+        # Same treatment as every other line: the rate is frozen at the moment
+        # the charge is made, so a later statutory change cannot rewrite history.
+        tax_rate_snapshot=rate_for_menu_item(None),
+    ))
+    db.session.flush()
+
+
 def open_villa_tab(booking: Booking, actor_id: str) -> Tab:
-    """Open a VILLA tab for this booking and transfer deposit as a credit."""
+    """Open a VILLA tab for this booking, charge the room, credit the deposit."""
     resource_name = booking.resource.name if booking.resource else "Villa"
     tab = Tab(
         tab_type=TabType.VILLA.value,
@@ -160,6 +281,9 @@ def open_villa_tab(booking: Booking, actor_id: str) -> Tab:
     booking.status = BookingStatus.CHECKED_IN.value
     booking.check_in_actual_utc = datetime.now(timezone.utc)
 
+    # Order matters for readability of the folio: the room first, then what
+    # has already been paid against it.
+    charge_accommodation_to_tab(booking, tab, actor_id)
     transfer_deposit_to_tab(booking, tab, actor_id)
     return tab
 

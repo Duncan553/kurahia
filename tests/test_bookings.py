@@ -204,14 +204,31 @@ class TestBookingLifecycle:
         assert data["tab_id"] is not None
         tab_id = data["tab_id"]
 
-        # Tab balance should be ≤ 0 (deposit covers it as a credit)
+        # The room is charged to the tab at check-in, so after a PARTIAL deposit
+        # the balance is what is still owed.
+        #
+        # This used to assert `balance <= 0` with the comment "deposit covers it
+        # as a credit" — which was only ever true because base_total was never
+        # charged to the tab at all. The assertion was protecting the bug: it
+        # would have failed the moment the room appeared on the bill, which is
+        # exactly what it did.
         from app.services.tab import get_tab_balance
         from app.extensions import db
         with client.application.app_context():
             balance = get_tab_balance(tab_id)
-        assert balance <= Decimal("0")
+        assert balance > Decimal("0"), "the unpaid part of the room must be owed"
 
-        # Check-out: balance ≤ 0 so it succeeds
+        # Check-out is refused while that stands — a guest cannot walk out
+        # having paid only the deposit.
+        rv = client.post(f"/bookings/{booking_id}/check-out", headers=auth(manager_token))
+        assert rv.status_code == 400
+        assert "outstanding balance" in rv.get_json()["error"].lower()
+
+        # Settle in full, then they may leave.
+        client.post(f"/tabs/{tab_id}/payments",
+                    json={"method": "CASH", "amount": str(balance),
+                          "idempotency_key": str(uuid.uuid4())},
+                    headers=auth(manager_token))
         rv = client.post(f"/bookings/{booking_id}/check-out", headers=auth(manager_token))
         assert rv.status_code == 200
         assert rv.get_json()["status"] == "CHECKED_OUT"
@@ -356,8 +373,19 @@ class TestDepositFlow:
             p = db.session.get(Payment, data["payment_id"])
             assert p.tab_id is None
 
-    def test_deposit_transfer_creates_new_payment_only(self, client, manager_token, villa, app):
-        """No edits to existing Payment records during deposit transfer."""
+    def test_deposit_transfer_moves_the_payment_it_does_not_duplicate_it(
+            self, client, manager_token, villa, app):
+        """One movement of money leaves exactly ONE Payment row.
+
+        This test used to assert the opposite — that check-in ADDS a second
+        Payment for the deposit — which is how a real double-count got locked in
+        as a requirement. Every revenue reader sums Payment rows unfiltered, so
+        a KSh 6,000 deposit was reported as 12,000 taken that day.
+
+        The deposit is collected before any tab exists, so its Payment lands
+        with tab_id=NULL. Check-in fills in that NULL. Nothing about the money
+        itself — amount, method, timestamp — is ever rewritten.
+        """
         from app.models.payment import Payment
         from app.extensions import db
 
@@ -376,20 +404,71 @@ class TestDepositFlow:
         # Confirm
         client.post(f"/bookings/{booking_id}/confirm", headers=auth(manager_token))
 
-        # Count payments before check-in
+        # Snapshot the money BEFORE check-in, so we can prove none of it moved.
         with app.app_context():
             count_before = db.session.query(Payment).count()
-            original_tab_id = db.session.get(Payment, deposit_payment_id).tab_id
+            before = db.session.get(Payment, deposit_payment_id)
+            assert before.tab_id is None      # no tab exists yet at booking time
+            amount_before  = before.amount
+            method_before  = before.method
+            created_before = before.created_at_utc
 
         # Check-in
-        client.post(f"/bookings/{booking_id}/check-in", headers=auth(manager_token))
+        rv = client.post(f"/bookings/{booking_id}/check-in", headers=auth(manager_token))
+        tab_id = rv.get_json()["tab_id"]
 
         with app.app_context():
-            count_after = db.session.query(Payment).count()
-            # Original payment unchanged
-            assert db.session.get(Payment, deposit_payment_id).tab_id == original_tab_id
-            # A new payment record was added for the transfer
-            assert count_after == count_before + 1
+            # No second row invented for money that only moved once.
+            assert db.session.query(Payment).count() == count_before
+
+            after = db.session.get(Payment, deposit_payment_id)
+            assert after.tab_id == tab_id             # the NULL got filled in
+            assert after.amount == amount_before      # and nothing else changed
+            assert after.method == method_before
+            assert after.created_at_utc == created_before
+
+            # The tab still sees the deposit, so the balance is unaffected.
+            from app.services.tab import get_tab_balance
+            assert get_tab_balance(tab_id) == Decimal(str(b["base_total"])) - deposit_required
+
+    def test_deposit_transfer_is_idempotent_on_a_re_run(
+            self, client, manager_token, villa, app):
+        """Re-running the transfer must not move or duplicate anything.
+
+        The old insert needed an idempotency_key to be safe on a retry. Filling
+        a NULL is naturally idempotent, but that only holds if the code checks
+        before writing — so this drives the service directly a second time on a
+        live tab, which is the path a retry would take.
+        """
+        from app.models.payment import Payment
+        from app.models.booking import Booking
+        from app.models.tab import Tab
+        from app.extensions import db
+        from app.services.booking import transfer_deposit_to_tab
+        from app.services.tab import get_tab_balance
+
+        rv = _make_booking(client, manager_token, villa.id, guest_phone="+254700400009")
+        booking_id = rv.get_json()["id"]
+        deposit_required = Decimal(rv.get_json()["deposit_required"])
+        client.post("/booking-payments", json={
+            "booking_id": booking_id, "purpose": "DEPOSIT",
+            "amount": str(deposit_required), "method": "CASH",
+        }, headers=auth(manager_token))
+        client.post(f"/bookings/{booking_id}/confirm", headers=auth(manager_token))
+        rv = client.post(f"/bookings/{booking_id}/check-in", headers=auth(manager_token))
+        tab_id = rv.get_json()["tab_id"]
+
+        with app.app_context():
+            count_before   = db.session.query(Payment).count()
+            balance_before = get_tab_balance(tab_id)
+
+            booking = db.session.get(Booking, booking_id)
+            tab     = db.session.get(Tab, tab_id)
+            transfer_deposit_to_tab(booking, tab, booking.created_by_id)
+            db.session.commit()
+
+            assert db.session.query(Payment).count() == count_before
+            assert get_tab_balance(tab_id) == balance_before
 
     def test_deposit_idempotent(self, client, manager_token, villa):
         rv = _make_booking(client, manager_token, villa.id)
@@ -716,3 +795,99 @@ class TestAvailability:
         villa_entry = next((r for r in results if r["name"] == "Test Villa"), None)
         assert villa_entry is not None
         assert villa_entry["available"] is False
+
+
+# ── The room must be on the room's bill ───────────────────────────────────────
+
+def _full_villa_checkin(client, token, vid, guest="Charge Test Guest"):
+    """booking -> full deposit -> confirm -> check-in. Returns (booking, tab_id)."""
+    from datetime import datetime, timezone, timedelta
+    import uuid as _u
+    ci = datetime.now(timezone.utc) + timedelta(hours=2)
+    co = ci + timedelta(days=2)
+    h = {"Authorization": f"Bearer {token}"}
+    bk = client.post("/bookings", json={
+        "resource_id": vid, "guest_name": guest, "guest_phone": f"+2547{_u.uuid4().int % 10**8:08d}",
+        "number_of_guests": 2,
+        "check_in_planned_utc": ci.isoformat(), "check_out_planned_utc": co.isoformat(),
+        "idempotency_key": str(_u.uuid4()),
+    }, headers=h).get_json()
+    client.post("/booking-payments", json={
+        "booking_id": bk["id"], "purpose": "DEPOSIT", "method": "CASH",
+        "amount": bk["deposit_required"], "idempotency_key": str(_u.uuid4()),
+    }, headers=h)
+    client.post(f"/bookings/{bk['id']}/confirm", headers=h)
+    rv = client.post(f"/bookings/{bk['id']}/check-in", headers=h)
+    return bk, rv.get_json().get("tab_id")
+
+
+def test_accommodation_is_charged_to_the_villa_tab(client, owner_token, villa):
+    """base_total lived on the BOOKING and was never written to the tab, so a
+    villa tab was an incidentals account and the room was invisible to it."""
+    bk, tab_id = _full_villa_checkin(client, owner_token, villa.id)
+    assert tab_id
+    folio = client.get(f"/receipts/{tab_id}",
+                       headers={"Authorization": f"Bearer {owner_token}"}).get_json()
+    rooms = [c for c in folio["charges"] if c["description"].startswith("Accommodation")]
+    assert len(rooms) == 1, "the room must appear on the bill exactly once"
+    assert Decimal(rooms[0]["amount"]) == Decimal(bk["base_total"])
+
+
+def test_guest_cannot_check_out_owing_the_room(client, owner_token, villa, app):
+    """The whole point: balance was NEGATIVE (deposit, no room charge), so
+    is_tab_closable said yes and a guest could walk owing 70% of the stay."""
+    from app.services.tab import is_tab_closable
+    bk, tab_id = _full_villa_checkin(client, owner_token, villa.id)
+    with app.app_context():
+        ok, reason = is_tab_closable(tab_id)
+    assert ok is False, "a guest owing the balance of the room must not be closable"
+    assert "outstanding balance" in reason.lower()
+
+
+def test_room_is_not_charged_twice(client, owner_token, villa):
+    """A second check-in attempt must not add another accommodation line."""
+    bk, tab_id = _full_villa_checkin(client, owner_token, villa.id)
+    client.post(f"/bookings/{bk['id']}/check-in",
+                headers={"Authorization": f"Bearer {owner_token}"})
+    folio = client.get(f"/receipts/{tab_id}",
+                       headers={"Authorization": f"Bearer {owner_token}"}).get_json()
+    rooms = [c for c in folio["charges"] if c["description"].startswith("Accommodation")]
+    assert len(rooms) == 1
+
+
+def test_overstaying_guest_blocks_the_room(client, owner_token, villa, app):
+    """A room is free when the person has LEFT, not when the diary says so.
+
+    The overlap check compares PLANNED dates, so a guest due out on the 28th who
+    has not checked out falls outside every future window and the villa reads as
+    free. Found live: Villa 4 held two open accounts at once — PW Guest 96604
+    (due out, never checked out) and a new arrival. Overstays are ordinary."""
+    from app.extensions import db as _db
+    from app.models.booking import Booking, BookingStatus
+    from app.services.booking import check_resource_availability
+    from datetime import datetime, timezone, timedelta
+    import uuid as _u
+
+    # A guest who was due out yesterday and is still in the room.
+    past_out = datetime.now(timezone.utc) - timedelta(days=1)
+    with app.app_context():
+        _db.session.add(Booking(
+            resource_id=villa.id, guest_name="Overstayer", guest_phone=f"+2547{_u.uuid4().int % 10**8:08d}",
+            number_of_guests=1,
+            check_in_planned_utc=past_out - timedelta(days=2),
+            check_out_planned_utc=past_out,
+            check_out_actual_utc=None,
+            base_total="10000", deposit_required="0",
+            status=BookingStatus.CHECKED_IN.value,
+            idempotency_key=str(_u.uuid4()),
+            created_by_id=_db.session.query(__import__("app.models.user", fromlist=["User"]).User).first().id,
+        ))
+        _db.session.commit()
+
+        # Dates well clear of their planned window — the calendar sees no clash.
+        ci = datetime.now(timezone.utc) + timedelta(days=7)
+        ok, why = check_resource_availability(villa.id, ci, ci + timedelta(days=2))
+
+    assert ok is False, "a room someone is still in must not be bookable"
+    assert "still occupied" in why
+    assert "Overstayer" in why

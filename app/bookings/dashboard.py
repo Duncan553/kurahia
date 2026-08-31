@@ -87,6 +87,11 @@ def front_desk_today():
             "booking_id":    b.id,
             "guest_name":    b.guest_name,
             "resource":      b.resource.name if b.resource else None,
+            # tab_id was computed here (for the balance below) but not returned,
+            # while "occupancy" right underneath does return it. Departure is
+            # precisely when someone asks "what am I paying for?" — front desk
+            # needs the tab to open the guest's bill.
+            "tab_id":        b.tab_id,
             "tab_balance":   str(get_tab_balance(b.tab_id)) if b.tab_id else "0",
         } for b in departures],
         "occupancy": [{
