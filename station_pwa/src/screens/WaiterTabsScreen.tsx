@@ -113,6 +113,34 @@ export default function WaiterTabsScreen() {
 
   // Wristband redemption: guest paid KSh 3,000 at the gate — that credit sits
   // on the band's tab. Look the band up, order straight against its credit.
+  // ── Villa lookup ──────────────────────────────────────────────────────
+  // A wristband has had a lookup since Chunk 7; a villa had none, so "put it
+  // on Villa 6" meant scrolling every open villa tab and matching on text.
+  // The register comes back WITH the tab because "where does this go" and
+  // "is this person allowed to" are one question at a busy bar.
+  const [room, setRoom] = useState('')
+  const [confirming, setConfirming] = useState<{
+    tab_id: string; reference: string; balance: string
+    may_charge: string[]; also_staying: string[]; unnamed_count: number
+  } | null>(null)
+
+  const roomMut = useMutation({
+    mutationFn: (q: string) =>
+      api.get(`/tabs/by-room/${encodeURIComponent(q.trim())}`).then(r => r.data),
+    onSuccess: (d) => setConfirming(d),
+    onError: (e) => {
+      const r = (e as { response?: { status?: number; data?: { error?: string; candidates?: { reference: string }[] } } }).response
+      // 409 = the room string matched more than one open account. The endpoint
+      // refuses to guess; showing the candidates is more use than an error.
+      if (r?.status === 409 && r.data?.candidates) {
+        addToast({ type: 'error',
+          message: `${r.data.error} — ${r.data.candidates.map(c => c.reference).join(', ')}` })
+        return
+      }
+      addToast({ type: 'error', message: extractErr(e) })
+    },
+  })
+
   const bandMut = useMutation({
     mutationFn: (num: string) =>
       api.get<{ tab_id: string; status: string }>(`/gate/bands/${num.trim()}`).then(r => r.data),
@@ -178,6 +206,77 @@ export default function WaiterTabsScreen() {
           Open Band
         </Button>
       </div>
+
+      {/* Charge to a villa — the same shape as the band lookup above */}
+      <p className="text-[10px] text-ink-tertiary mb-1">Or type the room to charge a villa</p>
+      <div className="flex gap-2 mb-6">
+        <input
+          aria-label="Room number"
+          placeholder="Villa 6 — charge to the room"
+          value={room}
+          onChange={e => setRoom(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && room.trim() && roomMut.mutate(room)}
+          className="flex-1 rounded-xl glass-card bg-transparent px-4 py-2.5
+            text-sm text-ink-primary placeholder:text-ink-tertiary
+            focus:outline-none focus:border-primary-main focus-visible:ring-2 focus-visible:ring-primary-main"
+        />
+        <Button variant="ghost" size="sm" loading={roomMut.isPending}
+          onClick={() => room.trim() && roomMut.mutate(room)}>
+          Find Room
+        </Button>
+      </div>
+
+      {/* Confirm WHO before the bill is added. The waiter reads the names back
+          to the person in front of them; a name not on this list is not
+          entitled to charge the room, whatever they say. */}
+      <Modal open={!!confirming} onClose={() => setConfirming(null)}
+        title={confirming?.reference ?? ''} size="sm">
+        {confirming && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary mb-1">
+                May charge to this room
+              </p>
+              <ul className="flex flex-col gap-1">
+                {confirming.may_charge.map(n => (
+                  <li key={n} className="text-sm text-ink-primary">· {n}</li>
+                ))}
+              </ul>
+            </div>
+
+            {confirming.also_staying.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary mb-1">
+                  Staying, but not allowed to charge
+                </p>
+                <ul className="flex flex-col gap-1">
+                  {confirming.also_staying.map(n => (
+                    <li key={n} className="text-sm text-ink-tertiary">· {n}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {confirming.unnamed_count > 0 && (
+              <div className="rounded-xl px-3 py-2 bg-status-pending/10 border border-status-pending/25">
+                <p className="text-xs text-status-pending">
+                  {confirming.unnamed_count} person(s) on this booking were never named.
+                  If they are not on the list above, send them to front desk.
+                </p>
+              </div>
+            )}
+
+            <p className="text-xs text-ink-tertiary">
+              Currently on the room: <span className="tabular-nums text-ink-secondary">
+                KSh {parseFloat(confirming.balance).toLocaleString()}</span>
+            </p>
+
+            <Button onClick={() => { const t = confirming.tab_id; setConfirming(null); setRoom(''); navigate(`/pos/tabs/${t}`) }}>
+              Yes — open this room's tab
+            </Button>
+          </div>
+        )}
+      </Modal>
 
       {isLoading && <div className="space-y-2 mb-6">{[1,2,3].map(i => <Skeleton key={i} variant="row" />)}</div>}
 

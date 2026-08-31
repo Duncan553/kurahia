@@ -37,6 +37,21 @@ export function RoleGate({ minLevel }: { minLevel: number }) {
 
 export function RequireRole({ minLevel, children }: { minLevel: number; children: ReactNode }) {
   const user = useAuthStore((s) => s.user)
-  if (!user || user.role_level < minLevel) return null
+  // Returning null here rendered a completely blank page — no header, no
+  // explanation, nothing to tap. On a shared station tablet that reads as a
+  // broken app, not as a permission boundary, and the person just stands
+  // there. Every error in this system says what happened in plain English
+  // (engineering invariant 5); a screen someone cannot open is no different.
+  if (!user || user.role_level < minLevel) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-24 px-6 text-center">
+        <p className="text-lg font-semibold text-ink-primary">This screen isn't yours to open</p>
+        <p className="text-sm text-ink-tertiary max-w-sm">
+          It needs a higher role than the account signed in at this station.
+          Ask a manager to sign in here, or use a tool from the bar below.
+        </p>
+      </div>
+    )
+  }
   return <>{children}</>
 }

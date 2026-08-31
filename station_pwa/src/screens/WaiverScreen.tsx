@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { Input, Select, useToastStore } from '@shared'
 import api from '../lib/axios'
@@ -21,8 +22,13 @@ function genKey() { return crypto.randomUUID() }
 export default function WaiverScreen() {
   const addToast = useToastStore((s) => s.addToast)
 
+  // Front desk arrives here from Check-In with ?booking=<id> when an arrival
+  // still needs a waiver, so the ID does not have to be copied by hand off
+  // another screen. Opened directly from the nav it is simply empty.
+  const [params] = useSearchParams()
+
   const [guestName,    setGuestName]    = useState('')
-  const [bookingId,    setBookingId]    = useState('')
+  const [bookingId,    setBookingId]    = useState(params.get('booking') ?? '')
   const [activityType, setActivityType] = useState('WATER_ACTIVITY')
   const [notes,        setNotes]        = useState('')
   const [idemKey,      setIdemKey]      = useState(genKey)

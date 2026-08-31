@@ -116,7 +116,7 @@ export default function StationLoginScreen() {
       >
         <img src={HERO_URL} alt="" aria-hidden="true"
           className="w-full h-full object-cover object-center" />
-        <div className="absolute inset-0" style={{ background: 'rgba(30, 16, 12, 0.75)' }} />
+        <div className="absolute inset-0" style={{ background: 'var(--color-chrome-75)' }} />
       </motion.div>
 
       <div className="relative z-10 flex items-center justify-center min-h-screen px-6 py-8">
