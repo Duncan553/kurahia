@@ -6,6 +6,10 @@ import { Button, SearchInput, ErrorBoundary, useToastStore } from '@shared'
 import api from '../lib/axios'
 
 interface StaffUser { id: string; username: string; role: string; department: string | null; is_active: boolean; pin_set: boolean }
+interface StaffProfile {
+  id: string; user_id: string; full_name: string
+  wage_rate: string | null; wage_period: string | null
+}
 interface Meta { roles: { id: string; name: string; level: number }[]; departments: { id: string; name: string }[] }
 
 const BLANK = { username:'', password:'', roleId:'', deptId:'', fullName:'', phone:'', wageRate:'', wagePeriod:'', hireDate:'', nationalId:'', emgName:'', emgPhone:'' }
@@ -39,11 +43,26 @@ export default function StaffAccountsScreen() {
     queryKey: ['auth-meta'],
     queryFn: () => api.get<Meta>('/auth/users/meta').then(r => r.data),
   })
-  const { data: profiles = [] } = useQuery<{user_id:string}[]>({
+  const { data: profiles = [] } = useQuery<StaffProfile[]>({
     queryKey: ['staff-profiles'],
-    queryFn: () => api.get<{user_id:string}[]>('/hr/profiles').then(r => r.data),
+    queryFn: () => api.get<StaffProfile[]>('/hr/profiles').then(r => r.data),
   })
   const hasProfile = new Set(profiles.map(p => p.user_id))
+  const profileFor = new Map(profiles.map(p => [p.user_id, p]))
+
+  // Editing a wage on an EXISTING person had no screen anywhere: the hire
+  // wizard could set one at step 2 and nothing could ever change it, so
+  // thirteen of fifteen staff had no wage and payroll could not pay them.
+  // PATCH /hr/profiles/<id> existed on the server the whole time; nothing
+  // called it.
+  const [wageEdit, setWageEdit] = useState<{id:string; value:string}|null>(null)
+  const wageMut = useMutation({
+    mutationFn: (v: {id:string; wage:string}) =>
+      api.patch(`/hr/profiles/${v.id}`, { wage_rate: v.wage, wage_period: 'MONTHLY' })
+         .then(r => r.data),
+    onSuccess: () => { setWageEdit(null); setErr(''); qc.invalidateQueries({ queryKey: ['staff-profiles'] }) },
+    onError:   (e) => setErr(extractErr(e)),
+  })
 
   const userMut = useMutation({
     mutationFn: (b: object) => api.post('/auth/users', b).then(r => r.data),
@@ -236,6 +255,49 @@ export default function StaffAccountsScreen() {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink-primary truncate">{u.username}</p>
                   <p className="text-xs text-ink-secondary">{u.role}{u.department ? ` · ${u.department}` : ''}</p>
+                  {/* Monthly pay, editable in place. Everyone here is paid
+                      monthly, so the period is not asked — it is sent as
+                      MONTHLY. The server still accepts HOURLY and DAILY for
+                      anyone unusual; this screen just does not make fourteen
+                      people answer a question with one answer. */}
+                  {hasProfile.has(u.id) && (() => {
+                    const prof = profileFor.get(u.id)!
+                    const editing = wageEdit?.id === prof.id
+                    if (editing) {
+                      return (
+                        <form
+                          className="flex items-center gap-1 mt-1"
+                          onSubmit={(e) => { e.preventDefault()
+                            if (wageEdit.value.trim()) wageMut.mutate({ id: prof.id, wage: wageEdit.value.trim() }) }}
+                        >
+                          <span className="text-[10px] text-ink-tertiary">KSh</span>
+                          <input
+                            autoFocus type="number" min="0" step="1" inputMode="numeric"
+                            aria-label={`Monthly pay for ${u.username}`}
+                            value={wageEdit.value}
+                            onChange={(e) => setWageEdit({ id: prof.id, value: e.target.value })}
+                            className="w-24 px-2 py-0.5 text-xs rounded-lg bg-white/5 border border-white/10 text-ink-primary"
+                          />
+                          <button type="submit" disabled={wageMut.isPending}
+                            className="text-[10px] px-2 py-0.5 rounded-lg bg-primary-main/20 text-primary-main font-semibold">
+                            {wageMut.isPending ? '…' : 'Save'}
+                          </button>
+                          <button type="button" onClick={() => setWageEdit(null)}
+                            className="text-[10px] px-1 text-ink-tertiary">Cancel</button>
+                        </form>
+                      )
+                    }
+                    return (
+                      <button
+                        onClick={() => setWageEdit({ id: prof.id, value: prof.wage_rate ? String(Math.round(parseFloat(prof.wage_rate))) : '' })}
+                        className="mt-1 text-[11px] text-ink-tertiary hover:text-ink-secondary underline decoration-dotted"
+                      >
+                        {prof.wage_rate
+                          ? `KSh ${Math.round(parseFloat(prof.wage_rate)).toLocaleString()} / month`
+                          : 'Set monthly pay'}
+                      </button>
+                    )
+                  })()}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {/* Role + department, editable in place. Only roles strictly
