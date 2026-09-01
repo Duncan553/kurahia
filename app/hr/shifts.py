@@ -115,6 +115,48 @@ def create_shift():
                     "scheduled_end_utc":   end.isoformat()}), 201
 
 
+@shifts_bp.post("/shifts/generate")
+@require_active_user
+def generate_roster():
+    """Create a week of shifts from each employee's stored working pattern.
+
+    Body: {"week_start": "2026-09-01", "dry_run": false}
+    week_start defaults to the coming Monday.
+
+    This is the answer to "who rosters 14 people every Sunday" — nobody does,
+    which is why the board was empty. The pattern is set once per person; this
+    turns it into shifts. Anyone without a pattern is untouched and still
+    rostered by hand.
+    """
+    from datetime import date, timedelta
+    from app.services.roster_generator import generate_week
+
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required to generate a roster."}), 403
+
+    data = request.get_json(silent=True) or {}
+    raw = data.get("week_start")
+    if raw:
+        try:
+            week_start = date.fromisoformat(raw)
+        except (ValueError, TypeError):
+            return jsonify({"error": "week_start must be YYYY-MM-DD."}), 400
+    else:
+        today = date.today()
+        week_start = today + timedelta(days=(7 - today.weekday()) % 7 or 7)
+
+    result = generate_week(week_start, actor.id, dry_run=bool(data.get("dry_run")))
+    if not data.get("dry_run"):
+        AuditLog.log(actor=actor.username, action="hr.roster.generate",
+                     target=result["week_start"],
+                     details=f"created={result['created']} "
+                             f"already={result['already_rostered']} "
+                             f"on_leave={result['skipped_on_leave']}")
+        db.session.commit()
+    return jsonify(result), 200
+
+
 @shifts_bp.get("/shifts")
 @require_active_user
 def list_shifts():
