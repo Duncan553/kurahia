@@ -489,10 +489,19 @@ def test_direct_tracking_requires_an_inventory_item(client, manager_token, food_
     assert bad.status_code == 400
 
 
-def test_untracked_item_cannot_be_re_enabled(client, manager_token, food_item_id):
-    """The stated rule: UNTRACKED is the one state an item may not go live in."""
-    client.post(f"/menu/items/{food_item_id}/disable", headers=H(manager_token))
-    rv = client.post(f"/menu/items/{food_item_id}/enable", headers=H(manager_token))
+def test_untracked_item_cannot_be_re_enabled(client, manager_token, general_dept_id):
+    """The stated rule: UNTRACKED is the one state an item may not go live in.
+
+    Makes its own unclassified item rather than leaning on a seeded one. It used
+    to use food_item_id, which was UNTRACKED only because the seed left every
+    menu item on the model default — so the test passed for a reason that had
+    nothing to do with what it was testing, and broke the moment the seed
+    started classifying its items like a real menu does.
+    """
+    mid = _mk_menu(client, manager_token, general_dept_id,
+                   name="Unclassified Platter").get_json()["id"]
+    client.post(f"/menu/items/{mid}/disable", headers=H(manager_token))
+    rv = client.post(f"/menu/items/{mid}/enable", headers=H(manager_token))
     assert rv.status_code == 400
     assert "no stock tracking set" in rv.get_json()["error"]
 
@@ -893,23 +902,29 @@ def test_meta_only_offers_roles_below_the_actor(client, manager_token):
 # 14. HOLES — these pin behaviour that looks wrong. Each says what SHOULD happen.
 # ══════════════════════════════════════════════════════════════════════════════
 
-def test_HOLE_a_brand_new_untracked_menu_item_is_live_and_sellable(
+def test_a_brand_new_untracked_menu_item_cannot_be_sold(
         client, manager_token, waiter_token, general_dept_id, app):
-    """SHOULD: an UNTRACKED item may not go live (pos/menu.py:291-309 says so, and
-    /enable enforces it).
-    IS: POST /menu/items creates the row with is_active=True (model default) and
-    stock_tracking=UNTRACKED (model default) — the untracked check is on /enable
-    ONLY, and a freshly created item never passes through /enable. So the block
-    is trivially bypassed: create it and sell it. Order creation only checks
-    is_active (pos/orders.py:115)."""
+    """WAS A HOLE, now closed — kept as the regression guard.
+
+    pos/menu.py:291 says an UNTRACKED item may not go live, but that check was
+    wired to /enable ONLY. POST /menu/items creates the row already active and
+    already UNTRACKED (both model defaults), so a fresh item never passes
+    through /enable and the block was trivially bypassed: create it, sell it,
+    and nothing would ever move stock. Order creation checked is_active and
+    nothing else.
+
+    The check now runs on the sale itself (app/pos/orders.py), which is the
+    only place it can actually stop the money."""
     mid = _mk_menu(client, manager_token, general_dept_id, name="Mystery Platter").get_json()["id"]
     row = db.session.get(MenuItem, mid)
-    assert row.is_active is True
-    assert row.stock_tracking == StockTracking.UNTRACKED.value
+    assert row.is_active is True                       # still created live...
+    assert row.stock_tracking == StockTracking.UNTRACKED.value   # ...and unclassified
 
     rv = client.post("/orders", headers=H(waiter_token),
                      json={"items": [{"menu_item_id": mid, "quantity": 1}]})
-    assert rv.status_code == 201        # sold, and nothing will ever move stock
+    assert rv.status_code == 400, \
+        f"an unclassified item was SOLD: {rv.get_data(as_text=True)}"
+    assert "no stock tracking set" in rv.get_json()["error"]
 
 
 def test_HOLE_direct_sale_drives_stock_negative(
@@ -1062,3 +1077,12 @@ def test_HOLE_event_expected_guests_is_not_validated(client, manager_token):
     with pytest.raises(IntegrityError):
         client.post("/events", headers=H(manager_token),
                     json={**body, "expected_guests": -50, "title": "T2"})
+
+
+def test_a_classified_item_still_sells(client, waiter_token, food_item_id):
+    """The other half of the untracked block: it must not catch anything
+    legitimate. A guard that fires on real sales gets routed around by staff,
+    and then it guards nothing at all."""
+    rv = client.post("/orders", headers=H(waiter_token),
+                     json={"items": [{"menu_item_id": food_item_id, "quantity": 1}]})
+    assert rv.status_code == 201, rv.get_data(as_text=True)
