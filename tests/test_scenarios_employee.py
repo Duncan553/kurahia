@@ -990,8 +990,15 @@ class TestPerformanceAndPayroll:
         base = datetime.now(timezone.utc).replace(microsecond=0) - timedelta(hours=5)
         _add_clock_event(waiter_profile.id, "CLOCK_IN",  base)
         _add_clock_event(waiter_profile.id, "CLOCK_OUT", base + timedelta(hours=4))
+
+        # Query from the day the shift STARTED, not blindly from today. Between
+        # midnight and 05:00 UTC "five hours ago" is yesterday, so asking for
+        # today alone found the CLOCK_OUT with no CLOCK_IN and reported 0 hours
+        # — a night-shift-shaped bug in the test that failed for the first five
+        # hours of every day and passed the other nineteen.
+        start = base.date().isoformat()
         today = datetime.now(timezone.utc).date().isoformat()
-        rv = client.get(f"/hr/payroll-draft?start_date={today}&end_date={today}",
+        rv = client.get(f"/hr/payroll-draft?start_date={start}&end_date={today}",
                         headers=auth(manager_token))
         row = [r for r in rv.get_json()["employees"]
                if r["employee_id"] == waiter_profile.id][0]
