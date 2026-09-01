@@ -1447,3 +1447,59 @@ class TestConduct:
         assert rv.get_json()["version"] == 1
         rows = client.get("/conduct/compliance", headers=auth(owner_token)).get_json()
         assert waiter_profile.full_name in rows[0]["unsigned_employees"]
+
+
+class TestWhoSetsWages:
+    """Settled by Wachira: a manager sets and edits pay for people below them.
+
+    The refusals were already pinned — nobody sets their own pay, nobody edits
+    a file at or above their own level. What was NOT pinned is the thing those
+    refusals exist to protect: that a manager can actually do the job. A rule
+    with only negative tests can be tightened into uselessness and nothing
+    notices until payroll cannot be prepared.
+    """
+
+    def test_a_manager_can_set_a_subordinates_wage(self, client, manager_token,
+                                                   waiter_profile):
+        rv = client.patch(f"/hr/profiles/{waiter_profile.id}",
+                          json={"wage_rate": "18000", "wage_period": "MONTHLY"},
+                          headers=auth(manager_token))
+        assert rv.status_code == 200, rv.get_data(as_text=True)
+        db.session.expire_all()
+        from app.models.employee_profile import EmployeeProfile
+        assert str(db.session.get(EmployeeProfile, waiter_profile.id).wage_rate
+                   ).startswith("18000")
+
+    def test_a_manager_can_CHANGE_a_wage_already_set(self, client, manager_token,
+                                                     waiter_profile):
+        """A raise. Setting once at hire and never again was the actual bug —
+        no screen could reach this endpoint at all."""
+        from app.models.employee_profile import EmployeeProfile
+        client.patch(f"/hr/profiles/{waiter_profile.id}",
+                     json={"wage_rate": "18000", "wage_period": "MONTHLY"},
+                     headers=auth(manager_token))
+        rv = client.patch(f"/hr/profiles/{waiter_profile.id}",
+                          json={"wage_rate": "21000", "wage_period": "MONTHLY"},
+                          headers=auth(manager_token))
+        assert rv.status_code == 200, rv.get_data(as_text=True)
+        db.session.expire_all()
+        assert str(db.session.get(EmployeeProfile, waiter_profile.id).wage_rate
+                   ).startswith("21000")
+
+    def test_the_wage_reaches_payroll(self, client, manager_token, waiter_profile):
+        """A wage nobody can be paid from is decoration."""
+        client.patch(f"/hr/profiles/{waiter_profile.id}",
+                     json={"wage_rate": "18000", "wage_period": "MONTHLY"},
+                     headers=auth(manager_token))
+        rv = client.get("/hr/payroll-draft", headers=auth(manager_token))
+        assert rv.status_code == 200
+        row = [r for r in rv.get_json()["employees"]
+               if r["employee_id"] == waiter_profile.id][0]
+        assert str(row["wage_rate"]).startswith("18000")
+        assert row["wage_period"] == "MONTHLY"
+
+    def test_a_waiter_still_cannot_set_anybodys_wage(self, client, waiter_token,
+                                                     manager_profile):
+        rv = client.patch(f"/hr/profiles/{manager_profile.id}",
+                          json={"wage_rate": "999999"}, headers=auth(waiter_token))
+        assert rv.status_code == 403
