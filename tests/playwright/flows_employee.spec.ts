@@ -26,6 +26,11 @@ import { test, expect, Page, Locator, BrowserContext, Browser } from '@playwrigh
 
 const API = 'http://localhost:5000'
 const APP = 'http://localhost:5173'
+// The station tools moved out of the employee app — POS, the queues and the
+// whole /manager group live in station_pwa now, because they belong to the
+// POST, not the person. Anything below that opens one of those screens has to
+// drive the station tablet, or it lands on the employee app's catch-all.
+const STATION = 'http://localhost:5176'
 const PASSWORD = process.env.SEED_PASSWORD ?? 'Kurahia1!'
 
 /* Findings collected as we go; printed as a summary at the end. */
@@ -285,7 +290,7 @@ test('1b. clock: the screen renders real server state and survives a reload', as
 test('2. waiter: open a tab, add a menu item, send it to the kitchen', async ({ browser }) => {
   const { ctx, page } = await pageAs(browser, 'joyce.wambua')
 
-  await page.goto(`${APP}/pos/tabs`, { waitUntil: 'networkidle' })
+  await page.goto(`${STATION}/pos/tabs`, { waitUntil: 'networkidle' })
   expect(page.url(), 'AuthGate must not bounce a clocked-in waiter').toContain('/pos/tabs')
 
   // ── open a new table ──
@@ -345,7 +350,7 @@ test('3. kitchen: the order arrives, is received, and is marked ready', async ({
   test.skip(!flow.tabId, 'test 2 did not produce a tab — nothing to cook')
   const { ctx, page } = await pageAs(browser, 'cynthia.achieng')
 
-  await page.goto(`${APP}/pos/kitchen`, { waitUntil: 'networkidle' })
+  await page.goto(`${STATION}/pos/kitchen`, { waitUntil: 'networkidle' })
   await expect(page.getByRole('heading', { name: 'Kitchen Station' })).toBeVisible()
 
   // The queue is shared with real seed traffic — find OUR ticket by tab reference.
@@ -384,7 +389,7 @@ test('3. kitchen: the order arrives, is received, and is marked ready', async ({
 test('4. payment: bad amount is refused in plain English, good amount clears the balance', async ({ browser }) => {
   test.skip(!flow.tabId, 'test 2 did not produce a tab — nothing to pay for')
   const { ctx, page } = await pageAs(browser, 'joyce.wambua')
-  await page.goto(`${APP}/pos/tabs/${flow.tabId}`, { waitUntil: 'networkidle' })
+  await page.goto(`${STATION}/pos/tabs/${flow.tabId}`, { waitUntil: 'networkidle' })
 
   // The waiter marks the ready item served first — that's the real sequence.
   const served = page.getByRole('button', { name: /Served/ }).first()
@@ -534,7 +539,7 @@ test('6. incident: empty form is refused, a real report persists and reaches the
 
 test('7a. manager/roster: loads real staff and the Set action writes through', async ({ browser }) => {
   const { ctx, page } = await pageAs(browser, 'brian.mwangi')
-  await page.goto(`${APP}/manager/roster`, { waitUntil: 'networkidle' })
+  await page.goto(`${STATION}/manager/roster`, { waitUntil: 'networkidle' })
 
   await expect(page.getByRole('heading', { name: "Today's Roster" })).toBeVisible()
   // Real data, not a placeholder: every active seeded user has a row.
@@ -581,7 +586,7 @@ test('7a. manager/roster: loads real staff and the Set action writes through', a
 
 test('7b. manager/staff: loads real accounts and search filters them', async ({ browser }) => {
   const { ctx, page } = await pageAs(browser, 'brian.mwangi')
-  await page.goto(`${APP}/manager/staff`, { waitUntil: 'networkidle' })
+  await page.goto(`${STATION}/manager/staff`, { waitUntil: 'networkidle' })
 
   await expect(page.getByRole('heading', { name: 'Staff Accounts' })).toBeVisible()
   await expect(page.getByText('joyce.wambua').first()).toBeVisible({ timeout: 15_000 })
@@ -618,7 +623,7 @@ test('7c. manager/cash: pulls the waiter\'s pending cash and reconciles it', asy
   // on load, so creating the payment later would leave the UI showing a stale
   // total that no longer matches the API.
   const { ctx, page } = await pageAs(browser, 'brian.mwangi')
-  await page.goto(`${APP}/manager/cash`, { waitUntil: 'networkidle' })
+  await page.goto(`${STATION}/manager/cash`, { waitUntil: 'networkidle' })
 
   await expect(page.getByRole('heading', { name: 'Cash Reconciliation' })).toBeVisible()
 
@@ -714,7 +719,7 @@ test('8b. BUG: the "Access restricted" screen has no explanation and no way back
   // user gets a bare title and is stranded. This test asserts the INTENDED
   // behaviour, so a failure here IS the bug.
   const { ctx, page } = await pageAs(browser, 'joyce.wambua')
-  await page.goto(`${APP}/manager/roster`, { waitUntil: 'networkidle' })
+  await page.goto(`${STATION}/manager/roster`, { waitUntil: 'networkidle' })
   await expect(page.getByText('Access restricted')).toBeVisible()
 
   await expect(page.getByText("You don't have permission to view this page."),

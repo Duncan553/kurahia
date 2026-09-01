@@ -11,6 +11,8 @@ import { test, expect, Page } from '@playwright/test'
 import path from 'path'
 
 const EMPLOYEE_URL = 'http://localhost:5173'
+// See flows_employee.spec.ts — the post's tools are on the station tablet now.
+const STATION_URL  = 'http://localhost:5176'
 const OWNER_URL    = 'http://localhost:5174'
 const SCREENSHOT_DIR = path.resolve(__dirname, 'screenshots')
 const PASSWORD = process.env.SEED_PASSWORD ?? 'Kurahia1!'
@@ -178,7 +180,7 @@ test.describe('MANAGER DASHBOARD', () => {
     await passwordLogin(page, EMPLOYEE_URL, 'manager2')
 
     // Navigate to manager screen
-    await page.goto(`${EMPLOYEE_URL}/manager`, { waitUntil: 'networkidle' })
+    await page.goto(`${STATION_URL}/manager`, { waitUntil: 'networkidle' })
     await page.waitForTimeout(2000)
     await snap(page, 'manager-dashboard')
 
@@ -219,7 +221,7 @@ test.describe('WAITER — POS Tabs', () => {
     await passwordLogin(page, EMPLOYEE_URL, 'waiter1')
 
     // Navigate to POS tabs
-    await page.goto(`${EMPLOYEE_URL}/pos/tabs`, { waitUntil: 'networkidle' })
+    await page.goto(`${STATION_URL}/pos/tabs`, { waitUntil: 'networkidle' })
     await page.waitForTimeout(2000)
     await snap(page, 'waiter-tabs')
 
@@ -265,7 +267,7 @@ test.describe('GATE — Hub', () => {
   test('gate staff sees hub with issue band section', async ({ page }) => {
     await passwordLogin(page, EMPLOYEE_URL, 'gate1')
 
-    await page.goto(`${EMPLOYEE_URL}/gate/hub`, { waitUntil: 'networkidle' })
+    await page.goto(`${STATION_URL}/gate/hub`, { waitUntil: 'networkidle' })
     await page.waitForTimeout(2000)
     await snap(page, 'gate-hub')
 
@@ -289,7 +291,7 @@ test.describe('KITCHEN — Queue', () => {
   test('kitchen queue screen loads', async ({ page }) => {
     await passwordLogin(page, EMPLOYEE_URL, 'headchef')
 
-    await page.goto(`${EMPLOYEE_URL}/pos/kitchen`, { waitUntil: 'networkidle' })
+    await page.goto(`${STATION_URL}/pos/kitchen`, { waitUntil: 'networkidle' })
     await page.waitForTimeout(2000)
     await snap(page, 'kitchen-queue')
 
@@ -330,7 +332,7 @@ test.describe('SECURITY — Role boundaries', () => {
   test('waiter1 cannot access /manager', async ({ page }) => {
     await passwordLogin(page, EMPLOYEE_URL, 'waiter1')
 
-    await page.goto(`${EMPLOYEE_URL}/manager`, { waitUntil: 'networkidle' })
+    await page.goto(`${STATION_URL}/manager`, { waitUntil: 'networkidle' })
     await page.waitForTimeout(2000)
     await snap(page, 'security-waiter-manager')
 
@@ -345,7 +347,7 @@ test.describe('SECURITY — Role boundaries', () => {
   test('waiter1 cannot access /chef', async ({ page }) => {
     await passwordLogin(page, EMPLOYEE_URL, 'waiter1')
 
-    await page.goto(`${EMPLOYEE_URL}/chef`, { waitUntil: 'networkidle' })
+    await page.goto(`${STATION_URL}/chef`, { waitUntil: 'networkidle' })
     await page.waitForTimeout(2000)
     await snap(page, 'security-waiter-chef')
 
@@ -360,7 +362,7 @@ test.describe('SECURITY — Role boundaries', () => {
   test('gate1 (level 3) cannot access /manager', async ({ page }) => {
     await passwordLogin(page, EMPLOYEE_URL, 'gate1')
 
-    await page.goto(`${EMPLOYEE_URL}/manager`, { waitUntil: 'networkidle' })
+    await page.goto(`${STATION_URL}/manager`, { waitUntil: 'networkidle' })
     await page.waitForTimeout(2000)
     await snap(page, 'security-gate-manager')
 
