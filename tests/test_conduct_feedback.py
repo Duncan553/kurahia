@@ -307,16 +307,24 @@ class TestGuestFeedback:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 9. Performance socket activated — guest_rating returns real average
+# 9. Guest feedback is recorded — and does NOT reach performance
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class TestPerformanceSocket:
-    def test_guest_rating_populated_from_feedback(
-            self, client, manager_token, waiter_token, employee_profile, app):
+class TestFeedbackIsNotPerformance:
+    """Guest rating was removed from the performance surface on purpose.
+
+    It was computed and shown beside the four scores while composite_score was
+    punctuality + attendance + cash_health + void_health only — a number that
+    looked like it counted and did not. The feedback itself is still recorded
+    and still reaches the owner's feedback dashboard; what is gone is the claim
+    that it bears on a performance review.
+    """
+
+    def test_feedback_is_still_recorded_against_the_employee(
+            self, client, manager_token, employee_profile, app):
         from app.models.guest_feedback import GuestFeedback
         from app.extensions import db
 
-        # Seed feedback linked to this employee
         with app.app_context():
             for score in [5, 4, 5]:
                 db.session.add(GuestFeedback(
@@ -326,29 +334,23 @@ class TestPerformanceSocket:
                     idempotency_key=f"perf-test-{score}-{uuid.uuid4()}",
                 ))
             db.session.commit()
+            kept = db.session.query(GuestFeedback).filter_by(
+                served_by_employee_id=employee_profile.id).count()
+        assert kept == 3, "the feedback itself must survive — only the score link went"
 
+    def test_performance_no_longer_reports_a_guest_rating(
+            self, client, manager_token, employee_profile):
         now = datetime.now(timezone.utc)
         start = (now - timedelta(days=30)).strftime("%Y-%m-%d")
-        end   = now.strftime("%Y-%m-%d")
+        end = now.strftime("%Y-%m-%d")
         rv = client.get(
             f"/hr/performance/{employee_profile.id}?start_date={start}&end_date={end}",
             headers=auth(manager_token),
         )
         assert rv.status_code == 200
-        detail = rv.get_json()["detail"]
-        # Previously None — now a real average (5+4+5)/3 = 4.67
-        assert detail["guest_rating"] is not None
-        assert Decimal(detail["guest_rating"]) == Decimal("4.67")
-
-    def test_no_feedback_returns_none(
-            self, client, manager_token, employee_profile):
-        now = datetime.now(timezone.utc)
-        rv = client.get(
-            f"/hr/performance/{employee_profile.id}"
-            f"?start_date={now.strftime('%Y-%m-%d')}&end_date={now.strftime('%Y-%m-%d')}",
-            headers=auth(manager_token),
-        )
-        assert rv.get_json()["detail"]["guest_rating"] is None
+        body = rv.get_json()
+        assert "guest_rating" not in body["detail"]
+        assert "guest_rating" not in body.get("weights", {})
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

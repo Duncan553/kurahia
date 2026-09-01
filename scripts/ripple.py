@@ -9,7 +9,8 @@ actually heard.
 
     sell past the reorder level   -> does the owner get a low-stock notice?
     sell an item with no recipe   -> does anybody get told stock is now wrong?
-    a guest rates a waiter        -> does the waiter's score move?
+    a guest rates a waiter        -> does it reach the owner, and stay
+                                     OUT of the performance score?
     equipment goes overdue        -> does it show as due, derived not stored?
     a stock count finds a gap     -> does the variance say so, in shillings?
 
@@ -184,19 +185,18 @@ def ripple_no_recipe(owner, mgr, chef, waiter, kitchen, bar):
 
 # ══ 3. GUEST FEEDBACK ═══════════════════════════════════════════════════════
 def ripple_feedback(owner, mgr, front, waiter):
-    """A guest rates the person who served them. That rating has to reach the
-    performance score, or the review is a suggestion box with no bottom."""
+    """A guest rates the person who served them.
+
+    The rating is recorded and reaches the OWNER's feedback view. It does NOT
+    reach the performance score, and that is deliberate — it used to sit in the
+    detail block beside four scores it had no part in, so it read as if it
+    counted. Removed rather than wired in.
+    """
     act("a guest rates the waiter who served them")
     prof = mgr.get("/hr/profiles").get_json() or []
     target = next((p for p in prof if p.get("user_id") == waiter.user_id), None)
     if not expect(target, "the waiter has an employee file"):
         return
-
-    start = (datetime.now(timezone.utc) - timedelta(days=1)).date().isoformat()
-    end = (datetime.now(timezone.utc) + timedelta(days=1)).date().isoformat()
-    before = mgr.get(f"/hr/performance/{target['id']}",
-                     query_string={"start_date": start, "end_date": end})
-    rating_before = (before.get_json() or {}).get("guest_rating")
 
     r = front.post("/feedback", {
         "score": 5, "comment": "Very quick service at the pool bar.",
@@ -207,24 +207,18 @@ def ripple_feedback(owner, mgr, front, waiter):
                   str(r.get_json())[:70]):
         return
 
-    after = mgr.get(f"/hr/performance/{target['id']}",
-                    query_string={"start_date": start, "end_date": end}).get_json() or {}
-    rating_after = (after.get("detail") or {}).get("guest_rating")
-    expect(rating_after is not None,
-           "it reaches the waiter's performance record",
-           f"guest_rating {rating_before} -> {rating_after}")
+    # It reaches the owner, who is the person the opinion is actually for.
+    fb = owner.get("/dashboard/feedback")
+    expect(fb.status_code == 200, "and reaches the owner's feedback view")
 
-    # ...but NOT the composite score. guest_rating is computed and reported in
-    # `detail`, while composite_score is punctuality + attendance + cash_health
-    # + void_health only (app/services/hr.py:298-304). It was built as a socket
-    # before the Feedback model existed and never wired in.
-    #
-    # Recorded, deliberately NOT "fixed": how much a guest's opinion should
-    # weigh against somebody's wages is Wachira's call, not an agent's.
-    weights = after.get("weights") or {}
-    expect("guest_rating" not in weights,
-           "guest rating is still OUTSIDE the composite score — Wachira's call",
-           f"weights: {', '.join(sorted(weights))}")
+    # And it stays OUT of the performance review.
+    start_d = (datetime.now(timezone.utc) - timedelta(days=1)).date().isoformat()
+    end_d = (datetime.now(timezone.utc) + timedelta(days=1)).date().isoformat()
+    perf = mgr.get(f"/hr/performance/{target['id']}",
+                   query_string={"start_date": start_d, "end_date": end_d}).get_json() or {}
+    expect("guest_rating" not in (perf.get("detail") or {}),
+           "a guest's opinion does NOT score the employee",
+           f"scores: {', '.join(sorted(perf.get('weights') or {}))}")
 
 
 # ══ 4. EQUIPMENT ════════════════════════════════════════════════════════════
@@ -288,11 +282,12 @@ def ripple_stock_count(owner, mgr, bar, chef):
     """Counting less than the ledger says is the theft signal. The variance has
     to be stated — a count that quietly overwrites the ledger hides the gap.
 
-    WHO CAN COUNT is the finding here. Submitting a count needs manager level
-    (>=5) AND, below owner, the item's own department. The seeded resort has
-    nobody who is both: the manager sits in Management, and the kitchen and bar
-    leads are level 3. So for a Bar or Kitchen item the ONLY person who can
-    count is the owner — see the checks below, which pin it rather than pretend.
+    WHO CAN COUNT was the finding here, and it is now fixed. Counting used to
+    need manager level AND, below owner, the item's own department — and nobody
+    in the resort was both, so all 38 items were owner-only. Permission is now
+    a flag on the ROLE (invariant 10): the lead who holds the stock counts their
+    own department, a manager spot-checks anywhere, and seniority alone grants
+    nothing — a waiter standing in the bar still cannot count it.
     """
     act("a stock count finds less than the books say")
     name = "Tusker Beer"
@@ -313,27 +308,29 @@ def ripple_stock_count(owner, mgr, bar, chef):
             "idempotency_key": f"ripple-restock-{uuid.uuid4().hex[:8]}"})
     expected = get_current_stock(iid)
 
-    r = mgr.post("/inventory/counts", {
-        "item_id": iid, "counted_amount": str(expected),
-        "count_type": "DAILY", "idempotency_key": str(uuid.uuid4())})
-    expect(r.status_code == 403,
-           "the manager cannot count Bar stock — wrong department",
-           str(r.get_json().get("error", ""))[:56])
-
+    # The bar lead counts their OWN store — the person who holds the stock.
     r = bar.post("/inventory/counts", {
         "item_id": iid, "counted_amount": str(expected),
         "count_type": "DAILY", "idempotency_key": str(uuid.uuid4())})
+    expect(r.status_code == 201,
+           "the bar lead can count their own bar",
+           str(r.get_json().get("error", ""))[:56] if r.status_code != 201 else "")
+
+    # The head chef cannot — it is not their department.
+    r = chef.post("/inventory/counts", {
+        "item_id": iid, "counted_amount": str(expected),
+        "count_type": "DAILY", "idempotency_key": str(uuid.uuid4())})
     expect(r.status_code == 403,
-           "the bar lead cannot either — below manager level",
+           "the head chef cannot count the bar — not their department",
            str(r.get_json().get("error", ""))[:56])
 
-    # Which leaves exactly one person in the whole resort.
-    r = owner.post("/inventory/counts", {
+    # A manager spot-checks anywhere.
+    r = mgr.post("/inventory/counts", {
         "item_id": iid, "counted_amount": str(expected - short_by),
         "count_type": "DAILY", "notes": "ripple sweep",
         "idempotency_key": str(uuid.uuid4())})
     if not expect(r.status_code in (200, 201),
-                  f"only the OWNER can count {name} — 3 short",
+                  f"a manager spot-checks {name} — 3 short",
                   str(r.get_json())[:70]):
         return
     body = r.get_json()

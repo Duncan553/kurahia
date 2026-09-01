@@ -31,7 +31,6 @@ interface PerformanceData {
     cash_shortfalls: number
     void_rate_pct: string
     hours_worked: string
-    guest_rating: string | null
   }
   weights: Record<string, string>
 }
@@ -215,15 +214,9 @@ function StaffRow({ profile, period, isExpanded, onToggle }: {
                     ))}
                   </div>
 
-                  {/* Guest rating (if available) */}
-                  {perf.detail.guest_rating && (
-                    <div className="rounded-xl bg-white/5 p-2.5">
-                      <p className="text-[10px] text-ink-tertiary">Guest Rating</p>
-                      <p className="text-sm font-bold tabular-nums text-ink-primary">
-                        {perf.detail.guest_rating} / 5
-                      </p>
-                    </div>
-                  )}
+                  {/* Guest rating used to sit here. It was never part of the
+                      composite score, so it showed a number that looked like it
+                      counted and did not. Removed rather than wired in. */}
 
                   {/* Period */}
                   <p className="text-[10px] text-ink-tertiary text-right">
