@@ -39,6 +39,25 @@ class EmployeeProfile(db.Model):
     payment_method         = db.Column(db.String(20), nullable=True)   # MPESA / BANK
     payment_account_number = db.Column(db.String(60),  nullable=True)  # phone no. or bank acct no.
 
+    # ── The working pattern this person is normally on ────────────────────────
+    # Rostering by hand does not survive contact with a real week: 14 people x 6
+    # shifts is 84 rows somebody types every Sunday. So it gets typed once, then
+    # never again, and the attendance board quietly stops meaning anything.
+    #
+    # The pattern is stored ONCE and shifts are generated from it — a recurring
+    # template plus copy-forward, which is what every scheduling tool does,
+    # reduced to the smallest thing that still gives a true board.
+    #
+    #   roster_days   "MON,TUE,WED,THU,FRI"  the days they normally work
+    #   roster_start  "16:00"                local start (Africa/Nairobi)
+    #   roster_end    "00:00"                local end; before start = overnight
+    #
+    # All NULL means "not on a regular pattern" — casuals, and anyone whose days
+    # move around, are rostered by hand exactly as before. Nothing is forced.
+    roster_days  = db.Column(db.String(60), nullable=True)
+    roster_start = db.Column(db.String(5),  nullable=True)
+    roster_end   = db.Column(db.String(5),  nullable=True)
+
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
     created_at_utc = db.Column(

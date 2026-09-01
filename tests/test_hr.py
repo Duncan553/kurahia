@@ -559,3 +559,117 @@ def test_a_profile_photo_cannot_point_off_site(client, manager_token, app):
                           headers=auth(manager_token))
         assert rv.status_code == 400, f"accepted {bad!r}"
         assert "uploaded image path" in rv.get_json()["error"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Roster generation — the pattern is typed once, the shifts come from it
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _patterned(profile, days="MON,TUE,WED,THU,FRI", start="08:00", end="17:00"):
+    from app.extensions import db
+    profile.roster_days, profile.roster_start, profile.roster_end = days, start, end
+    db.session.commit()
+    return profile
+
+
+def test_a_week_of_shifts_is_generated_from_one_pattern(client, manager_token, app):
+    """WAS THE PROBLEM: 14 staff x 6 days is 84 rows somebody types every Sunday,
+    so nobody does, and the attendance board silently lists nobody."""
+    from datetime import date
+    from app.extensions import db
+    from app.models.shift import Shift
+    from app.models.user import User
+    from app.models.employee_profile import EmployeeProfile
+
+    u = db.session.query(User).filter_by(username="waiter1").first()
+    prof = db.session.query(EmployeeProfile).filter_by(user_id=u.id).first()
+    if prof is None:
+        prof = EmployeeProfile(user_id=u.id, full_name="Pattern Tester", phone="+254700111000")
+        db.session.add(prof)
+        db.session.commit()
+    _patterned(prof)
+
+    before = db.session.query(Shift).filter_by(employee_id=prof.id).count()
+    rv = client.post("/hr/shifts/generate", json={"week_start": "2026-09-07"},
+                     headers=auth(manager_token))
+    assert rv.status_code == 200, rv.get_data(as_text=True)
+    # Mon-Fri from one line of pattern
+    assert rv.get_json()["created"] >= 5
+    assert db.session.query(Shift).filter_by(employee_id=prof.id).count() == before + 5
+
+
+def test_generating_the_same_week_twice_creates_nothing(client, manager_token, app):
+    """Somebody will click it twice. That must not double the roster."""
+    from app.extensions import db
+    from app.models.user import User
+    from app.models.employee_profile import EmployeeProfile
+
+    u = db.session.query(User).filter_by(username="waiter1").first()
+    prof = db.session.query(EmployeeProfile).filter_by(user_id=u.id).first()
+    if prof is None:
+        prof = EmployeeProfile(user_id=u.id, full_name="Pattern Tester", phone="+254700111001")
+        db.session.add(prof)
+        db.session.commit()
+    _patterned(prof)
+
+    first = client.post("/hr/shifts/generate", json={"week_start": "2026-09-14"},
+                        headers=auth(manager_token)).get_json()
+    second = client.post("/hr/shifts/generate", json={"week_start": "2026-09-14"},
+                         headers=auth(manager_token)).get_json()
+    assert first["created"] > 0
+    assert second["created"] == 0
+    assert second["already_rostered"] >= first["created"]
+
+
+def test_somebody_with_no_pattern_is_left_alone(client, manager_token, app):
+    """Casuals and anyone whose days move around stay manual, on purpose."""
+    from app.extensions import db
+    from app.models.shift import Shift
+    from app.models.user import User
+    from app.models.employee_profile import EmployeeProfile
+
+    u = db.session.query(User).filter_by(username="staff1").first()
+    prof = db.session.query(EmployeeProfile).filter_by(user_id=u.id).first()
+    if prof is None:
+        prof = EmployeeProfile(user_id=u.id, full_name="Casual Worker", phone="+254700111002")
+        db.session.add(prof)
+        db.session.commit()
+    prof.roster_days = prof.roster_start = prof.roster_end = None
+    db.session.commit()
+
+    rv = client.post("/hr/shifts/generate", json={"week_start": "2026-09-21"},
+                     headers=auth(manager_token))
+    assert rv.status_code == 200
+    assert rv.get_json()["no_pattern"] >= 1
+    assert db.session.query(Shift).filter_by(employee_id=prof.id).count() == 0
+
+
+def test_an_overnight_pattern_does_not_end_before_it_starts(client, manager_token, app):
+    """The bar works 16:00 to 00:00 — that is eight hours into the next day, not
+    minus eight hours on the same one."""
+    from app.extensions import db
+    from app.models.shift import Shift
+    from app.models.user import User
+    from app.models.employee_profile import EmployeeProfile
+
+    u = db.session.query(User).filter_by(username="waiter1").first()
+    prof = db.session.query(EmployeeProfile).filter_by(user_id=u.id).first()
+    if prof is None:
+        prof = EmployeeProfile(user_id=u.id, full_name="Night Bar", phone="+254700111003")
+        db.session.add(prof)
+        db.session.commit()
+    _patterned(prof, days="MON", start="16:00", end="00:00")
+
+    client.post("/hr/shifts/generate", json={"week_start": "2026-09-28"},
+                headers=auth(manager_token))
+    sh = (db.session.query(Shift).filter_by(employee_id=prof.id)
+          .order_by(Shift.scheduled_start_utc.desc()).first())
+    assert sh.scheduled_end_utc > sh.scheduled_start_utc
+    hours = (sh.scheduled_end_utc - sh.scheduled_start_utc).total_seconds() / 3600
+    assert 7.9 < hours < 8.1, f"an 8-hour night shift came out as {hours}h"
+
+
+def test_a_waiter_cannot_generate_the_roster(client, waiter_token):
+    rv = client.post("/hr/shifts/generate", json={"week_start": "2026-10-05"},
+                     headers=auth(waiter_token))
+    assert rv.status_code == 403
