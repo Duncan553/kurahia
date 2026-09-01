@@ -117,6 +117,12 @@ def run(app):
         say(f"closed {closed} tab(s) that owed nothing")
 
         # ── 3. Staff hired to prove hiring works ──────────────────────────────
+        # The LOGIN account and the EMPLOYEE FILE are two different rows, and
+        # only deactivating the account was leaving the file on the roster. The
+        # attendance board reads employee files, so a manager opening it saw one
+        # test hire listed four times and not one of the fourteen real staff.
+        from app.models.employee_profile import EmployeeProfile
+        from app.models.shift import Shift
         test_users = db.session.query(User).filter(
             db.or_(User.username.like("newhire.%"),
                    User.username.like("ripple.%"),
@@ -127,6 +133,37 @@ def run(app):
             if APPLY:
                 owner.post(f"/auth/deactivate/{u.id}")
             say(f"deactivated {u.username}")
+
+        # Employee files for people who were never real. Disabling one is
+        # owner-only, and it cancels their shifts too — a shift belonging to
+        # nobody is what put a phantom on the attendance board.
+        seeded = {"amara.wanjiku", "brian.mwangi", "cynthia.achieng", "david.otieno",
+                  "esther.kamau", "francis.njoroge", "grace.muthoni", "hassan.omondi",
+                  "ivan.kipchoge", "joyce.wambua", "kevin.mutua", "lillian.chebet",
+                  "mercy.nyambura", "peter.mwendwa"}
+        ghosts = [p for p in db.session.query(EmployeeProfile).filter_by(is_active=True).all()
+                  if not p.user or p.user.username not in seeded]
+        print(f"\n── {len(ghosts)} employee file(s) for people who were never real")
+        for p in ghosts:
+            if APPLY:
+                owner.post(f"/hr/profiles/{p.id}/disable")
+            say(f"retired {p.full_name}")
+
+        # Cancel every SCHEDULED shift belonging to somebody no longer active.
+        # Disabling the file is not enough: /hr/attendance/today lists SHIFTS and
+        # then looks the person up, so a retired employee's shift still puts them
+        # on the board. That is why four Amina Wekesas were still standing there
+        # after their accounts and files had all been closed.
+        orphan_shifts = [sh for sh in db.session.query(Shift)
+                         .filter_by(status="SCHEDULED").all()
+                         if not (db.session.get(EmployeeProfile, sh.employee_id)
+                                 or EmployeeProfile()).is_active]
+        print(f"\n── {len(orphan_shifts)} shift(s) rostered to somebody no longer here")
+        for sh in orphan_shifts:
+            pr = db.session.get(EmployeeProfile, sh.employee_id)
+            if APPLY:
+                owner.post(f"/hr/shifts/{sh.id}/cancel", {"reason": "Test data — cleared before demo."})
+            say(f"cancelled a shift for {pr.full_name if pr else 'a deleted profile'}")
 
         # ── 4. Put stock back on the shelves ──────────────────────────────────
         print("\n── restocking what the drivers drank and cooked")
