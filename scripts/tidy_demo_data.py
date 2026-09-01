@@ -40,19 +40,25 @@ APPLY = "--apply" in sys.argv
 
 # Restock anything at or below this so the screens do not read as an empty bar.
 LOW_WATER = Decimal("12")
-RESTOCK = {                       # item -> (quantity, total KSh, real pack)
-    "Tusker Beer":            ("24", "2880", "one crate of 24 @ KSh 120/bottle"),
-    "Guinness":               ("24", "3600", "one crate of 24 @ KSh 150/bottle"),
-    "Soda 330ml":             ("24", "1200", "one crate of 24 @ KSh 50/bottle"),
-    "Mineral Water 500ml":    ("24",  "600", "one shrink-pack of 24 @ KSh 25"),
-    "Chocolate Cake (whole)": ("4", "10000", "4 whole cakes @ KSh 2,500"),
-    "Spices Mix":             ("2",  "1600", "2kg @ KSh 800/kg"),
-    "Fuel":                   ("20", "3900", "20L @ KSh 195/L"),
-    "Petrol (outboard)":      ("50", "9750", "50L @ KSh 195/L"),
-    "Paddle Sets":            ("4",  "9600", "4 sets @ KSh 2,400"),
-    "Aromatherapy Kit":       ("4", "14000", "4 sets @ KSh 3,500"),
-    "Massage Oil":            ("6",  "7200", "6 bottles @ KSh 1,200"),
-    "Cooking Oil":            ("20", "5600", "one 20L jerrican @ KSh 280/L"),
+# item -> (quantity, total KSh, real pack, who it came from)
+#
+# The supplier is named on every line. It was left off the first time, and
+# those nine restocks are now the only purchases in the database that cannot be
+# traced back to anybody — which is exactly the gap this data was meant to help
+# demonstrate, manufactured by the cleanup script itself.
+RESTOCK = {
+    "Tusker Beer":            ("24", "2880", "one crate of 24 @ KSh 120/bottle", "Thika Road Beverages"),
+    "Guinness":               ("24", "3600", "one crate of 24 @ KSh 150/bottle", "Thika Road Beverages"),
+    "Soda 330ml":             ("24", "1200", "one crate of 24 @ KSh 50/bottle",  "Thika Road Beverages"),
+    "Mineral Water 500ml":    ("24",  "600", "one shrink-pack of 24 @ KSh 25",   "Thika Road Beverages"),
+    "Chocolate Cake (whole)": ("4", "10000", "4 whole cakes @ KSh 2,500",        "Naivas Wholesale Thika"),
+    "Spices Mix":             ("2",  "1600", "2kg @ KSh 800/kg",                 "Naivas Wholesale Thika"),
+    "Cooking Oil":            ("20", "5600", "one 20L jerrican @ KSh 280/L",     "Naivas Wholesale Thika"),
+    "Fuel":                   ("20", "3900", "20L @ KSh 195/L",                  "TotalEnergies Juja"),
+    "Petrol (outboard)":      ("50", "9750", "50L @ KSh 195/L",                  "TotalEnergies Juja"),
+    "Paddle Sets":            ("4",  "9600", "4 sets @ KSh 2,400",               "Nairobi Spa Essentials"),
+    "Aromatherapy Kit":       ("4", "14000", "4 sets @ KSh 3,500",               "Nairobi Spa Essentials"),
+    "Massage Oil":            ("6",  "7200", "6 bottles @ KSh 1,200",            "Nairobi Spa Essentials"),
 }
 
 
@@ -124,7 +130,7 @@ def run(app):
 
         # ── 4. Put stock back on the shelves ──────────────────────────────────
         print("\n── restocking what the drivers drank and cooked")
-        for name, (qty, cost, pack) in RESTOCK.items():
+        for name, (qty, cost, pack, supplier) in RESTOCK.items():
             item = db.session.query(InventoryItem).filter_by(name=name, is_active=True).first()
             if not item:
                 continue
@@ -134,6 +140,7 @@ def run(app):
             if APPLY:
                 r = owner.post("/inventory/purchases", {
                     "item_id": item.id, "quantity": qty, "actual_cost": cost,
+                    "supplier_name": supplier,
                     "receipt_photo_path": f"receipts/restock-{uuid.uuid4().hex[:8]}.jpg",
                     "notes": pack, "idempotency_key": f"tidy-{uuid.uuid4()}"})
                 ok = r.status_code in (200, 201)
