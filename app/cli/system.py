@@ -202,6 +202,75 @@ def verify_chain():
         raise SystemExit(1)
 
 
+@audit_cli_bp.cli.command("rebuild-chain")
+@click.option("--yes", is_flag=True, help="Confirm — this rewrites every entry_hash.")
+def rebuild_chain(yes):
+    """DEV ONLY: re-hash the whole audit chain with the current formula.
+
+    WHY THIS EXISTS, and why it is dangerous. The chain is only meaningful
+    because a row's hash cannot be recomputed after the fact. This command
+    recomputes all of them. On a live system that is indistinguishable from a
+    cover-up, which is exactly why it refuses to run anywhere but development.
+
+    It is needed exactly once, for one reason: the hash FORMULA changed.
+    `details` was added to the hashed content (it had been left out, so anyone
+    with database access could rewrite what an entry SAID and verification still
+    reported the history as clean). Every row written before that change was
+    hashed without details, so it no longer verifies — not because anything was
+    tampered with, but because the question changed.
+
+    Production starts with an empty audit log, so this will never be needed
+    there. If the formula ever changes again AFTER go-live, do not reach for
+    this: version the hash instead and verify old rows with the old rule.
+    """
+    import os
+    from flask import current_app
+    from app.models.audit_log import AuditLog
+
+    env = os.environ.get("FLASK_ENV", "")
+    if env != "development":
+        click.echo(f"Refused: rebuild-chain only runs with FLASK_ENV=development (got {env!r}).")
+        raise SystemExit(1)
+
+    db_url = str(current_app.config.get("SQLALCHEMY_DATABASE_URI", ""))
+    if db_url.startswith(("postgres://", "postgresql://")):
+        click.echo("Refused: this is pointed at Postgres, which is the production database.")
+        raise SystemExit(1)
+
+    rows = db.session.query(AuditLog).order_by(AuditLog.timestamp.asc()).all()
+    stale = 0
+    prev = None
+    for r in rows:
+        if AuditLog._compute_hash(r.actor, r.action, r.target, r.timestamp,
+                                  prev, r.details) != r.entry_hash:
+            stale += 1
+        prev = r.entry_hash
+
+    if not stale:
+        click.echo(f"Nothing to do — all {len(rows)} entries already verify.")
+        return
+    if not yes:
+        click.echo(f"{stale} of {len(rows)} entries were hashed with the old formula.")
+        click.echo("This will rewrite every entry_hash. Re-run with --yes.")
+        return
+
+    prev = None
+    for r in rows:
+        r.prev_hash = prev
+        r.entry_hash = AuditLog._compute_hash(r.actor, r.action, r.target,
+                                              r.timestamp, prev, r.details)
+        prev = r.entry_hash
+    # The head marker has to move with it, or verification now reports the tail
+    # rewritten — which it was, deliberately, by this command.
+    AuditLog._remember_head(prev)
+    db.session.commit()
+
+    ok, message = AuditLog.verify_chain()
+    click.echo(f"Rebuilt {len(rows)} entries. Chain now: {'OK' if ok else message}")
+    if not ok:
+        raise SystemExit(1)
+
+
 # ── Judge ──────────────────────────────────────────────────────────────────────
 
 @judge_cli_bp.cli.command("run-weekly")
