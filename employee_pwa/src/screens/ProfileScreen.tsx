@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, useToastStore } from '@shared'
+import { Avatar, Button, useToastStore } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import { useFontSizePref, type FontSizeKey } from '../lib/fontSizePref'
 import api from '../lib/axios'
 
 interface MyProfile {
   full_name: string; phone: string
+  photo_path: string | null
   payment_method: string | null; payment_account_number: string | null
 }
 const extractErr = (e: unknown) =>
@@ -152,6 +153,14 @@ export default function ProfileScreen() {
   const clearAuth = useAuthStore((s) => s.clearAuth)
   const { size: fontSize, changeSize: changeFontSize } = useFontSizePref()
 
+  // Same key as the payment section below, so react-query serves both from one
+  // request rather than fetching the profile twice on one screen.
+  const { data: profile } = useQuery<MyProfile>({
+    queryKey: ['my-profile'],
+    queryFn: () => api.get<MyProfile>('/hr/profiles/me').then(r => r.data),
+    retry: false,          // no profile yet is a normal state, not an error
+  })
+
   function signOut() { clearAuth(); navigate('/pin') }
 
   const containerVariants = {
@@ -181,12 +190,19 @@ export default function ProfileScreen() {
 
       {/* ── Identity card ─────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="flex items-center gap-4 -mt-2">
-        <div className="w-14 h-14 rounded-full bg-primary-main flex items-center justify-center
-          text-white text-xl font-bold shrink-0 ring-4 ring-cream-card">
-          {user?.username?.[0]?.toUpperCase() ?? '?'}
-        </div>
+        {/* Real photo when there is one, initials in a stable colour when there
+            is not. Was a single letter taken from the USERNAME, so "peter.mwendwa"
+            showed a "P" — the login handle, not the person. */}
+        <Avatar
+          name={profile?.full_name || user?.username || '?'}
+          photoPath={profile?.photo_path}
+          size="lg"
+          className="ring-4 ring-cream-card"
+        />
         <div>
-          <p className="text-base font-bold text-ink-primary">{user?.username}</p>
+          <p className="text-base font-bold text-ink-primary">
+            {profile?.full_name || user?.username}
+          </p>
           <p className="text-sm text-ink-tertiary">
             {roleName(user?.role_level ?? 0)}
             {user?.department ? ` · ${user.department}` : ''}

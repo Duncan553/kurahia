@@ -912,9 +912,9 @@ class TestProfiles:
                          headers=auth(manager_token))
         assert rv.status_code == 403
 
-    def test_HOLE_a_manager_can_raise_their_own_wage(
+    def test_a_manager_cannot_raise_their_own_wage(
             self, client, manager_token, manager_profile):
-        """HOLE — the sharpest one in this domain.
+        """WAS THE SHARPEST HOLE IN THIS DOMAIN, now closed.
 
         PATCH /hr/profiles/<id> (app/hr/profiles.py:195-234) checks only
         `actor.role.level < MANAGER_LEVEL`. It never asks whether the profile
@@ -931,28 +931,49 @@ class TestProfiles:
         rv = client.patch(f"/hr/profiles/{manager_profile.id}", json={
             "wage_rate": "999999", "wage_period": "HOURLY",
         }, headers=auth(manager_token))
-        assert rv.status_code == 200                     # <-- should be 403
+        assert rv.status_code == 403, rv.get_data(as_text=True)
+        assert "own pay" in rv.get_json()["error"]
 
+        # And nothing reached the payroll draft.
         rv = client.get("/hr/payroll-draft", headers=auth(manager_token))
         row = [r for r in rv.get_json()["employees"]
                if r["employee_id"] == manager_profile.id][0]
-        assert row["wage_rate"].startswith("999999")
+        assert not str(row["wage_rate"]).startswith("999999")
 
-    def test_HOLE_a_manager_can_rewrite_the_owners_profile(
+    def test_a_manager_may_still_edit_their_own_phone(
+            self, client, manager_token, manager_profile):
+        """Only PAY is walled off. Blocking the whole self-edit would send
+        everyone to the owner to correct a phone number, and a rule that
+        annoying gets worked around."""
+        rv = client.patch(f"/hr/profiles/{manager_profile.id}",
+                          json={"phone": "+254700111222"},
+                          headers=auth(manager_token))
+        assert rv.status_code == 200, rv.get_data(as_text=True)
+
+    def test_the_owner_can_set_a_managers_wage(
+            self, client, owner_token, manager_profile):
+        """The rule must not lock the resort out of paying people."""
+        rv = client.patch(f"/hr/profiles/{manager_profile.id}",
+                          json={"wage_rate": "5000", "wage_period": "MONTHLY"},
+                          headers=auth(owner_token))
+        assert rv.status_code == 200, rv.get_data(as_text=True)
+
+    def test_a_manager_cannot_rewrite_the_owners_profile(
             self, client, owner_token, manager_token):
-        """HOLE (hierarchy). Same missing check, pointed upward: no outranking
-        rule on PATCH /hr/profiles/<id>, so a manager can edit the OWNER's
-        name, phone, emergency contact and wage."""
+        """WAS A HOLE (hierarchy). The same missing check, pointed upward: no
+        outranking rule on PATCH /hr/profiles/<id>, so a manager could edit the
+        OWNER's name, phone, emergency contact and wage."""
         from app.models.employee_profile import EmployeeProfile
         owner_profile = db.session.query(EmployeeProfile).filter_by(
             user_id=_user("owner1").id).first()
+        before = owner_profile.full_name
         rv = client.patch(f"/hr/profiles/{owner_profile.id}", json={
             "full_name": "Definitely The Owner", "wage_rate": "1",
         }, headers=auth(manager_token))
-        assert rv.status_code == 200                     # <-- should be 403
+        assert rv.status_code == 403, rv.get_data(as_text=True)
+        assert "at or above your own role level" in rv.get_json()["error"]
         db.session.expire_all()
-        assert db.session.get(EmployeeProfile, owner_profile.id).full_name \
-            == "Definitely The Owner"
+        assert db.session.get(EmployeeProfile, owner_profile.id).full_name == before
 
 
 # ══════════════════════════════════════════════════════════════════════════════

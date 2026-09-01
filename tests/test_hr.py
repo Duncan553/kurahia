@@ -506,3 +506,56 @@ class TestWiFiUnconfiguredIsNamedHonestly:
                          headers={"Authorization": f"Bearer {waiter_token}"})
         assert rv.status_code == 403
         assert "staff network" in rv.get_json()["error"].lower()
+
+
+def test_a_profile_photo_can_be_changed_not_just_set_once(client, manager_token, app):
+    """photo_path was accepted on CREATE and ignored on PATCH, so a staff photo
+    could be set at hire time and never corrected."""
+    from app.extensions import db
+    from app.models.user import User
+    from app.models.employee_profile import EmployeeProfile
+
+    u = db.session.query(User).filter_by(username="waiter1").first()
+    prof = db.session.query(EmployeeProfile).filter_by(user_id=u.id).first()
+    if prof is None:
+        rv = client.post("/hr/profiles", json={
+            "user_id": u.id, "full_name": "Photo Test", "phone": "+254700999888",
+        }, headers=auth(manager_token))
+        assert rv.status_code == 201, rv.get_data(as_text=True)
+        pid = rv.get_json()["id"]
+    else:
+        pid = prof.id
+
+    rv = client.patch(f"/hr/profiles/{pid}", json={"photo_path": "/images/profiles/ab12.jpg"},
+                      headers=auth(manager_token))
+    assert rv.status_code == 200, rv.get_data(as_text=True)
+    db.session.expire_all()
+    assert db.session.get(EmployeeProfile, pid).photo_path == "/images/profiles/ab12.jpg"
+
+    # And it shows up on the staff LIST, which is what a roster with faces reads.
+    rows = client.get("/hr/profiles", headers=auth(manager_token)).get_json()
+    mine = [r for r in rows if r["id"] == pid][0]
+    assert mine["photo_path"] == "/images/profiles/ab12.jpg"
+
+
+def test_a_profile_photo_cannot_point_off_site(client, manager_token, app):
+    """The value lands in an <img src>. Free text here would let somebody aim a
+    staff photo at an external tracking pixel that fires every time a manager
+    opens the roster — or at a javascript: scheme."""
+    from app.extensions import db
+    from app.models.user import User
+    from app.models.employee_profile import EmployeeProfile
+
+    u = db.session.query(User).filter_by(username="waiter1").first()
+    prof = db.session.query(EmployeeProfile).filter_by(user_id=u.id).first()
+    if prof is None:
+        prof = EmployeeProfile(user_id=u.id, full_name="Photo Test", phone="+254700999777")
+        db.session.add(prof)
+        db.session.commit()
+
+    for bad in ("https://tracker.example.com/pixel.gif", "javascript:alert(1)",
+                "//evil.example.com/x.png"):
+        rv = client.patch(f"/hr/profiles/{prof.id}", json={"photo_path": bad},
+                          headers=auth(manager_token))
+        assert rv.status_code == 400, f"accepted {bad!r}"
+        assert "uploaded image path" in rv.get_json()["error"]
