@@ -171,7 +171,38 @@ def main():
     else:
         print(f"  ✓ all {checked} GET paths answer without a server error")
 
-    total_bad = len(missing) + len(wrong_method) + len(broken)
+    # ── Internal navigation ───────────────────────────────────────────────────
+    # The API contract is only half of it. A screen can also navigate to one of
+    # its OWN routes that no longer exists, and nothing complains: React Router
+    # quietly falls through to the catch-all, which in these apps is the login
+    # screen. The person sees "it logged me out" and has no idea a screen moved.
+    #
+    # That is exactly what happened when the station tools left the employee
+    # app: TWO redirect blocks and three notification tap-targets still pointed
+    # at deleted routes. TypeScript cannot catch it — they are strings.
+    print("\ninternal navigation, per app:")
+    dead_nav = []
+    for pkg in ("employee_pwa", "owner_pwa", "station_pwa"):
+        main = Path(pkg) / "src" / "main.tsx"
+        if not main.exists():
+            continue
+        declared = set(re.findall(r"path: '([^']+)'", main.read_text()))
+        # ":id" style params — compare on the static prefix
+        stems = {d.split("/:")[0] for d in declared}
+        targets = set()
+        for f in (Path(pkg) / "src").rglob("*.ts*"):
+            text = f.read_text(encoding="utf-8", errors="ignore")
+            targets |= set(re.findall(r"""(?:Navigate to=|navigate\()['"](/[a-z0-9/-]*)""", text))
+            if f.name in ("notificationRoutes.ts", "sw.ts"):
+                targets |= set(re.findall(r""": '(/[a-z0-9/-]+)'""", text))
+        bad = sorted(t for t in targets
+                     if t and t not in declared and t.split("/:")[0] not in stems
+                     and not any(t.startswith(s + "/") for s in stems if s != "/"))
+        print(f"  {pkg:14} {len(targets):>3} target(s), "
+              f"{'all resolve' if not bad else 'DEAD: ' + ', '.join(bad)}")
+        dead_nav += [(pkg, t) for t in bad]
+
+    total_bad = len(missing) + len(wrong_method) + len(broken) + len(dead_nav)
     print("\n" + "=" * 62)
     print("front-end contract holds" if not total_bad
           else f"{total_bad} contract break(s)")

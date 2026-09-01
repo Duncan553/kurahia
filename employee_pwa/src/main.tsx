@@ -5,9 +5,8 @@ import { ErrorBoundary } from '@shared'
 import { MotionConfig } from 'framer-motion'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { registerSW } from 'virtual:pwa-register'
-import api from './lib/axios'
 import './index.css'
 
 // Service worker: auto-updates on new deploy (skipWaiting in sw.ts)
@@ -61,29 +60,21 @@ const DisputesScreen = lazy(() => import('./screens/DisputesScreen'))
 const IncidentScreen = lazy(() => import('./screens/IncidentScreen'))
 import RegisterScreen from './screens/RegisterScreen'
 
-// ── HomeRedirect: landing page based on device mode ──
+// ── HomeRedirect ──────────────────────────────────────────────────────────
+// Everyone lands on the clock. Nothing else to decide.
+//
+// This used to read a `kurahia:station_mode` flag out of localStorage and send
+// people to their post — kitchen to /pos/kitchen, a waiter to /pos/tabs, gate
+// to /gate/hub. Those routes are station_pwa's now, so every one of those
+// redirects pointed at a route this app no longer serves: the person would
+// have bounced off the catch-all and landed back on the login screen, from the
+// home route, with nothing to tell them why.
+//
+// It was the SECOND copy of that logic — AppLayout had one too — which is
+// exactly how a rule survives being deleted once.
 function HomeRedirect() {
   const user = useAuthStore((s) => s.user)
-  const station = localStorage.getItem('kurahia:station_mode') === 'true'
-  // Today's roster overrides the account's fixed department — same source
-  // AppLayout uses, so a manager's reassignment for today is respected here
-  // too, not just on subsequent navigation. See AppLayout.tsx.
-  const { data: rosterToday } = useQuery<{ department: string | null }>({
-    queryKey: ['roster', 'me'],
-    queryFn: () => api.get('/hr/roster/me').then(r => r.data),
-    staleTime: 5 * 60_000,
-    enabled: !!user,
-  })
   if (!user) return <Navigate to='/login' replace />
-  const dept = (rosterToday?.department ?? user.department ?? '').toLowerCase() // DB names are Title-Case ("Kitchen"), so lowercase before matching
-  const level = user.role_level ?? 0
-  if (station && level < 5) {
-    if (dept.includes('kitchen')) return <Navigate to='/pos/kitchen' replace />
-    if (dept.includes('bar')) return <Navigate to='/pos/bar' replace />
-    if (dept.includes('waiter') || dept.includes('front')) return <Navigate to='/pos/tabs' replace />
-    if (dept.includes('gate')) return <Navigate to='/gate/hub' replace />
-    return <Navigate to='/pos/tabs' replace />
-  }
   return <Navigate to='/clock' replace />
 }
 
