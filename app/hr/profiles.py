@@ -96,6 +96,9 @@ def list_profiles():
         "id":        p.id,
         "user_id":   p.user_id,
         "full_name": p.full_name,
+        # Needed by every staff LIST that shows a face. It was on the single
+        # profile response but not here, so a roster could never show a photo.
+        "photo_path": p.photo_path,
         "phone":     p.phone,
         "hire_date": p.hire_date.isoformat() if p.hire_date else None,
         "is_active": p.is_active,
@@ -118,6 +121,7 @@ def get_my_profile():
     return jsonify({
         "id":                     profile.id,
         "full_name":              profile.full_name,
+        "photo_path":             profile.photo_path,
         "phone":                  profile.phone,
         "payment_method":         profile.payment_method,
         "payment_account_number": profile.payment_account_number,
@@ -203,8 +207,47 @@ def edit_profile(profile_id):
         return jsonify({"error": "Employee profile not found."}), 404
 
     data = request.get_json(silent=True) or {}
+
+    # ── Who may edit WHOSE file ───────────────────────────────────────────────
+    # This checked the actor's level and nothing else — not whose file it was.
+    # Two things fell out of that, and the same self-dealing rule already exists
+    # two files away on smaller stakes: a manager may not override their own
+    # clock (app/hr/clock.py) and may not approve their own leave
+    # (app/hr/leave.py). Wages are the bigger number.
+    target_user = profile.user
+    editing_self = target_user is not None and target_user.id == actor.id
+    pay_fields = {"wage_rate", "wage_period"}
+
+    # 1. Nobody sets their own pay. A manager could set wage_rate to anything
+    #    and /hr/payroll-draft would duly report it. Owner-only, and the owner
+    #    is not exempt from being asked to have someone else do it either —
+    #    but with one owner account that would deadlock the resort, so the
+    #    owner keeps it and the audit row carries the name.
+    if editing_self and pay_fields & data.keys() and actor.role.level < OWNER_LEVEL:
+        return jsonify({"error": "You cannot change your own pay. Ask the owner "
+                                 "to do it, so the change has a second name on it."}), 403
+
+    # 2. Nobody edits the file of somebody at or above their own level. Pointed
+    #    upward, the missing check let a manager rewrite the OWNER's name, phone,
+    #    emergency contact and wage.
+    if (not editing_self and target_user is not None
+            and target_user.role.level >= actor.role.level):
+        return jsonify({"error": "You cannot edit the file of someone at or above "
+                                 "your own role level."}), 403
+
     if "full_name" in data:
         profile.full_name = data["full_name"].strip()
+    # A photo could be set at hire time and then never changed — create accepted
+    # photo_path, this did not. Constrained to a path this system produced:
+    # the value lands in an <img src>, so a free-text field here would let
+    # somebody point a staff photo at an external URL (a tracking pixel that
+    # fires every time a manager opens the roster) or at a javascript: scheme.
+    if "photo_path" in data:
+        raw = (data["photo_path"] or "").strip()
+        if raw and not raw.startswith("/images/"):
+            return jsonify({"error": "photo_path must be an uploaded image path "
+                                     "(POST the file to /uploads/profile first)."}), 400
+        profile.photo_path = raw or None
     if "phone" in data:
         profile.phone = data["phone"].strip()
     if "emergency_contact_name" in data:

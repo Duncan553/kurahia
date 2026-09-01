@@ -194,3 +194,36 @@ def test_staff_can_still_upload_receipts(client, waiter_token):
         headers={"Authorization": f"Bearer {waiter_token}"},
     )
     assert rv.status_code == 201, rv.get_json()
+
+
+def test_the_returned_url_matches_where_the_file_was_saved(client, manager_token, app):
+    """WAS A BUG: every profile photo, receipt and villa picture was a dead link.
+
+    UPLOAD_TARGETS maps "profile" -> images/profiles, "receipt" -> images/receipts,
+    "villa" -> images/villas — all plural — while the response built
+    "/images/{category}/..." from the SINGULAR key. The file saved fine and the
+    URL pointed at a directory that does not exist: 404 on display, no error
+    anywhere. It would have shown up the first time somebody uploaded a face.
+
+    Checks every category, so adding one with a mismatched folder name cannot
+    reintroduce it.
+    """
+    import io
+    from pathlib import Path
+    from app.uploads import UPLOAD_TARGETS
+
+    for category, target in UPLOAD_TARGETS.items():
+        rv = client.post(
+            f"/uploads/{category}",
+            data={"file": (io.BytesIO(b"\xff\xd8\xff\xe0stub"), "face.jpg")},
+            content_type="multipart/form-data",
+            headers={"Authorization": f"Bearer {manager_token}"},
+        )
+        assert rv.status_code == 201, f"{category}: {rv.get_data(as_text=True)}"
+        url = rv.get_json()["path"]
+
+        folder_on_disk = Path(target).name
+        folder_in_url = url.rsplit("/", 2)[-2]
+        assert folder_in_url == folder_on_disk, (
+            f"{category}: saved into '{folder_on_disk}' but the URL says "
+            f"'{folder_in_url}' — the image would 404")

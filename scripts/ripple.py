@@ -297,8 +297,21 @@ def ripple_stock_count(owner, mgr, bar, chef):
     act("a stock count finds less than the books say")
     name = "Tusker Beer"
     iid = inv_id(name)
-    expected = get_current_stock(iid)
     short_by = Decimal("3")
+
+    # Restock first if the shelf is too low to be short by three. Repeated runs
+    # of this sweep sell beer, so after enough of them the count went negative
+    # and the endpoint correctly refused it — the script had quietly assumed
+    # stock would always be there. Buying through the real endpoint keeps the
+    # sweep re-runnable for good.
+    if get_current_stock(iid) < short_by:
+        owner.post("/inventory/purchases", {
+            "item_id": iid, "quantity": "24", "actual_cost": "2880",
+            "supplier_name": "Thika Road Beverages",
+            "receipt_photo_path": "receipts/ripple-restock.jpg",
+            "notes": "one crate of 24 @ KSh 120/bottle",
+            "idempotency_key": f"ripple-restock-{uuid.uuid4().hex[:8]}"})
+    expected = get_current_stock(iid)
 
     r = mgr.post("/inventory/counts", {
         "item_id": iid, "counted_amount": str(expected),

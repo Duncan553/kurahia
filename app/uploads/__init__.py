@@ -106,7 +106,18 @@ def upload_file(category):
     dest = _upload_dir(category) / unique_name
     file.save(str(dest))
 
-    public_path = f"/images/{category}/{unique_name}" if category != "general" else f"/images/uploads/{unique_name}"
+    # Derive the URL from where the file ACTUALLY went, not from the category
+    # name. Those two disagree: UPLOAD_TARGETS maps "profile" -> images/profiles,
+    # "receipt" -> images/receipts, "villa" -> images/villas — all plural — while
+    # this line built "/images/profile/…" from the singular key. Every profile
+    # photo, receipt scan and villa picture ever uploaded came back as a URL
+    # pointing at a directory that does not exist: saved fine, 404 on display,
+    # and nothing anywhere reported an error.
+    #
+    # One source of truth. Adding a category with a mismatched folder name can
+    # no longer produce a dead link.
+    folder = UPLOAD_TARGETS[category].rsplit("/", 1)[-1]
+    public_path = f"/images/{folder}/{unique_name}"
 
     AuditLog.log(actor=actor.username, action=f"upload.{category}", target=unique_name)
     db.session.commit()

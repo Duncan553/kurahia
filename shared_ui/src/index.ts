@@ -1,3 +1,6 @@
+export { Avatar, initialsFor } from './components/Avatar'
+export type { AvatarProps, AvatarSize } from './components/Avatar'
+
 export { Button } from './components/Button'
 export type { ButtonProps, ButtonVariant, ButtonSize } from './components/Button'
 
