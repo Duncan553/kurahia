@@ -11,7 +11,7 @@ from app.extensions import db as _db
 from app.models.department import Department
 from app.models.role import Role
 from app.models.user import User
-from app.models.menu_item import MenuItem, PrepStation
+from app.models.menu_item import MenuItem, PrepStation, StockTracking
 
 # ── Fast Argon2 for tests ONLY ───────────────────────────────────────────────
 # Argon2 is SUPPOSED to be slow — that slowness is the whole security property,
@@ -135,13 +135,29 @@ def _seed_test_db(app):
     _db.session.add_all([owner, manager, staff, kitchen_staff, waiter, chef])
     _db.session.flush()
 
-    # Seed representative menu items
+    # Seed representative menu items — CLASSIFIED, because an unclassified item
+    # cannot be sold and a fixture that ignores that is not representative.
+    #
+    # These were all left on the UNTRACKED model default, which was fine while
+    # nothing enforced the rule on the sale path. It is enforced now, so a
+    # seeded item has to say how it moves stock, exactly like a real one:
+    #
+    #   food    RECIPE  — a dish assembled from ingredients. The recipe lines
+    #                     live in the tests that care about deduction; what
+    #                     matters here is that it is DECLARED as a recipe dish.
+    #   drink   DIRECT   — one sale, one bottle. Linked per-test where the link
+    #                     matters, since the seed holds no inventory rows.
+    #   service SERVICE  — a pool pass genuinely consumes nothing. That is a
+    #                     positive claim, which is the whole point of SERVICE.
     food = MenuItem(name="Grilled Tilapia",   price="1200", category="Mains",
-                    prep_station=PrepStation.KITCHEN.value, department_id=general_dept.id)
+                    prep_station=PrepStation.KITCHEN.value, department_id=general_dept.id,
+                    stock_tracking=StockTracking.RECIPE.value)
     drink = MenuItem(name="Tusker Lager",     price="300",  category="Beer",
-                    prep_station=PrepStation.BAR.value,     department_id=general_dept.id)
+                    prep_station=PrepStation.BAR.value,     department_id=general_dept.id,
+                    stock_tracking=StockTracking.SERVICE.value)
     service = MenuItem(name="Pool Access",    price="500",  category="Activities",
-                    prep_station=PrepStation.NONE.value,    department_id=general_dept.id)
+                    prep_station=PrepStation.NONE.value,    department_id=general_dept.id,
+                    stock_tracking=StockTracking.SERVICE.value)
 
     _db.session.add_all([food, drink, service])
     _db.session.commit()

@@ -20,7 +20,7 @@ import pytest
 
 from app.extensions import db
 from app.models.inventory_item import InventoryItem
-from app.models.menu_item import MenuItem, PrepStation
+from app.models.menu_item import MenuItem, PrepStation, StockTracking
 from app.models.recipe_line import RecipeLine
 from app.models.stock_movement import StockMovement, MovementReason
 from app.services.stock import get_current_stock
@@ -49,9 +49,13 @@ def spa_service(app):
         idempotency_key=str(uuid.uuid4()),
     ))
 
+    # RECIPE, because this fixture attaches RecipeLine rows straight to the DB.
+    # Through the API, POST /menu/items/<id>/recipe sets this for you; building
+    # the rows by hand skips that, and an item left UNTRACKED cannot be sold.
     service = MenuItem(
         name="Deep Tissue Massage", price="4500", category="Spa",
         prep_station=PrepStation.NONE.value, department_id=dept.id,
+        stock_tracking=StockTracking.RECIPE.value,
     )
     db.session.add(service)
     db.session.flush()
@@ -190,9 +194,13 @@ def test_direct_service_without_a_recipe_alerts_the_head_chef(app, client, waite
     from app.models.notification import Notification
 
     dept = db.session.query(Department).filter_by(name="General").first()
+    # Deliberately RECIPE with NO recipe lines — that is exactly the state this
+    # test is about: an item declared as consuming ingredients that has none,
+    # which must alert the head chef rather than deduct nothing in silence.
     service = MenuItem(
         name="Sunset Boat Cruise", price="3000", category="Water",
         prep_station=PrepStation.NONE.value, department_id=dept.id,
+        stock_tracking=StockTracking.RECIPE.value,
     )
     db.session.add(service)
     db.session.commit()
@@ -238,6 +246,7 @@ def bottled_beer(app):
         name="Tusker", price="350", category="Beer",
         prep_station=PrepStation.NONE.value, department_id=dept.id,
         inventory_item_id=stock.id,          # <- the direct link
+        stock_tracking=StockTracking.DIRECT.value,   # ...and what it means
     )
     db.session.add(item)
     db.session.commit()

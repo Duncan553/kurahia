@@ -22,7 +22,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user, require_clocked_in
 from app.utils.money import parse_amount, parse_quantity
 from app.extensions import db
-from app.models.menu_item import MenuItem, PrepStation
+from app.models.menu_item import MenuItem, PrepStation, StockTracking
 from app.models.tab import Tab, TabStatus
 from app.models.order import Order, OrderStatus
 from app.models.order_item import OrderItem, OrderItemStatus, VALID_TRANSITIONS
@@ -122,6 +122,23 @@ def create_order():
                 return jsonify({"error": f"Menu item '{mi_id}' not found."}), 404
             if not mi.is_active:
                 return jsonify({"error": f"'{mi.name}' is disabled. Re-enable it or choose another."}), 400
+            # UNTRACKED may not be SOLD, which is the rule the whole catalogue
+            # rests on — and it was only ever enforced when ENABLING an item
+            # (app/pos/menu.py:321). A menu item is created active and UNTRACKED
+            # by default, so it never passes through enable, and it sold freely:
+            # money taken, stock never moved, and the count wrong at month end
+            # with no event to blame.
+            #
+            # UNTRACKED means "nobody has decided how this deducts", not
+            # "consumes nothing" — SERVICE is how a person says that, on
+            # purpose. Blocking only UNTRACKED is what keeps it enforceable.
+            if mi.stock_tracking == StockTracking.UNTRACKED.value:
+                return jsonify({"error": (
+                    f"'{mi.name}' has no stock tracking set, so selling it would "
+                    f"not move inventory. Ask a manager to set a recipe, link it "
+                    f"to a stock item, or mark it as a service that consumes "
+                    f"nothing."
+                )}), 400
 
             # Stock pre-check: warn if recipe ingredients are depleted
             from app.models.recipe_line import RecipeLine
