@@ -766,9 +766,9 @@ def test_removing_a_middle_entry_breaks_the_chain(client, app, owner_token, some
     assert rv.get_json()["intact"] is False
 
 
-def test_HOLE_the_details_field_is_outside_the_hash(client, app, owner_token,
-                                                    some_history):
-    """HOLE — app/models/audit_log.py:57-61 (`_compute_hash`).
+def test_the_details_field_is_inside_the_hash(client, app, owner_token,
+                                              some_history):
+    """WAS A HOLE — app/models/audit_log.py `_compute_hash`.
 
         raw = f"{actor}|{action}|{target or ''}|{timestamp}|{prev_hash or ''}"
 
@@ -788,15 +788,14 @@ def test_HOLE_the_details_field_is_outside_the_hash(client, app, owner_token,
     db.session.commit()
 
     rv = client.get("/audit/verify", headers=H(owner_token))
-    assert rv.get_json()["intact"] is True                     # ← the hole
+    assert rv.get_json()["intact"] is False, \
+        "details was rewritten and the chain still called itself clean"
+    assert "Chain broken" in rv.get_json().get("detail", "")
 
-    rv = client.get("/audit/logs?action=admin.setting.update", headers=H(owner_token))
-    assert "rewritten by the attacker" in rv.get_json()["entries"][0]["details"]
 
-
-def test_HOLE_truncating_the_tail_of_the_chain_is_undetectable(client, app, owner_token,
-                                                               some_history):
-    """HOLE — same file, `verify_chain` (audit_log.py:105-119).
+def test_truncating_the_tail_of_the_chain_is_detected(client, app, owner_token,
+                                                     some_history):
+    """WAS A HOLE — same file, `verify_chain`.
 
     Verification walks forward from row 1 and only checks that each row hashes
     to its predecessor. Delete the LAST n rows and every survivor still hashes
@@ -817,8 +816,10 @@ def test_HOLE_truncating_the_tail_of_the_chain_is_undetectable(client, app, owne
     db.session.commit()
 
     rv = client.get("/audit/verify", headers=H(owner_token))
-    assert rv.get_json()["intact"] is True                     # ← the hole
-    assert rv.get_json()["entries_checked"] == before - 2      # the only tell
+    assert rv.get_json()["intact"] is False, \
+        "two entries were deleted from the end and nothing noticed"
+    assert "SHORTER" in rv.get_json().get("detail", "")
+    assert rv.get_json()["entries_checked"] == before - 2
 
 
 def test_owner_actions_are_actually_written_to_the_trail(client, owner_token):
