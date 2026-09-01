@@ -297,8 +297,17 @@ def test_count_reconciles_derived_stock(client, manager_token, item_id):
     assert get_current_stock(item_id) == Decimal("18")
 
 
-def test_count_rejects_negative_and_staff_and_foreign_department(
+def test_count_rejects_negative_and_staff_but_lets_a_manager_spot_check(
         client, manager_token, waiter_token, item_id, app):
+    """The department rule CHANGED, deliberately.
+
+    It used to block a manager from counting outside their own department. The
+    manager sits in Management, which holds no inventory, so that rule combined
+    with the manager-level requirement meant nobody but the owner could count
+    anything at all. A manager may now count any department — somebody has to
+    be able to spot-check a store they do not run — while everyone else is
+    still held to their own.
+    """
     r1 = client.post("/inventory/counts", headers=H(manager_token),
                      json={"item_id": item_id, "counted_amount": "-1"})
     assert r1.status_code == 400
@@ -310,8 +319,7 @@ def test_count_rejects_negative_and_staff_and_foreign_department(
     kitchen_item = _mk_item("Kitchen Salt", dept="Kitchen")
     r3 = client.post("/inventory/counts", headers=H(manager_token),
                      json={"item_id": kitchen_item, "counted_amount": "1"})
-    assert r3.status_code == 403        # manager1 sits in General
-    assert "your own department" in r3.get_json()["error"]
+    assert r3.status_code == 201, r3.get_data(as_text=True)
 
 
 def test_count_on_disabled_item_refused(client, manager_token, item_id):
@@ -1085,4 +1093,75 @@ def test_a_classified_item_still_sells(client, waiter_token, food_item_id):
     and then it guards nothing at all."""
     rv = client.post("/orders", headers=H(waiter_token),
                      json={"items": [{"menu_item_id": food_item_id, "quantity": 1}]})
+    assert rv.status_code == 201, rv.get_data(as_text=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Who may count stock — the rule that used to make counting owner-only
+# ══════════════════════════════════════════════════════════════════════════════
+
+def test_counting_is_not_owner_only_anymore(client, owner_token, manager_token, item_id, app):
+    """WAS A HOLE: nobody but the owner could count anything, anywhere.
+
+    Counting required manager level (5+) AND, below owner, the item's own
+    department. No role in the resort satisfied both — the manager sits in
+    Management, which holds zero inventory, and every department that DOES hold
+    stock is led at level 3 or below. So all 38 items were owner-only: either
+    the owner counted the whole resort personally, or nobody counted at all.
+
+    Permission is now data on the ROLE (invariant 10), because "responsible for
+    this department" is not the same fact as "senior enough", and only the first
+    is what counting requires.
+    """
+    from app.models.role import Role
+
+    granted = db.session.query(Role).filter_by(can_count_stock=True).count()
+    assert granted > 0, "no role can count — the resort cannot count its own stock"
+
+    # A manager may count ANY department, because somebody has to be able to
+    # spot-check a store they do not run.
+    rv = client.post("/inventory/counts", headers=H(manager_token), json={
+        "item_id": item_id, "counted_amount": "5", "count_type": "DAILY",
+        "idempotency_key": str(uuid.uuid4()),
+    })
+    assert rv.status_code == 201, rv.get_data(as_text=True)
+
+
+def test_seniority_alone_does_not_grant_a_count(client, waiter_token, item_id, app):
+    """The case a level threshold gets wrong.
+
+    Lowering the bar far enough to include the housekeeping and grounds leads
+    (level 1) would also hand the bar's count to a waiter standing in the bar.
+    The flag is per ROLE, so being in the department is not enough.
+    """
+    from app.models.user import User
+
+    waiter = db.session.query(User).filter_by(username="waiter1").first()
+    item = db.session.get(InventoryItem, item_id)
+    # Put the waiter in the very department that holds the stock.
+    waiter.department_id = item.department_id
+    db.session.commit()
+    assert waiter.role.can_count_stock is False
+
+    rv = client.post("/inventory/counts", headers=H(waiter_token), json={
+        "item_id": item_id, "counted_amount": "5", "count_type": "DAILY",
+        "idempotency_key": str(uuid.uuid4()),
+    })
+    assert rv.status_code == 403
+    assert "not set up to submit stock counts" in rv.get_json()["error"]
+
+
+def test_the_owner_can_always_count_even_with_every_flag_off(client, owner_token, item_id, app):
+    """The resort must never be able to lock itself out of counting. The owner
+    passes on level, so revoking every flag cannot leave nobody able to count."""
+    from app.models.role import Role
+
+    for r in db.session.query(Role).all():
+        r.can_count_stock = False
+    db.session.commit()
+
+    rv = client.post("/inventory/counts", headers=H(owner_token), json={
+        "item_id": item_id, "counted_amount": "5", "count_type": "DAILY",
+        "idempotency_key": str(uuid.uuid4()),
+    })
     assert rv.status_code == 201, rv.get_data(as_text=True)

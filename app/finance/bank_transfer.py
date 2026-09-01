@@ -570,6 +570,16 @@ def bank_status():
         return jsonify({"error": "Manager or above required."}), 403
     sms_configured, api_configured, message = configuration_status()
     return jsonify({
+        # `configured` answers the same question the M-Pesa and card status
+        # endpoints answer, so one health check can read all three the same way.
+        # This endpoint reported only the two per-path flags, so anything asking
+        # "is the bank socket up?" got None from bank and a real boolean from
+        # the other two — and None reads as "off" whether it is or not.
+        #
+        # Bank has TWO independent paths (an SMS forwarder and a direct API) and
+        # either one alone is a working socket, so this is an OR, with the
+        # per-path flags kept for anyone who needs the detail.
+        "configured":     bool(sms_configured or api_configured),
         "sms_configured": sms_configured,
         "api_configured": api_configured,
         "provider":       get_provider_name(),

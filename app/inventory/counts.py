@@ -26,14 +26,17 @@ from app.services.trust import compute_trust_tier, AUTO_CONFIRMED
 counts_bp = Blueprint("inv_counts", __name__, url_prefix="/inventory/counts")
 
 MANAGER_LEVEL = 5
+OWNER_LEVEL   = 10
 
 
 @counts_bp.post("")
 @require_active_user
 def submit_count():
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Only a manager or above can submit stock counts."}), 403
+    # The "manager or above" gate that used to sit here is gone — it is what
+    # made every item in the resort owner-only to count. Permission is now the
+    # role's can_count_stock flag, checked below once the item is known, because
+    # WHICH department the item belongs to is half the question.
 
     data = request.get_json(silent=True) or {}
     item_id      = data.get("item_id", "")
@@ -63,8 +66,23 @@ def submit_count():
     if not item or not item.is_active:
         return jsonify({"error": "This item is disabled or does not exist. Re-enable it or choose another."}), 404
 
-    # Dept-scoped access: non-owners can only count items in their own department
-    if actor.role.level < 10 and actor.department_id and item.department_id != actor.department_id:
+    # ── Who may count ─────────────────────────────────────────────────────────
+    # Two questions, not one. First: is this role trusted to count at all? That
+    # is data on the role (see app/models/role.py for why it cannot be a level).
+    # Second: WHICH stock? A manager or above may count anywhere, because
+    # somebody has to be able to spot-check a department they do not run.
+    # Everyone else counts their own department only.
+    #
+    # The control on a department lead counting their own store is not a
+    # permission — it is that the count writes an ADJUSTMENT movement, states
+    # the variance out loud, demotes the item's trust tier, and lands in the
+    # audit log with their name on it. A count nobody can perform is not a
+    # control either; it is just a count that never happens.
+    if actor.role.level < OWNER_LEVEL and not actor.role.can_count_stock:
+        return jsonify({"error": "Your role is not set up to submit stock counts. "
+                                 "The owner can grant this from the roles screen."}), 403
+    if (actor.role.level < MANAGER_LEVEL and actor.department_id
+            and item.department_id != actor.department_id):
         return jsonify({"error": "You can only count items in your own department."}), 403
 
     # Capture trust tier BEFORE this count changes anything (for auto-demotion detection)

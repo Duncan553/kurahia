@@ -171,23 +171,17 @@ def compute_hours_worked(employee_id: str,
     return Decimal(str(round(total_seconds / 3600, 4)))
 
 
-# ── Guest-rating socket (activated in Chunk 9) ───────────────────────────────
-
-def _get_guest_rating(employee_id: str,
-                      period_start: datetime, period_end: datetime) -> str | None:
-    """
-    Average GuestFeedback score (1-5) for this employee in the period.
-    Returns None if no feedback exists — the composite score stays unaffected.
-    """
-    from app.models.guest_feedback import GuestFeedback
-    result = db.session.query(func.avg(GuestFeedback.score)).filter(
-        GuestFeedback.served_by_employee_id == employee_id,
-        GuestFeedback.created_at_utc >= period_start,
-        GuestFeedback.created_at_utc < period_end,
-    ).scalar()
-    if result is None:
-        return None
-    return str(round(Decimal(str(result)), 2))
+# Guest rating is NOT part of performance, deliberately.
+#
+# It used to be computed here and shown in the detail block beside the four
+# scores, while composite_score was punctuality + attendance + cash_health +
+# void_health only. So it sat next to a score it did not affect: a waiter guests
+# loved and one guests complained about came out identical, and the number
+# implied otherwise.
+#
+# Removed rather than wired in. GuestFeedback is still recorded and still
+# reaches the owner's feedback dashboard — what is gone is the claim that it
+# bears on somebody's performance review.
 
 
 # ── Performance scoring ───────────────────────────────────────────────────────
@@ -318,7 +312,6 @@ def compute_performance(employee_id: str,
             "cash_shortfalls":  short_count,
             "void_rate_pct":    str(void_rate_pct),
             "hours_worked":     str(hours_worked),
-            "guest_rating":     _get_guest_rating(employee_id, period_start, period_end),
         },
         "weights": {k: str(v) for k, v in SCORE_WEIGHTS.items()},
     }

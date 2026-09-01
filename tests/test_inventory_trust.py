@@ -261,8 +261,24 @@ def test_head_chef_can_count_own_dept(app, client, kitchen_item):
     assert rv.status_code == 201, rv.get_json()
 
 
-def test_head_chef_cannot_count_other_dept(app, client, general_item):
-    """A level-5 Kitchen user cannot count items from another department."""
+def test_a_manager_level_user_may_spot_check_another_dept(app, client, general_item):
+    """The department rule CHANGED for manager level and above, deliberately.
+
+    It used to hold everyone below the owner to their own department. Combined
+    with the manager-level requirement to count at all, that meant NOBODY could
+    count: the resort's manager sits in Management, which holds no inventory,
+    and every department holding stock is led at level 3 or below. All 38 items
+    were owner-only.
+
+    Manager and above may now count anywhere, because somebody other than the
+    owner has to be able to spot-check a store they do not run. Below that
+    level, the department rule still holds — see
+    test_scenarios_management.py::test_seniority_alone_does_not_grant_a_count,
+    where a waiter standing IN the department is still refused.
+
+    Note this fixture builds an artificial actor: a level-5 user placed in the
+    Kitchen. A real head chef is level 3 and stays scoped to the Kitchen.
+    """
     with app.app_context():
         from app.models.department import Department
         from app.models.role import Role
@@ -276,9 +292,10 @@ def test_head_chef_cannot_count_other_dept(app, client, general_item):
     rv_login = client.post("/auth/login", json={"username":"chef_test_s3b","password":"ChefPass1!"})
     chef_token = rv_login.get_json()["access_token"]
 
-    # general_item is in General dept, chef is in Kitchen
+    # general_item is in General dept, this actor is in Kitchen — and at manager
+    # level, so the spot-check is allowed.
     rv = _submit_count(client, chef_token, general_item, counted="5")
-    assert rv.status_code == 403
+    assert rv.status_code == 201, rv.get_data(as_text=True)
 
 
 def test_owner_can_count_any_dept(app, client, owner_token, kitchen_item):

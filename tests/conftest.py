@@ -93,8 +93,11 @@ def _seed_test_db(app):
     _db.session.add_all([general_dept, kitchen_dept, bar_dept, foh_dept])
     _db.session.flush()
 
+    # can_count_stock mirrors the production grant (see the migration): the
+    # manager spot-checks any department, plain staff cannot count at all, and
+    # the owner passes on level so the flag is irrelevant to them.
     owner_role   = Role(name="owner",   level=10)
-    manager_role = Role(name="manager", level=5)
+    manager_role = Role(name="manager", level=5, can_count_stock=True)
     staff_role   = Role(name="staff",   level=1)
     _db.session.add_all([owner_role, manager_role, staff_role])
     _db.session.flush()
@@ -125,7 +128,7 @@ def _seed_test_db(app):
     # front_desk and gate_lead share level 3 and must not price the menu.
     chef_role = _db.session.query(Role).filter_by(name="head_chef").first()
     if not chef_role:
-        chef_role = Role(name="head_chef", level=3)
+        chef_role = Role(name="head_chef", level=3, can_count_stock=True)
         _db.session.add(chef_role)
         _db.session.flush()
     chef = User(username="chef1", role_id=chef_role.id, department_id=kitchen_dept.id)
