@@ -186,15 +186,26 @@ def scenario_villa_stay(app, desks):
                s, "bar accepts the ticket")
         expect(bar.post(f"/order-items/{oi_id}/ready").status_code == 200,
                s, "bar marks it ready — waiter is notified")
+        # The ready alert must have reached the waiter who sent it — checked
+        # HERE, between ready and serve, because that is the only moment the
+        # claim is about. This assertion used to sit after the serve below and
+        # passed only because nothing ever retired the ping: alerts for served
+        # items piled up on the waiter's screen for days (247 of them on this
+        # database). Serving now clears it, so reading the inbox afterwards
+        # measures the wrong instant.
+        def order_pings():
+            return [n for n in (waiter.get("/notifications/inbox").get_json() or [])
+                    if n.get("reference_type") == "order_ready"]
+
+        expect(order_pings(), s, "the waiter who sent it got the ready alert",
+               f"{len(order_pings())} ping(s)")
+
         expect(waiter.post(f"/order-items/{oi_id}/serve").status_code == 200,
                s, "waiter serves it")
 
-        # The ready alert must have reached the waiter who sent it.
-        inbox = waiter.get("/notifications/inbox")
-        pings = [n for n in (inbox.get_json() or [])
-                 if n.get("reference_type") == "order_ready"]
-        expect(pings, s, "the waiter who sent it got the ready alert",
-               f"{len(pings)} ping(s)")
+        # …and the alert stands down once the errand is done.
+        expect(not order_pings(), s, "the alert clears when the item is served",
+               f"{len(order_pings())} ping(s) still unread")
 
     # Cannot leave owing money.
     r = grace.post(f"/bookings/{bk['id']}/check-out")

@@ -263,6 +263,31 @@ def _reverse_charge(oi: OrderItem, actor: User):
     ))
 
 
+def _retire_ready_ping(oi):
+    """Mark the "ready for pickup" ping READ once the item is no longer waiting.
+
+    The ping is written when the kitchen marks an item READY and is addressed to
+    the waiter who took the order. Nothing ever retired it, so it outlived the
+    thing it referred to: a waiter's Tables screen carried "Terrace 4: 1.00x
+    Beef Pilau is ready for pickup" after the pilau was served, the bill paid
+    and the table closed — and several days' worth of those stack up above the
+    actual tables. An alert that outlives its errand teaches people to scroll
+    past alerts.
+
+    Serving or cancelling the item IS the acknowledgement; tapping the alert
+    stays available for the waiter who picks up without opening the tab.
+    Called inside the caller's transaction.
+    """
+    from app.models.notification import Notification, NotificationStatus
+
+    (db.session.query(Notification)
+     .filter_by(reference_type="order_ready", reference_id=oi.id)
+     .filter(Notification.status != NotificationStatus.READ.value)
+     .update({"status": NotificationStatus.READ.value,
+              "read_at_utc": datetime.now(timezone.utc)},
+             synchronize_session=False))
+
+
 def _notify_waiter_ready(oi: OrderItem):
     """
     Kitchen/bar marked an item READY → ping the waiter who created the order.
@@ -365,6 +390,7 @@ def serve_item(oi_id):
     with db.session.begin_nested():
         oi.status   = OrderItemStatus.SERVED.value
         oi.served_at = datetime.now(timezone.utc)
+        _retire_ready_ping(oi)
         # Auto-complete the order if all items are resolved
         _maybe_complete_order(oi.order)
     AuditLog.log(actor=actor.username, action="order_item.serve", target=oi_id)
@@ -410,6 +436,7 @@ def cancel_item(oi_id):
         oi.status        = OrderItemStatus.CANCELLED.value
         oi.cancelled_at  = datetime.now(timezone.utc)
         oi.cancel_reason = data.get("reason", "")
+        _retire_ready_ping(oi)          # nobody is collecting a cancelled item
         _reverse_charge(oi, actor)
         if was_ready:
             reverse_consumption(oi, actor)  # undo ingredient deduction
