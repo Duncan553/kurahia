@@ -13,6 +13,7 @@ interface JWTClaims extends Record<string, unknown> {
   sub: string
   role_level: number
   department?: string | null
+  can_count_stock?: boolean
 }
 
 const KEYPAD = ['1','2','3','4','5','6','7','8','9','','0','⌫'] as const
@@ -51,7 +52,9 @@ export default function StationLoginScreen() {
       setErrorMsg('')
       const claims = decodeJWT<JWTClaims>(data.access_token)
       setAuth(
-        { id: claims.sub, username, role_level: claims.role_level, department: claims.department ?? null },
+        { id: claims.sub, username, role_level: claims.role_level,
+          department: claims.department ?? null,
+          can_count_stock: claims.can_count_stock ?? false },
         data.access_token,
         data.refresh_token,
       )

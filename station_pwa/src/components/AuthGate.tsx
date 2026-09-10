@@ -35,14 +35,23 @@ export function RoleGate({ minLevel }: { minLevel: number }) {
   return <Outlet />
 }
 
-export function RequireRole({ minLevel, children }: { minLevel: number; children: ReactNode }) {
+// `allow` is for a screen whose real rule is a CAPABILITY, not a rank — stock
+// counting being the one that bit: housekeeping (level 1) counts its own store
+// and front desk (level 3) does not, so no minLevel can express it. Pass a
+// predicate and the level check steps aside.
+export function RequireRole({ minLevel, allow, children }: {
+  minLevel: number
+  allow?: (u: { role_level: number; can_count_stock?: boolean }) => boolean
+  children: ReactNode
+}) {
   const user = useAuthStore((s) => s.user)
+  const permitted = user ? (allow ? allow(user) : user.role_level >= minLevel) : false
   // Returning null here rendered a completely blank page — no header, no
   // explanation, nothing to tap. On a shared station tablet that reads as a
   // broken app, not as a permission boundary, and the person just stands
   // there. Every error in this system says what happened in plain English
   // (engineering invariant 5); a screen someone cannot open is no different.
-  if (!user || user.role_level < minLevel) {
+  if (!permitted) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-24 px-6 text-center">
         <p className="text-lg font-semibold text-ink-primary">This screen isn't yours to open</p>

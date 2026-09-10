@@ -94,6 +94,7 @@ def login():
             identity=user.id,
             additional_claims={
                 "role_level": user.role.level,
+                "can_count_stock": user.role.can_count_stock,
                 "department": dept,
                 "requires_pin_setup": True,
             },
@@ -106,7 +107,8 @@ def login():
 
     access_token = create_access_token(
         identity=user.id,
-        additional_claims={"role_level": user.role.level, "department": dept},
+        additional_claims={"role_level": user.role.level, "department": dept,
+                           "can_count_stock": user.role.can_count_stock},
     )
     refresh_token = create_refresh_token(identity=user.id)
 
@@ -163,6 +165,7 @@ def pin_login():
         identity=user.id,
         additional_claims={
             "role_level": user.role.level,
+            "can_count_stock": user.role.can_count_stock,
             "department": user.department.name if user.department else None,
         },
     )
@@ -194,6 +197,7 @@ def refresh():
         identity=user.id,
         additional_claims={
             "role_level": user.role.level,
+            "can_count_stock": user.role.can_count_stock,
             "department": user.department.name if user.department else None,
         },
     )
@@ -230,6 +234,7 @@ def set_pin():
         identity=user.id,
         additional_claims={
             "role_level": user.role.level,
+            "can_count_stock": user.role.can_count_stock,
             "department": user.department.name if user.department else None,
         },
     )

@@ -332,8 +332,11 @@ export default function InventoryCountScreen() {
       .slice(0, 6)
   }, [results, overviewItems, departments])
 
+  // Counting is a role CAPABILITY, not a rank — see RequireRole's `allow`.
+  // This was minLevel={5}, which refused the head chef her own kitchen count
+  // while the backend (inventory/counts.py) was deliberately allowing it.
   return (
-    <RequireRole minLevel={5}>
+    <RequireRole minLevel={5} allow={u => !!u.can_count_stock || u.role_level >= 5}>
       <div className="p-4 md:p-6 max-w-6xl mx-auto">
         <motion.div initial="hidden" animate="visible" variants={stagger}>
 

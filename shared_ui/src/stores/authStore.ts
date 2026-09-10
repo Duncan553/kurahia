@@ -8,6 +8,13 @@ export interface AuthUser {
   username: string         // from login form
   role_level: number       // JWT `role_level` claim (owner=10, manager=5, staff=1)
   department: string | null // JWT `department` claim — drives tablet-aware nav
+  // Whether this role may submit stock counts. It is a per-ROLE flag, not a
+  // level: housekeeping (level 1) counts its own store and front desk (level 3)
+  // does not, so no `level >= n` test can stand in for it. The stock-count
+  // screen was gated `minLevel={5}`, which locked out every role whose job it
+  // is — chef, bar lead, spa, housekeeping, grounds — while the backend was
+  // happily allowing them. Optional so an old cached token stays readable.
+  can_count_stock?: boolean
 }
 
 interface AuthState {
