@@ -100,12 +100,22 @@ export default function WaiterTabDetailScreen() {
 
   // ── Data ────────────────────────────────────────────────────────────────
 
-  const { data: tab, isLoading } = useQuery<TabDetail>({
+  const { data: tab, isLoading, error: tabError } = useQuery<TabDetail>({
     queryKey: ['tab', tabId],
     queryFn: () => api.get<TabDetail>(`/tabs/${tabId}`).then(r => r.data),
     refetchInterval: 15_000,
+    // A refusal is an answer, not a blip: retrying it 15s forever just hammers
+    // the door. Anything else (a dropped LAN, a restarting backend) still retries.
+    retry: (_n, e) => ![403, 404].includes(
+      (e as { response?: { status?: number } })?.response?.status ?? 0),
   })
 
+  // The backend refuses tabs that are not yours to open, in plain English. That
+  // message used to be dropped on the floor: `tab` stayed undefined, and the
+  // screen below reads undefined as "brand new table" — so a waiter tapping
+  // Villa 1's card got an empty POS captioned "Walk-in", showing "Balance due
+  // KSh 0" on a folio owing 70,000, with a live "Close Table" button. Show what
+  // the server actually said and go no further.
   const { data: items = [], isLoading: menuLoading } = useQuery<MenuItem[]>({
     queryKey: ['menu-items'],
     queryFn: () => api.get<MenuItem[]>('/menu/items').then(r => r.data),
@@ -702,6 +712,24 @@ export default function WaiterTabDetailScreen() {
 
   const isNewTab = allOrderItems.length === 0 && draftEntries.length === 0
   const showEntryPrompt = isNewTab && entryChoice === 'pending'
+
+  const refusal = (tabError as { response?: { status?: number; data?: { error?: string } } })?.response
+  if (refusal && [403, 404].includes(refusal.status ?? 0)) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
+        <p className="font-serif text-2xl font-bold text-ink-primary">
+          {refusal.status === 404 ? 'That table is gone' : "Not your table"}
+        </p>
+        <p className="text-sm text-ink-secondary max-w-sm">
+          {refusal.data?.error ?? 'You cannot open this table.'}
+        </p>
+        <button onClick={() => navigate('/pos/tabs')}
+          className="px-5 py-3 rounded-2xl glass-card text-sm font-semibold text-ink-primary">
+          ← Back to tables
+        </button>
+      </div>
+    )
+  }
 
   // ── Layout ─────────────────────────────────────────────────────────────
 
