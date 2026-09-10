@@ -15,6 +15,7 @@ from app.extensions import db
 from app.models.inventory_item import InventoryItem
 from app.models.user import User
 from app.services.variance import compute_variance
+from app.services.business_day import business_day_bounds
 
 variance_bp = Blueprint("inv_variance", __name__, url_prefix="/inventory")
 
@@ -28,18 +29,42 @@ def variance_report():
     if actor.role.level < MANAGER_LEVEL:
         return jsonify({"error": "Manager or above required."}), 403
 
-    dept_id  = request.args.get("dept") or (actor.department_id if actor.role.level < 10 else None)
+    # A manager's post is the whole property, and every other inventory read
+    # already treats them that way: GET /inventory/items lists all 40 lines for
+    # a manager, and counts.py lets a manager count any department. Variance
+    # alone defaulted to actor.department_id, so Brian — whose department is
+    # "Management", which holds one active line — opened the theft-detection
+    # screen and saw 1 item out of 40, silently, with nothing to say so.
+    #
+    # Below MANAGER_LEVEL nobody reaches this endpoint at all (the check above),
+    # so this default only ever narrowed the person it is written for. `dept`
+    # still narrows deliberately when a screen asks for one department.
+    dept_id  = request.args.get("dept")
     from_str = request.args.get("from")
     to_str   = request.args.get("to")
 
     if not from_str or not to_str:
         return jsonify({"error": "'from' and 'to' query params required (ISO 8601 UTC)"}), 400
 
+    # A bare date means the resort's BUSINESS day, not a UTC calendar day.
+    # A day here runs 06:00 EAT to 06:00 EAT (app/services/business_day.py,
+    # which attendance, finance, receipts and the dashboards all use). Reading
+    # "2026-09-11" as UTC midnight put the first three hours of a Kenyan day
+    # into the previous window: a stock count taken at 00:50 EAT was reported
+    # as "not yet counted" for the day it was taken in.
+    #
+    # A full ISO timestamp is still honoured exactly as given, so a caller that
+    # wants a precise window keeps one.
     try:
-        period_start = datetime.fromisoformat(from_str).replace(tzinfo=timezone.utc)
-        period_end   = datetime.fromisoformat(to_str).replace(tzinfo=timezone.utc)
+        if len(from_str) == 10 and len(to_str) == 10:
+            period_start, _ = business_day_bounds(from_str)
+            _, period_end   = business_day_bounds(to_str)
+        else:
+            period_start = datetime.fromisoformat(from_str).replace(tzinfo=timezone.utc)
+            period_end   = datetime.fromisoformat(to_str).replace(tzinfo=timezone.utc)
     except ValueError:
-        return jsonify({"error": "Invalid date format. Use ISO 8601, e.g. 2026-05-01T00:00:00"}), 400
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD, or a full "
+                                 "ISO 8601 timestamp like 2026-05-01T00:00:00"}), 400
 
     if period_start >= period_end:
         return jsonify({"error": "'from' must be before 'to'"}), 400

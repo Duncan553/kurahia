@@ -4,7 +4,10 @@ variance.py — Layer 1 variance computation.
 Formula (per item, per period):
   opening          = most recent StockCount at or before period_start
   purchases        = SUM of PURCHASE movements in period
-  consumption      = ABS(SUM of SPOILAGE + STAFF_MEAL + SENT_BACK + SALE_PLACEHOLDER in period)
+  consumption      = ABS(SUM of CONSUMPTION_REASONS in period) — SPOILAGE, STAFF_MEAL,
+                     SENT_BACK, SALE_PLACEHOLDER and SALE. SALE matters most: it is
+                     what a POS sale writes, so leaving it out would report every
+                     dish sold as unexplained loss.
   expected_closing = opening + purchases - consumption
   actual_closing   = most recent StockCount within the period
   variance         = actual_closing - expected_closing
