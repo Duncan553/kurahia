@@ -421,9 +421,18 @@ export default function WaiterTabDetailScreen() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="flex items-center gap-2 py-2 border-b border-white/10 last:border-0"
+                  // flex-WRAP, and it is load-bearing. The note input below is
+                  // `w-full`, written to sit on its own line under the item — but
+                  // in a non-wrapping flex row it just became a third sibling
+                  // demanding 100% of the width, which crushed this name column
+                  // (flex-1 min-w-0) to nothing. `truncate` then hid the evidence:
+                  // the order panel listed "KSh 950 each · 1 · KSh 950" with no
+                  // dish name on it at all, on the busiest screen in the resort.
+                  // basis-[45%] gives the name a floor so it cannot be squeezed
+                  // out again by whatever gets added to this row next.
+                  className="flex flex-wrap items-center gap-2 py-2 border-b border-white/10 last:border-0"
                 >
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 basis-[45%] min-w-0">
                     <p className="text-sm font-semibold text-ink-primary truncate">{e.name}</p>
                     <p className="text-xs text-ink-tertiary tabular-nums">{kes(e.price)} each</p>
                   </div>
