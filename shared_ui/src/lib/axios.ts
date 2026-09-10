@@ -25,8 +25,37 @@ function drainQueue(error: unknown, token: string | null = null) {
   queue = []
 }
 
+// ── UTC normaliser ────────────────────────────────────────────────────────
+// The API stamps every time in UTC (engineering invariant 8) but serialises it
+// with `.isoformat()` on a naive datetime, so the wire carries
+// "2026-09-10T20:09:27.633387" — no Z, no offset. `new Date()` reads a string
+// like that as LOCAL time, so in Kenya every timestamp in all three apps
+// rendered three hours early: a wristband issued at 23:09 showed 20:09, and
+// near midnight it showed the wrong DAY.
+//
+// Fixed here, at the one place every response passes through, rather than at
+// the 123 `.isoformat()` call sites across 50 backend files — several of which
+// are real DATE fields (hire_date, roster_date) that must not gain a time zone.
+//
+// The regex deliberately requires a time component and no existing offset, so
+// "2026-09-10" is left alone and a correct "…+00:00" (what Postgres will send
+// in production) is left alone too.
+const NAIVE_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/
+
+function markUtc(value: unknown): unknown {
+  if (typeof value === 'string') return NAIVE_UTC.test(value) ? value + 'Z' : value
+  if (Array.isArray(value)) return value.map(markUtc)
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = markUtc(v)
+    return out
+  }
+  return value
+}
+
 api.interceptors.response.use(
-  (res) => res,
+  (res) => { res.data = markUtc(res.data); return res },
+
   async (error) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
     const status: number | undefined = error.response?.status
