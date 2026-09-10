@@ -21,6 +21,16 @@ interface AuthState {
   clearAuth: () => void
 }
 
+// Signing out must also drop every cached ANSWER, not just the token.
+// The station tablet is shared: front desk signs out, a waiter signs in on the
+// same device seconds later. React Query keys like ['roster','me'] carry no
+// user identity, so the waiter was being served the front desk's cached roster
+// — landing him on /front-desk/checkin and showing him a FRONT DESK badge.
+// Each app registers its queryClient.clear() here at start-up, so every
+// clearAuth() (sign-out button AND the 401 interceptor) wipes the cache too.
+let cacheReset: (() => void) | null = null
+export function setAuthCacheReset(fn: () => void) { cacheReset = fn }
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -36,8 +46,10 @@ export const useAuthStore = create<AuthState>()(
       setSetupToken: (setupToken) =>
         set({ setupToken }),
 
-      clearAuth: () =>
-        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, setupToken: null }),
+      clearAuth: () => {
+        cacheReset?.()                       // drop the previous person's data
+        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, setupToken: null })
+      },
     }),
     { name: 'kurahia-auth', storage: createJSONStorage(() => sessionStorage) },
   ),
