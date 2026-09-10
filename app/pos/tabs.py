@@ -42,10 +42,15 @@ def list_tabs():
     "opened by me" (assigned_to_id doesn't apply the same way to a manager
     covering the whole floor).
 
-    That broadening excludes BAND tabs specifically — those are gate-issued
-    wristband credit accounts (Gate screens own that workflow, no waiter is
-    ever meant to stumble into one this way) — but keeps VILLA in, since
-    waiters also deliver food/drinks to villas, not just restaurant tables.
+    That broadening covers UNASSIGNED WALK_IN tables only. BAND tabs are
+    gate-issued wristband accounts (Gate owns that workflow), and an unassigned
+    VILLA tab is a guest's whole folio, which GET /tabs/:id refuses to open
+    below front desk. Listing those two was a promise this API could not keep:
+    the Tables screen showed a waiter Villa 1's card, and opening it 403'd —
+    except the screen swallowed the 403 and drew an empty table with a
+    "Close Table" button on a folio owing 70,000. A waiter who genuinely serves
+    a villa gets it the intended way: a manager assigns it (POST /tabs/:id/assign),
+    which makes it his by the same rule both doors already use.
     """
     actor     = db.session.get(User, get_jwt_identity())
     status    = (request.args.get("status") or "").upper() or None
@@ -61,7 +66,8 @@ def list_tabs():
         if actor.role.level < MANAGER_LEVEL:
             query = query.filter(
                 (Tab.assigned_to_id == actor.id) |
-                ((Tab.assigned_to_id.is_(None)) & (Tab.tab_type != TabType.BAND.value))
+                ((Tab.assigned_to_id.is_(None))
+                 & (Tab.tab_type == TabType.WALK_IN.value))
             )
         else:
             query = query.filter_by(opened_by_id=actor.id)
@@ -136,6 +142,43 @@ def open_tab():
     }), 201
 
 
+def _may_touch_tab(actor, tab, *, closing: bool = False) -> bool:
+    """Is this person allowed to open — or close — this tab?
+
+    Front desk and above may touch any tab; settling other people's accounts is
+    their job. Below that the two acts differ, and the difference is the rule:
+
+      OPENING one to read or serve it — assigned to you, opened by you, or an
+      unassigned WALK_IN. That last clause is not generosity, it is the SAME set
+      GET /tabs?mine=true already puts on the waiter's Tables screen. While the
+      two disagreed, the screen showed a card ("Ledger Demo · KSh 3,500") that
+      403'd when tapped, and the app drew the refusal as an empty new table. An
+      unassigned walk-in is a table in the room carrying no guest identity.
+
+      CLOSING one — assigned to you or opened by you, full stop. Closing ends an
+      account, and most tables are unassigned most of the time, so extending the
+      orphan-table clause here would have handed every clocked-in staffer the
+      power to close nearly any table. A test caught exactly that after the
+      first version of this function did it.
+
+    A VILLA or BAND tab is somebody's folio either way, and stays shut below
+    front desk.
+
+    This lived inline in get_tab while close_tab had NO check at all, so a
+    housekeeper could close a waiter's table (proved live: 200 OK), and on a
+    BAND tab that also deactivates the guest's wristband. One function now, used
+    by both doors, because the version where each route carried its own copy is
+    exactly how they came to disagree.
+    """
+    if actor.role.level >= FRONT_DESK_LEVEL:
+        return True
+    if (tab.assigned_to_id == actor.id) or (tab.opened_by_id == actor.id):
+        return True
+    if closing:
+        return False
+    return tab.assigned_to_id is None and tab.tab_type == TabType.WALK_IN.value
+
+
 @tabs_bp.get("/<tab_id>")
 @require_active_user
 def get_tab(tab_id):
@@ -158,13 +201,11 @@ def get_tab(tab_id):
     if not tab:
         return jsonify({"error": "Tab not found."}), 404
 
-    if actor.role.level < FRONT_DESK_LEVEL:
-        is_mine = (tab.assigned_to_id == actor.id) or (tab.opened_by_id == actor.id)
-        if not is_mine:
-            return jsonify({
-                "error": "You can only open a table you are serving. "
-                         "Ask front desk or a manager for anything else."
-            }), 403
+    if not _may_touch_tab(actor, tab):
+        return jsonify({
+            "error": "You can only open a table you are serving. "
+                     "Ask front desk or a manager for anything else."
+        }), 403
 
     balance = get_tab_balance(tab_id)
 
@@ -249,6 +290,11 @@ def close_tab(tab_id):
     tab   = db.session.get(Tab, tab_id)
     if not tab:
         return jsonify({"error": "Tab not found."}), 404
+    if not _may_touch_tab(actor, tab, closing=True):
+        return jsonify({
+            "error": "You can only close a table you are serving. "
+                     "Ask front desk or a manager to settle this one."
+        }), 403
     if tab.status == TabStatus.CLOSED.value:
         return jsonify({"error": "This tab is already closed."}), 400
 
