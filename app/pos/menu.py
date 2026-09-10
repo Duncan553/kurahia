@@ -73,6 +73,15 @@ def _notify_owner_menu_change(actor_name: str, verb: str, item_name: str):
 # to the gate staff.
 MENU_AUTHOR_ROLES = {"head_chef"}
 
+# The bar runs its own board. A juice or a mocktail is designed and poured at
+# the bar, so the bar lead writes its recipe there for the same reason the chef
+# writes the kitchen's — the person who makes the thing knows what goes in it.
+# The line stops exactly where the chef's does: ALCOHOL stays the manager's,
+# because a pour measure is also the theft lever (understate the tot, sell the
+# difference), and because beer, wine and spirits are a licensed list that
+# management signs for.
+BAR_AUTHOR_ROLES = {"bar_lead"}
+
 # The stations the head chef makes things at.
 CHEF_STATIONS = {PrepStation.KITCHEN.value, PrepStation.BAR.value}
 
@@ -87,6 +96,9 @@ def _can_manage_menu(actor, prep_station: str | None = None,
     non-alcoholic side of the bar — a fresh juice is squeezed to a recipe the
     same way a dish is plated to one.
 
+    Bar lead: the non-alcoholic BAR list, on the bar's own board. Same standing
+    the chef has over the kitchen, bounded to the station they work.
+
     NOT the head chef: alcohol. Beer, wine and cocktails are a licensed and
     excised list that management prices and signs for; the person who designs
     a dish is not the person who answers for the liquor. Nor services — a spa
@@ -97,11 +109,14 @@ def _can_manage_menu(actor, prep_station: str | None = None,
     """
     if actor.role.level >= MANAGER_LEVEL:
         return True
-    if actor.role.name not in MENU_AUTHOR_ROLES:
-        return False
     if is_alcoholic:
-        return False
-    return prep_station is None or str(prep_station).upper() in CHEF_STATIONS
+        return False                       # nobody below a manager, chef included
+    if actor.role.name in MENU_AUTHOR_ROLES:
+        return prep_station is None or str(prep_station).upper() in CHEF_STATIONS
+    if actor.role.name in BAR_AUTHOR_ROLES:
+        # the bar's own board: soft drinks, juices, mocktails
+        return prep_station is None or str(prep_station).upper() == PrepStation.BAR.value
+    return False
 
 
 def _require_manager(actor, prep_station: str | None = None,
@@ -112,6 +127,20 @@ def _require_manager(actor, prep_station: str | None = None,
     for the food and the juices.
     """
     if not _can_manage_menu(actor, prep_station, is_alcoholic):
+        # Say WHICH rule stopped them. The bar lead now authors the bar's soft
+        # drinks, so refusing his cocktail with "only the head chef, a manager
+        # or the owner can manage menu items" told him something untrue about
+        # himself and nothing about the actual reason.
+        if actor.role.name in BAR_AUTHOR_ROLES:
+            if is_alcoholic:
+                return jsonify({
+                    "error": "Beer, wine and cocktails are priced and measured by "
+                             "a manager. The bar runs its soft drinks and mocktails."
+                }), 403
+            return jsonify({
+                "error": "The bar's board covers drinks. Food is the head chef's, "
+                         "and services are set by a manager."
+            }), 403
         if actor.role.name in MENU_AUTHOR_ROLES:
             if is_alcoholic:
                 return jsonify({
@@ -233,6 +262,25 @@ def edit_menu_item(item_id):
                     "error": f"stock_tracking must be one of "
                              f"{[m.value for m in StockTracking]}."
                 }), 400
+            # SERVICE is a signature, not a setting. "This consumes nothing"
+            # is the sentence that lets an item be sold while moving no stock,
+            # and the rule at the top of this file already says who signs it:
+            # manager -> ALCOHOL, and every SERVICE.
+            #
+            # That half was never enforced, and it was the way around the other
+            # half. Proved live: the head chef created "Gin & Tonic" at the bar
+            # with the alcohol box UNTICKED (the gate is a field the restrained
+            # person fills in), then marked it SERVICE — a cocktail, priced by
+            # the chef, on sale, pouring gin that no ledger ever sees. Signing
+            # is now the manager's, so the mis-flag alone gets nobody anywhere.
+            if (want == StockTracking.SERVICE.value
+                    and item.stock_tracking != want
+                    and actor.role.level < MANAGER_LEVEL):
+                return jsonify({
+                    "error": "Only a manager can sign off that an item consumes "
+                             "nothing. Set a recipe or link a stock item, or ask "
+                             "a manager to mark it a service."
+                }), 403
             # DIRECT is a claim about data, so it has to be true.
             if want == StockTracking.DIRECT.value and not (
                 data.get("inventory_item_id") or item.inventory_item_id
@@ -245,7 +293,17 @@ def edit_menu_item(item_id):
                 changes.append(f"tracking {item.stock_tracking} -> {want}")
             item.stock_tracking = want
         if "inventory_item_id" in data:
-            item.inventory_item_id = data["inventory_item_id"] or None
+            # Same rule as a recipe line: linking a sale straight to a liquor
+            # stock line is a pour, and a pour is the manager's to sign.
+            _link_id = data["inventory_item_id"] or None
+            if _link_id and actor.role.level < MANAGER_LEVEL:
+                _linked = db.session.get(InventoryItem, _link_id)
+                if _linked is not None and _linked.is_alcoholic:
+                    return jsonify({
+                        "error": f"'{_linked.name}' is liquor. A manager links a "
+                                 f"sale to it — ask one to set this up."
+                    }), 403
+            item.inventory_item_id = _link_id
             # Linking a stock item is itself a statement of how this deducts,
             # unless a recipe already says something more specific.
             if item.inventory_item_id and "stock_tracking" not in data:
@@ -544,6 +602,16 @@ def set_recipe(item_id):
         inv_item = db.session.get(InventoryItem, inv_id)
         if not inv_item or not inv_item.is_active:
             return jsonify({"error": f"Inventory item '{inv_id}' not found or inactive."}), 404
+        # Liquor in the pour is a manager's signature, not a bar decision.
+        # The alcohol gate used to read MenuItem.is_alcoholic only — a flag on
+        # the SALE — so a "Virgin Mojito" (soft-drink price, soft-drink
+        # authority) could quietly deduct White Rum, which is a bottle leaving
+        # the store with a mocktail's paperwork behind it.
+        if inv_item.is_alcoholic and actor.role.level < MANAGER_LEVEL:
+            return jsonify({
+                "error": f"'{inv_item.name}' is liquor. A manager sets any recipe "
+                         f"that pours it — ask one to add this line."
+            }), 403
         parsed_lines.append((inv_item, qty))
 
     with db.session.begin_nested():
