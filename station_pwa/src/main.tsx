@@ -107,6 +107,8 @@ const router = createBrowserRouter([
           { path: '/manager/purchases', element: <ProposeBudgetScreen /> },
           { path: '/manager/menu',      element: <MenuManageScreen />     },
           { path: '/chef',              element: <HeadChefScreen />       },
+          // The bar's own board — same screen, bar station. See BOARDS in HeadChefScreen.
+          { path: '/bar',               element: <HeadChefScreen station="BAR" /> },
           { path: '/inventory/count',   element: <InventoryCountScreen /> },
           // One path only. A /finance/cash-recon alias existed briefly so the
           // nav tile and the Manage tile could each have their own URL — two

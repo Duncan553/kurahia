@@ -6,6 +6,35 @@ import { RequireRole } from '../components/AuthGate'
 import { ErrorBoundary, useToastStore } from '@shared'
 import api from '../lib/axios'
 
+// ── One board, two stations ───────────────────────────────────────────────
+// The bar runs its own board: the bar lead opens this same screen and gets the
+// bar's stock, the bar's drinks and the bar's queue. It is deliberately not a
+// second copy of this file — employee_pwa and station_pwa once held two copies
+// of CheckInScreen and they drifted 198 lines apart before anyone noticed.
+// Everything station-specific lives in this one table.
+const BOARDS = {
+  KITCHEN: {
+    title: 'Kitchen', subtitle: 'Chef Dashboard',
+    queuePath: '/pos/kitchen', queueLabel: 'Kitchen Queue',
+    stockNote: 'What ingredients you have right now',
+    recipeNote: 'What goes into each dish and how much',
+    recipeLine: 'Enter & edit recipes per dish',
+    menuLine: 'Add dishes, set prices',
+    restockSubject: 'Restock request from kitchen',
+  },
+  BAR: {
+    title: 'Bar', subtitle: 'Bar Dashboard',
+    queuePath: '/pos/bar', queueLabel: 'Bar Queue',
+    stockNote: 'What you have behind the bar right now',
+    recipeNote: 'What goes into each drink and how much — the pour, per glass',
+    recipeLine: 'Enter & edit recipes per drink',
+    menuLine: 'Add drinks, set prices',
+    restockSubject: 'Restock request from the bar',
+  },
+} as const
+
+export type BoardStation = keyof typeof BOARDS
+
 interface InvItem {
   id: string; name: string; unit: string; current_stock: string
   reorder_level: string; below_reorder: boolean
@@ -37,7 +66,7 @@ const fadeIn = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } }
 
 /* ── Restock Request Form — sends a suggestion to management ────────────────── */
-function RestockRequestForm({ onClose }: { onClose: () => void }) {
+function RestockRequestForm({ onClose, defaultSubject }: { onClose: () => void; defaultSubject: string }) {
   const addToast = useToastStore(s => s.addToast)
   const [subject, setSubject] = useState('')
   const [body, setBody]       = useState('')
@@ -45,7 +74,7 @@ function RestockRequestForm({ onClose }: { onClose: () => void }) {
   const mut = useMutation({
     mutationFn: () => api.post('/suggestions', {
       category: 'MANAGEMENT',
-      subject: subject.trim() || 'Restock request from kitchen',
+      subject: subject.trim() || defaultSubject,
       body: body.trim(),
     }),
     onSuccess: () => {
@@ -92,13 +121,14 @@ function RestockRequestForm({ onClose }: { onClose: () => void }) {
   )
 }
 
-export default function HeadChefScreen() {
+export default function HeadChefScreen({ station = 'KITCHEN' }: { station?: BoardStation }) {
+  const board = BOARDS[station]
   const navigate = useNavigate()
   const [showRestock, setShowRestock] = useState(false)
 
   /* ── Existing query — inventory items ─────────────────────────────── */
   const { data: items = [] } = useQuery<InvItem[]>({
-    queryKey: ['chef-stock'],
+    queryKey: ['chef-stock', station],
     queryFn: () => api.get<InvItem[]>('/inventory/items').then(r => Array.isArray(r.data) ? r.data : []),
     staleTime: 30_000, refetchInterval: 60_000,
   })
@@ -125,9 +155,9 @@ export default function HeadChefScreen() {
             className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-8">
             <div>
               <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
-                Kitchen
+                {board.title}
               </h1>
-              <p className="text-sm text-ink-tertiary mt-1">Chef Dashboard</p>
+              <p className="text-sm text-ink-tertiary mt-1">{board.subtitle}</p>
             </div>
 
             {/* Service badge + time */}
@@ -152,7 +182,7 @@ export default function HeadChefScreen() {
                   <Glass>
                     <div className="p-5">
                       <SectionLabel>Stock Overview</SectionLabel>
-                      <p className="text-[10px] text-ink-tertiary mb-2">What ingredients you have right now</p>
+                      <p className="text-[10px] text-ink-tertiary mb-2">{board.stockNote}</p>
 
                       {/* Hero numbers row — FOCAL POINT of this screen */}
                       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -311,9 +341,9 @@ export default function HeadChefScreen() {
                     <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
                       Recipes
                     </p>
-                    <p className="text-[10px] text-ink-tertiary mb-1">What goes into each dish and how much</p>
+                    <p className="text-[10px] text-ink-tertiary mb-1">{board.recipeNote}</p>
                     <p className="text-sm text-ink-primary mb-1">
-                      Enter &amp; edit recipes per dish
+                      {board.recipeLine}
                     </p>
                     <p className="text-[10px] text-[#fa5c29]">Open →</p>
                   </div>
@@ -329,7 +359,7 @@ export default function HeadChefScreen() {
                       Menu
                     </p>
                     <p className="text-sm text-ink-primary mb-1">
-                      Add dishes, set prices
+                      {board.menuLine}
                     </p>
                     <p className="text-[10px] text-[#fa5c29]">Open →</p>
                   </div>
@@ -356,10 +386,10 @@ export default function HeadChefScreen() {
               {/* Kitchen queue tile — navigate to live queue */}
               <motion.div variants={fadeIn} transition={{ duration: 0.3 }}
                 whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
-                <Glass className="cursor-pointer" onClick={() => navigate('/pos/kitchen')}>
+                <Glass className="cursor-pointer" onClick={() => navigate(board.queuePath)}>
                   <div className="p-5">
                     <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
-                      Kitchen Queue
+                      {board.queueLabel}
                     </p>
                     <p className="text-sm text-ink-primary mb-1">
                       Live order queue
@@ -373,7 +403,7 @@ export default function HeadChefScreen() {
               <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
                 {showRestock ? (
                   <Glass>
-                    <RestockRequestForm onClose={() => setShowRestock(false)} />
+                    <RestockRequestForm onClose={() => setShowRestock(false)} defaultSubject={board.restockSubject} />
                   </Glass>
                 ) : (
                   <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>

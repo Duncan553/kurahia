@@ -16,6 +16,7 @@ interface MenuItem {
   image_path: string | null
   stock_tracking: 'RECIPE' | 'DIRECT' | 'SERVICE' | 'UNTRACKED'
   inventory_item_id: string | null
+  is_alcoholic: boolean
 }
 interface InvItem {
   id: string; name: string; unit: string; cost_per_unit: string | null
@@ -37,6 +38,11 @@ const STATIONS = [
   { value: 'BAR',     label: 'Bar (drinks queue)' },
   { value: 'NONE',    label: 'No queue (spa / gym / activities)' },
 ]
+// NONE is the service catalogue — spa treatments, day passes, jet ski hire.
+// Authoring those is the manager's, so a chef is not offered the option.
+const stationsFor = (isManager: boolean, myStation: string | null) =>
+  isManager ? STATIONS
+            : STATIONS.filter(s => myStation ? s.value === myStation : s.value !== 'NONE')
 const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
 
@@ -62,6 +68,19 @@ export default function MenuManageScreen() {
   const addToast   = useToastStore(s => s.addToast)
   const user       = useAuthStore(s => s.user)
   const isOwner    = (user?.role_level ?? 0) >= 10
+  // The catalogue splits by WHO AUTHORS IT, and the API already enforces it:
+  // the head chef owns food and the bar's non-alcoholic side; the manager owns
+  // alcohol and every service (spa, gym, water activities). This screen used to
+  // list all of it to everyone, so the chef opened Menu & Services and scrolled
+  // through jet ski hire and massages she cannot touch — every one of them a
+  // 403 waiting to happen. Show a person the part of the catalogue that is theirs.
+  const isManager  = (user?.role_level ?? 0) >= 5
+  // Below a manager, this screen shows the station you work, and only that.
+  // The kitchen's board is the chef's; drinks are designed and poured at the
+  // bar, so they are written on the bar's board (/bar) — not on the chef's.
+  const myStation  = (user?.department ?? '').toLowerCase().includes('bar')
+    ? 'BAR' : (user?.department ?? '').toLowerCase().includes('kitchen')
+    ? 'KITCHEN' : null
 
   const [searchQ, setSearchQ]    = useState('')
   const [f, setF]               = useState(BLANK)
@@ -308,12 +327,16 @@ export default function MenuManageScreen() {
   // ── Grouping ──────────────────────────────────────────────────────────────
 
   const deptName = (id: string) => meta?.departments.find(d => d.id === id)?.name ?? '—'
-  const grouped  = items.reduce<Record<string, MenuItem[]>>((acc, it) => {
+  const ownItems = isManager
+    ? items
+    : items.filter(it => myStation ? it.prep_station === myStation
+                                   : it.prep_station !== 'NONE')
+  const grouped  = ownItems.reduce<Record<string, MenuItem[]>>((acc, it) => {
     ;(acc[deptName(it.department_id)] ??= []).push(it); return acc
   }, {})
 
   // Available dishes for "copy from another dish" — all active items
-  const copyItems = recipeFor ? items.filter(i => i.id !== recipeFor.id && i.is_active) : []
+  const copyItems = recipeFor ? ownItems.filter(i => i.id !== recipeFor.id && i.is_active) : []
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -325,7 +348,13 @@ export default function MenuManageScreen() {
           <h1 className="text-2xl font-bold font-serif text-ink-primary">Menu &amp; Services</h1>
           <p className="text-xs text-ink-tertiary mt-0.5">Add, price, disable items &amp; manage recipes</p>
         </div>
-        <Button variant="primary" size="sm" onClick={() => setAdding(a => !a)}>
+        <Button variant="primary" size="sm" onClick={() => {
+          // Open the form on the station this person actually works, or a bar
+          // lead would type a drink into a form still set to "Kitchen" — the
+          // one station their own Routes-to list no longer offers.
+          if (!adding && myStation) setF(v => ({ ...v, station: myStation }))
+          setAdding(a => !a)
+        }}>
           {adding ? 'Close' : '+ Add Item'}
         </Button>
       </div>
@@ -399,7 +428,7 @@ export default function MenuManageScreen() {
           <Select
             label="Routes to" required value={f.station}
             onChange={e => setF({ ...f, station: e.target.value })}
-            options={STATIONS}
+            options={stationsFor(isManager, myStation)}
           />
 
           {/* Alcohol is a manager-only list on the backend (pos/menu.py). Shown
@@ -514,7 +543,10 @@ export default function MenuManageScreen() {
                     recipe or linking a stock item, so offering those here would
                     invite a claim the data does not support. Shown only while
                     the item is blocked, so it does not clutter settled rows. */}
-                {it.stock_tracking === 'UNTRACKED' && (
+                {/* Signing "this consumes nothing" is the manager's — it is what
+                    lets an item sell while moving no stock (pos/menu.py). Hidden
+                    rather than shown-and-refused. */}
+                {it.stock_tracking === 'UNTRACKED' && isManager && (
                   <button
                     onClick={() => trackingMut.mutate({ id: it.id, value: 'SERVICE' })}
                     disabled={trackingMut.isPending}
@@ -528,8 +560,11 @@ export default function MenuManageScreen() {
                   </button>
                 )}
 
-                {/* Recipe button — only for kitchen/bar items */}
-                {it.prep_station !== 'NONE' && (
+                {/* Recipe button — kitchen/bar items only, and never the liquor
+                    for anyone below a manager: a pour measure is the theft lever,
+                    so the API refuses it. Opening an editor that cannot save is
+                    how a person learns to distrust the screen. */}
+                {it.prep_station !== 'NONE' && (isManager || !it.is_alcoholic) && (
                   <button
                     onClick={() => openRecipe(it)}
                     aria-label={`Edit recipe for ${it.name}`}

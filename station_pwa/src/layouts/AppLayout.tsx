@@ -136,8 +136,19 @@ const NAV_ITEMS: NavItem[] = [
   // deptIs(d, 'kitchen', 'bar'), which put the chef's hub on the bar tablet.)
   { id: 'chef', path: '/chef', label: 'Chef', Icon: KitchenIcon,
     visible: (l, d) => deptIs(d, 'kitchen') && l >= 3 },
+  // The bar's equivalent of the chef's hub: bar stock, drink recipes, bar queue.
+  // Drinks are designed and poured at the bar, so their recipes are written here
+  // rather than on the kitchen's board.
+  { id: 'bar-desk', path: '/bar', label: 'Drinks', Icon: BarIcon,
+    visible: (l, d) => deptIs(d, 'bar') && l >= 3 },
+  // Manager and above only. Cash RECONCILIATION — counting a drawer against
+  // what the system expected — is a manager's job on both sides: the screen is
+  // RequireRole minLevel={5} and app/finance/cash.py refuses below MANAGER_LEVEL.
+  // This tile used to be offered to front desk as well, so Grace had a "Cash"
+  // button in her own nav bar that answered "This screen isn't yours to open".
+  // Taking money from a guest is front desk's; reconciling the float is not.
   { id: 'cash', path: '/manager/cash', label: 'Cash', Icon: CheckInIcon,
-    visible: (l, d) => deptIs(d, 'front desk', 'front-desk') || l >= 5 },
+    visible: (l) => l >= 5 },
   { id: 'manager', path: '/manager', label: 'Manage', Icon: SafetyIcon,
     visible: (l) => l >= 5 },
 
