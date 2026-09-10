@@ -39,15 +39,24 @@ interface CountResult {
   duplicate?: boolean
 }
 
+// These are the field names GET /inventory/variance actually returns. The
+// interface previously declared opening_stock / closing_stock / adjustment,
+// which that endpoint has never sent — so the "opening -> closing" line and the
+// badge below rendered from undefined, and a flagged row showed a percentage
+// and nothing else. The numbers a person needs to act are expected vs counted.
 interface VarianceItem {
   item_id: string
   item_name: string
+  unit?: string
   no_closing_count?: boolean
   flagged?: boolean
-  variance_pct?: string
-  opening_stock?: string
-  closing_stock?: string
-  adjustment?: string
+  variance?: string          // SIGNED. negative = less on the shelf than the book says
+  variance_pct?: string      // magnitude only — it drives the tolerance check
+  opening?: string
+  purchases?: string
+  consumption?: string
+  expected_closing?: string
+  actual_closing?: string
 }
 
 interface VarianceReport {
@@ -890,19 +899,32 @@ export default function InventoryCountScreen() {
                               ) : (
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs tabular-nums text-ink-tertiary">
-                                    {v.opening_stock} → {v.closing_stock}
+                                    expected {v.expected_closing} → counted {v.actual_closing}
                                   </span>
-                                  {v.adjustment && (
-                                    <VarianceBadge adj={v.adjustment} watchList={false} />
+                                  {v.variance && (
+                                    <VarianceBadge adj={v.variance} watchList={false} />
                                   )}
                                 </div>
                               )}
                             </div>
-                            {v.variance_pct && !v.no_closing_count && (
-                              <p className={`text-[11px] mt-0.5 ${v.flagged ? 'text-status-failed' : 'text-ink-tertiary'}`}>
-                                {parseFloat(v.variance_pct) > 0 ? '+' : ''}{v.variance_pct}% variance
-                              </p>
-                            )}
+                            {/* The SIGN is the whole meaning on this screen, and it has to
+                                come from `variance`, not from `variance_pct` — the API sends
+                                the percentage as a magnitude (abs) because that is what the
+                                tolerance check compares. Testing it with `> 0 ? '+' : ''`
+                                therefore printed a plus on EVERY row, so 4 kg missing read
+                                as "+20.0% variance": a shortage displayed as a surplus, on
+                                the screen whose job is to catch stock going missing. */}
+                            {v.variance_pct && !v.no_closing_count && (() => {
+                              const short = parseFloat(v.variance ?? '0') < 0
+                              const qty = Math.abs(parseFloat(v.variance ?? '0'))
+                              return (
+                                <p className={`text-[11px] mt-0.5 ${v.flagged ? 'text-status-failed' : 'text-ink-tertiary'}`}>
+                                  {short
+                                    ? `${qty}${v.unit ? ' ' + v.unit : ''} SHORT — ${v.variance_pct}% less than expected`
+                                    : `${qty}${v.unit ? ' ' + v.unit : ''} over — ${v.variance_pct}% more than expected`}
+                                </p>
+                              )
+                            })()}
                           </motion.div>
                         ))}
                       </motion.div>
