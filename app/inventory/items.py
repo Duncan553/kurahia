@@ -98,6 +98,9 @@ def create_item():
         return jsonify({"error": "reorder_level must be a non-negative number."}), 400
     watch_list  = bool(data.get("is_watch_list", False))
     staff_food  = bool(data.get("is_staff_food", False))
+    # Liquor. Both this route and the edit below are already manager-only, so
+    # the flag can only ever be set by the person who answers for the licence.
+    alcoholic   = bool(data.get("is_alcoholic", False))
     tolerance   = data.get("tolerance_percent")
     category    = (data.get("category") or "").strip() or None
     pack_size   = data.get("pack_size")
@@ -127,6 +130,7 @@ def create_item():
             name=name, unit=unit, department_id=dept_id,
             reorder_level=str(reorder),
             is_watch_list=watch_list,
+            is_alcoholic=alcoholic,
             is_staff_food=staff_food,
             tolerance_percent=str(tolerance) if tolerance is not None else None,
             category=category,
@@ -165,6 +169,8 @@ def edit_item(item_id):
             item.reorder_level = str(data["reorder_level"])
         if "is_watch_list" in data:
             item.is_watch_list = bool(data["is_watch_list"])
+        if "is_alcoholic" in data:
+            item.is_alcoholic = bool(data["is_alcoholic"])
         if "tolerance_percent" in data:
             item.tolerance_percent = str(data["tolerance_percent"]) if data["tolerance_percent"] is not None else None
         if "is_active" in data:
@@ -231,6 +237,9 @@ def list_items():
             "reorder_level":  str(it.reorder_level),
             "below_reorder":  stock < it.reorder_level,
             "is_watch_list":  it.is_watch_list,
+            # Read by the menu guards: liquor may only be poured into a recipe
+            # or linked to a sale by a manager (pos/menu.py).
+            "is_alcoholic":   it.is_alcoholic,
             "is_staff_food":  it.is_staff_food,
             "cost_per_unit":  str(it.cost_per_unit) if it.cost_per_unit is not None else None,
             "pack_size":      str(it.pack_size) if it.pack_size is not None else None,

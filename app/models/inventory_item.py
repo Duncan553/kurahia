@@ -3,6 +3,7 @@ InventoryItem — a physical stock item tracked in a department.
 Units are free-text strings (kg, crate, litre, bottle, etc.) — never hardcoded.
 is_watch_list → tighter tolerance + daily count cadence.
 is_staff_food  → lives in Staff dept, excluded from sale-stock variance and judge.
+is_alcoholic   → liquor. Only a manager may put it in a recipe or link it to a sale.
 """
 import uuid
 from datetime import datetime, timezone
@@ -27,6 +28,14 @@ class InventoryItem(db.Model):
 
     # Staff food lives in a separate dept; judge and sale-variance ignore it
     is_staff_food = db.Column(db.Boolean, nullable=False, default=False)
+
+    # Is this stock line liquor? Set by a manager, and it is the only way the
+    # menu guards can TELL. Alcohol was gated on MenuItem.is_alcoholic alone —
+    # a flag on the sale — so nothing stopped a bar lead binding White Rum into
+    # the recipe for a "Virgin Mojito": a soft-drink price, a soft-drink
+    # authority, and a bottle of rum leaving the store to cover it. The pour is
+    # where liquor is stolen, so the pour is where the flag has to live too.
+    is_alcoholic = db.Column(db.Boolean, nullable=False, default=False)
 
     # Pack-aware fields for spirits/cocktails: pack_size=750, pack_unit="ml" means
     # 1 bottle = 750 ml. Recipes specify ml; stock tracks bottles.
