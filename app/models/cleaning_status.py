@@ -47,7 +47,9 @@ class CleaningStatus(db.Model):
     # Current cleaning state
     status = db.Column(db.String(15), nullable=False, default=CleaningStatusEnum.DIRTY.value)
 
-    # Which housekeeper is assigned (nullable until assigned)
+    # The LEAD housekeeper — the one accountable for the state of the room.
+    # Kept as a single FK because every existing caller, the audit trail and the
+    # "assigned to me" permission check all read one name.
     assigned_to_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
     assigned_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
@@ -83,3 +85,37 @@ class CleaningStatus(db.Model):
 
     def __repr__(self):
         return f"<CleaningStatus {self.resource_id} {self.status}>"
+
+
+class CleaningCleaner(db.Model):
+    """Everyone who worked on one clean — a villa is usually done by two.
+
+    CleaningStatus.assigned_to_id holds ONE name, which was fine while the
+    board was "who is this room assigned to" and wrong as soon as front desk
+    started recording who actually cleaned it: villas here are done in pairs,
+    and the second person simply vanished from the record.
+
+    The lead stays on CleaningStatus (permission checks and the audit row read
+    one name). This table is the full list, lead included, so "who cleaned
+    Villa 4 on the 12th" has a complete answer.
+    """
+    __tablename__ = "cleaning_cleaners"
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    cleaning_id = db.Column(db.String(36), db.ForeignKey("cleaning_statuses.id"),
+                            nullable=False, index=True)
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False, index=True)
+    is_lead = db.Column(db.Boolean, nullable=False, default=False)
+    added_at_utc = db.Column(db.DateTime(timezone=True), nullable=False,
+                             default=lambda: datetime.now(timezone.utc))
+
+    user = db.relationship("User", foreign_keys=[user_id], lazy="select")
+
+    __table_args__ = (
+        # Structural, not app-level: the same person cannot be recorded twice
+        # on one clean, so a double-tap cannot inflate who did the work.
+        db.UniqueConstraint("cleaning_id", "user_id", name="uq_cleaning_cleaner"),
+    )
+
+    def __repr__(self):
+        return f"<CleaningCleaner {self.cleaning_id} {self.user_id} lead={self.is_lead}>"

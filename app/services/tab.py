@@ -36,11 +36,56 @@ def get_tab_balance(tab_id: str) -> Decimal:
 BAND_CREDIT_CEILING_MULTIPLIER = Decimal("2")  # allow up to 2x the entry fee (KSh 6,000)
 
 
+# A villa has no natural ceiling the way a wristband does — nobody pre-pays a
+# room account the way they top up a band. But "no ceiling" measured out as
+# genuinely unlimited: a KSh 3,000 day wristband is stopped at KSh 6,000 while
+# an overnight villa, the far more expensive account, would accept a KSh 500,000
+# charge without a word. Proved by asking both: BAND refused, VILLA allowed.
+#
+# What actually backs a villa is the deposit. So the limit is what the guest has
+# already put down plus a headroom the resort sets, and it is a STOP, not a
+# block — front house can take a payment or raise the booking's own limit, and
+# the message says so rather than leaving a waiter stuck at the bar.
+VILLA_DEFAULT_HEADROOM = Decimal("20000")
+
+
+def check_tab_credit(tab_id: str, new_charge: Decimal) -> tuple[bool, str]:
+    """Ceiling check for any tab. Band rules unchanged; villas now have one too."""
+    from app.models.tab import Tab, TabType
+    from app.models.booking import Booking
+
+    tab = db.session.get(Tab, tab_id)
+    if not tab:
+        return True, ""
+
+    if tab.tab_type == TabType.VILLA.value:
+        booking = db.session.query(Booking).filter_by(tab_id=tab_id).first()
+        if not booking:
+            return True, ""
+        # Front house may set a limit per booking; otherwise deposit + headroom.
+        limit = getattr(booking, "credit_limit", None)
+        if limit is None:
+            limit = Decimal(str(booking.deposit_required or 0)) + VILLA_DEFAULT_HEADROOM
+        limit = Decimal(str(limit))
+        balance = get_tab_balance(tab_id)
+        if balance + new_charge > limit:
+            return False, (
+                f"This room has reached its charging limit of KSh {limit:,.2f}. "
+                f"Current balance: KSh {balance:,.2f}. "
+                f"Send the guest to front house to settle part of the bill or "
+                f"raise the limit."
+            )
+        return True, ""
+
+    return check_band_credit(tab_id, new_charge)
+
+
 def check_band_credit(tab_id: str, new_charge: Decimal) -> tuple[bool, str]:
     """
     For band tabs: block charges that would put the running balance more than
     2× the entry fee above zero (i.e. the guest would owe more than KSh 6,000).
-    Normal tabs (villa, walk-in) have no ceiling — returns (True, "").
+    Walk-in tabs have no ceiling — returns (True, ""). Villas are handled by
+    check_tab_credit above.
     Returns (ok, plain-English error message).
     """
     from app.models.tab import Tab

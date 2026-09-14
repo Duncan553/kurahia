@@ -202,7 +202,7 @@ export default function ManagerScreen() {
         <path d="M13.5 13l2 2 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ) },
-    { label: 'Front Desk', desc: 'Arrivals, departures, occupancy', path: '/manager/front-desk', svg: (
+    { label: 'Front House', desc: 'Arrivals, departures, occupancy', path: '/manager/front-desk', svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <rect x="2" y="6" width="16" height="11" rx="2" stroke="currentColor" strokeWidth="1.5"/>
         <path d="M7 6V4a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

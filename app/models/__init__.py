@@ -59,7 +59,7 @@ from .calendar_entry import CalendarEntry, CalendarEntryType
 from .equipment import Equipment, MaintenanceLog, SafetyCheck, EquipmentStatus
 from .push_subscription import PushSubscription
 from .system_setting import SystemSetting
-from .cleaning_status import CleaningStatus, CleaningStatusEnum, VALID_CLEANING_TRANSITIONS
+from .cleaning_status import CleaningStatus, CleaningStatusEnum, VALID_CLEANING_TRANSITIONS, CleaningCleaner
 from .lost_found import LostFound, LostFoundStatus
 from .supplier import Supplier
 from .incident import Incident, IncidentSeverity

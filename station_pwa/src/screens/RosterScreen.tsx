@@ -19,7 +19,7 @@ const extractErr = (e: unknown) =>
 // ── Screen ────────────────────────────────────────────────────────────────
 // Today's station roster: which department each employee is actually working
 // today, separate from their fixed home department on the account. Lets a
-// manager cover gaps (e.g. a waiter helping Front Desk today) without
+// manager cover gaps (e.g. a waiter helping Front House today) without
 // touching anyone's account — see app/hr/roster.py.
 
 export default function RosterScreen() {

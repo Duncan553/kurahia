@@ -18,6 +18,7 @@ receipts_bp = Blueprint("receipts", __name__, url_prefix="/receipts")
 
 
 FRONT_DESK_LEVEL = 3
+MANAGER_LEVEL = 5
 
 
 @receipts_bp.get("")
@@ -45,6 +46,23 @@ def list_receipts():
         Tab.opened_at_utc >= day_start,
         Tab.opened_at_utc < day_end,
     )
+
+    # Front house keeps the villas and the wristbands; a restaurant table is
+    # settled by the waiter standing at it and was never theirs to reconcile.
+    # Showing all three made this screen a list of other people's work, and the
+    # villa folio — the one thing front house is actually asked about at
+    # checkout — sat buried among walk-ins.
+    #
+    # Nothing is lost by the narrowing: a restaurant charge made TO a villa is
+    # a LINE on that villa's folio, not a separate walk-in tab, so "what is
+    # this KSh 4,500 for?" is still answerable here. A manager keeps the
+    # property-wide view.
+    if actor.role.level < MANAGER_LEVEL:
+        query = query.filter(Tab.tab_type.in_(["VILLA", "BAND"]))
+
+    tab_type = (request.args.get("type") or "").strip().upper()
+    if tab_type and tab_type != "ALL" and actor.role.level >= MANAGER_LEVEL:
+        query = query.filter(Tab.tab_type == tab_type)
     if q:
         query = query.filter(Tab.reference.ilike(f"%{q}%"))
 

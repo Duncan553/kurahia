@@ -46,7 +46,32 @@ interface FrontDeskData {
   pending_waivers: PendingWaiver[]
 }
 
-type Tab = 'arrivals' | 'departures' | 'occupancy'
+type Tab = 'arrivals' | 'departures' | 'occupancy' | 'rooms'
+
+// Room readiness, read-only, on the screen where the decision is made.
+// "Which villa can I give this guest?" is asked at the desk with the guest
+// standing there, and the answer lived on a tablet in another department. The
+// desk either walked over or guessed — and a guess walks a guest to a room
+// that has not been cleaned. GET /housekeeping/status now admits front desk;
+// starting and completing a clean stay with the people who do the cleaning.
+interface CleaningRow {
+  // Null for a villa that has never been cleaned — /housekeeping/status returns
+  // a placeholder row so the villa still appears. There is no record to act on
+  // until one exists, which is why the key and the buttons both guard on it.
+  id: string | null
+  resource_name: string | null
+  status: 'DIRTY' | 'CLEANING' | 'CLEAN' | 'INSPECTED' | string
+  assigned_to_name?: string | null
+  cleaners?: string[]
+  updated_at?: string | null
+}
+
+const ROOM_STATE: Record<string, { label: string; tone: string }> = {
+  INSPECTED: { label: 'Ready',        tone: 'var(--color-leaf-green)' },
+  CLEAN:     { label: 'Clean',        tone: 'var(--color-leaf-green)' },
+  CLEANING:  { label: 'Being cleaned', tone: 'var(--color-tea-brown)' },
+  DIRTY:     { label: 'Not cleaned',  tone: 'var(--color-stamp-red)' },
+}
 
 function DepositBar({ paid, required }: { paid: string; required: string }) {
   const p = parseFloat(paid)
@@ -213,6 +238,63 @@ export default function CheckInScreen() {
     },
   })
 
+  // These four hooks sit ABOVE the loading and error guards on purpose. Placed
+  // after them, React ran fewer hooks on the first (loading) render than on the
+  // second and threw "Rendered more hooks than during the previous render",
+  // blanking the whole screen. Rules of hooks: same calls, same order, every
+  // render — early returns are what make that easy to break.
+  // Only fetched when the tab is open — the desk does not need it to check
+  // somebody in, and a 403 here must never break the rest of the screen.
+  const { data: rooms = [], isError: roomsError } = useQuery<CleaningRow[]>({
+    queryKey: ['front-desk-rooms'],
+    queryFn: () => api.get<CleaningRow[]>('/housekeeping/status').then(r => r.data),
+    enabled: tab === 'rooms',
+    staleTime: 30_000,
+  })
+
+  // Housekeepers to name. The desk records the work; the RECORD still says who
+  // did it, otherwise the audit row reads as though a receptionist cleaned six
+  // villas single-handed.
+  const { data: keepers = [] } = useQuery<{ id: string; username: string; department: string | null }[]>({
+    queryKey: ['housekeepers'],
+    queryFn: () => api.get<{ id: string; username: string; department: string | null }[]>('/auth/users')
+      .then(r => r.data.filter(u => (u.department ?? '').toLowerCase().includes('housekeep'))),
+    enabled: tab === 'rooms',
+    staleTime: 5 * 60_000,
+  })
+
+  // A villa is usually cleaned by two, so this holds a LIST per room rather
+  // than one name. Chips beat a multi-select on a tablet: every option is one
+  // tap, and who is selected is readable without opening anything.
+  const [keeperFor, setKeeperFor] = useState<Record<string, string[]>>({})
+  const toggleKeeper = (roomId: string, userId: string) =>
+    setKeeperFor((k) => {
+      const cur = k[roomId] ?? []
+      return { ...k, [roomId]: cur.includes(userId) ? cur.filter(x => x !== userId) : [...cur, userId] }
+    })
+
+  const roomAct = useMutation({
+    mutationFn: async (v: { rec: CleaningRow; action: 'start' | 'complete' | 'inspect' }) => {
+      // Naming the cleaner happens first, so START carries the attribution
+      // rather than leaving it on whoever tapped the button.
+      // First name picked is the LEAD — the one accountable for the room —
+      // and the rest ride along in housekeeper_ids.
+      const chosen = v.rec.id ? (keeperFor[v.rec.id] ?? []) : []
+      if (v.action === 'start' && chosen.length && !v.rec.assigned_to_name) {
+        await api.post('/housekeeping/assign', {
+          cleaning_id: v.rec.id,
+          housekeeper_id: chosen[0],
+          housekeeper_ids: chosen.slice(1),
+        })
+      }
+      return api.post(`/housekeeping/${v.rec.id}/${v.action}`)
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['front-desk-rooms'] }),
+    onError: (e) => addToast({ type: 'error',
+      message: (e as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Could not update the room.' }),
+  })
+
   // ── LOADING ───────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
@@ -262,7 +344,7 @@ export default function CheckInScreen() {
         {/* ── Header ───────────────────────────────────────────────── */}
         <div>
           <div className="flex items-start justify-between gap-3">
-            <h1 className="text-2xl font-bold text-ink-primary font-serif">Front Desk</h1>
+            <h1 className="text-2xl font-bold text-ink-primary font-serif">Front House</h1>
             {/* Where front desk adds a guest. Until now the only booking form
                 lived on the villa/housekeeping screen. */}
             <button onClick={() => navigate('/front-desk/new-booking')}
@@ -278,9 +360,10 @@ export default function CheckInScreen() {
 
         {/* ── Tab bar ──────────────────────────────────────────────── */}
         <div className="flex gap-1 bg-white/6 rounded-xl p-1">
-          {(['arrivals', 'departures', 'occupancy'] as Tab[]).map((t) => {
+          {(['arrivals', 'departures', 'occupancy', 'rooms'] as Tab[]).map((t) => {
             const count = t === 'arrivals' ? arrivals.length
               : t === 'departures' ? departures.length
+              : t === 'rooms' ? rooms.filter(r => r.status === 'DIRTY').length
               : occupancy.length
             return (
               <button
@@ -459,6 +542,96 @@ export default function CheckInScreen() {
                   </div>
                 )
               })}
+            </div>
+          )
+        )}
+
+        {/* ── Rooms — readiness, read-only ──────────────────────────── */}
+        {tab === 'rooms' && (
+          roomsError ? (
+            <p className="text-sm text-ink-tertiary px-1 py-6">
+              Room readiness is not available on this account.
+            </p>
+          ) : rooms.length === 0 ? (
+            <p className="text-sm text-ink-tertiary px-1 py-6">
+              No villas configured yet.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {/* Not-cleaned first: the desk is looking for what it CANNOT
+                  give out as much as for what it can. */}
+              {[...rooms]
+                .sort((a, b) => (a.status === 'DIRTY' ? -1 : 0) - (b.status === 'DIRTY' ? -1 : 0))
+                .map((r) => {
+                  const st = ROOM_STATE[r.status] ?? { label: r.status, tone: 'var(--color-ink-tertiary)' }
+                  return (
+                    // Keyed on the villa, not the record: three villas with no
+                    // cleaning record all carried id=null, so React saw three
+                    // children with the same key and duplicated rows on every
+                    // re-render — Villa 6 and Villa 14 each appeared twice.
+                    <div key={r.id ?? `res-${r.resource_name}`}
+                      className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl glass-card">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-ink-primary truncate">
+                          {r.resource_name ?? 'Villa'}
+                        </p>
+                        {(r.cleaners?.length ? r.cleaners.join(' + ') : r.assigned_to_name) && (
+                          <p className="text-xs text-ink-tertiary mt-0.5 truncate">
+                            {r.cleaners?.length ? r.cleaners.join(' + ') : r.assigned_to_name}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {r.id && r.status === 'DIRTY' && !r.assigned_to_name && keepers.length > 0 && (
+                          <div className="flex flex-wrap gap-1 items-center">
+                            <span className="text-[10px] uppercase tracking-wider text-ink-tertiary mr-1">
+                              Cleaned by
+                            </span>
+                            {keepers.map(k => {
+                              const on = !!(r.id && (keeperFor[r.id] ?? []).includes(k.id))
+                              return (
+                                <button key={k.id} type="button"
+                                  aria-pressed={on}
+                                  onClick={() => r.id && toggleKeeper(r.id, k.id)}
+                                  className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${
+                                    on ? 'bg-primary-main text-white border-primary-main'
+                                       : 'border-white/15 text-ink-tertiary hover:text-ink-secondary'}`}>
+                                  {k.username}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                        {r.id && r.status === 'DIRTY' && (
+                          <Button size="sm" variant="primary" loading={roomAct.isPending}
+                            disabled={!r.assigned_to_name && !(r.id && (keeperFor[r.id] ?? []).length)}
+                            onClick={() => roomAct.mutate({ rec: r, action: 'start' })}>
+                            Start
+                          </Button>
+                        )}
+                        {r.id && r.status === 'CLEANING' && (
+                          <Button size="sm" variant="primary" loading={roomAct.isPending}
+                            onClick={() => roomAct.mutate({ rec: r, action: 'complete' })}>
+                            Done
+                          </Button>
+                        )}
+                        {r.id && r.status === 'CLEAN' && (
+                          <Button size="sm" variant="secondary" loading={roomAct.isPending}
+                            onClick={() => roomAct.mutate({ rec: r, action: 'inspect' })}>
+                            Ready for guest
+                          </Button>
+                        )}
+                        <span className="text-xs font-semibold uppercase tracking-wider w-24 text-right"
+                              style={{ color: st.tone }}>
+                          {st.label}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              <p className="text-[11px] text-ink-tertiary px-1 pt-1">
+                Name who cleaned it — the record keeps their name, not yours.
+              </p>
             </div>
           )
         )}

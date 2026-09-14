@@ -201,6 +201,10 @@ def edit_user(user_id):
     return jsonify({"id": target.id, "username": target.username}), 200
 
 
+def _dept_name(user) -> str:
+    return (user.department.name or "").strip().lower() if user.department else ""
+
+
 @users_bp.get("")
 @require_active_user
 def list_users():
@@ -223,7 +227,21 @@ def list_users():
     # assignment flow (waiter table assignment, housekeeping assignment) the
     # moment the actor was a manager rather than the owner.
     if actor.role.level < MANAGER_LEVEL and actor.department_id:
-        query = query.filter_by(department_id=actor.department_id)
+        visible_depts = [actor.department_id]
+        # Front desk now runs the cleaning board (housekeeping has no screen of
+        # its own), and every start/complete names the housekeeper who did the
+        # work rather than the receptionist who recorded it. Naming them needs
+        # to SEE them, so front desk's scope includes housekeeping. Without
+        # this the picker was empty and the only way to record a clean would
+        # have been to leave the cleaner's name off it.
+        if _dept_name(actor) in ("front house", "front desk", "front-desk"):
+            from app.models.department import Department
+            hk = db.session.query(Department).filter(
+                db.or_(Department.name.ilike("%housekeep%"),
+                       Department.name.ilike("%villa%"))
+            ).all()
+            visible_depts += [d.id for d in hk]
+        query = query.filter(User.department_id.in_(visible_depts))
 
     return jsonify([
         {

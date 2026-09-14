@@ -76,8 +76,10 @@ export default function ReceiptsScreen() {
           <header className="mb-5">
             <h1 className="font-serif text-2xl md:text-3xl font-bold text-ink-primary">Receipts</h1>
             <p className="text-sm text-ink-tertiary mt-1">
-              Every bill raised on the resort&rsquo;s trading day. Open one to see each
-              line, what was paid, and who took it.
+              Villa folios and wristband tabs for the trading day. Open one to
+              see every line, what was paid, and who took it. Restaurant tables
+              settle at the table; a meal charged to a villa shows as a line on
+              that villa&rsquo;s folio.
             </p>
           </header>
 

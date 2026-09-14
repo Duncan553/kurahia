@@ -26,7 +26,7 @@ import ClockScreen         from './screens/ClockScreen'
 
 // All staff — band lookup (level 1+)
 
-// Gate / Front Desk (level 3+)
+// Gate / Front House (level 3+)
 
 // Water activities (level 1, water dept) — nav filters by department
 

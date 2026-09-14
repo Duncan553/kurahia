@@ -56,6 +56,11 @@ class Booking(db.Model):
 
     base_total        = db.Column(db.Numeric(14, 2), nullable=False)   # price snapshot
     deposit_required  = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+    # How far this room may run before the POS stops accepting charges. NULL =
+    # use the default (deposit + headroom). Front house raises it deliberately
+    # for a guest they know, and that decision has a name on it in the audit log
+    # rather than being a property-wide loosening.
+    credit_limit      = db.Column(db.Numeric(14, 2), nullable=True)
 
     status   = db.Column(db.String(15), nullable=False, default=BookingStatus.HELD.value)
     tab_id   = db.Column(db.String(36), db.ForeignKey("tabs.id"), nullable=True)

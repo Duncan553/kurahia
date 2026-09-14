@@ -183,7 +183,7 @@ export default function AppLayout() {
 
   // Today's station roster overrides the employee's fixed home department —
   // a manager can put someone on a different station for a shift (e.g. a
-  // waiter covering Front Desk today) without touching their account. Falls
+  // waiter covering Front House today) without touching their account. Falls
   // back to the account's own department when nobody explicitly rostered
   // them today (the ordinary case). Same cache key everywhere it's read.
   const { data: rosterToday } = useQuery<{ department: string | null }>({

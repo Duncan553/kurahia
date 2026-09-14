@@ -45,11 +45,6 @@ function VillaIcon() {
     <path d="M3 9.5L10 3l7 6.5v8a1 1 0 01-1 1H4a1 1 0 01-1-1v-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 }
-function HousekeepingIcon() {
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-    <path d="M10 2l1.2 2.4L14 5l-2 2 .5 3L10 8.5 7.5 10l.5-3-2-2 2.8-.6L10 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-}
 function GateIcon() {
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
     <rect x="2.5" y="4.5" width="15" height="11" rx="2" stroke="currentColor" strokeWidth="1.5"/>
@@ -111,8 +106,12 @@ const NAV_ITEMS: NavItem[] = [
   // hit a real 403 here. They still get Cleaning below regardless of level.
   { id: 'villa', path: '/villa', label: 'Villa', Icon: VillaIcon,
     visible: (l, d) => deptIs(d, 'villa', 'housekeep') && l >= 3 },
-  { id: 'housekeeping', path: '/housekeeping', label: 'Cleaning', Icon: HousekeepingIcon,
-    visible: (_l, d) => deptIs(d, 'villa', 'housekeep') },
+  // Cleaning has no tile and no screen of its own any more. At a six-villa
+  // property the cleaners do not carry tablets, and the desk already knows who
+  // is on which room — so the whole cleaning board lives on Check-In, under
+  // Rooms, where the person handing a villa to a guest can see and set it.
+  // The record still names the housekeeper (front desk picks who cleaned it),
+  // so accountability did not move even though the screen did.
   { id: 'gate-hub', path: '/gate/hub', label: 'Gate', Icon: GateIcon,
     visible: (_l, d) => deptIs(d, 'gate', 'entry', 'secur') },
   // level >= 3, for the same reason Villa above carries it: CheckInScreen is
@@ -121,14 +120,14 @@ const NAV_ITEMS: NavItem[] = [
   // handed a level-1 front-desk staffer a Check-In button that refused them —
   // the fourth instance this session of a tile offering what the screen denies.
   { id: 'checkin', path: '/front-desk/checkin', label: 'Check-In', Icon: CheckInIcon,
-    visible: (l, d) => deptIs(d, 'front desk', 'front-desk') && l >= 3 },
+    visible: (l, d) => deptIs(d, 'front house', 'front desk', 'front-desk') && l >= 3 },
   { id: 'band-lookup', path: '/gate/band-lookup', label: 'Band', Icon: BandIcon,
-    visible: (_l, d) => deptIs(d, 'gate', 'front desk', 'front-desk') },
+    visible: (_l, d) => deptIs(d, 'gate', 'front house', 'front desk', 'front-desk') },
   // Front desk is asked "can I see that bill again?" more than anyone, and the
   // screen + GET /receipts both require FRONT_DESK_LEVEL, so the tile matches
   // at l >= 3 rather than offering a door that refuses them.
   { id: 'receipts', path: '/receipts', label: 'Receipts', Icon: CheckInIcon,
-    visible: (l, d) => deptIs(d, 'front desk', 'front-desk') && l >= 3 },
+    visible: (l, d) => deptIs(d, 'front house', 'front desk', 'front-desk') && l >= 3 },
   { id: 'incident', path: '/incidents', label: 'Incident', Icon: IncidentIcon,
     visible: () => true },
 

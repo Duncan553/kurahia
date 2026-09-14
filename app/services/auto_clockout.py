@@ -94,6 +94,20 @@ def auto_clock_out(day_start: datetime, day_end: datetime, actor_id: str | None 
         # A clock-out can never precede its clock-in, whatever the roster says.
         out_at = max(out_at, clock_in_at)
 
+        # And it can never be in the FUTURE. The sweep is meant to run after the
+        # day has ended, but nothing stops it being run at noon — and when it
+        # was, it stamped clock_in + 10h, landing at 22:20 on a 13:07 afternoon.
+        # The effect is worse than a wrong number: the latest event for that
+        # person is then a clock-out that has not happened yet, so every clock-in
+        # they make afterwards is overtaken by it and they read as OFF SHIFT.
+        # Three waiters were locked out of the POS by a single early sweep.
+        # Nobody can have worked hours that have not happened.
+        out_at = min(out_at, datetime.now(timezone.utc))
+        if out_at <= clock_in_at:
+            # Ran so early that the shift has no elapsed time yet — leave it
+            # open rather than writing a zero-length day.
+            continue
+
         db.session.add(ClockEvent(
             employee_id=ev.employee_id,
             event_type=ClockEventType.CLOCK_OUT.value,

@@ -32,7 +32,7 @@ from app.models.audit_log import AuditLog
 from app.models.inventory_item import InventoryItem
 from app.services.consumption import consume_order_item, reverse_consumption
 from app.services.tax import rate_for_menu_item
-from app.services.tab import check_band_credit
+from app.services.tab import check_tab_credit
 
 orders_bp = Blueprint("orders", __name__)
 
@@ -189,7 +189,7 @@ def send_order(order_id):
         Decimal(str(oi.quantity)) * Decimal(str(oi.unit_price_snapshot))
         for oi in order.items
     )
-    ok, credit_err = check_band_credit(order.tab_id, total_new_charge)
+    ok, credit_err = check_tab_credit(order.tab_id, total_new_charge)
     if not ok:
         return jsonify({"error": credit_err}), 400
 

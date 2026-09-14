@@ -19,7 +19,6 @@ import ServicePayScreen from './screens/ServicePayScreen'
 import WaiverScreen from './screens/WaiverScreen'
 import SafetyCheckScreen from './screens/SafetyCheckScreen'
 import VillaScreen from './screens/VillaScreen'
-import HousekeepingScreen from './screens/HousekeepingScreen'
 import GateHubScreen from './screens/GateHubScreen'
 import CheckInScreen from './screens/CheckInScreen'
 import BandLookupScreen from './screens/BandLookupScreen'
@@ -93,7 +92,6 @@ const router = createBrowserRouter([
           { path: '/gate/waiver', element: <WaiverScreen /> },
           { path: '/equipment/safety-check', element: <SafetyCheckScreen /> },
           { path: '/villa', element: <VillaScreen /> },
-          { path: '/housekeeping', element: <HousekeepingScreen /> },
           { path: '/gate/hub', element: <GateHubScreen /> },
           { path: '/front-desk/checkin', element: <CheckInScreen /> },
           { path: '/gate/band-lookup', element: <BandLookupScreen /> },
@@ -121,7 +119,7 @@ const router = createBrowserRouter([
           // Was FrontDeskScreen: 381 lines reading GET /front-desk/today and
           // writing nothing — a read-only subset of CheckInScreen, which shows
           // the same day AND can confirm, check in, check out and take deposits.
-          // Two screens, one endpoint, one titled Front Desk; the weaker one is
+          // Two screens, one endpoint, one titled Front House; the weaker one is
           // gone and the path now lands on the one that can actually do the job.
           { path: '/manager/front-desk',element: <CheckInScreen />        },
           { path: '/manager/roster',    element: <RosterScreen />         },

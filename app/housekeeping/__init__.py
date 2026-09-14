@@ -20,7 +20,7 @@ from app.utils.auth_decorators import require_active_user
 from app.extensions import db
 from app.models.user import User
 from app.models.cleaning_status import (
-    CleaningStatus, CleaningStatusEnum, VALID_CLEANING_TRANSITIONS,
+    CleaningStatus, CleaningStatusEnum, VALID_CLEANING_TRANSITIONS, CleaningCleaner,
 )
 from app.models.bookable_resource import BookableResource
 from app.models.audit_log import AuditLog
@@ -28,6 +28,7 @@ from app.models.audit_log import AuditLog
 housekeeping_bp = Blueprint("housekeeping", __name__, url_prefix="/housekeeping")
 
 MANAGER_LEVEL = 5
+FRONT_DESK_LEVEL = 3
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -54,6 +55,13 @@ def _status_dict(cs: CleaningStatus) -> dict:
         "assigned_to_id":  cs.assigned_to_id,
         "assigned_to":     cs.assigned_to.username if cs.assigned_to else None,
         "assigned_at":     cs.assigned_at.isoformat() if cs.assigned_at else None,
+        # Everyone who worked on it, lead first. A villa is usually cleaned by
+        # two, and the second person used to vanish from the record entirely.
+        "cleaners":        [c.user.username for c in sorted(
+                                db.session.query(CleaningCleaner)
+                                  .filter_by(cleaning_id=cs.id).all(),
+                                key=lambda c: (not c.is_lead, c.user.username if c.user else ""))
+                            if c.user],
         "completed_at":    cs.completed_at.isoformat() if cs.completed_at else None,
         "inspected_by_id": cs.inspected_by_id,
         "inspected_by":    cs.inspected_by.username if cs.inspected_by else None,
@@ -95,14 +103,23 @@ def create_dirty_record(resource_id: str) -> CleaningStatus:
 def list_status():
     """
     Returns the most recent cleaning record for each active villa/room.
-    Visible to housekeeping dept (L1+) and managers (L5+).
+    Visible to housekeeping dept (L1+), FRONT DESK (L3+) and managers (L5+).
+
+    Front desk was refused, and that was the wrong boundary. The question
+    "which villa can I give this guest right now?" is asked at the desk with a
+    guest standing there, and the answer lives in this table. Without it the
+    only honest reply is to walk to the housekeeping tablet and look — so in
+    practice the desk guesses, and a guest gets walked to a room that has not
+    been cleaned.
+
+    READ only. Starting, completing and inspecting a clean stay with the people
+    who do the cleaning; this hands the desk the state, not the work.
     """
     actor = db.session.get(User, get_jwt_identity())
 
-    # Housekeeping/villa dept staff (any level) or managers can view
     is_hk_dept = _is_hk_dept(actor)
-    if actor.role.level < MANAGER_LEVEL and not is_hk_dept:
-        return jsonify({"error": "Villa/housekeeping department or manager access required."}), 403
+    if actor.role.level < FRONT_DESK_LEVEL and not is_hk_dept:
+        return jsonify({"error": "Front desk, housekeeping or manager access required."}), 403
 
     # Get all active villa/room resources
     resources = db.session.query(BookableResource).filter_by(is_active=True).all()
@@ -147,10 +164,20 @@ def list_status():
 @housekeeping_bp.post("/assign")
 @require_active_user
 def assign():
-    """Manager assigns a housekeeper to a cleaning task."""
+    """Front desk or manager puts a named housekeeper on a cleaning task.
+
+    Housekeeping has no screen of its own: at a six-villa property the cleaners
+    do not carry tablets, and the desk already knows who is on which room. So
+    the desk drives the board.
+
+    The reason this endpoint still takes a housekeeper_id rather than assuming
+    the actor is the thing that matters. The person recording the work is now
+    not the person who did it, and without a name the audit row would say a
+    receptionist cleaned six villas. Naming the housekeeper keeps the record
+    true about who is accountable for the state of the room."""
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager access required to assign housekeepers."}), 403
+    if actor.role.level < FRONT_DESK_LEVEL:
+        return jsonify({"error": "Front desk or above required to assign housekeepers."}), 403
 
     data = request.get_json(silent=True) or {}
     cleaning_id = data.get("cleaning_id")
@@ -167,9 +194,28 @@ def assign():
     if not housekeeper or not housekeeper.is_active:
         return jsonify({"error": "Housekeeper not found or inactive."}), 404
 
+    # A villa here is usually cleaned by two. The lead stays on the record —
+    # permission checks and the audit row read one name — and everyone who
+    # worked on it, lead included, goes in cleaning_cleaners so "who cleaned
+    # Villa 4" has a complete answer later.
+    extra_ids = data.get("housekeeper_ids") or []
+    all_ids = [housekeeper_id] + [i for i in extra_ids if i != housekeeper_id]
+
     record.assigned_to_id = housekeeper_id
     record.assigned_at = datetime.now(timezone.utc)
     record.updated_at = datetime.now(timezone.utc)
+
+    for uid in all_ids:
+        u = db.session.get(User, uid)
+        if not u or not u.is_active:
+            continue
+        exists = db.session.query(CleaningCleaner).filter_by(
+            cleaning_id=record.id, user_id=uid).first()
+        if exists:
+            exists.is_lead = (uid == housekeeper_id)
+            continue
+        db.session.add(CleaningCleaner(
+            cleaning_id=record.id, user_id=uid, is_lead=(uid == housekeeper_id)))
 
     db.session.flush()
     AuditLog.log(
@@ -199,8 +245,10 @@ def start_cleaning(cleaning_id):
     # had no working "Start Cleaning" path until a manager happened to assign it.
     is_hk_dept = _is_hk_dept(actor)
     can_self_claim = record.assigned_to_id is None and is_hk_dept
-    if record.assigned_to_id != actor.id and actor.role.level < MANAGER_LEVEL and not can_self_claim:
-        return jsonify({"error": "Only the assigned housekeeper or a manager can start cleaning."}), 403
+    if (record.assigned_to_id != actor.id and actor.role.level < FRONT_DESK_LEVEL
+            and not can_self_claim):
+        return jsonify({"error": "Only the assigned housekeeper, front desk or a "
+                                 "manager can start cleaning."}), 403
 
     ok, err = _transition_ok(record.status, CleaningStatusEnum.CLEANING.value)
     if not ok:
@@ -234,7 +282,7 @@ def complete_cleaning(cleaning_id):
         return jsonify({"error": "Cleaning record not found."}), 404
 
     # Only the assigned housekeeper or a manager can complete
-    if record.assigned_to_id != actor.id and actor.role.level < MANAGER_LEVEL:
+    if record.assigned_to_id != actor.id and actor.role.level < FRONT_DESK_LEVEL:
         return jsonify({"error": "Only the assigned housekeeper or a manager can complete cleaning."}), 403
 
     ok, err = _transition_ok(record.status, CleaningStatusEnum.CLEAN.value)
@@ -264,10 +312,13 @@ def complete_cleaning(cleaning_id):
 @housekeeping_bp.post("/<cleaning_id>/inspect")
 @require_active_user
 def inspect(cleaning_id):
-    """Manager inspects and approves a cleaned room (CLEAN → INSPECTED)."""
+    """Front desk or manager approves a cleaned room (CLEAN → INSPECTED).
+
+    Front desk is the one who hands the room to a guest, so front desk is the
+    one who should have to say it is fit to hand over."""
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager access required to inspect rooms."}), 403
+    if actor.role.level < FRONT_DESK_LEVEL:
+        return jsonify({"error": "Front desk or above required to inspect rooms."}), 403
 
     record = db.session.get(CleaningStatus, cleaning_id)
     if not record:
