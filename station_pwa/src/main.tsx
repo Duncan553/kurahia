@@ -55,6 +55,7 @@ import ReconcileScreen from './screens/ReconcileScreen'
 // The guest's bill for the whole stay. GET /receipts/:tab_id was built in
 // Phase A and never called, so a guest checking out saw a total and no lines.
 import FolioScreen from './screens/FolioScreen'
+import ReceiptsScreen from './screens/ReceiptsScreen'
 // Front desk taking a guest in. POST /bookings always allowed FRONT_DESK_LEVEL;
 // the only screen calling it was gated to villa/housekeeping staff.
 import NewBookingScreen from './screens/NewBookingScreen'
@@ -130,6 +131,7 @@ const router = createBrowserRouter([
           { path: '/manager/reconcile', element: <ReconcileScreen />      },
           // Level 3+: front desk needs this at check-out, waiters when closing a table.
           { path: '/folio/:tabId',      element: <FolioScreen />          },
+          { path: '/receipts',         element: <ReceiptsScreen />       },
           { path: '/front-desk/new-booking', element: <NewBookingScreen /> },
           { path: '/manager/staff',     element: <StaffAccountsScreen />  },
           // Unknown address, but signed in: say so. This lives INSIDE AuthGate

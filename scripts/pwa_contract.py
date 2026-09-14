@@ -276,6 +276,97 @@ def permission_scan():
     return breaks
 
 
+# ── Orphan endpoints ─────────────────────────────────────────────────────────
+# The scan at the top of this file asks: does everything the UI calls exist?
+# This asks the OPPOSITE, which is the question that actually loses features:
+# does everything that exists have a door?
+#
+# GET /receipts — the central receipts search, with date and reference filters,
+# built and tested in Phase A — had no caller in any of the three apps. Nobody
+# noticed for months, because nothing fails. The endpoint answers perfectly; no
+# screen ever asks it. The single-bill version (GET /receipts/<id>) had the same
+# gap until FolioScreen was written for it.
+#
+# Not every orphan is a bug: callbacks that payment providers POST to, health
+# probes, and CLI-facing routes are reached by things that are not a screen and
+# never should be. Those are listed apart rather than counted, so the real
+# question — "is this a feature nobody can reach?" — stays readable.
+
+# Reached by something that is not a browser screen, by design.
+NON_UI_PREFIXES = (
+    "/finance/mpesa/callback", "/finance/mpesa/c2b", "/finance/bank/sms",
+    "/finance/card/ipn", "/health", "/auth/refresh", "/uploads",
+)
+
+
+def all_path_literals():
+    """Every API-looking string literal anywhere in the front-end source.
+
+    The call scanner at the top only matches a literal sitting directly inside
+    api.get(...), which is right for ITS question (does this call resolve?) but
+    far too narrow for this one. Real code holds paths in variables and picks
+    them with ternaries:
+
+        const endpoint = station === 'KITCHEN' ? '/kitchen/queue' : '/bar/queue'
+        api.post(type === 'CLOCK_IN' ? '/hr/clock-in' : '/hr/clock-out')
+
+    The first version of this check reported both queue endpoints and clock-out
+    as features nobody could reach, which is the opposite of true — the kitchen
+    board is one of the most-used screens in the resort. For the orphan
+    question, wrongly counting a path as CALLED costs one missed finding;
+    wrongly calling a live endpoint an orphan sends someone to build a door that
+    already exists. So this deliberately errs wide.
+    """
+    lits = set()
+    for root in APPS:
+        for f in Path(root).rglob("*.ts*"):
+            text = f.read_text(encoding="utf-8", errors="ignore")
+            lits |= set(re.findall(r"""['"`](/[a-z][a-z0-9\-]*(?:/[^'"`\s${]*)*)['"`]""", text))
+    return lits
+
+
+def orphan_scan(app, calls):
+    """Real routes that no screen calls. Returns the ones worth a door."""
+    called = set()
+    for path in set(calls) | all_path_literals():
+        # A call built at runtime ("/tabs/${id}") was normalised to "/tabs/1"
+        # by the scanner above; compare on the static head so a dynamic caller
+        # still counts as covering its route family.
+        parts = [p for p in path.split("/") if p]
+        for i in range(len(parts), 0, -1):
+            called.add("/" + "/".join(parts[:i]))
+
+    def is_called(rule):
+        r = str(rule)
+        # Flask writes params as <id>; a caller reaches them as a value.
+        head = r.split("<")[0].rstrip("/") or "/"
+        return head in called or r in called or any(c.startswith(head + "/") for c in called)
+
+    orphans, by_design = [], []
+    for rule in sorted(app.url_map.iter_rules(), key=str):
+        if rule.endpoint == "static":
+            continue
+        methods = sorted(rule.methods - {"HEAD", "OPTIONS"})
+        if not methods:
+            continue
+        if is_called(rule):
+            continue
+        (by_design if str(rule).startswith(NON_UI_PREFIXES) else orphans).append(
+            (str(rule), ",".join(methods)))
+
+    print("\nendpoints with no screen behind them:")
+    if not orphans:
+        print("  every route the API serves is reachable from some screen")
+    else:
+        print(f"  {len(orphans)} route(s) no app calls — each is a feature nobody can reach:")
+        for path, methods in orphans:
+            print(f"      {methods:<18} {path}")
+    if by_design:
+        print(f"  ({len(by_design)} more are called by providers, probes or the CLI, "
+              f"not by a screen — expected)")
+    return orphans
+
+
 def main():
     app = create_app("development")
     calls = scan()
@@ -392,6 +483,7 @@ def main():
         dead_nav += [(pkg, t) for t in bad]
 
     perm_breaks = permission_scan()
+    orphans = orphan_scan(app, calls)
 
     total_bad = (len(missing) + len(wrong_method) + len(broken)
                  + len(dead_nav) + len(perm_breaks))

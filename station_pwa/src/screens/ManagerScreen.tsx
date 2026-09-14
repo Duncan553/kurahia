@@ -145,6 +145,12 @@ export default function ManagerScreen() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
   const ACTIONS: { label: string; desc: string; path: string; svg: React.ReactNode }[] = [
+    { label: 'Receipts', desc: 'Every bill raised today', path: '/receipts', svg: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M5 2h10v16l-2.5-1.5L10 18l-2.5-1.5L5 18V2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+        <path d="M8 7h4M8 10h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ) },
     { label: 'Receive Stock', desc: 'Record a purchase + receipt', path: '/manager/receive', svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M3 7l7-4 7 4v6l-7 4-7-4V7z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
