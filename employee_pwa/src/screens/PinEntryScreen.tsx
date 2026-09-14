@@ -123,7 +123,7 @@ export default function PinEntryScreen() {
               drop-shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
               Enter PIN
             </h1>
-            <p className="text-sm text-ink-primary/60 mt-1">Kurahia Staff</p>
+            <p className="text-sm text-ink-primary/60 mt-1">Waterfront Juja Staff</p>
           </div>
 
           {/* Frosted glass card */}

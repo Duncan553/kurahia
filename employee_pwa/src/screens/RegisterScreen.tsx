@@ -110,7 +110,7 @@ export default function RegisterScreen() {
       >
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-ink-primary font-serif">Join Kurahia</h1>
+          <h1 className="text-2xl font-bold text-ink-primary font-serif">Join Waterfront Juja</h1>
           <p className="text-sm text-ink-tertiary mt-1">Create your staff account</p>
         </div>
 

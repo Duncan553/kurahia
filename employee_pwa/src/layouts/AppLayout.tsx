@@ -242,8 +242,8 @@ export default function AppLayout() {
         {/* Logo */}
         <div className="h-14 flex items-center justify-center lg:justify-start lg:px-4 border-b border-white/5">
           <span className="text-ink-primary font-bold font-serif text-lg">
-            <span className="hidden lg:block">Kurahia</span>
-            <span className="lg:hidden">K</span>
+            <span className="hidden lg:block">Waterfront Juja</span>
+            <span className="lg:hidden">W</span>
           </span>
         </div>
 
@@ -306,7 +306,7 @@ export default function AppLayout() {
         {/* Mobile top bar (sm: hidden since sidebar has logo) */}
         <header className="sm:hidden h-14 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
           style={{ background: 'var(--color-chrome-90)' }}>
-          <span className="text-lg font-bold font-serif text-ink-primary">Kurahia</span>
+          <span className="text-lg font-bold font-serif text-ink-primary">Waterfront Juja</span>
           {/* Sign out. The button box is 44x44 (the touch minimum) but the orange
               circle inside stays 32px, so the header looks identical — only the
               tappable area grew. -mr-1.5 pulls the wider box back over the header's

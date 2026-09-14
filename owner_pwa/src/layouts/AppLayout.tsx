@@ -172,14 +172,14 @@ export default function AppLayout() {
       <aside className="hidden sm:flex flex-col w-16 lg:w-56 shrink-0 border-r border-white/5"
         style={{ background: 'var(--color-chrome-95)', backdropFilter: 'blur(20px)' }}>
 
-        {/* Logo — matches Stitch: circle icon + "Kurahia" + "WATERFRONT CLUB" */}
+        {/* Logo — matches Stitch: circle icon + "Waterfront Juja" + "WATERFRONT CLUB" */}
         <div className="p-4 lg:p-5 border-b border-white/5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-primary-main/15 border border-primary-main/20 flex items-center justify-center shrink-0">
-              <span className="text-[#ffb59f] text-sm font-serif font-bold">K</span>
+              <span className="text-[#ffb59f] text-sm font-serif font-bold">W</span>
             </div>
             <div className="hidden lg:block">
-              <p className="text-sm font-serif font-bold text-ink-primary">Kurahia</p>
+              <p className="text-sm font-serif font-bold text-ink-primary">Waterfront Juja</p>
               <p className="text-[8px] tracking-[0.2em] uppercase text-[#ffb59f]/60">Waterfront Club</p>
             </div>
           </div>
@@ -216,8 +216,8 @@ export default function AppLayout() {
         <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
           style={{ background: 'var(--color-chrome-90)', backdropFilter: 'blur(16px)' }}>
           <div className="flex items-center gap-1">
-            <span className="sm:hidden text-base font-bold font-serif text-ink-primary">Kurahia</span>
-            <span className="hidden sm:block text-sm font-medium text-ink-primary">Kurahia Dashboard</span>
+            <span className="sm:hidden text-base font-bold font-serif text-ink-primary">Waterfront Juja</span>
+            <span className="hidden sm:block text-sm font-medium text-ink-primary">Waterfront Juja Dashboard</span>
           </div>
           {/* Shortcut pills. min-h-[44px] + inline-flex: they were 28px tall (py-1.5
               on a 12px font) and these are tablet-only controls, so a thumb is the

@@ -20,25 +20,25 @@ interface WaiverResponse {
 
 const WAIVER_TITLE = 'LIABILITY WAIVER — WATER ACTIVITIES'
 
-const WAIVER_BODY = `By signing this waiver, I voluntarily participate in water-based activities at Waterfront Kurahia, Juja Farm, Kiambu County, Kenya.
+const WAIVER_BODY = `By signing this waiver, I voluntarily participate in water-based activities at Waterfront Juja, Juja Farm, Kiambu County, Kenya.
 
 1. ASSUMPTION OF RISK
 I understand that water activities — including use of jetskis, motorboats, inflatables, and swimming — carry inherent risks: drowning, physical injury, collision, and equipment malfunction. I voluntarily assume all such risks.
 
 2. RELEASE OF LIABILITY
-I release, waive, and discharge Waterfront Kurahia and its owners, managers, employees, and agents from all claims, damages, or liability arising from my participation in water activities, to the fullest extent permitted by Kenyan law.
+I release, waive, and discharge Waterfront Juja and its owners, managers, employees, and agents from all claims, damages, or liability arising from my participation in water activities, to the fullest extent permitted by Kenyan law.
 
 3. MEDICAL FITNESS
 I confirm I am physically fit and have no medical condition — including heart disease, epilepsy, or pregnancy — that would make water activities unsafe for me.
 
 4. SAFETY RULES
-I agree to follow all safety instructions from Waterfront Kurahia staff at all times. Non-compliance may result in immediate removal from the activity without refund.
+I agree to follow all safety instructions from Waterfront Juja staff at all times. Non-compliance may result in immediate removal from the activity without refund.
 
 5. CHILDREN
 If signing on behalf of a minor, I confirm I am the parent or legal guardian and accept these terms on their behalf.
 
 6. PHOTOGRAPHY
-I consent to being photographed or filmed during activities for Waterfront Kurahia's records and promotional use.
+I consent to being photographed or filmed during activities for Waterfront Juja's records and promotional use.
 
 I confirm I have read and understood the above terms fully before signing.`
 
@@ -404,7 +404,7 @@ export default function KioskWaiverScreen() {
       {/* Header */}
       <header className="shrink-0 text-center pt-8 pb-4 px-6 border-b border-tea-brown/20">
         <p className="font-serif text-sm tracking-[0.4em] text-tea-brown/60 uppercase mb-1">
-          Waterfront Kurahia
+          Waterfront Juja
         </p>
         <h1 className="font-serif text-4xl font-bold text-tea-brown tracking-widest leading-tight">
           {WAIVER_TITLE}
@@ -518,7 +518,7 @@ export default function KioskWaiverScreen() {
       {/* Footer */}
       <footer className="shrink-0 text-center py-4 border-t border-tea-brown/20">
         <p className="text-xs text-ticket-ink/40 tracking-widest uppercase">
-          Waterfront Kurahia · Juja · Kiambu · Kenya
+          Waterfront Juja · Juja · Kiambu · Kenya
         </p>
       </footer>
 

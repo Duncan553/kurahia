@@ -128,7 +128,7 @@ export default function LoginScreen() {
             onClick={() => navigate('/register')}
             className="text-primary-main hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main rounded"
           >
-            Join Kurahia
+            Join Waterfront Juja
           </button>
         </p>
       </motion.div>

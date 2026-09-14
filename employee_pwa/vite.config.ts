@@ -52,8 +52,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2,wav}'],
       },
       manifest: {
-        name: 'Kurahia Staff',
-        short_name: 'Kurahia',
+        name: 'Waterfront Juja Staff',
+        short_name: 'Waterfront Juja',
         theme_color: '#40534C',
         background_color: '#E4D2B0',
         display: 'standalone',

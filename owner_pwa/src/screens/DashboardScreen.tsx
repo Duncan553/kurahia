@@ -842,7 +842,7 @@ export default function DashboardScreen() {
             {greeting}, Director.
           </h1>
           <p className="text-sm text-ink-secondary mt-1">
-            Here is the current state of Kurahia
+            Here is the current state of Waterfront Juja
           </p>
           <div className="flex items-center gap-3 mt-1">
             <p className="text-xs text-ink-tertiary">

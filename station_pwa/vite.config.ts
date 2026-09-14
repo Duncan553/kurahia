@@ -76,9 +76,9 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/(kitchen|bar|tabs|orders|order-items|gate|front-desk|inventory|menu|auth|hr|receipts|booking-payments|bookings|bookable-resources|waivers|equipment|housekeeping|incidents|events|finance|notifications|suggestions)\b/],
       },
       manifest: {
-        name: 'Kurahia Station',
+        name: 'Waterfront Juja Station',
         short_name: 'Station',
-        description: 'Kurahia Resort — POS, kitchen, bar and gate stations',
+        description: 'Waterfront Juja Resort — POS, kitchen, bar and gate stations',
         theme_color: '#171717',
         background_color: '#171717',
         display: 'standalone',

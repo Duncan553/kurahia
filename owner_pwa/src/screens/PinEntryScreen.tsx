@@ -93,7 +93,7 @@ export default function PinEntryScreen() {
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-xs">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold font-serif text-ink-primary">Kurahia</h1>
+          <h1 className="text-3xl font-bold font-serif text-ink-primary">Waterfront Juja</h1>
           <p className="text-sm text-ink-secondary mt-1">Enter your PIN</p>
         </div>
 

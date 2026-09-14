@@ -49,8 +49,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
       },
       manifest: {
-        name: 'Kurahia Owner',
-        short_name: 'Kurahia O',
+        name: 'Waterfront Juja Owner',
+        short_name: 'Waterfront Juja O',
         theme_color: '#40534C',
         background_color: '#E4D2B0',
         display: 'standalone',

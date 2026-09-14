@@ -124,6 +124,11 @@ const NAV_ITEMS: NavItem[] = [
     visible: (l, d) => deptIs(d, 'front desk', 'front-desk') && l >= 3 },
   { id: 'band-lookup', path: '/gate/band-lookup', label: 'Band', Icon: BandIcon,
     visible: (_l, d) => deptIs(d, 'gate', 'front desk', 'front-desk') },
+  // Front desk is asked "can I see that bill again?" more than anyone, and the
+  // screen + GET /receipts both require FRONT_DESK_LEVEL, so the tile matches
+  // at l >= 3 rather than offering a door that refuses them.
+  { id: 'receipts', path: '/receipts', label: 'Receipts', Icon: CheckInIcon,
+    visible: (l, d) => deptIs(d, 'front desk', 'front-desk') && l >= 3 },
   { id: 'incident', path: '/incidents', label: 'Incident', Icon: IncidentIcon,
     visible: () => true },
 
@@ -206,7 +211,7 @@ export default function AppLayout() {
       <header className="h-14 shrink-0 flex items-center justify-between px-4 border-b border-white/5"
         style={{ background: 'var(--color-chrome-95)' }}>
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-lg font-bold font-serif text-ink-primary shrink-0">Kurahia</span>
+          <span className="text-lg font-bold font-serif text-ink-primary shrink-0">Waterfront Juja</span>
           {department && (
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
               bg-primary-main/20 text-primary-main truncate">

@@ -18,7 +18,7 @@ interface JWTClaims extends Record<string, unknown> {
 
 const KEYPAD = ['1','2','3','4','5','6','7','8','9','','0','⌫'] as const
 
-// Real Kurahia property photo, served locally (no external dependency at login time).
+// Real Waterfront Juja property photo, served locally (no external dependency at login time).
 const HERO_URL = '/images/resort-bg.jpg'
 
 export default function StationLoginScreen() {
@@ -132,7 +132,7 @@ export default function StationLoginScreen() {
           <div className="text-center mb-6">
             <h1 className="font-serif text-3xl font-bold text-ink-primary tracking-tight
               drop-shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
-              Kurahia Station
+              Waterfront Juja Station
             </h1>
             <p className="text-sm text-ink-primary/60 mt-1">Enter your PIN to start your shift</p>
           </div>

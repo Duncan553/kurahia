@@ -45,7 +45,7 @@ export default function LoginScreen() {
       // failure mode "front end refuses login, doesn't say why" traces back
       // to when the account trying is real but isn't the owner.
       if (claims.role_level < 10) {
-        setErrorMsg('This app is for the owner account only. Use the Kurahia Staff app instead.')
+        setErrorMsg('This app is for the owner account only. Use the Waterfront Juja Staff app instead.')
         return
       }
       // Normal login — store auth and go to dashboard
@@ -106,10 +106,10 @@ export default function LoginScreen() {
               bg-white/[0.06] border border-white/[0.08]
               flex items-center justify-center"
           >
-            <span className="text-xl font-serif font-bold text-ink-primary tracking-tight">K</span>
+            <span className="text-xl font-serif font-bold text-ink-primary tracking-tight">W</span>
           </motion.div>
           <h1 className="font-serif text-3xl font-bold text-ink-primary tracking-tight">
-            Kurahia
+            Waterfront Juja
           </h1>
           <p className="text-xs text-ink-tertiary mt-1.5 tracking-wide uppercase">
             Waterfront Club

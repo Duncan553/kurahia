@@ -244,7 +244,7 @@ export default function KioskFeedbackScreen() {
         </button>
 
         <p className="text-xs text-ticket-ink/30 tracking-widest uppercase">
-          Waterfront Kurahia · Juja · Kiambu · Kenya
+          Waterfront Juja · Juja · Kiambu · Kenya
         </p>
 
         {/* Hidden corner exit */}
@@ -268,7 +268,7 @@ export default function KioskFeedbackScreen() {
         style={{ touchAction: 'pan-y', overscrollBehavior: 'none' }}
       >
         <div className="text-center space-y-2">
-          <p className="text-xs tracking-[0.4em] text-tea-brown/50 uppercase">Waterfront Kurahia</p>
+          <p className="text-xs tracking-[0.4em] text-tea-brown/50 uppercase">Waterfront Juja</p>
           <h1 className="font-serif text-5xl font-bold text-tea-brown tracking-widest">
             RATE YOUR VISIT
           </h1>
@@ -347,7 +347,7 @@ export default function KioskFeedbackScreen() {
         style={{ touchAction: 'pan-y', overscrollBehavior: 'none' }}
       >
         <div className="text-center space-y-2">
-          <p className="text-xs tracking-[0.4em] text-tea-brown/50 uppercase">Waterfront Kurahia</p>
+          <p className="text-xs tracking-[0.4em] text-tea-brown/50 uppercase">Waterfront Juja</p>
           <h1 className="font-serif text-5xl font-bold text-tea-brown tracking-widest">
             ANYTHING ELSE?
           </h1>

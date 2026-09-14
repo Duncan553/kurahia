@@ -20,7 +20,7 @@ export default function KioskLaunchScreen() {
           KIOSK MODE
         </h1>
         <p className="text-sm text-ticket-ink/60 tracking-wide">
-          Waterfront Kurahia · Menu Browse
+          Waterfront Juja · Menu Browse
         </p>
       </div>
 

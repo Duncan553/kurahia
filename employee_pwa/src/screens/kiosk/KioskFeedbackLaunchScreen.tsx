@@ -20,7 +20,7 @@ export default function KioskFeedbackLaunchScreen() {
           FEEDBACK KIOSK
         </h1>
         <p className="text-sm text-ticket-ink/60 tracking-wide">
-          Waterfront Kurahia · Guest Feedback
+          Waterfront Juja · Guest Feedback
         </p>
       </div>
 

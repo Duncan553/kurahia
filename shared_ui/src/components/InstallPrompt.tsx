@@ -39,7 +39,7 @@ export function InstallPrompt({ kvGet, kvSet }: InstallPromptProps) {
     <div className="m-4 mb-0 p-4 rounded-2xl border border-cream-alt bg-cream-card
       flex items-center gap-3">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-ink-primary">Add Kurahia to your home screen</p>
+        <p className="text-sm font-semibold text-ink-primary">Add Waterfront Juja to your home screen</p>
         <p className="text-xs text-ink-secondary mt-0.5">Faster access, works like a real app.</p>
       </div>
       <Button variant="ghost" size="sm"

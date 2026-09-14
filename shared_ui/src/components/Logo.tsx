@@ -38,7 +38,7 @@ export function Logo({ size = 'md', variant = 'dark', className = '', ...props }
       </svg>
 
       <span className={`font-bold font-serif tracking-wide ${s.title}`}>
-        Kurahia
+        Waterfront Juja
       </span>
       <span className={`tracking-widest uppercase ${s.sub} ${subColor}`}>
         Waterfront Resort

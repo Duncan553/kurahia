@@ -33,7 +33,7 @@ export default function KioskWelcomeScreen() {
 
       <div className="flex flex-col items-center gap-6 px-8 text-center">
         <p className="font-serif text-xl font-bold text-tea-brown/60 tracking-[0.4em] uppercase">
-          Waterfront Kurahia
+          Waterfront Juja
         </p>
 
         <h1 className="font-serif text-7xl font-bold text-tea-brown tracking-widest leading-none">

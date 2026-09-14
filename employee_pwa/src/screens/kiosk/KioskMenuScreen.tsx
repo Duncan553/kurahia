@@ -316,7 +316,7 @@ export default function KioskMenuScreen() {
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="shrink-0 text-center pt-8 pb-4 px-6 border-b border-tea-brown/20">
         <p className="font-serif text-sm tracking-[0.4em] text-tea-brown/60 uppercase mb-1">
-          Waterfront Kurahia
+          Waterfront Juja
         </p>
         <h1 className="font-serif text-5xl font-bold text-tea-brown tracking-widest leading-tight">
           MENU

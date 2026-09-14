@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-// Kurahia Staff service worker — injectManifest strategy.
+// Waterfront Juja Staff service worker — injectManifest strategy.
 // Workbox injects the precache list; push handlers live here too (Part E).
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: (string | { url: string; revision: string | null })[]
@@ -61,7 +61,7 @@ self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return
   const payload = event.data.json() as { title?: string; body?: string; reference_type?: string }
   event.waitUntil(
-    self.registration.showNotification(payload.title ?? 'Kurahia', {
+    self.registration.showNotification(payload.title ?? 'Waterfront Juja', {
       body: payload.body ?? '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',

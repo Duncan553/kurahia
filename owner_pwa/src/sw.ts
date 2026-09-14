@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-// Kurahia Owner service worker — injectManifest strategy.
+// Waterfront Juja Owner service worker — injectManifest strategy.
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: (string | { url: string; revision: string | null })[]
 }
