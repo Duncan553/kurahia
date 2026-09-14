@@ -33,20 +33,45 @@ def auth(token):
 TIMING_GAP_THRESHOLD_MS = 50   # difference larger than this is a meaningful leak
 
 
+# ── Paired timing measurement ─────────────────────────────────────────────────
+# A timing test is only as good as its measurement, and the first version of
+# this one measured wrong. It took five samples of path A, THEN five of path B,
+# and compared the medians. Any drift in machine load BETWEEN the two blocks —
+# another test's fixture, a GC pause, the OS scheduling something else — landed
+# entirely in the gap and was reported as a timing leak in the application.
+#
+# Proved: both tests passed in 6s when run alone and failed inside the full
+# 7.5-minute serial suite, same code both times. conftest.py already guards the
+# xdist case; this is the serial case it does not cover.
+#
+# The fix is to INTERLEAVE. Sampling A,B,A,B,… puts both paths through the same
+# conditions, so slow moments hit both and cancel in the difference instead of
+# accumulating in it. Warm-up rounds are discarded because the first call to
+# each path pays one-time costs (query compilation, Argon2's memory arena) that
+# say nothing about the steady-state timing an attacker could actually measure.
+#
+# The 30% tolerance is deliberately NOT widened. Loosening the bar to silence a
+# bad measurement would leave a real leak able to hide under it.
+def paired_medians(client, url, payload_a, payload_b, n=15, warmup=2):
+    """Median ms for each path, sampled alternately. Returns (median_a, median_b)."""
+    for _ in range(warmup):
+        client.post(url, json=payload_a)
+        client.post(url, json=payload_b)
+    a_samples, b_samples = [], []
+    for _ in range(n):
+        for payload, bucket in ((payload_a, a_samples), (payload_b, b_samples)):
+            t0 = time.perf_counter()
+            client.post(url, json=payload)
+            bucket.append((time.perf_counter() - t0) * 1000)
+    return statistics.median(a_samples), statistics.median(b_samples)
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 4.1  Username enumeration via login timing
 # ══════════════════════════════════════════════════════════════════════════════
 
 @pytest.mark.production_hashing  # measures REAL Argon2 timing — see conftest.py
 class TestUsernameEnumerationLogin:
-    def _median_ms(self, client, url, payload, n=5) -> float:
-        samples = []
-        for _ in range(n):
-            t0 = time.perf_counter()
-            client.post(url, json=payload)
-            samples.append((time.perf_counter() - t0) * 1000)
-        return statistics.median(samples)
-
     def test_nonexistent_vs_wrong_password_same_message(self, app, client):
         """Both paths return identical message and status code."""
         rv_no_user   = client.post("/auth/login",
@@ -71,12 +96,9 @@ class TestUsernameEnumerationLogin:
         Both paths should now take ~same time (within 30% of each other).
         Argon2 has natural jitter — 30% tolerance avoids flakiness.
         """
-        median_no_user  = self._median_ms(
+        median_no_user, median_wrong_pw = paired_medians(
             client, "/auth/login",
             {"username": "ghost_xyz_999", "password": "any"},
-        )
-        median_wrong_pw = self._median_ms(
-            client, "/auth/login",
             {"username": "owner1", "password": "wrong_password"},
         )
         # Both paths must be within 30% of the slower one
@@ -97,14 +119,6 @@ class TestUsernameEnumerationLogin:
 
 @pytest.mark.production_hashing  # measures REAL Argon2 timing — see conftest.py
 class TestPINLoginEnumeration:
-    def _median_ms(self, client, url, payload, n=5) -> float:
-        samples = []
-        for _ in range(n):
-            t0 = time.perf_counter()
-            client.post(url, json=payload)
-            samples.append((time.perf_counter() - t0) * 1000)
-        return statistics.median(samples)
-
     def test_nonexistent_vs_wrong_pin_same_message(self, app, client):
         """Both paths return identical status and message."""
         rv_no_user  = client.post("/auth/pin-login",
@@ -126,12 +140,9 @@ class TestPINLoginEnumeration:
         Dummy Argon2.verify on the no-user PIN path equalises timing.
         Within 30% tolerance to account for Argon2 natural jitter.
         """
-        median_no_user  = self._median_ms(
+        median_no_user, median_wrong_pin = paired_medians(
             client, "/auth/pin-login",
             {"username": "ghost_xyz_999", "pin": "0000"},
-        )
-        median_wrong_pin = self._median_ms(
-            client, "/auth/pin-login",
             {"username": "waiter1", "pin": "9999"},
         )
         slower = max(median_no_user, median_wrong_pin)
