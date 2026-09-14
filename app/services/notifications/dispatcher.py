@@ -19,11 +19,26 @@ from app.models.audit_log import AuditLog
 
 
 def _channel_active(name: str) -> bool:
-    """True if the owner hasn't disabled this channel."""
+    """True unless the owner has explicitly switched this channel off.
+
+    This read `cfg is not None` against a row filtered on is_active=True, so a
+    channel with NO config row counted as disabled — the opposite of what the
+    docstring promises, and of how the rest of invariant-10 configuration
+    behaves (a row is how you OVERRIDE a default, not how you earn one).
+
+    Nothing looked wrong because the table was empty and both outbound sockets
+    are unconfigured anyway: skipping a channel that could not have sent looks
+    identical to sending nothing. The damage was scheduled for the day SMS
+    credentials arrive — the socket would be live, the provider correct, and
+    the dispatcher would still skip SMS in silence, with the obvious suspect
+    being the provider.
+
+    Absent row = on. An explicit is_active=False row = off, which is what the
+    WhatsApp rows now carry."""
     cfg = db.session.query(NotificationChannelConfig).filter_by(
-        channel_name=name, is_active=True
+        channel_name=name
     ).first()
-    return cfg is not None
+    return cfg.is_active if cfg else True
 
 
 def is_user_present(user_id: str) -> bool:

@@ -90,16 +90,32 @@ def notify_guest(
         )
         return ("RENDER_ERROR", detail)
 
-    # ── Try WhatsApp ─────────────────────────────────────────────────────
-    from app.services.notifications.whatsapp import send_whatsapp
+    # ── Try WhatsApp, IF the owner still has that channel switched on ────
+    # NotificationChannelConfig is the owner's allow-list — invariant 10, one
+    # row per channel, flip is_active to pause it. The dispatcher has always
+    # honoured it (_channel_active). This path did not: it called the socket
+    # directly, so a channel the owner had switched OFF was still attempted for
+    # every guest message, and the audit log filled with attempts at a channel
+    # the resort had decided against. The switch has to mean the same thing on
+    # both paths or it does not mean anything.
+    from app.services.notifications.dispatcher import _channel_active
+    from app.models.notification import NotificationChannel
 
-    wa_status, wa_msg = send_whatsapp(guest_phone, body)
-    AuditLog.log(
-        actor="guest_notify",
-        action=f"guest.notify.{message_type}.whatsapp",
-        target=guest_phone,
-        details=f"status={wa_status} | {wa_msg}",
-    )
+    if _channel_active(NotificationChannel.WHATSAPP.value):
+        from app.services.notifications.whatsapp import send_whatsapp
+        wa_status, wa_msg = send_whatsapp(guest_phone, body)
+    else:
+        wa_status, wa_msg = ("DISABLED", "WhatsApp channel is switched off.")
+
+    # A channel that was never tried leaves no audit row — recording an
+    # "attempt" that did not happen would be a false entry on a chained log.
+    if wa_status != "DISABLED":
+        AuditLog.log(
+            actor="guest_notify",
+            action=f"guest.notify.{message_type}.whatsapp",
+            target=guest_phone,
+            details=f"status={wa_status} | {wa_msg}",
+        )
     if wa_status == "SENT":
         logger.info("WhatsApp sent to %s: %s", guest_phone, message_type)
         return ("WHATSAPP", wa_msg)
