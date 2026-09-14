@@ -836,8 +836,12 @@ export default function DashboardScreen() {
   return (
     <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
-        {/* ── Stitch greeting header ────────────────────────────────── */}
-        <div className="mb-6">
+        {/* ── Stitch greeting header ──────────────────────────────────
+            Carries the resort photograph as a bounded band. Nothing in here is
+            a figure to be read closely — greeting, one line of prose, a
+            timestamp — which is the whole reason the image is allowed here and
+            nowhere below. See .photo-masthead in tokens.css. */}
+        <div className="mb-6 photo-masthead">
           <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink-primary tracking-tight">
             {greeting}, Director.
           </h1>

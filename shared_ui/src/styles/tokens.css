@@ -211,6 +211,58 @@ body::after {
   pointer-events: none;
 }
 
+/* ── Photographic masthead ───────────────────────────────────────
+   The resort photograph, returned to the one place it costs nothing.
+
+   It used to sit behind EVERY screen, under every card, and that could not be
+   made safe: contrast over a photograph is not a number, it is a range. The
+   same white text measured 2.7:1 over the sunlit garden and 9.1:1 over the
+   dark roof, so no token value could satisfy WCAG 1.4.3 — the target moved
+   with the scroll. WCAG 1.4.8 says it plainer: do not put text over background
+   images. These are also tablets used outdoors at a waterfront, where sunlight
+   already eats whatever contrast margin exists indoors.
+
+   None of that forbids the photograph. It forbids the photograph UNDER THE
+   WORDS. So it comes back as a bounded band behind the greeting — a region
+   with no figures, no labels and nothing to read closely — and fades into the
+   ground before the first card begins. Identity where the eye rests; a flat,
+   known surface everywhere it reads.
+
+   The heading on top gets its own dark-to-transparent scrim, so even this
+   text is not relying on the photograph being dark in the right places. */
+.photo-masthead {
+  position: relative;
+  isolation: isolate;
+  border-radius: 1rem;
+  overflow: hidden;
+  padding: 1.75rem 1.5rem 1.5rem;
+  background: #0b1d24;
+}
+.photo-masthead::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url('/images/resort-bg.jpg') center 38% / cover no-repeat;
+}
+.photo-masthead::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* Left-weighted so the words sit on the solid end, and the image stays
+     legible as an image on the right. Bottom stop matches the page ground so
+     the band dissolves into it rather than ending on a hard edge. */
+  background:
+    linear-gradient(90deg, rgba(9, 25, 32, 0.94) 0%, rgba(9, 25, 32, 0.82) 45%, rgba(9, 25, 32, 0.55) 100%),
+    linear-gradient(180deg, rgba(9, 25, 32, 0.25) 0%, rgba(9, 25, 32, 0.85) 100%);
+}
+@media (prefers-reduced-transparency), (prefers-contrast: more) {
+  /* Asked for plainness, give plainness: no photograph at all. */
+  .photo-masthead::before { display: none; }
+  .photo-masthead::after  { background: #0b1d24; }
+}
+
 /* ── SHARP Glass panels ────────────────────────────────────────── */
 .glass-card {
   contain: layout paint;
