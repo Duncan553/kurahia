@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { RequireRole } from '../components/AuthGate'
 import { ErrorBoundary, useToastStore } from '@shared'
 import api from '../lib/axios'
@@ -121,10 +121,128 @@ function RestockRequestForm({ onClose, defaultSubject }: { onClose: () => void; 
   )
 }
 
+/* ── Write-off — stock that left without being sold ──────────────────────────
+   POST /inventory/movements/{spoilage,sent-back} existed since Phase A with no
+   caller, so waste had nowhere to be recorded. That is not a neutral gap: stock
+   that goes bad still leaves the shelf, and with no write-off it lands in
+   variance as an unexplained shortfall — which is exactly the shape the judge
+   reads as theft. A cook who cannot record spoiled milk generates a theft
+   signal by doing nothing wrong.
+
+   The endpoints take a POSITIVE quantity and negate it themselves, so this
+   form never sends a minus. The department rule is the server's (a lead writes
+   off their own department, a manager anywhere); the list below is already
+   scoped to this board's station, so the two agree.                          */
+function WriteOffForm({ items, onClose }: { items: InvItem[]; onClose: () => void }) {
+  const addToast = useToastStore(s => s.addToast)
+  const qc = useQueryClient()
+  const [itemId, setItemId] = useState('')
+  const [qty, setQty]       = useState('')
+  const [reason, setReason] = useState<'spoilage' | 'sent-back'>('spoilage')
+  const [notes, setNotes]   = useState('')
+
+  const chosen = items.find(i => i.id === itemId)
+
+  const mut = useMutation({
+    mutationFn: () => api.post(`/inventory/movements/${reason}`, {
+      item_id: itemId,
+      quantity: qty,
+      notes: notes.trim() || undefined,
+      // Idempotency (invariant 4): a double-tap on a flaky tablet must not
+      // write the loss twice. Generated per submission, not per keystroke.
+      idempotency_key: crypto.randomUUID(),
+    }),
+    onSuccess: () => {
+      addToast({ type: 'success',
+                 message: `${qty} ${chosen?.unit ?? ''} of ${chosen?.name} written off.` })
+      qc.invalidateQueries({ queryKey: ['chef-stock'] })
+      onClose()
+    },
+    onError: (e) => {
+      // The server's own sentence — it explains the department rule better
+      // than a generic failure message can.
+      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Could not record the write-off.'
+      addToast({ type: 'error', message: msg })
+    },
+  })
+
+  const valid = itemId && parseFloat(qty) > 0
+
+  return (
+    <form onSubmit={e => { e.preventDefault(); if (valid) mut.mutate() }}
+      className="p-5 space-y-3">
+      <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
+        Write Off Stock
+      </p>
+      <p className="text-[11px] text-ink-tertiary -mt-1">
+        Something spoiled or came back from a table. Recording it here keeps it
+        out of the variance report as an unexplained loss.
+      </p>
+
+      <select
+        required value={itemId} onChange={e => setItemId(e.target.value)}
+        aria-label="Item to write off"
+        className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
+          text-ink-primary focus:outline-none focus:border-primary-main"
+      >
+        <option value="">Choose an item…</option>
+        {items.map(i => (
+          <option key={i.id} value={i.id}>
+            {i.name} — {parseFloat(i.current_stock)} {i.unit} on hand
+          </option>
+        ))}
+      </select>
+
+      <div className="flex gap-2">
+        {([['spoilage', 'Spoiled'], ['sent-back', 'Sent back']] as const).map(([val, label]) => (
+          <button key={val} type="button" onClick={() => setReason(val)}
+            aria-pressed={reason === val}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              reason === val
+                ? 'bg-primary-main text-white'
+                : 'glass-card text-ink-tertiary hover:bg-white/5'
+            }`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <input
+        required type="number" step="any" min="0" inputMode="decimal"
+        placeholder={chosen ? `Quantity in ${chosen.unit}` : 'Quantity'}
+        value={qty} onChange={e => setQty(e.target.value)}
+        className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
+          text-ink-primary focus:outline-none focus:border-primary-main"
+      />
+      <textarea
+        placeholder="What happened? (optional, but it is what the manager reads)"
+        value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+        className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
+          text-ink-primary focus:outline-none focus:border-primary-main resize-none"
+      />
+
+      <div className="flex gap-2">
+        <button type="button" onClick={onClose}
+          className="flex-1 py-2.5 rounded-xl glass-card text-ink-tertiary text-sm font-semibold
+            hover:bg-white/5 transition-colors">
+          Cancel
+        </button>
+        <button type="submit" disabled={!valid || mut.isPending}
+          className="flex-1 py-2.5 rounded-xl bg-primary-main text-white text-sm font-semibold
+            hover:bg-primary-main/90 transition-colors disabled:opacity-50">
+          {mut.isPending ? 'Recording…' : 'Record Write-Off'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 export default function HeadChefScreen({ station = 'KITCHEN' }: { station?: BoardStation }) {
   const board = BOARDS[station]
   const navigate = useNavigate()
   const [showRestock, setShowRestock] = useState(false)
+  const [showWriteOff, setShowWriteOff] = useState(false)
 
   /* ── Existing query — inventory items ─────────────────────────────── */
   const { data: items = [] } = useQuery<InvItem[]>({
@@ -414,6 +532,32 @@ export default function HeadChefScreen({ station = 'KITCHEN' }: { station?: Boar
                         </p>
                         <p className="text-sm text-ink-primary mb-1">
                           Send restock request to manager
+                        </p>
+                        <p className="text-[10px] text-[#fa5c29]">Open →</p>
+                      </div>
+                    </Glass>
+                  </motion.div>
+                )}
+              </motion.div>
+
+              {/* Write Off tile — the other direction stock can leave. Sits
+                  beside Restock on purpose: one asks for more, one records
+                  what went. Both are things the person at this board sees
+                  first and nobody else sees at all. */}
+              <motion.div variants={fadeIn} transition={{ duration: 0.3 }}>
+                {showWriteOff ? (
+                  <Glass>
+                    <WriteOffForm items={items} onClose={() => setShowWriteOff(false)} />
+                  </Glass>
+                ) : (
+                  <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+                    <Glass className="cursor-pointer" onClick={() => setShowWriteOff(true)}>
+                      <div className="p-5">
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
+                          Write Off Stock
+                        </p>
+                        <p className="text-sm text-ink-primary mb-1">
+                          Record something spoiled or sent back
                         </p>
                         <p className="text-[10px] text-[#fa5c29]">Open →</p>
                       </div>

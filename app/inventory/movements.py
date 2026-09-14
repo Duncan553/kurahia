@@ -80,14 +80,41 @@ def _get_item(item_id: str) -> tuple:
     return item, None
 
 
+# A write-off is a stock-out with no revenue against it, which is also the
+# oldest cover for theft — hence the original manager-only gate on spoilage and
+# sent-back. But the person who sees the spoiled milk is the chef, not the
+# manager, and an unrecordable loss does not stop existing: it reappears as
+# unexplained variance, where the judge reads it as possible theft. Gating the
+# write-off that hard made the theft signal WORSE, not better.
+#
+# Same reasoning the stock count already settled (inventory/counts.py): a
+# control nobody can operate is not a control, it is just a record that never
+# gets written. So a department lead may write off stock IN THEIR OWN
+# DEPARTMENT, and a manager anywhere. The abuse path is watched rather than
+# forbidden — every write carries the actor's name into the hash-chained audit
+# log, and judge.run_daily already runs a spoilage-spike check over these exact
+# rows.
+STATION_LEAD_LEVEL = 3
+
+
+def _may_write_off(actor: User, item: InventoryItem):
+    """None if allowed, else (json_error, status)."""
+    if actor.role.level >= MANAGER_LEVEL:
+        return None
+    if actor.role.level < STATION_LEAD_LEVEL:
+        return jsonify({"error": "A department lead or above records write-offs. "
+                                 "Ask your supervisor to record this one."}), 403
+    if actor.department_id and item.department_id != actor.department_id:
+        return jsonify({"error": "You can only write off stock in your own department."}), 403
+    return None
+
+
 # ── Spoilage ──────────────────────────────────────────────────────────────────
 
 @movements_bp.post("/spoilage")
 @require_active_user
 def log_spoilage():
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
 
     data = request.get_json(silent=True) or {}
     qty, err = _parse_quantity(data)
@@ -95,6 +122,12 @@ def log_spoilage():
         return jsonify({"error": err}), 400
 
     item, err = _get_item(data.get("item_id", ""))
+    if err:
+        return err
+
+    # Checked AFTER the item loads — the rule is about which department the
+    # item belongs to, so it cannot be answered before we know the item.
+    err = _may_write_off(actor, item)
     if err:
         return err
 
@@ -164,8 +197,6 @@ def log_staff_meal():
 def log_sent_back():
     """A returned plate/order — removes from stock (it cannot be resold)."""
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
 
     data = request.get_json(silent=True) or {}
     qty, err = _parse_quantity(data)
@@ -173,6 +204,12 @@ def log_sent_back():
         return jsonify({"error": err}), 400
 
     item, err = _get_item(data.get("item_id", ""))
+    if err:
+        return err
+
+    # Checked AFTER the item loads — the rule is about which department the
+    # item belongs to, so it cannot be answered before we know the item.
+    err = _may_write_off(actor, item)
     if err:
         return err
 
