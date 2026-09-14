@@ -207,9 +207,13 @@ export default function AttendanceScreen() {
                     variants={containerVariants}
                     className="space-y-2"
                   >
+                    {/* Keyed on the EMPLOYEE, not the shift. shift_id became nullable
+                        when this board started showing people who clocked in without
+                        being rostered — and all ten of them carry null, so React saw
+                        ten children with the same key. One person, one row. */}
                     {rows.map((row) => (
                       <motion.button
-                        key={row.shift_id}
+                        key={row.employee_id}
                         variants={itemVariants}
                         whileTap={{ scale: 0.97 }}
                         whileHover={{ y: -2 }}
