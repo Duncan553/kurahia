@@ -55,9 +55,41 @@ def attendance_today():
 
     shifts = query.all()
 
+    # The board is the UNION of who was ROSTERED and who actually TURNED UP.
+    #
+    # It used to iterate shifts alone, so an employee with no scheduled shift
+    # could not appear on it however long they worked — they clocked in, served
+    # a full service, and the manager's attendance board stayed empty. On a
+    # property that does not roster rigorously (and most do not, early on) that
+    # makes the screen permanently blank while the resort is full of staff,
+    # which is what it was showing today: "No shifts scheduled today" with three
+    # people clocked in. It is also a payroll hole — hours worked off-roster
+    # never reach the person who has to verify them.
+    #
+    # A shift answers "who was meant to be here". A clock event answers "who
+    # is here". The screen is called Attendance, so it has to answer the second
+    # and use the first as context.
+    shift_by_emp = {s.employee_id: s for s in shifts}
+
+    walk_ins = db.session.query(ClockEvent.employee_id).filter(
+        ClockEvent.event_type == ClockEventType.CLOCK_IN.value,
+        ClockEvent.occurred_at_utc >= day_start,
+        ClockEvent.occurred_at_utc < day_end,
+    ).distinct().all()
+
+    for (emp_id,) in walk_ins:
+        if emp_id in shift_by_emp:
+            continue
+        if dept_filter:
+            # Honour the department filter for unrostered staff too, via their
+            # profile — there is no shift row to read a department from.
+            prof = db.session.get(EmployeeProfile, emp_id)
+            if not prof or prof.department_id != dept_filter:
+                continue
+        shift_by_emp[emp_id] = None          # present, but not rostered
+
     rows = []
-    for s in shifts:
-        emp_id = s.employee_id
+    for emp_id, s in shift_by_emp.items():
         profile = db.session.get(EmployeeProfile, emp_id)
 
         clocked_in = db.session.query(ClockEvent).filter(
@@ -84,8 +116,11 @@ def attendance_today():
             late = None
         elif clocked_in:
             status = "clocked_in"
-            late = is_late(clocked_in.occurred_at_utc, s)
-        elif has_absence_notice(emp_id, s.id, today):
+            # Lateness is measured against a rostered start. With no shift
+            # there is no time to be late FOR, so it stays None rather than
+            # inventing a baseline.
+            late = is_late(clocked_in.occurred_at_utc, s) if s else None
+        elif s and has_absence_notice(emp_id, s.id, today):
             status = "absent_with_notice"
             late = None
         else:
@@ -95,9 +130,12 @@ def attendance_today():
         rows.append({
             "employee_id":   emp_id,
             "employee_name": profile.full_name if profile else None,
-            "shift_id":      s.id,
-            "shift_start":   s.scheduled_start_utc.isoformat(),
-            "shift_end":     s.scheduled_end_utc.isoformat(),
+            "shift_id":      s.id if s else None,
+            "shift_start":   s.scheduled_start_utc.isoformat() if s else None,
+            "shift_end":     s.scheduled_end_utc.isoformat() if s else None,
+            # Present without a roster entry. Not an accusation — covering a
+            # gap is ordinary — but the manager should see that it happened.
+            "unrostered":    s is None,
             "status":        status,
             "late":          late,
             # True only in the contradictory case: on approved leave yet a clock
@@ -187,13 +225,25 @@ def attendance_summary():
             Shift.scheduled_start_utc < period_end,
         ).all()
 
-        clock_ins = db.session.query(ClockEvent).filter(
-            ClockEvent.employee_id == p.id,
-            ClockEvent.event_type == ClockEventType.CLOCK_IN.value,
-            ClockEvent.occurred_at_utc >= period_start,
-            ClockEvent.occurred_at_utc < period_end,
-        ).count()
+        # DAYS worked, not clock-in EVENTS. This counted raw CLOCK_IN rows and
+        # reported them as "shifts attended", but a PIN login at a station
+        # clocks you in, so one person produces several a day. The board showed
+        # "30/9 attended" — thirty out of nine — and the ratio meant nothing.
+        # Distinct dates is the number a manager actually wants, and it counts
+        # unrostered days too, which shifts alone cannot.
+        clock_in_dates = {
+            (ev.occurred_at_utc.date() if ev.occurred_at_utc.tzinfo is None
+             else ev.occurred_at_utc.astimezone(timezone.utc).date())
+            for ev in db.session.query(ClockEvent).filter(
+                ClockEvent.employee_id == p.id,
+                ClockEvent.event_type == ClockEventType.CLOCK_IN.value,
+                ClockEvent.occurred_at_utc >= period_start,
+                ClockEvent.occurred_at_utc < period_end,
+            ).all()
+        }
+        days_worked = len(clock_in_dates)
 
+        shifts_attended       = 0
         absent_with_notice    = 0
         absent_no_notice      = 0
         for s in shifts:
@@ -206,7 +256,9 @@ def attendance_summary():
                 ClockEvent.shift_id == s.id,
             ).first()
 
-            if not clocked:
+            if clocked:
+                shifts_attended += 1
+            else:
                 if (has_approved_leave(p.id, s_date) or
                         has_absence_notice(p.id, s.id, s_date)):
                     absent_with_notice += 1
@@ -219,7 +271,10 @@ def attendance_summary():
             "employee_id":        p.id,
             "employee_name":      p.full_name,
             "shifts_scheduled":   len(shifts),
-            "shifts_attended":    clock_ins,
+            # Now bounded by shifts_scheduled, because it counts shifts that
+            # actually had someone clock in against them.
+            "shifts_attended":    shifts_attended,
+            "days_worked":        days_worked,
             "absent_with_notice": absent_with_notice,
             "absent_no_notice":   absent_no_notice,
             "hours_worked":       str(hours),

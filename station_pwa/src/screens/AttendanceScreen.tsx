@@ -10,8 +10,11 @@ interface AttendanceRow {
   employee_id: string
   employee_name: string | null
   shift_id: string
-  shift_start: string
-  shift_end: string
+  // Null for someone who turned up without a rostered shift — the board is the
+  // union of who was scheduled and who actually clocked in.
+  shift_start: string | null
+  shift_end: string | null
+  unrostered?: boolean
   status: string
   late: boolean | null
 }
@@ -225,7 +228,9 @@ export default function AttendanceScreen() {
                             )}
                           </div>
                           <p className="text-xs text-ink-tertiary mt-0.5">
-                            {formatTime(row.shift_start)} – {formatTime(row.shift_end)}
+                            {row.shift_start
+                              ? <>{formatTime(row.shift_start)} – {formatTime(row.shift_end!)}</>
+                              : <span className="text-tea-brown">Not rostered — clocked in anyway</span>}
                           </p>
                         </div>
                         <StatusChip status={row.status} />
@@ -305,7 +310,9 @@ export default function AttendanceScreen() {
             <div className="rounded-xl bg-white/5 px-4 py-3 text-sm space-y-0.5">
               <p className="text-ink-tertiary">
                 Shift: <span className="text-ink-primary font-medium">
-                  {formatTime(selectedEmp.shift_start)} – {formatTime(selectedEmp.shift_end)}
+                  {selectedEmp.shift_start
+                    ? <>{formatTime(selectedEmp.shift_start)} – {formatTime(selectedEmp.shift_end!)}</>
+                    : 'Not rostered — clocked in anyway'}
                 </span>
               </p>
               <p className="text-ink-tertiary">

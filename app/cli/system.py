@@ -294,6 +294,20 @@ def run_daily():
     click.echo(f"Daily judge: {alerts} alert(s) fired.")
 
 
+@system_cli_bp.cli.command("auto-clockout")
+def auto_clockout_cmd():
+    """Close shifts nobody clocked out of, using the roster as the authority."""
+    from app.services.auto_clockout import auto_clock_out
+    from app.services.business_day import business_day_bounds_today
+
+    start, end = business_day_bounds_today()
+    closed, hours = auto_clock_out(start, end)
+    if closed:
+        click.echo(f"auto clock-out: {closed} shift(s) closed, {hours} hours recorded")
+    else:
+        click.echo("auto clock-out: nothing left open")
+
+
 @system_cli_bp.cli.command("auto-close")
 def auto_close_cmd():
     """Auto-close the previous business day if all green, alert owner if not."""
