@@ -792,7 +792,6 @@ export default function CheckInScreen() {
                 { value: 'CASH',          label: 'Cash' },
                 { value: 'MPESA',         label: 'M-Pesa' },
                 { value: 'CARD',          label: 'Card' },
-                { value: 'BANK_TRANSFER', label: 'Bank transfer' },
               ]}
             />
           </FormField>

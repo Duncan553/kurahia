@@ -37,7 +37,8 @@ const kes = (v: string | number) =>
   `KSh ${parseFloat(String(v)).toLocaleString('en-KE', { minimumFractionDigits: 0 })}`
 const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
-const METHODS = ['CASH', 'MPESA', 'CARD', 'BANK_TRANSFER'] as const
+// Cash, M-Pesa, Card. Bank transfer removed — see GateHubScreen.
+const METHODS = ['CASH', 'MPESA', 'CARD'] as const
 
 /** Fetch a PDF from the backend using the JWT token, then trigger a browser download. */
 const downloadPdf = async (url: string, filename: string) => {
@@ -582,7 +583,7 @@ export default function WaiterTabDetailScreen() {
                       ? 'bg-primary-main text-white border-primary-main'
                       : 'bg-transparent text-ink-secondary border-white/10 hover:border-primary-main/50'
                   }`}>
-                  {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}
+                  {m.charAt(0) + m.slice(1).toLowerCase()}
                 </button>
               ))}
             </div>

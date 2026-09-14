@@ -78,6 +78,10 @@ def mpesa_pending():
 
 
 @mpesa_bp.post("/mpesa/reconcile")
+# Card settles through the same flow — the body below already accepts both
+# methods — so the card screen gets a path of its own rather than a second
+# implementation that can drift.
+@mpesa_bp.post("/card/reconcile")
 @require_active_user
 def mpesa_reconcile():
     """
@@ -177,6 +181,48 @@ def mpesa_reconcile():
         db.session.commit()
 
     return jsonify({"reconciled": len(results), "flagged": flagged_count, "results": results}), 200
+
+
+@mpesa_bp.get("/card/pending")
+@require_active_user
+def card_pending():
+    """Card payments not yet checked against the settlement report.
+
+    The reconcile screen offers a Card tab and calls this. Only /card/summary
+    existed, so the tab would have listed nothing and said nothing about why —
+    a control offering what the API does not serve, which is the shape this
+    codebase keeps producing. Mirrors mpesa_pending exactly; the shared
+    _pending_by_method does the work.
+    """
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    date_str = request.args.get("date")
+    if not date_str:
+        return jsonify({"error": "date query parameter required (YYYY-MM-DD)."}), 400
+    try:
+        period_start, period_end = parse_date_bounds(date_str)
+    except ValueError:
+        return jsonify({"error": "Invalid date. Use YYYY-MM-DD."}), 400
+
+    pending = _pending_by_method(PaymentMethod.CARD.value, period_start, period_end)
+    return jsonify({
+        "date": date_str,
+        "count": len(pending),
+        "payments": [
+            {
+                "payment_id":  p.id,
+                "amount":      str(p.amount),
+                # The screen shows mpesa_code || reference || "no reference",
+                # so a card slip lands in the same place a code would.
+                "reference":   p.card_ref,
+                "received_by": p.received_by.username if p.received_by else None,
+                "created_at":  p.created_at_utc.isoformat(),
+            }
+            for p in pending
+        ],
+    }), 200
 
 
 @mpesa_bp.get("/card/summary")

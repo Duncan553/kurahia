@@ -345,7 +345,11 @@ function SocketStatusTab() {
         Payment and notification sockets. Activate by setting env vars (see docs/ runbooks).
       </p>
       <SocketRow label="M-Pesa Daraja (STK Push)"  endpoint="/finance/mpesa/status" />
-      <SocketRow label="Bank Transfer (SMS + API)" endpoint="/finance/bank/status"  />
+      {/* Bank transfer is not offered. It was a payment method nobody could
+          explain, so it produced payments nobody could verify — removed from
+          every till on 14 Sep 2026. A guest pays cash, M-Pesa or card. The
+          socket stays in the tree, dormant and unadvertised, rather than being
+          deleted; staff PAYROLL by bank is a different thing and is unaffected. */}
       <SocketRow label="Card Gateway"              endpoint="/finance/card/status"  />
       <SocketRow label="WhatsApp Notifications"    endpoint="/notifications/whatsapp/status" />
     </div>

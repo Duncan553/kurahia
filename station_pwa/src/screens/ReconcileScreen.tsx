@@ -1,15 +1,18 @@
 /**
  * ReconcileScreen — match the day's digital takings against the statement.
  *
- * Cash reconciliation had a screen. M-Pesa, bank transfer and card did not —
- * /finance/mpesa/pending, /finance/bank/pending, /finance/card/summary and both
- * reconcile endpoints have existed since Phase A with no caller anywhere. In
- * Kenya that is most of the money: the one payment method with a screen was the
- * one least used.
+ * Cash had a screen. M-Pesa and card did not, though in Kenya that is most of
+ * the money — the one method with a screen was the one least used.
  *
- * The job is the same for each: here is what the system thinks it received, tick
- * off what the statement agrees with, flag what it does not. Tabs rather than
- * three screens, because a manager does all of them in one sitting at close.
+ * Three tabs because a manager does all of them in one sitting at close, but
+ * the tabs are NOT the same job, and the note under each says so. Cash is a
+ * COUNT: notes in a hand against what the system expected, and no provider
+ * will ever do it for you. M-Pesa and card are a CHECK: the money reached the
+ * account or it did not, and the provider already knows — ticking those by
+ * hand stands in for a feed that is not switched on yet.
+ *
+ * Bank transfer was a fourth tab and is gone. It was a payment method nobody
+ * could explain, which made it a source of payments nobody could verify.
  */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -22,7 +25,10 @@ import CashReconScreen from './CashReconScreen'
 // Cash is reconciled per STAFF MEMBER (a handover), the other two per DAY (a
 // statement). Different shape, same job and same sitting — so it is a tab here
 // and CashReconScreen renders inside it rather than being a separate errand.
-type Method = 'mpesa' | 'bank' | 'cash'
+// Bank is gone: it was a method nobody could explain, so it produced payments
+// nobody could verify. Card takes its place, because card is one of the three
+// ways a guest actually pays here.
+type Method = 'mpesa' | 'card' | 'cash'
 
 interface Payment {
   payment_id: string
@@ -40,8 +46,21 @@ const extractErr = (e: unknown) =>
 const TABS: { id: Method; label: string }[] = [
   { id: 'cash',  label: 'Cash' },
   { id: 'mpesa', label: 'M-Pesa' },
-  { id: 'bank',  label: 'Bank' },
+  { id: 'card',  label: 'Card' },
 ]
+
+// The two jobs on this screen are not the same job, and calling them both
+// "reconcile" hid that. CASH is a COUNT: notes in a hand against what the
+// system expected, and no provider will ever do it for you. M-Pesa and CARD
+// are a CHECK: the money either reached the account or it did not, and the
+// provider already knows. Ticking those by hand is standing in for a feed that
+// is not switched on yet — which is why each says so rather than pretending
+// this is permanent work.
+const TAB_NOTE: Record<Method, string> = {
+  cash:  'Counting a drawer against what the system expected. Only a person can do this one.',
+  mpesa: 'Checking each payment reached the M-Pesa account. Automatic once the resort’s Daraja credentials are in — until then, tick against the statement.',
+  card:  'Checking each payment reached the card settlement. Automatic once the card gateway is configured — until then, tick against the settlement report.',
+}
 
 export default function ReconcileScreen() {
   const qc = useQueryClient()
@@ -117,6 +136,10 @@ export default function ReconcileScreen() {
                 className="w-auto" />
             )}
           </div>
+
+          {/* Say which job this tab is. Counting a drawer and checking a feed
+              are different work, and only one of them is permanent. */}
+          <p className="text-xs text-ink-tertiary mb-4 max-w-2xl">{TAB_NOTE[tab]}</p>
 
           {tab === 'cash' ? (
             <CashReconScreen embedded />

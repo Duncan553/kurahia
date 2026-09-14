@@ -13,7 +13,8 @@ const kes = (v: string | number) =>
   `KSh ${parseFloat(String(v)).toLocaleString('en-KE', { minimumFractionDigits: 0 })}`
 const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
-const METHODS = ['CASH', 'MPESA', 'CARD', 'BANK_TRANSFER']
+// Cash, M-Pesa, Card. Bank transfer removed — see GateHubScreen.
+const METHODS = ['CASH', 'MPESA', 'CARD']
 
 export default function ServicePayScreen() {
   const dept = useAuthStore(s => s.user?.department)
@@ -215,7 +216,7 @@ export default function ServicePayScreen() {
                       className={`py-3 rounded-xl text-sm font-semibold border transition-colors ${
                         pay.method === m ? 'bg-primary-main text-white border-primary-main' : 'text-ink-secondary border-white/10'
                       }`}>
-                      {m === 'BANK_TRANSFER' ? 'Bank' : m.charAt(0) + m.slice(1).toLowerCase()}
+                      {m.charAt(0) + m.slice(1).toLowerCase()}
                     </button>
                   ))}
                 </div>

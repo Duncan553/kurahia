@@ -18,13 +18,16 @@ interface Stats {
 
 interface Band { id: string; band_number: number; tab_balance: string }
 
-type Method = 'CASH' | 'MPESA' | 'CARD' | 'BANK_TRANSFER'
+// Three ways a guest pays here. Bank transfer was offered and nobody knew
+// how it worked — a method staff cannot explain is a method that produces
+// payments nobody can verify. Staff PAYROLL still goes by bank; that is a
+// different thing and is untouched.
+type Method = 'CASH' | 'MPESA' | 'CARD'
 
 const METHODS: { value: Method; label: string }[] = [
   { value: 'CASH',          label: 'Cash'  },
   { value: 'MPESA',         label: 'M-Pesa'},
   { value: 'CARD',          label: 'Card'  },
-  { value: 'BANK_TRANSFER', label: 'Bank'  },
 ]
 
 const kes = (v: string | number) =>
