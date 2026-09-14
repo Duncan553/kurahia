@@ -115,8 +115,13 @@ const NAV_ITEMS: NavItem[] = [
     visible: (_l, d) => deptIs(d, 'villa', 'housekeep') },
   { id: 'gate-hub', path: '/gate/hub', label: 'Gate', Icon: GateIcon,
     visible: (_l, d) => deptIs(d, 'gate', 'entry', 'secur') },
+  // level >= 3, for the same reason Villa above carries it: CheckInScreen is
+  // RequireRole minLevel={3} and app/bookings/core.py refuses check_in below
+  // FRONT_DESK_LEVEL. Offered to the whole department regardless of level, this
+  // handed a level-1 front-desk staffer a Check-In button that refused them —
+  // the fourth instance this session of a tile offering what the screen denies.
   { id: 'checkin', path: '/front-desk/checkin', label: 'Check-In', Icon: CheckInIcon,
-    visible: (_l, d) => deptIs(d, 'front desk', 'front-desk') },
+    visible: (l, d) => deptIs(d, 'front desk', 'front-desk') && l >= 3 },
   { id: 'band-lookup', path: '/gate/band-lookup', label: 'Band', Icon: BandIcon,
     visible: (_l, d) => deptIs(d, 'gate', 'front desk', 'front-desk') },
   { id: 'incident', path: '/incidents', label: 'Incident', Icon: IncidentIcon,
