@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Skeleton, EmptyState, Modal, Button, Input, Select, FormField, useToastStore, ErrorBoundary } from '@shared'
+import { Skeleton, EmptyState, Modal, Button, Input, Select, FormField, useToastStore, ErrorBoundary, PaymentRef } from '@shared'
 import api from '../lib/axios'
 import { RequireRole } from '../components/AuthGate'
 import { useAuthStore } from '../stores/authStore'
@@ -107,6 +107,7 @@ export default function CheckInScreen() {
   const [depositFor, setDepositFor] = useState<Arrival | null>(null)
   const [depositAmt, setDepositAmt] = useState('')
   const [depositMethod, setDepositMethod] = useState('CASH')
+  const [depositRef, setDepositRef] = useState('')
   // The guest register. Booking holds ONE name plus number_of_guests as an
   // integer, so everyone else in the villa was part of a number. This is where
   // they get names — and where charging rights are granted deliberately rather
@@ -168,18 +169,23 @@ export default function CheckInScreen() {
    * POST /bookings/<id>/confirm existed the whole time (app/bookings/core.py).
    */
   const depositMutation = useMutation({
-    mutationFn: (v: { bookingId: string; amount: string; method: string }) =>
+    mutationFn: (v: { bookingId: string; amount: string; method: string; ref: string }) =>
       api.post('/booking-payments', {
         booking_id: v.bookingId,
         purpose: 'DEPOSIT',
         method: v.method,
         amount: v.amount,
+        // deposits.py has always read mpesa_code off this payload; nothing
+        // ever put one in it, so a deposit could not be matched at close of day.
+        ...(v.method === 'MPESA' && v.ref.trim() ? { mpesa_code: v.ref.trim() } : {}),
+        ...(v.method === 'CARD'  && v.ref.trim() ? { card_ref:   v.ref.trim() } : {}),
         idempotency_key: crypto.randomUUID(),
       }).then((r) => r.data),
     onSuccess: () => {
       addToast({ type: 'success', message: 'Deposit recorded.' })
       setDepositFor(null)
       setDepositAmt('')
+      setDepositRef('')
       queryClient.invalidateQueries({ queryKey: ['front-desk-today'] })
     },
     onError: (err: unknown) => {
@@ -790,6 +796,7 @@ export default function CheckInScreen() {
               ]}
             />
           </FormField>
+          <PaymentRef method={depositMethod} value={depositRef} onChange={setDepositRef} />
           <div className="flex gap-2 justify-end">
             <Button variant="ghost" size="sm" onClick={() => setDepositFor(null)}>Cancel</Button>
             <Button
@@ -799,6 +806,7 @@ export default function CheckInScreen() {
                 bookingId: depositFor.booking_id,
                 amount: depositAmt,
                 method: depositMethod,
+                ref: depositRef,
               })}
             >
               Record

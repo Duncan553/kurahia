@@ -66,6 +66,47 @@ def create_leave_request():
     return jsonify({"id": lr.id, "status": lr.status, "leave_type": ltype}), 201
 
 
+def _tell_the_employee(lr, decision: str, actor: User, notes: str | None):
+    """The person who asked for the leave is told the answer.
+
+    The approve modal says "The employee will be notified" and nothing sent
+    anything — the request changed status, the audit log recorded it, and the
+    one person whose time it is found out by asking again. A decision about
+    somebody's own days off that only the decider can see is not a decision
+    they have been given.
+
+    In-app, which is the channel that works: the staff app polls this inbox and
+    the alert shows on their own phone. Idempotent on the request id, so a
+    double-tap cannot send it twice.
+    """
+    from app.models.notification import (
+        Notification, NotificationStatus, NotificationChannel,
+    )
+    profile = db.session.get(EmployeeProfile, lr.employee_id)
+    if not profile or not profile.user_id:
+        return
+    key = f"leave-{decision}-{lr.id}"
+    if db.session.query(Notification).filter_by(idempotency_key=key).first():
+        return
+    word = "approved" if decision == "approve" else "not approved"
+    body = (f"Your {lr.leave_type.replace('_', ' ').lower()} leave for "
+            f"{lr.start_date} to {lr.end_date} was {word} by {actor.username}.")
+    if notes:
+        body += f" Note: {notes}"
+    db.session.add(Notification(
+        recipient_user_id=profile.user_id,
+        reference_type="leave_decision",
+        reference_id=lr.id,
+        subject=f"Leave {word}",
+        body=body,
+        status=NotificationStatus.DELIVERED.value,
+        channel=NotificationChannel.IN_APP.value,
+        scheduled_for_utc=datetime.now(timezone.utc),
+        sent_at_utc=datetime.now(timezone.utc),
+        idempotency_key=key,
+    ))
+
+
 @leave_bp.post("/leave-requests/<lr_id>/approve")
 @require_active_user
 def approve_leave(lr_id):
@@ -90,6 +131,7 @@ def approve_leave(lr_id):
     lr.reviewed_at_utc = datetime.now(timezone.utc)
     lr.notes           = data.get("notes")
     db.session.flush()
+    _tell_the_employee(lr, "approve", actor, lr.notes)
     AuditLog.log(actor=actor.username, action="hr.leave.approve", target=lr_id)
     db.session.commit()
     return jsonify({"id": lr.id, "status": lr.status}), 200
@@ -118,6 +160,7 @@ def reject_leave(lr_id):
     lr.reviewed_at_utc = datetime.now(timezone.utc)
     lr.notes           = data.get("notes")
     db.session.flush()
+    _tell_the_employee(lr, "reject", actor, lr.notes)
     AuditLog.log(actor=actor.username, action="hr.leave.reject", target=lr_id)
     db.session.commit()
     return jsonify({"id": lr.id, "status": lr.status}), 200

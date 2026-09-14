@@ -20,14 +20,29 @@ from app.services.business_day import business_day_bounds
 variance_bp = Blueprint("inv_variance", __name__, url_prefix="/inventory")
 
 MANAGER_LEVEL = 5
+STATION_LEAD_LEVEL = 3
 
 
 @variance_bp.get("/variance")
 @require_active_user
 def variance_report():
+    """Expected use against actual use.
+
+    This was manager-only, while the chef's own board carries a Variance tile
+    and the shared inventory screen shows a Variance tab to whoever opens it.
+    Both offered it and the endpoint refused, and the screen said nothing —
+    it just sat on "Select a date range and tap Run".
+
+    A department lead now reads variance FOR THEIR OWN DEPARTMENT, the same
+    rule the stock count already uses. That is not a loosening for its own
+    sake: the chef is the person who can say why 4kg of beef went, and a
+    variance nobody can see is a variance nobody explains — which is exactly
+    how genuine waste reaches the judge as an unexplained loss.
+    """
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
+    if actor.role.level < STATION_LEAD_LEVEL:
+        return jsonify({"error": "A department lead or above can read variance. "
+                                 "Ask your supervisor."}), 403
 
     # A manager's post is the whole property, and every other inventory read
     # already treats them that way: GET /inventory/items lists all 40 lines for
@@ -40,6 +55,15 @@ def variance_report():
     # so this default only ever narrowed the person it is written for. `dept`
     # still narrows deliberately when a screen asks for one department.
     dept_id  = request.args.get("dept")
+
+    # A lead sees their own department and nothing else — asking for another
+    # one is refused rather than quietly answered with their own, so the number
+    # on screen always matches the question asked.
+    if actor.role.level < MANAGER_LEVEL:
+        if dept_id and dept_id != actor.department_id:
+            return jsonify({"error": "You can only read variance for your own "
+                                     "department."}), 403
+        dept_id = actor.department_id
     from_str = request.args.get("from")
     to_str   = request.args.get("to")
 

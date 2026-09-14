@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { PaymentRef } from '../components/PaymentRef'
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -93,6 +94,7 @@ export default function WaiterTabDetailScreen() {
   const [activeStation, setActiveStation] = useState<'ALL' | 'KITCHEN' | 'BAR'>('ALL')
   const [activeCat, setActiveCat] = useState('All')
   const [pay, setPay] = useState({ method: 'CASH' as string, amount: '' })
+  const [payRef, setPayRef] = useState('')
   const [idem, setIdem] = useState(() => crypto.randomUUID())
   const [cancelId, setCancelId] = useState<string | null>(null)
   const [receiptPhone, setReceiptPhone] = useState('')
@@ -204,11 +206,19 @@ export default function WaiterTabDetailScreen() {
 
   const payMut = useMutation({
     mutationFn: () =>
-      api.post(`/tabs/${tabId}/payments`, { method: pay.method, amount: pay.amount, idempotency_key: idem }),
+      api.post(`/tabs/${tabId}/payments`, {
+        method: pay.method, amount: pay.amount,
+        // Busiest M-Pesa path in the resort, and it sent no reference at all,
+        // so the manager's close-of-day list read "no reference" on every row.
+        ...(pay.method === 'MPESA' && payRef.trim() ? { mpesa_code: payRef.trim() } : {}),
+        ...(pay.method === 'CARD'  && payRef.trim() ? { card_ref:   payRef.trim() } : {}),
+        idempotency_key: idem,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tab', tabId] })
       qc.invalidateQueries({ queryKey: ['my-tabs'] })
       setPay(p => ({ ...p, amount: '' }))
+      setPayRef('')
       setIdem(crypto.randomUUID())
       addToast({ type: 'success', message: 'Payment recorded.' })
     },
@@ -576,6 +586,7 @@ export default function WaiterTabDetailScreen() {
                 </button>
               ))}
             </div>
+            <PaymentRef method={pay.method} value={payRef} onChange={setPayRef} />
             <input
               type="number" min="0" step="0.01" inputMode="decimal"
               placeholder="Amount (KSh)"

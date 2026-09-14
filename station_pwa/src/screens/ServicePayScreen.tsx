@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Skeleton, EmptyState, Button, useToastStore, ErrorBoundary } from '@shared'
+import { Skeleton, EmptyState, Button, useToastStore, ErrorBoundary, PaymentRef } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 
@@ -22,6 +22,7 @@ export default function ServicePayScreen() {
 
   const [draft, setDraft] = useState<Record<string, number>>({})
   const [pay, setPay] = useState({ method: 'CASH', amount: '' })
+  const [payRef, setPayRef] = useState('')
   const [stage, setStage] = useState<'select' | 'pay'>('select')
   const [tab, setTab] = useState<'pos' | 'stock' | 'request'>('pos')
   const [requestText, setRequestText] = useState('')
@@ -57,7 +58,14 @@ export default function ServicePayScreen() {
       const { data: newTab } = await api.post('/tabs', { idempotency_key: idem })
       const { data: order } = await api.post('/orders', { tab_id: newTab.id, items: orderItems })
       await api.post(`/orders/${order.id}/send`)
-      await api.post(`/tabs/${newTab.id}/payments`, { method: pay.method, amount: String(total), idempotency_key: crypto.randomUUID() })
+      await api.post(`/tabs/${newTab.id}/payments`, {
+        method: pay.method, amount: String(total),
+        // The endpoint has always taken these. Nothing sent them, so every
+        // spa and water payment reached close-of-day as "no reference".
+        ...(pay.method === 'MPESA' && payRef.trim() ? { mpesa_code: payRef.trim() } : {}),
+        ...(pay.method === 'CARD'  && payRef.trim() ? { card_ref:   payRef.trim() } : {}),
+        idempotency_key: crypto.randomUUID(),
+      })
       await api.post(`/tabs/${newTab.id}/close`)
     },
     onSuccess: () => {
@@ -211,6 +219,7 @@ export default function ServicePayScreen() {
                     </button>
                   ))}
                 </div>
+                <PaymentRef method={pay.method} value={payRef} onChange={setPayRef} />
                 <input type="number" min="0" step="0.01" inputMode="decimal"
                   placeholder="Amount received (KSh)"
                   value={pay.amount} onChange={e => setPay(p => ({ ...p, amount: e.target.value }))}

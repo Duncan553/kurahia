@@ -28,10 +28,26 @@ def _require_owner(actor):
 @dept_bp.get("")
 @require_active_user
 def list_departments():
+    """Reading the list of departments is not an admin act.
+
+    This was manager-only, and the cost was a silent lie rather than a refusal.
+    The chef's own inventory screen calls it to turn a department_id into a
+    name, gets 403, and falls back to `?? "Other"` — so a head chef looking at
+    her own kitchen stock saw the group labelled "Other". No error, no empty
+    state, just a mildly wrong word, which is the hardest kind of wrong to
+    notice.
+
+    Department NAMES are not sensitive — they are printed on the nav bar of
+    every station tablet. Creating, renaming and disabling them stays with the
+    owner (_require_owner, below); only this read is opened, and only to
+    somebody already signed in and active.
+    """
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < 5:
-        return jsonify({"error": "Manager or above required."}), 403
     include_disabled = request.args.get("include_disabled", "false").lower() == "true"
+    # Disabled departments are administrative history, not floor information.
+    if include_disabled and actor.role.level < 5:
+        return jsonify({"error": "Manager or above required to list disabled "
+                                 "departments."}), 403
     query = db.session.query(Department)
     if not include_disabled:
         query = query.filter_by(is_active=True)

@@ -38,7 +38,29 @@ def compute_variance(item_id: str, period_start: datetime, period_end: datetime)
         .order_by(StockCount.timestamp_utc.desc())
         .first()
     )
-    opening = Decimal(str(opening_count.counted_amount)) if opening_count else Decimal("0")
+    # Opening is the stock on the shelf when the period began.
+    #
+    # A COUNT is the better anchor where one exists — it is a verified number
+    # somebody put their name to, not what the system believes. But falling
+    # back to ZERO when none exists says the shelf was empty, and that is a
+    # different claim entirely. Tilapia Fillet carried 7.95kg in from earlier
+    # purchases with no count behind it, so opening read 0, expected_closing
+    # came out NEGATIVE (-0.25), and the screen built to catch stock going
+    # missing reported "+7.2500 kg, 2900%, flagged" on an item where nothing
+    # was wrong.
+    #
+    # With no count, the honest opening is what the LEDGER says was there:
+    # the sum of every movement before the period. That is exactly zero for a
+    # line created inside the period (nothing had moved yet), so a brand-new
+    # item still measures correctly, and it is 7.95 for Tilapia.
+    if opening_count is not None:
+        opening = Decimal(str(opening_count.counted_amount))
+    else:
+        carried_in = db.session.query(func.sum(StockMovement.change_amount)).filter(
+            StockMovement.item_id == item_id,
+            StockMovement.timestamp_utc < period_start,
+        ).scalar()
+        opening = Decimal(str(carried_in)) if carried_in is not None else Decimal("0")
 
     # Purchases in period (positive movements)
     purchases_raw = db.session.query(func.sum(StockMovement.change_amount)).filter(

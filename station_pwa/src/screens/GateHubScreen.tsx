@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Modal, useToastStore, ErrorBoundary } from '@shared'
+import { Modal, useToastStore, ErrorBoundary, PaymentRef } from '@shared'
 import api from '../lib/axios'
 import { formatBandBalance } from '../lib/format'
 
@@ -111,6 +111,7 @@ function RecentBands() {
 function IssueSection({ onIssued }: { onIssued: () => void }) {
   const addToast   = useToastStore(s => s.addToast)
   const [method, setMethod]       = useState<Method>('CASH')
+  const [payRef, setPayRef]       = useState('')
   const [idemKey, setIdemKey]     = useState(genKey)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [lastBand, setLastBand]   = useState<number | null>(null)
@@ -119,11 +120,16 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
     mutationFn: () =>
       api.post<{ band_number: number; duplicate?: boolean }>('/gate/issue-band', {
         method, idempotency_key: idemKey,
+        // The endpoint has always accepted these; nothing ever sent them, so
+        // every gate payment reached the reconcile screen as "no reference".
+        ...(method === 'MPESA' && payRef.trim() ? { mpesa_code: payRef.trim() } : {}),
+        ...(method === 'CARD'  && payRef.trim() ? { card_ref:   payRef.trim() } : {}),
       }).then(r => r.data),
     onSuccess: (data) => {
       setConfirmOpen(false)
       setLastBand(data.band_number)
       setIdemKey(genKey())
+      setPayRef('')
       onIssued()
       const msg = data.duplicate
         ? `Already issued — Band #${data.band_number}`
@@ -155,6 +161,8 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
           </motion.button>
         ))}
       </div>
+
+      <PaymentRef method={method} value={payRef} onChange={setPayRef} />
 
       {/* HERO CTA — the focal point of this screen */}
       <motion.button
