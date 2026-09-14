@@ -15,6 +15,9 @@ interface AttendanceRow {
   shift_start: string | null
   shift_end: string | null
   unrostered?: boolean
+  clocked_in_at?: string | null
+  hours_today?: string
+  department?: string | null
   status: string
   late: boolean | null
 }
@@ -215,9 +218,14 @@ export default function AttendanceScreen() {
                           bg-transparent hover:bg-white/5 transition-colors text-left
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark"
                       >
+                        {/* Columns, not a name adrift in whitespace. The row
+                            used to carry a name on the left and one word on the
+                            right across the full width of a tablet — the eye
+                            crossed ~900px of nothing to pair them. Each column
+                            below is a question the manager came here to ask. */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-ink-primary">
+                            <span className="text-sm font-semibold text-ink-primary truncate">
                               {row.employee_name ?? 'Unknown'}
                             </span>
                             {row.late && (
@@ -227,12 +235,39 @@ export default function AttendanceScreen() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-ink-tertiary mt-0.5">
-                            {row.shift_start
-                              ? <>{formatTime(row.shift_start)} – {formatTime(row.shift_end!)}</>
-                              : <span className="text-tea-brown">Not rostered — clocked in anyway</span>}
+                          <p className="text-xs text-ink-tertiary mt-0.5 truncate">
+                            {row.department ?? 'No department'}
+                            {row.unrostered && <span className="text-tea-brown"> · not rostered</span>}
                           </p>
                         </div>
+
+                        <div className="hidden sm:block w-28 shrink-0 text-right">
+                          <p className="text-[10px] uppercase tracking-wider text-ink-tertiary">In at</p>
+                          <p className="text-sm tabular-nums text-ink-primary">
+                            {row.clocked_in_at ? formatTime(row.clocked_in_at) : '—'}
+                          </p>
+                        </div>
+
+                        <div className="hidden md:block w-24 shrink-0 text-right">
+                          <p className="text-[10px] uppercase tracking-wider text-ink-tertiary">On duty</p>
+                          <p className="text-sm tabular-nums text-ink-primary">
+                            {row.hours_today && parseFloat(row.hours_today) > 0
+                              ? `${parseFloat(row.hours_today).toFixed(1)} h`
+                              : '—'}
+                          </p>
+                        </div>
+
+                        <div className="w-32 shrink-0 text-right">
+                          <p className="text-[10px] uppercase tracking-wider text-ink-tertiary">
+                            {row.shift_start ? 'Rostered' : 'Shift'}
+                          </p>
+                          <p className="text-xs text-ink-secondary tabular-nums">
+                            {row.shift_start
+                              ? <>{formatTime(row.shift_start)}–{formatTime(row.shift_end!)}</>
+                              : <span className="text-tea-brown">none</span>}
+                          </p>
+                        </div>
+
                         <StatusChip status={row.status} />
                       </motion.button>
                     ))}

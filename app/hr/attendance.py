@@ -141,6 +141,18 @@ def attendance_today():
             # True only in the contradictory case: on approved leave yet a clock
             # event exists for today. Surfaces the anomaly instead of hiding it.
             "clocked_in_while_on_leave": bool(on_leave and clocked_in),
+            # The two facts a manager actually looks for on this board — when
+            # did they get here, and how long have they been on. Without these
+            # the row carried a name and one word across the full width of a
+            # tablet, which is a lot of screen to say very little.
+            "clocked_in_at": (clocked_in.occurred_at_utc.isoformat()
+                              if clocked_in else None),
+            "hours_today":   str(compute_hours_worked(emp_id, day_start, day_end)),
+            # Department lives on the USER, not the profile — the profile is
+            # the HR record, the user is the account that holds the posting.
+            "department":    (profile.user.department.name
+                              if profile and profile.user and profile.user.department
+                              else None),
         })
 
     return jsonify(rows), 200
