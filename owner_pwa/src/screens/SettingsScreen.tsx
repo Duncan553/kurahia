@@ -351,7 +351,10 @@ function SocketStatusTab() {
           socket stays in the tree, dormant and unadvertised, rather than being
           deleted; staff PAYROLL by bank is a different thing and is unaffected. */}
       <SocketRow label="Card Gateway"              endpoint="/finance/card/status"  />
-      <SocketRow label="WhatsApp Notifications"    endpoint="/notifications/whatsapp/status" />
+      {/* WhatsApp is not being used — decided 14 Sep 2026, and both WHATSAPP
+          and WHATSAPP_FALLBACK_SMS carry an explicit is_active=false row in
+          notification_channel_configs. Listing a socket the resort has ruled
+          out invites somebody to go and switch it on. */}
     </div>
   )
 }

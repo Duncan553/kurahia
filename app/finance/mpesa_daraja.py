@@ -17,7 +17,7 @@ import httpx
 from typing import Tuple, Optional
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import get_jwt_identity
-from app.utils.auth_decorators import require_active_user
+from app.utils.auth_decorators import require_active_user, require_clocked_in
 from app.extensions import db
 from app.models.user import User
 from app.models.payment import Payment, PaymentMethod
@@ -384,11 +384,22 @@ def handle_stk_callback(payload: dict) -> Tuple[bool, any]:
 
 @mpesa_daraja_bp.post("/mpesa/charge")
 @require_active_user
+@require_clocked_in
 def mpesa_charge():
-    """Cashier-initiated STK Push to customer's phone."""
+    """Send the M-Pesa prompt to the guest's phone.
+
+    Gated at MANAGER_LEVEL, which put it out of reach of the only person who
+    is ever standing at the table. A waiter is level 1; a manager is not
+    holding the bill when the guest says "I'll pay by M-Pesa".
+
+    It now matches POST /tabs/<id>/payments — active and clocked in — because
+    prompting is the SAFER of the two acts. Recording a payment by hand lets a
+    staff member assert that money arrived when none did; a prompt cannot move
+    anything without the guest entering their own PIN, and Safaricom confirms
+    it back to us. Holding the safer path to a higher bar pushed everyone onto
+    the weaker one.
+    """
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
 
     if not is_configured():
         return jsonify({
@@ -444,10 +455,19 @@ def mpesa_callback():
 @mpesa_daraja_bp.get("/mpesa/status")
 @require_active_user
 def mpesa_status():
-    """Diagnostic — is the Daraja socket live?"""
+    """Is the Daraja socket live?
+
+    Manager-only made this a diagnostic. It is also the answer to a question
+    the WAITER has to ask before showing a guest anything: can I send the
+    prompt, or do I ask them to pay the paybill and read the code back?
+
+    Without it the till offered "Send prompt" unconditionally — and with the
+    socket dormant that recorded a payment and then failed to send anything,
+    so the bill read SETTLED with no money behind it. Whether a payment route
+    is switched on is not privileged information; it is a property of the till
+    the person is standing at.
+    """
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
     configured, message = configuration_status()
     return jsonify({"configured": configured, "message": message}), 200
 

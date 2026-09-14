@@ -34,14 +34,27 @@ def configured_env(monkeypatch):
 
 # ── POST /finance/mpesa/charge — auth ────────────────────────────────────────
 
-def test_charge_requires_manager_role(client, waiter_token):
-    """Waiter (role level < 5) → 403."""
+def test_charge_is_not_refused_to_a_waiter(client, waiter_token):
+    """The rule this used to pin was deliberately changed.
+
+    It asserted "waiter (level < 5) -> 403", which put the M-Pesa prompt out of
+    reach of the only person ever standing at the table. Prompting is the SAFER
+    of the two acts available there: recording a payment by hand lets a staff
+    member assert money arrived when none did, while a prompt cannot move
+    anything without the guest entering their own PIN. Holding the safer path
+    to a higher bar pushed everyone onto the weaker one.
+
+    It now matches POST /tabs/<id>/payments — active and clocked in. 503 here
+    means the request reached the handler and the socket is dormant, which is
+    the correct answer in tests and proves the gate is no longer the blocker.
+    """
     rv = client.post(
         "/finance/mpesa/charge",
         json={"amount": 100, "phone_number": "0712345678", "tab_id": "t1", "payment_id": "p1"},
         headers={"Authorization": f"Bearer {waiter_token}"},
     )
-    assert rv.status_code == 403
+    assert rv.status_code != 403, rv.get_json()
+    assert rv.status_code == 503
 
 
 def test_charge_requires_auth(client):
