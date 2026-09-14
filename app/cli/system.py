@@ -294,6 +294,15 @@ def run_daily():
     click.echo(f"Daily judge: {alerts} alert(s) fired.")
 
 
+@system_cli_bp.cli.command("stale-sweep")
+def stale_sweep_cmd():
+    """Raise tabs and leave requests nobody closed to someone who can."""
+    from app.services.stale_sweep import sweep
+    r = sweep()
+    click.echo(f"stale tabs: {r['stale_tabs']} ({r['tab_notices']} notice(s) sent)")
+    click.echo(f"pending leave: {r['pending_leave']} ({r['leave_notices']} notice(s) sent)")
+
+
 @system_cli_bp.cli.command("auto-clockout")
 def auto_clockout_cmd():
     """Close shifts nobody clocked out of, using the roster as the authority."""
