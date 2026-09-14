@@ -175,44 +175,39 @@ html { --font-size-base: 16px; }
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Ambient background (gives glass something to blur) ──────── */
+/* ── The ground ──────────────────────────────────────────────────
+   This used to be a photograph of the resort under a 0.90 scrim, with every
+   panel translucent on top of it. That arrangement could not win: the scrim
+   had to stay near-opaque or text contrast swung with scroll position (white
+   measured between 2.7:1 and 9.1:1 depending on whether a card happened to be
+   over the dark roof or the sunlit garden), and at 0.90 the photo contributed
+   nothing but noise under blur(24px). Every surface landed inside the same
+   narrow band of dark petrol — correct contrast, no depth. That is the flat,
+   washed look, and it could not be fixed by moving alphas: the photo WAS the
+   problem, because a blurred photograph has no stable luminance to build on.
+
+   So the working screens get a clean ground instead, and the panels above it
+   become opaque with real, deliberate steps between them. The photograph still
+   opens both apps — the login screens carry their own <img>, which is where
+   atmosphere belongs and where there is no data to read. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -2;
-  background: url('/images/resort-bg.jpg') center/cover no-repeat;
+  background: linear-gradient(168deg, #0c1f27 0%, #091920 52%, #0b1d24 100%);
 }
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
+  /* Kept from the photo era, and now they actually read: over a stable ground
+     these model the space instead of being crushed under a scrim. A lit lake
+     horizon top-right, warm lamplight bottom-left, opposite the accent. */
   background:
-    /* These three glows were at 0.03-0.07 alpha — under a 0.90 scrim that is
-       mathematically invisible. They were decoration that never rendered.
-       Raised to where they actually model the space: a lit horizon top-right,
-       warm lamplight bottom-left. This is the depth the flat ground was missing. */
-    /* Top-right: lake horizon */
-    radial-gradient(ellipse 60% 50% at 75% 15%, rgba(86, 166, 190, 0.20) 0%, transparent 70%),
-    /* Bottom-left: warm lamplight — the one warm note, opposite the accent */
-    radial-gradient(ellipse 50% 60% at 20% 85%, rgba(212, 132, 58, 0.13) 0%, transparent 70%),
-    /* Center: faint sage lift so the middle of the page is not a dead zone */
-    radial-gradient(ellipse 70% 70% at 50% 50%, rgba(45, 190, 160, 0.07) 0%, transparent 60%),
-    /* Base scrim.
-       The middle stop used to be 0.48 alpha, so halfway down every page the
-       resort photo came through at HALF strength — and that is precisely where
-       list content sits. Text over the dark roof read fine while the same text
-       over the green garden washed out: white swung between roughly 2.7:1 and
-       9.1:1 depending on nothing but scroll position.
-       No text colour can fix a target that moves that much, so the backdrop is
-       stabilised instead. The photo is still visible and still carries the
-       identity — it just stops competing with the words on top of it.
-
-       Alpha therefore stays high and STABLE — the change here is hue, not
-       transparency. Cool petrol instead of brown-black, so the photo reads as
-       dusk on water rather than mud. */
-    linear-gradient(160deg, rgba(14, 32, 40, 0.90) 0%, rgba(9, 22, 28, 0.87) 45%, rgba(12, 28, 35, 0.90) 100%);
+    radial-gradient(ellipse 60% 50% at 75% 12%, rgba(86, 166, 190, 0.16) 0%, transparent 68%),
+    radial-gradient(ellipse 50% 60% at 18% 88%, rgba(212, 132, 58, 0.10) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -230,14 +225,12 @@ body::after {
      The page scrim was stabilised for exactly this reason; cards never were.
      This petrol base is that same fix applied where the words are. The page
      ground still shows the photograph; the cards no longer do. */
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%),
-    linear-gradient(0deg, rgba(12, 28, 35, 0.82), rgba(12, 28, 35, 0.82));
-  /* saturate was cut to 110% because the brown ground let the resort photo's
-     olive cast through and cards read muddy. With a cool petrol ground the
-     backdrop no longer fights the glass, so saturation can come back up. */
-  backdrop-filter: blur(24px) saturate(145%) brightness(1.06);
-  -webkit-backdrop-filter: blur(24px) saturate(145%) brightness(1.06);
+  /* OPAQUE. A card is where text lives, so nothing shows through it — the
+     contrast of every label on it is now a fixed number rather than a function
+     of what it happens to be sitting over. The gradient is a light-from-above
+     lift, not transparency. backdrop-filter is gone with the photo: blurring a
+     flat colour costs a compositor pass on every tablet and changes nothing. */
+  background: linear-gradient(180deg, #17303a 0%, #142a33 100%);
   border: 1px solid rgba(255, 255, 255, 0.20);
   border-top-color: rgba(255, 255, 255, 0.30);
   border-radius: 1rem;
@@ -260,11 +253,7 @@ body::after {
 
 .glass-card-sage {
   contain: layout paint;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%),
-    linear-gradient(0deg, rgba(12, 28, 35, 0.82), rgba(12, 28, 35, 0.82));
-  backdrop-filter: blur(20px) saturate(160%) brightness(1.03);
-  -webkit-backdrop-filter: blur(20px) saturate(160%) brightness(1.03);
+  background: linear-gradient(180deg, #143039 0%, #112832 100%);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-top-color: rgba(255, 255, 255, 0.22);
   border-radius: 1rem;
@@ -277,11 +266,7 @@ body::after {
 
 .glass-surface {
   contain: layout paint;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.04) 100%),
-    linear-gradient(0deg, rgba(12, 28, 35, 0.82), rgba(12, 28, 35, 0.82));
-  backdrop-filter: blur(16px) saturate(150%) brightness(1.02);
-  -webkit-backdrop-filter: blur(16px) saturate(150%) brightness(1.02);
+  background: linear-gradient(180deg, #1b3641 0%, #172f38 100%);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 0.75rem;
   box-shadow:
