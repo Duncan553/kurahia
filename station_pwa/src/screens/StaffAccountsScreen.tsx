@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { RequireRole } from '../components/AuthGate'
 import { Button, SearchInput, ErrorBoundary, useToastStore } from '@shared'
 import api from '../lib/axios'
+import { useAuthStore } from '../stores/authStore'
 
 interface StaffUser { id: string; username: string; role: string; department: string | null; is_active: boolean; pin_set: boolean }
 interface StaffProfile {
@@ -56,12 +57,20 @@ export default function StaffAccountsScreen() {
   // PATCH /hr/profiles/<id> existed on the server the whole time; nothing
   // called it.
   const [wageEdit, setWageEdit] = useState<{id:string; value:string}|null>(null)
+  // Nobody sets their own pay — app/hr/profiles.py refuses it, deliberately,
+  // because a manager could otherwise write any wage_rate and /hr/payroll-draft
+  // would report it faithfully. The screen offered the control anyway and the
+  // 403 landed in an `err` that only renders inside the CREATE form, so the
+  // manager tapped Save on their own row and watched nothing happen at all.
+  const meId = useAuthStore((st) => st.user?.id)
+  const [wageErr, setWageErr] = useState('')
   const wageMut = useMutation({
     mutationFn: (v: {id:string; wage:string}) =>
       api.patch(`/hr/profiles/${v.id}`, { wage_rate: v.wage, wage_period: 'MONTHLY' })
          .then(r => r.data),
-    onSuccess: () => { setWageEdit(null); setErr(''); qc.invalidateQueries({ queryKey: ['staff-profiles'] }) },
-    onError:   (e) => setErr(extractErr(e)),
+    onSuccess: () => { setWageEdit(null); setErr(''); setWageErr(''); qc.invalidateQueries({ queryKey: ['staff-profiles'] }) },
+    // Shown beside the wage row, not in the create-account form far above it.
+    onError:   (e) => setWageErr(extractErr(e)),
   })
 
   const userMut = useMutation({
@@ -282,14 +291,30 @@ export default function StaffAccountsScreen() {
                             className="text-[10px] px-2 py-0.5 rounded-lg bg-primary-main/20 text-primary-main font-semibold">
                             {wageMut.isPending ? '…' : 'Save'}
                           </button>
-                          <button type="button" onClick={() => setWageEdit(null)}
+                          <button type="button" onClick={() => { setWageEdit(null); setWageErr('') }}
                             className="text-[10px] px-1 text-ink-tertiary">Cancel</button>
                         </form>
                       )
                     }
+                    if (wageErr && wageEdit?.id === prof.id) {
+                      return (
+                        <p className="mt-1 text-[11px] text-status-failed font-semibold max-w-xs">{wageErr}</p>
+                      )
+                    }
+                    // Your own row shows the figure but never the control.
+                    if (u.id === meId) {
+                      return (
+                        <p className="mt-1 text-[11px] text-ink-tertiary">
+                          {prof.wage_rate
+                            ? `KSh ${Math.round(parseFloat(prof.wage_rate)).toLocaleString()} / month`
+                            : 'No pay set'}
+                          <span className="text-tea-brown"> · only the owner sets your pay</span>
+                        </p>
+                      )
+                    }
                     return (
                       <button
-                        onClick={() => setWageEdit({ id: prof.id, value: prof.wage_rate ? String(Math.round(parseFloat(prof.wage_rate))) : '' })}
+                        onClick={() => { setWageErr(''); setWageEdit({ id: prof.id, value: prof.wage_rate ? String(Math.round(parseFloat(prof.wage_rate))) : '' }) }}
                         className="mt-1 text-[11px] text-ink-tertiary hover:text-ink-secondary underline decoration-dotted"
                       >
                         {prof.wage_rate
