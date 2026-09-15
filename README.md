@@ -5,9 +5,10 @@ bookings, gate wristbands and the owner's books, in one codebase. Every sale,
 shift and shilling is recorded once, by the person who was standing there, and
 the owner can read the whole property from a phone.
 
-Built for, and running at, Waterfront Juja — a lakeside resort in Juja Farm,
-Kiambu. Designed and built solo: backend, three front ends, test suite and
-deployment.
+Built for Waterfront Juja, a lakeside resort in Juja Farm, Kiambu. Complete
+and tested end to end; going live pending the resort's sign-off, so every
+figure shown here is practice data. Designed and built solo — backend, three
+front ends, test suite and deployment.
 
 **1,441 automated tests · a full simulated working day green at 38/38 · 70
 dashboards and tills opened as the person who uses each one**
@@ -198,5 +199,5 @@ anti-theft playbook — are deliberately kept out of this repository. They hold
 no credentials, but they describe what the system does *not* catch, and that is
 not something to publish.
 
-Licensed to the property it was built for. The author retains the underlying
-software.
+No licence is granted. All rights reserved by the author; the source is
+published here to be read, not reused.
