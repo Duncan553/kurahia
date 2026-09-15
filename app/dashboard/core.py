@@ -318,6 +318,15 @@ def bookings_view():
             t = b.resource.resource_type
             by_type[t] = by_type.get(t, 0) + 1
 
+    # How many of each kind the resort HAS. Occupancy is a fraction, and the
+    # denominator has to come from the same place as the numerator — without it
+    # the owner's dashboard had to invent one (it used active + 5, floored at
+    # 20, so one villa in six read 5%).
+    from app.models.bookable_resource import BookableResource
+    total_by_type: dict[str, int] = {}
+    for r in db.session.query(BookableResource).filter_by(is_active=True).all():
+        total_by_type[r.resource_type] = total_by_type.get(r.resource_type, 0) + 1
+
     # Pending deposits (CONFIRMED but deposit_paid < deposit_required)
     confirmed = db.session.query(Booking).filter_by(
         status=BookingStatus.CONFIRMED.value
@@ -358,6 +367,7 @@ def bookings_view():
 
     return jsonify({
         "occupancy_by_type": by_type,
+        "resources_by_type": total_by_type,
         "arrivals_today": [{"id": b.id, "guest": b.guest_name} for b in arrivals],
         "departures_today": [{"id": b.id, "guest": b.guest_name} for b in departures],
         "pending_deposits": pending_deposits,

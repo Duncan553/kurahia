@@ -38,6 +38,7 @@ interface FinanceData {
 
 interface BookingsData {
   occupancy_by_type: Record<string, number>
+  resources_by_type: Record<string, number>
   arrivals_today: { id: string; guest: string }[]
   departures_today: { id: string; guest: string }[]
   pending_deposits: { id: string; guest: string }[]
@@ -188,6 +189,12 @@ function HeroSection() {
     queryFn: () => api.get<AlertItem[]>('/dashboard/alerts').then(r => r.data),
     staleTime: 5 * 60_000,
   })
+  // Rooms occupied and rooms that exist — both counted by the same endpoint.
+  const { data: occ } = useQuery<BookingsData>({
+    queryKey: ['dash-bookings'],
+    queryFn: () => api.get<BookingsData>('/dashboard/bookings').then(r => r.data),
+    staleTime: 60_000,
+  })
 
   const isLoading = ovLoad || hLoad
 
@@ -207,8 +214,14 @@ function HeroSection() {
     )
   }
 
-  /* Use a simple percentage — active bookings vs a baseline capacity */
-  const occupancyPct = overview ? Math.min(Math.round((overview.bookings.active / Math.max(overview.bookings.active + 5, 20)) * 100), 100) : 0
+  /* Occupancy: rooms with a guest in them, over rooms that exist.
+   *
+   * It used to be `active / max(active + 5, 20)` — a denominator with no
+   * meaning, so one villa occupied out of six read 5%. A number on the owner's
+   * front page has to be countable on the ground. */
+  const roomsTotal    = occ ? Object.values(occ.resources_by_type ?? {}).reduce((a, b) => a + b, 0) : 0
+  const roomsOccupied = occ ? Object.values(occ.occupancy_by_type ?? {}).reduce((a, b) => a + b, 0) : 0
+  const occupancyPct  = roomsTotal > 0 ? Math.round((roomsOccupied / roomsTotal) * 100) : 0
 
   /* Revenue */
   const chartData = (hist ?? []).map(r => ({
@@ -242,7 +255,9 @@ function HeroSection() {
               {/* Center text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-bold text-ink-primary tabular-nums">{occupancyPct}%</span>
-                <span className="text-[10px] text-ink-tertiary">Rooms</span>
+                <span className="text-[10px] text-ink-tertiary">
+                  {roomsTotal > 0 ? `${roomsOccupied} of ${roomsTotal}` : 'Rooms'}
+                </span>
               </div>
             </div>
           </div>

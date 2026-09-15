@@ -132,7 +132,11 @@ def is_tab_closable(tab_id: str) -> tuple[bool, str]:
     """Returns (True, "") or (False, plain-English reason)."""
     balance = get_tab_balance(tab_id)
     if balance > Decimal("0"):
-        return False, f"This tab still has an outstanding balance of {balance}. Collect payment first."
+        # Money is read out loud to a guest standing at the desk, so it reads
+        # the way every other figure in the system does: KSh 172,800.00, not
+        # 172800.00.
+        return False, (f"This tab still has an outstanding balance of "
+                       f"KSh {balance:,.2f}. Collect payment first.")
 
     # Check for unresolved order items.
     #
