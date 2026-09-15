@@ -233,12 +233,45 @@ def propose_budget(pr_id):
     return jsonify({"id": pr.id, "status": pr.status, "estimated_cost": str(cost)}), 200
 
 
+
+def _budget_room(item_id: str, period_dt=None):
+    """What is left in this item's department budget this month.
+
+    Returns (budget_amount, spent, remaining, dept_name) or None when no budget
+    has been set — in which case there is no delegated authority to speak of
+    and the owner decides, which is the safe default.
+    """
+    from app.models.budget import Budget
+    from app.models.department import Department
+    from app.services.finance import get_budget_spend
+    from datetime import datetime as _dt, timezone as _tz
+    from calendar import monthrange
+
+    item = db.session.get(InventoryItem, item_id) if item_id else None
+    if not item:
+        return None
+    now    = period_dt or _dt.now(_tz.utc)
+    period = now.strftime("%Y-%m")
+    budget = db.session.query(Budget).filter_by(
+        department_id=item.department_id, period=period, is_active=True).first()
+    if not budget:
+        return None
+
+    start = _dt(now.year, now.month, 1, tzinfo=_tz.utc)
+    end   = _dt(now.year, now.month, monthrange(now.year, now.month)[1],
+                23, 59, 59, tzinfo=_tz.utc)
+    spent = get_budget_spend(item.department_id, start, end)
+    dept  = db.session.get(Department, item.department_id)
+    amount = Decimal(str(budget.amount))
+    return amount, spent, amount - spent, (dept.name if dept else "this department")
+
+
 @purchases_bp.post("/purchase-requests/<pr_id>/approve")
 @require_active_user
 def approve_request(pr_id):
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < OWNER_LEVEL:
-        return jsonify({"error": "Only the owner can approve purchase requests."}), 403
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
 
     pr = db.session.get(PurchaseRequest, pr_id)
     if not pr:
@@ -256,6 +289,41 @@ def approve_request(pr_id):
 
     if action not in ("approve", "reject"):
         return jsonify({"error": "action must be 'approve' or 'reject'"}), 400
+
+    # ── Who may say yes ─────────────────────────────────────────────────────
+    #
+    # Every request used to need the owner, for a crate of soda as much as for
+    # a freezer. That is not control, it is a queue: the owner becomes the
+    # bottleneck on the bar running out of tonic, and the real decisions get
+    # rubber-stamped along with the trivial ones.
+    #
+    # The delegation is the budget. The OWNER sets what a department may spend
+    # this month; inside that number a manager decides and gets on with it;
+    # the moment a request would take the department past it, the manager
+    # cannot approve it and it goes to the owner — who is then looking at the
+    # one decision that actually needs them.
+    #
+    # No budget set means no delegated authority, so it stays with the owner.
+    if action == "approve" and actor.role.level < OWNER_LEVEL:
+        room = _budget_room(pr.item_id)
+        cost = Decimal(str(pr.estimated_cost)) if pr.estimated_cost is not None else None
+        if room is None:
+            return jsonify({
+                "error": "No budget is set for this department this month, so only "
+                         "the owner can approve spending. Ask the owner to set one."
+            }), 403
+        amount, spent, remaining, dept = room
+        if cost is None:
+            return jsonify({
+                "error": "Put a cost estimate on this request first — without one "
+                         "there is no way to tell whether it fits the budget."
+            }), 400
+        if cost > remaining:
+            return jsonify({
+                "error": f"This would take {dept} past its budget. "
+                         f"KSh {remaining:,.2f} is left of KSh {amount:,.2f} this month "
+                         f"and this request is KSh {cost:,.2f}. Only the owner can approve it."
+            }), 403
 
     with db.session.begin_nested():
         pr.owner_id    = actor.id
@@ -366,9 +434,44 @@ def record_purchase():
         actor=actor.username, action="inventory.purchase",
         target=item.name, details=f"qty={qty} cost={cost}",
     )
+
+    # Spending past the budget is not refused here, and that is deliberate: the
+    # goods are at the door and the receipt is in the manager's hand. You cannot
+    # un-buy a delivery, and a system that pretends otherwise just teaches
+    # people to record purchases late or not at all.
+    #
+    # The control belongs one step earlier, at approval, where the money has not
+    # moved yet. What happens HERE is that the owner is told — the same night,
+    # by name and amount, not in a report next month.
+    over_budget = None
+    room = _budget_room(item_id)
+    if room is not None:
+        amount, spent, _remaining, dept = room
+        if spent > amount:
+            from app.services.judge_alerts import fire_alert_if_absent
+            from app.models.judge_alert import AlertSeverity
+            from datetime import datetime as _dt, timezone as _tz
+            now = _dt.now(_tz.utc)
+            period = now.strftime("%Y-%m")
+            over_budget = str(spent - amount)
+            fire_alert_if_absent(
+                alert_type="OVER_BUDGET",
+                description_key=f"{dept} over budget {period}",
+                item_id=item.id,
+                severity=AlertSeverity.HIGH.value,
+                description=(
+                    f"{dept} has spent KSh {spent:,.2f} against a KSh {amount:,.2f} "
+                    f"budget for {period} — KSh {spent - amount:,.2f} over. "
+                    f"Latest: {item.name}, KSh {cost:,.2f}, recorded by {actor.username}."
+                ),
+                period_start=now,
+                period_end=now,
+            )
+
     db.session.commit()
 
     return jsonify({
+        "over_budget_by": over_budget,
         "purchase_id": purchase.id,
         "movement_id": movement.id,
         "item":        item.name,

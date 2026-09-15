@@ -30,12 +30,20 @@ MANAGER_LEVEL = 5
 @budgets_bp.post("/budgets")
 @require_active_user
 def create_budget():
-    # Manager+ can set a budget (edit/disable/enable below stay owner-only —
-    # changing or removing a budget already in force is more sensitive than
-    # setting one for the first time).
+    # Owner only, and this is the hinge of the whole purchasing chain.
+    #
+    # A budget is the amount the OWNER decides a department may spend, and
+    # inside it a manager may now approve purchases without asking
+    # (app/inventory/purchases.py::approve_request). A manager who can set that
+    # number sets their own spending limit, which is not a limit — it is a
+    # signature on a blank cheque. Editing and disabling were already owner-only
+    # for exactly this reason; creating was the way round it.
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required to set budgets."}), 403
+    if actor.role.level < OWNER_LEVEL:
+        return jsonify({
+            "error": "Only the owner sets a department's budget — it is the amount "
+                     "a manager may then spend without asking."
+        }), 403
 
     data    = request.get_json(silent=True) or {}
     dept_id = data.get("department_id")

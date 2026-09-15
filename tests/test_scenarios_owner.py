@@ -504,21 +504,52 @@ def pending_request(client, manager_token):
     return rv.get_json()["id"]
 
 
-def test_manager_cannot_approve_a_purchase_request(client, manager_token, pending_request):
-    rv = client.post(f"/inventory/purchase-requests/{pending_request}/approve",
+@pytest.fixture
+def someone_elses_request(client, owner_token):
+    """A PENDING request raised by somebody OTHER than the manager.
+
+    The separation-of-duties rule fires before anything else — you cannot
+    approve your own request whatever your rank — so a fixture the manager
+    raised can never exercise the budget rules that sit behind it. Raising a
+    request is manager+ (app/inventory/purchases.py), so the other party here
+    is the owner.
+    """
+    rv = client.post("/inventory/purchase-requests", headers=H(owner_token),
+                     json={"item_description": "Two crates of Tusker", "quantity": "2"})
+    assert rv.status_code == 201, rv.get_json()
+    return rv.get_json()["id"]
+
+
+def test_a_manager_cannot_approve_spending_the_owner_has_not_delegated(
+        client, manager_token, someone_elses_request):
+    """Approval is delegated by BUDGET, and only by budget.
+
+    Every request used to need the owner, which made the owner the bottleneck
+    on a crate of soda. Now the owner sets what a department may spend in a
+    month and a manager decides inside it — but with no budget set there is
+    nothing delegated, so it stays with the owner, and the refusal says so.
+    """
+    rv = client.post(f"/inventory/purchase-requests/{someone_elses_request}/approve",
                      headers=H(manager_token), json={"action": "approve"})
     assert rv.status_code == 403
-    assert rv.get_json()["error"] == "Only the owner can approve purchase requests."
+    assert "budget" in rv.get_json()["error"].lower()
+    assert "owner" in rv.get_json()["error"].lower()
 
     from app.models.purchase_request import PurchaseRequest
-    assert db.session.get(PurchaseRequest, pending_request).status == "PENDING"
+    assert db.session.get(PurchaseRequest, someone_elses_request).status == "PENDING"
 
 
-def test_manager_cannot_reject_one_either(client, manager_token, pending_request):
-    """`action` is caller-supplied — reject is the same privileged decision."""
-    rv = client.post(f"/inventory/purchase-requests/{pending_request}/approve",
+def test_a_manager_may_still_say_no(client, manager_token, someone_elses_request):
+    """Rejecting is not spending.
+
+    Approval is gated on the budget because it commits money. Turning a request
+    down commits nothing, and making the owner the only person who can say no
+    to "we need another mop" is how a request queue stops being read at all.
+    """
+    rv = client.post(f"/inventory/purchase-requests/{someone_elses_request}/approve",
                      headers=H(manager_token), json={"action": "reject"})
-    assert rv.status_code == 403
+    assert rv.status_code == 200
+    assert rv.get_json()["status"] == "REJECTED"
 
 
 def test_waiter_cannot_even_raise_or_see_purchase_requests(client, waiter_token,

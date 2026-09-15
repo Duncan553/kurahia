@@ -831,9 +831,16 @@ def test_a_waiter_cannot_set_or_read_budgets(client, waiter_token, general_dept_
 
 def test_a_manager_cannot_edit_or_disable_a_budget_already_in_force(
         client, owner_token, manager_token, general_dept_id):
+    # The owner sets it — a budget is the owner deciding what a manager may
+    # spend without asking, so a manager setting one sets their own limit.
+    denied = client.post("/finance/budgets",
+                         json={"department_id": general_dept_id, "period": "2026-09",
+                               "amount": "50000"}, headers=auth(manager_token))
+    assert denied.status_code == 403
+
     created = client.post("/finance/budgets",
                           json={"department_id": general_dept_id, "period": "2026-09",
-                                "amount": "50000"}, headers=auth(manager_token))
+                                "amount": "50000"}, headers=auth(owner_token))
     assert created.status_code == 201
     bid = created.get_json()["id"]
     assert client.patch(f"/finance/budgets/{bid}", json={"amount": "1"},
