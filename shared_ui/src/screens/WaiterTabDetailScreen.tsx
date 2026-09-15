@@ -1,3 +1,4 @@
+import { imageUrl } from '../lib/imageUrl'
 import { useParams, useNavigate } from 'react-router-dom'
 import { PaymentRef } from '../components/PaymentRef'
 import { MpesaPrompt } from '../components/MpesaPrompt'
@@ -113,6 +114,8 @@ export default function WaiterTabDetailScreen() {
   const [activeCat, setActiveCat] = useState('All')
   const [pay, setPay] = useState({ method: 'CASH' as string, amount: '' })
   const [payRef, setPayRef] = useState('')
+  // Cash counted into the till, which is not the same number as the bill.
+  const [cashGiven, setCashGiven] = useState('')
   // The guest's number, for the M-Pesa prompt. Kept separate from the code
   // field: one is what you ask the guest for BEFORE paying, the other is what
   // they read back to you AFTER. The phone itself lives inside MpesaPrompt.
@@ -326,6 +329,7 @@ export default function WaiterTabDetailScreen() {
       qc.invalidateQueries({ queryKey: ['tab', tabId] })
       qc.invalidateQueries({ queryKey: ['my-tabs'] })
       setPay(p => ({ ...p, amount: '' }))
+      setCashGiven('')
       setPayRef('')
       setIdem(crypto.randomUUID())
       addToast({ type: 'success', message: 'Payment recorded.' })
@@ -472,7 +476,7 @@ export default function WaiterTabDetailScreen() {
                   {/* Photo area */}
                   <div className="h-24 bg-gradient-to-br from-white/5 to-transparent flex items-center justify-center overflow-hidden">
                     {item.image_path ? (
-                      <img src={item.image_path} alt={item.name}
+                      <img src={imageUrl(item.image_path)} alt={item.name}
                         className="w-full h-full object-cover" />
                     ) : (
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="opacity-30 text-ink-tertiary">
@@ -747,7 +751,10 @@ export default function WaiterTabDetailScreen() {
           <p className="text-xs text-ink-tertiary px-1">
             {tab?.tab_type === 'BAND'
               ? 'Prepaid at the gate. They can spend anywhere on the property and settle here, at another till, or at the gate on the way out.'
-              : `On ${tab?.reference ?? 'the room account'}. They can settle any part of it here, or leave it all for check-out.`}
+              // A room account is NOT settled here, so do not tell a waiter it is.
+              // The line under the balance and the line under the buttons were
+              // saying opposite things on the same screen.
+              : `On ${tab?.reference ?? 'the room account'}. Everything the room spends lands here; front desk takes the money.`}
           </p>
         )}
 
@@ -795,13 +802,13 @@ export default function WaiterTabDetailScreen() {
                 guest approves on their own phone and Safaricom confirms it
                 back — so it comes first, and typing a code afterwards stays
                 available for a guest who paid the paybill themselves. */}
-            {pay.method === 'MPESA' && (
-              <MpesaPrompt canPrompt={canPrompt}
-                amount={parseFloat(pay.amount || '0')}
-                sending={stkMut.isPending} onSend={p => stkMut.mutate(p)} />
-            )}
-
-            <PaymentRef method={pay.method} value={payRef} onChange={setPayRef} />
+            {/* AMOUNT FIRST, always. Picking Card or M-Pesa used to insert the
+                reference box above this one, so the field under the method
+                buttons changed identity depending on the method: the cashier
+                reaches for the first box, types 500, and it goes in as a card
+                slip number while the amount keeps whatever was there before.
+                Every payment needs an amount; the reference is optional, so it
+                sits underneath. */}
             <input
               type="number" min="0" step="0.01" inputMode="decimal"
               placeholder="Amount (KSh)"
@@ -810,12 +817,55 @@ export default function WaiterTabDetailScreen() {
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3
                 text-base text-ink-primary focus:outline-none focus:border-primary-main"
             />
+            {/* Everything that depends on the METHOD lives below the amount, so
+                the box under the method buttons is always the same box. */}
+            {pay.method === 'MPESA' && (
+              <MpesaPrompt canPrompt={canPrompt}
+                amount={parseFloat(pay.amount || '0')}
+                sending={stkMut.isPending} onSend={p => stkMut.mutate(p)} />
+            )}
+            <PaymentRef method={pay.method} value={payRef} onChange={setPayRef} />
             <button
               onClick={() => setPay(p => ({ ...p, amount: String(Math.abs(bal)) }))}
               className="w-full py-2.5 rounded-xl glass-card text-sm text-ink-secondary
                 hover:bg-white/5 transition-colors">
               Exact — {kes(Math.abs(bal))}
             </button>
+
+            {/* Cash: what the guest HANDS OVER is not what the resort keeps.
+                Typing the note into the amount box books the whole 5,000 as
+                takings for a 3,400 bill, and the drawer is short by the change
+                at reconciliation with nothing to explain it. Count the note
+                here, give the change, and let the ledger record the bill. */}
+            {pay.method === 'CASH' && (
+              <div className="space-y-2">
+                <input
+                  type="number" min="0" step="0.01" inputMode="decimal"
+                  placeholder="Cash given by guest (optional)"
+                  value={cashGiven}
+                  onChange={e => setCashGiven(e.target.value)}
+                  className="w-full rounded-xl glass-card bg-transparent px-4 py-3
+                    text-base text-ink-primary focus:outline-none focus:border-primary-main"
+                />
+                {(() => {
+                  const given = parseFloat(cashGiven || '0')
+                  const due   = parseFloat(pay.amount || '0') || Math.abs(bal)
+                  if (!given || given < due) return null
+                  return (
+                    <p className="text-sm text-ink-primary px-1">
+                      Change to give back: <strong>{kes(given - due)}</strong>
+                      <span className="text-ink-tertiary"> · {kes(due)} goes in the drawer</span>
+                    </p>
+                  )
+                })()}
+                {parseFloat(cashGiven || '0') > 0 && parseFloat(cashGiven) < (parseFloat(pay.amount || '0') || Math.abs(bal)) && (
+                  <p className="text-sm text-status-failed px-1">
+                    That is less than the amount being recorded — short by{' '}
+                    {kes((parseFloat(pay.amount || '0') || Math.abs(bal)) - parseFloat(cashGiven))}.
+                  </p>
+                )}
+              </div>
+            )}
             <Button variant="primary" size="lg" className="w-full" loading={payMut.isPending}
               onClick={() => payMut.mutate()}>
               Record Payment
