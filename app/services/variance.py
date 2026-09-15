@@ -54,7 +54,31 @@ def compute_variance(item_id: str, period_start: datetime, period_end: datetime)
     # line created inside the period (nothing had moved yet), so a brand-new
     # item still measures correctly, and it is 7.95 for Tilapia.
     if opening_count is not None:
+        # The count is the anchor, but the count is not necessarily the START.
+        # A count on the 10th with the period beginning on the 15th leaves five
+        # days of sales in between, and taking the counted number as opening
+        # silently drops them — the period then gets CHARGED with consumption
+        # that happened before it and the shortfall looks like theft.
+        #
+        # Found on Tusker Beer: last count 38 on 10 Sept, 3 bottles sold on the
+        # 14th, 150 received on the 15th. Expected closing came out 212 against
+        # a ledger that said 209, so a 19-bottle count difference was reported
+        # as a 22-bottle variance. Replay what moved in between.
         opening = Decimal(str(opening_count.counted_amount))
+        # COUNT movements are excluded on purpose. A count writes TWO things: the
+        # counted number (the anchor) and an adjustment movement that drags the
+        # ledger onto it. The adjustment is part of the anchor, not a change
+        # that happened after it — and its timestamp lands a hair LATER than the
+        # count row, so a naive "after the count" filter subtracts the same
+        # correction twice. Tusker read 32 instead of 35 that way.
+        since_count = db.session.query(func.sum(StockMovement.change_amount)).filter(
+            StockMovement.item_id == item_id,
+            StockMovement.timestamp_utc > opening_count.timestamp_utc,
+            StockMovement.timestamp_utc <= period_start,
+            StockMovement.reason != MovementReason.COUNT,
+        ).scalar()
+        if since_count is not None:
+            opening += Decimal(str(since_count))
     else:
         carried_in = db.session.query(func.sum(StockMovement.change_amount)).filter(
             StockMovement.item_id == item_id,
@@ -109,9 +133,27 @@ def compute_variance(item_id: str, period_start: datetime, period_end: datetime)
     # Flagged if absolute variance exceeds tolerance % of expected closing
     # Guard against zero expected_closing to avoid division by zero
     if expected_closing != Decimal("0"):
-        variance_pct = abs(variance) / abs(expected_closing) * 100
+        # Rounded to one decimal, and rounded HERE so every reader gets the same
+        # number. Unrounded, Decimal division put
+        # "3653.5885167464114832535 88517%" on a manager's screen — 25 digits of
+        # false precision on a figure whose whole job is to be glanced at.
+        variance_pct = (abs(variance) / abs(expected_closing) * 100).quantize(Decimal("0.1"))
     else:
         variance_pct = Decimal("0") if variance == Decimal("0") else Decimal("100")
+
+    # ── What it is worth ────────────────────────────────────────────────────
+    #
+    # "19 bottles" is a fact. "KSh 2,509" is the decision. The resort paid for
+    # that stock, and an owner reading a variance report needs the number in the
+    # currency the loss actually happened in — a 3 kg swing on tilapia and a
+    # 3 kg swing on sukuma are not the same event.
+    #
+    # Valued at the item's weighted-average cost, which is what was really paid,
+    # not the menu price. None where the item has never been bought, because a
+    # cost nobody has ever paid is a guess, and a guessed loss is worse than no
+    # figure at all.
+    cost = Decimal(str(item.cost_per_unit)) if (item and item.cost_per_unit is not None) else None
+    variance_value = (variance * cost) if cost is not None else None
 
     return {
         "item_id":          item_id,
@@ -126,4 +168,6 @@ def compute_variance(item_id: str, period_start: datetime, period_end: datetime)
         "variance_pct":     variance_pct,
         "flagged":          variance_pct > tolerance,
         "tolerance_pct":    tolerance,
+        "cost_per_unit":    cost,
+        "variance_value":   variance_value,
     }

@@ -85,6 +85,53 @@ def submit_count():
             and item.department_id != actor.department_id):
         return jsonify({"error": "You can only count items in your own department."}), 403
 
+    # ── A count never ADDS stock ─────────────────────────────────────────────
+    #
+    # The owner's rule, and it closes a real hole: the count screen was a way to
+    # put stock on the shelf with no money behind it. Type a bigger number than
+    # the system holds and the adjustment writes itself — no purchase, no cost,
+    # no supplier, no receipt. That is free inventory, and it also quietly
+    # destroys the variance report, because the "shortfall" it measures against
+    # is whatever the last person typed.
+    #
+    # If the shelf really does hold more than the books, the cause is a delivery
+    # nobody recorded — so the fix is to record that purchase, with what it cost
+    # and the receipt. Then the count agrees on its own.
+    system_qty = get_current_stock(item_id)
+    if counted > system_qty:
+        return jsonify({
+            "error": f"A count cannot add stock. You counted {counted:,.2f} {item.unit} "
+                     f"and the system holds {system_qty:,.2f}. More on the shelf than in "
+                     f"the books means a delivery was never recorded — record that "
+                     f"purchase with its cost and receipt, then count again."
+        }), 409
+
+    # ── A count far outside the possible is a typo, not a stock take ─────────
+    #
+    # This endpoint accepted 78,990 bottles of Tusker against a system figure of
+    # 56 without a murmur, wrote the adjustment, and moved on. A fat finger on a
+    # tablet is not a rare event on a counter, and the correction afterwards is
+    # a second false count in the ledger rather than an erasure.
+    #
+    # So an absurd number has to be said out loud and confirmed — exactly what
+    # the cash screen already does with a significant shortfall. Ten times the
+    # system figure (or ten times off it) is the line; anything inside that is
+    # an ordinary discrepancy and passes straight through, because a count that
+    # argues with every number is a count people stop doing.
+    if not data.get("confirm_unusual"):
+        limit = Decimal("10")
+        # Only the low side can reach here now — counting UP is refused above.
+        wildly_low = system_qty > 0 and counted * limit < system_qty
+        if wildly_low:
+            return jsonify({
+                "error": f"That count is a long way from what the system holds: you counted "
+                         f"{counted:,.2f} {item.unit} and the system says {system_qty:,.2f}. "
+                         f"Check the number — if it is right, confirm it and it will be recorded.",
+                "needs_confirmation": True,
+                "counted": str(counted),
+                "system": str(system_qty),
+            }), 409
+
     # Capture trust tier BEFORE this count changes anything (for auto-demotion detection)
     prior_tier, _ = compute_trust_tier(item)
 

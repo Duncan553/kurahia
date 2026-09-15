@@ -71,6 +71,10 @@ def _add_movements(app, item_id, count, reason=MovementReason.PURCHASE.value):
         db.session.commit()
 
 
+# A count can no longer ADD stock (app/inventory/counts.py — the owner's rule:
+# the count screen was a way to put inventory on the shelf with no purchase and
+# no money behind it). Every count below therefore lands at or under the system
+# figure, which is also the only direction a real stock take can surprise you in.
 def _submit_count(client, token, item_id, counted, count_type="DAILY"):
     return client.post("/inventory/counts", json={
         "item_id":        item_id,
@@ -128,7 +132,7 @@ def test_item_with_null_created_at_is_must_count(app):
 def test_recent_count_variance_is_must_count(app, client, manager_token, general_item):
     """An item that showed variance in a recent count → MUST_COUNT (COUNT movement exists)."""
     # Buy 10 units then count 8 → adjustment -2 → COUNT movement written
-    _submit_count(client, manager_token, general_item, counted="10")  # zero adj, no movement
+    _submit_count(client, manager_token, general_item, counted="1")  # small adj
     # Now create a COUNT movement directly (simulating a variance count)
     with app.app_context():
         from app.models.user import User
@@ -257,7 +261,7 @@ def test_head_chef_can_count_own_dept(app, client, kitchen_item):
     rv_login = client.post("/auth/login", json={"username":"chef_test_s3","password":"ChefPass1!"})
     chef_token = rv_login.get_json()["access_token"]
 
-    rv = _submit_count(client, chef_token, kitchen_item, counted="5")
+    rv = _submit_count(client, chef_token, kitchen_item, counted="0")
     assert rv.status_code == 201, rv.get_json()
 
 
@@ -294,13 +298,13 @@ def test_a_manager_level_user_may_spot_check_another_dept(app, client, general_i
 
     # general_item is in General dept, this actor is in Kitchen — and at manager
     # level, so the spot-check is allowed.
-    rv = _submit_count(client, chef_token, general_item, counted="5")
+    rv = _submit_count(client, chef_token, general_item, counted="0")
     assert rv.status_code == 201, rv.get_data(as_text=True)
 
 
 def test_owner_can_count_any_dept(app, client, owner_token, kitchen_item):
     """An owner (level 10) can count items from any department."""
-    rv = _submit_count(client, owner_token, kitchen_item, counted="5")
+    rv = _submit_count(client, owner_token, kitchen_item, counted="0")
     assert rv.status_code == 201, rv.get_json()
 
 
@@ -316,7 +320,7 @@ def test_auto_confirmed_variance_triggers_demotion(app, client, manager_token, g
     assert tier == AUTO_CONFIRMED, f"Precondition: expected AUTO_CONFIRMED, got {tier}"
 
     # Submit a count with variance (counted 999, actual is ~6 from movements)
-    rv = _submit_count(client, manager_token, general_item, counted="999")
+    rv = _submit_count(client, manager_token, general_item, counted="2")
     assert rv.status_code == 201
     body = rv.get_json()
     assert body["demoted"] is True
@@ -360,7 +364,11 @@ def test_must_count_variance_no_demotion(app, client, manager_token, general_ite
         it = db.session.get(InventoryItem, general_item)
         it.is_watch_list = True; db.session.commit()
 
-    rv = _submit_count(client, manager_token, general_item, counted="999")
+    # Stock has to be ON the shelf before a count can find it short — a count
+    # cannot add any.
+    _add_movements(app, general_item, count=6)
+
+    rv = _submit_count(client, manager_token, general_item, counted="2")
     assert rv.status_code == 201
     assert rv.get_json()["demoted"] is False  # only AUTO_CONFIRMED demotes
 
@@ -390,7 +398,7 @@ def test_demotion_expires_after_4_weeks(app, general_item):
 def test_count_audit_log_includes_tier(app, client, manager_token, general_item):
     """Count submission writes an audit log entry containing the trust tier."""
     _add_movements(app, general_item, count=6)  # make AUTO_CONFIRMED
-    _submit_count(client, manager_token, general_item, counted="5")
+    _submit_count(client, manager_token, general_item, counted="1")
 
     with app.app_context():
         log = db.session.query(AuditLog).filter_by(action="inventory.count").first()

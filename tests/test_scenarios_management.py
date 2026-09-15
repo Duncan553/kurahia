@@ -165,12 +165,18 @@ def test_request_lifecycle_pending_proposed_approved(client, manager_token, owne
     assert rv.status_code == 200 and rv.get_json()["status"] == "APPROVED"
 
 
-def test_manager_cannot_approve_a_request(client, manager_token, item_id):
+def test_a_manager_cannot_approve_their_own_request(client, manager_token, item_id):
+    """Separation of duties, and it fires before any budget question.
+
+    A manager may now approve spending inside the budget the owner set for their
+    department — but never their own request, whatever the amount and whatever
+    is left in the budget. The person who asks is not the person who agrees.
+    """
     pr = client.post("/inventory/purchase-requests", headers=H(manager_token),
                      json={"item_id": item_id, "quantity": "5"}).get_json()["id"]
     rv = client.post(f"/inventory/purchase-requests/{pr}/approve", headers=H(manager_token))
     assert rv.status_code == 403
-    assert "owner" in rv.get_json()["error"].lower()
+    assert "your own" in rv.get_json()["error"].lower()
 
 
 def test_owner_cannot_approve_own_request(client, owner_token, item_id):
@@ -316,10 +322,19 @@ def test_count_rejects_negative_and_staff_but_lets_a_manager_spot_check(
                      json={"item_id": item_id, "counted_amount": "1"})
     assert r2.status_code == 403
 
+    # A count cannot ADD stock, so a spot-check on an empty shelf counts zero —
+    # which still proves the permission, and is what an empty shelf holds.
     kitchen_item = _mk_item("Kitchen Salt", dept="Kitchen")
     r3 = client.post("/inventory/counts", headers=H(manager_token),
-                     json={"item_id": kitchen_item, "counted_amount": "1"})
+                     json={"item_id": kitchen_item, "counted_amount": "0"})
     assert r3.status_code == 201, r3.get_data(as_text=True)
+
+    # And the other direction is refused outright, whoever asks.
+    _stock(kitchen_item, 4)
+    r4 = client.post("/inventory/counts", headers=H(manager_token),
+                     json={"item_id": kitchen_item, "counted_amount": "40"})
+    assert r4.status_code == 409
+    assert "cannot add stock" in r4.get_json()["error"].lower()
 
 
 def test_count_on_disabled_item_refused(client, manager_token, item_id):

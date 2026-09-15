@@ -57,6 +57,10 @@ interface VarianceItem {
   consumption?: string
   expected_closing?: string
   actual_closing?: string
+  // What the gap is WORTH, at what the resort actually paid for the stock.
+  // "19 bottles" is a fact; "KSh 2,509" is the decision.
+  cost_per_unit?: string | null
+  variance_value?: string | null
 }
 
 interface VarianceReport {
@@ -64,6 +68,9 @@ interface VarianceReport {
   period_end: string
   items: VarianceItem[]
   flagged_count: number
+  lost_value?: string        // paid for, not on the shelf
+  unexplained_value?: string // of that, the part over tolerance
+  unbacked_value?: string    // on the shelf with no purchase behind it
 }
 
 interface PurchaseReq { id: string; item_name: string; quantity: string; status: string }
@@ -213,6 +220,8 @@ export default function InventoryCountScreen() {
   const [inputs,  setInputs]  = useState<Record<string, string>>({})
   const [keys,    setKeys]    = useState<Record<string, string>>({})
   const [results, setResults] = useState<Record<string, CountResult>>({})
+  // The item whose count the server has questioned, and what it said.
+  const [confirming, setConfirming] = useState<{ item: InventoryItem; message: string } | null>(null)
   const [pending, setPending] = useState<Set<string>>(new Set())
 
   // Variance date range — default to today
@@ -270,7 +279,10 @@ export default function InventoryCountScreen() {
     return keys[itemId]
   }
 
-  function submitCount(item: InventoryItem) {
+  // `confirm` carries a second tap through: the server answers 409 on a count
+  // far outside what it holds (a fat finger put 78,990 bottles of Tusker onto a
+  // shelf holding 56), and the person gets told the two numbers and asked.
+  function submitCount(item: InventoryItem, confirm = false) {
     const raw = inputs[item.id]?.trim()
     if (!raw || isNaN(parseFloat(raw))) {
       addToast({ type: 'error', message: `Enter a valid number for ${item.name}.` })
@@ -283,6 +295,7 @@ export default function InventoryCountScreen() {
       item_id:         item.id,
       counted_amount:  parseFloat(raw),
       idempotency_key: idemKey,
+      ...(confirm ? { confirm_unusual: true } : {}),
     })
       .then((r) => {
         const data = r.data
@@ -299,6 +312,10 @@ export default function InventoryCountScreen() {
       })
       .catch((err) => {
         const msg = err?.response?.data?.error ?? 'Count submission failed.'
+        if (err?.response?.status === 409 && err?.response?.data?.needs_confirmation) {
+          setConfirming({ item, message: msg })
+          return
+        }
         addToast({ type: 'error', message: msg })
       })
       .finally(() => {
@@ -879,6 +896,42 @@ export default function InventoryCountScreen() {
                           </p>
                         </div>
                       )}
+
+                      {/* The money line. A variance report in units is a puzzle;
+                          in shillings it is a decision. Both directions matter:
+                          stock paid for and missing, and stock on the shelf that
+                          no purchase accounts for — the second means money left
+                          without a receipt. */}
+                      {(Number(variance.lost_value ?? 0) > 0 || Number(variance.unbacked_value ?? 0) > 0) && (
+                        <div className="rounded-xl glass-card p-4 space-y-2">
+                          {Number(variance.lost_value ?? 0) > 0 && (
+                            <div className="flex justify-between items-baseline gap-3">
+                              <span className="text-sm text-ink-secondary">Paid for, not on the shelf</span>
+                              <span className="text-lg font-bold tabular-nums text-status-failed">
+                                KSh {Number(variance.lost_value).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          )}
+                          {Number(variance.unexplained_value ?? 0) > 0 && (
+                            <div className="flex justify-between items-baseline gap-3">
+                              <span className="text-xs text-ink-tertiary">of which over tolerance — needs an answer</span>
+                              <span className="text-sm font-semibold tabular-nums text-status-failed">
+                                KSh {Number(variance.unexplained_value).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          )}
+                          {Number(variance.unbacked_value ?? 0) > 0 && (
+                            <div className="flex justify-between items-baseline gap-3 pt-2 border-t border-white/10">
+                              <span className="text-sm text-ink-secondary">
+                                On the shelf with no purchase behind it
+                              </span>
+                              <span className="text-lg font-bold tabular-nums text-status-pending">
+                                KSh {Number(variance.unbacked_value).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <motion.div className="space-y-2" initial="hidden" animate="visible" variants={containerVariants}>
                         {variance.items.map((v) => (
                           <motion.div
@@ -922,6 +975,16 @@ export default function InventoryCountScreen() {
                                   {short
                                     ? `${qty}${v.unit ? ' ' + v.unit : ''} SHORT — ${v.variance_pct}% less than expected`
                                     : `${qty}${v.unit ? ' ' + v.unit : ''} over — ${v.variance_pct}% more than expected`}
+                                  {/* At what the resort paid, not the menu price. Absent
+                                      on an item never bought — a guessed loss is worse
+                                      than no figure. */}
+                                  {v.variance_value != null && parseFloat(v.variance_value) !== 0 && (
+                                    <span className="font-semibold">
+                                      {' · KSh '}
+                                      {Math.abs(parseFloat(v.variance_value)).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      {short ? ' lost' : ' unaccounted'}
+                                    </span>
+                                  )}
                                 </p>
                               )
                             })()}
@@ -1057,6 +1120,35 @@ export default function InventoryCountScreen() {
           </button>
         </form>
       </Drawer>
+
+      {/* The server questioned this count. Show both numbers and let them decide
+          — a stock take is allowed to find something shocking, but not by
+          accident. */}
+      {confirming && (
+        <div
+          role="dialog" aria-modal="true" aria-label="Confirm an unusual count"
+          onClick={() => setConfirming(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+          <div onClick={e => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl bg-cream-card p-5 space-y-4 shadow-xl">
+            <p className="font-bold text-ink-primary">Is that count right?</p>
+            <p className="text-sm text-ink-secondary">{confirming.message}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirming(null)}
+                className="flex-1 py-3 rounded-xl text-sm font-semibold border border-white/15
+                  text-ink-secondary hover:bg-white/5">
+                Go back and check
+              </button>
+              <button
+                onClick={() => { const c = confirming; setConfirming(null); submitCount(c.item, true) }}
+                className="flex-1 py-3 rounded-xl text-sm font-semibold bg-primary-main text-white">
+                It is right — record it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </RequireRole>
   )

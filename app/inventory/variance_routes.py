@@ -101,6 +101,20 @@ def variance_report():
     results = []
     flagged = []
 
+    from decimal import Decimal
+    # Two totals, and they answer different questions. `lost_value` is what the
+    # resort paid for stock that is not there — the number an owner acts on.
+    # `unexplained_value` counts the flagged lines only, so ordinary shrinkage
+    # inside tolerance does not get presented as theft.
+    lost_value        = Decimal("0")
+    unexplained_value = Decimal("0")
+    # Stock that APPEARED. A count saying there is more on the shelf than the
+    # ledger knows about is not good news: either somebody bought stock and the
+    # purchase was never recorded (money left the resort with no receipt), or
+    # the count is wrong. Both need answering, and neither shows up in a figure
+    # that only adds up losses.
+    unbacked_value    = Decimal("0")
+
     for item in items:
         v = compute_variance(item.id, period_start, period_end)
         if v is None:
@@ -108,6 +122,13 @@ def variance_report():
             continue
         if v["flagged"]:
             flagged.append(item.name)
+        val = v.get("variance_value")
+        if val is not None and val < 0:
+            lost_value += -val
+            if v["flagged"]:
+                unexplained_value += -val
+        elif val is not None and val > 0:
+            unbacked_value += val
         # Serialize Decimals to strings for JSON
         results.append({k: str(val) if hasattr(val, "quantize") else val for k, val in v.items()})
 
@@ -117,4 +138,7 @@ def variance_report():
         "items":        results,
         "flagged_count": len(flagged),
         "flagged_items": flagged,
+        "lost_value":        str(lost_value),
+        "unexplained_value": str(unexplained_value),
+        "unbacked_value":    str(unbacked_value),
     }), 200
