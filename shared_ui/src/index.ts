@@ -82,7 +82,7 @@ export { GlassCard } from './components/GlassCard'
 export type { GlassCardProps, GlassIntensity } from './components/GlassCard'
 
 // ── Date helpers (resort-local, NOT UTC — see lib/date.ts) ──
-export { resortToday, resortMonth, resortDatePlus, resortRecentMonths, RESORT_TZ } from './lib/date'
+export { resortToday, resortMonth, resortDatePlus, resortRecentMonths, resortBusinessDay, RESORT_TZ } from './lib/date'
 
 // ── Hooks ──
 export { useIsDesktop } from './hooks/useIsDesktop'

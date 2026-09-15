@@ -27,8 +27,23 @@ export function toDateKey(iso: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: NBI }).format(new Date(iso))
 }
 
-// Today's date key in Nairobi tz
-export function todayKey(): string {
+// Today's date key in Nairobi tz — the BUSINESS day, not the calendar day.
+//
+// A resort day runs 06:00 → 06:00 EAT (app/services/business_day.py), so at
+// 01:00 the bar is still working yesterday's date. Screens that ask "what
+// happened today" — receipts, variance, attendance, cash — must agree with the
+// backend about which day that is, or the night shift sees zeros.
+export function todayKey(d: Date = new Date()): string {
+  const hour = Number(new Intl.DateTimeFormat('en-GB',
+    { timeZone: NBI, hour: '2-digit', hour12: false }).format(d))
+  const day = hour < 6 ? new Date(d.getTime() - 86_400_000) : d
+  return new Intl.DateTimeFormat('en-CA', { timeZone: NBI }).format(day)
+}
+
+// The calendar date in Nairobi, for anything that genuinely means "today's
+// date" rather than "the trading day" — a date input's max, a booking's
+// earliest check-in.
+export function calendarToday(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: NBI }).format(new Date())
 }
 

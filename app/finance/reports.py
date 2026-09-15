@@ -159,7 +159,7 @@ def three_way_report():
     # ── Gap analysis ──────────────────────────────────────────────────────
     gaps = []
     if recon_diff < Decimal("0"):
-        gaps.append(f"Cash shortfall of KES {abs(recon_diff):,.2f} — "
+        gaps.append(f"Cash shortfall of KSh {abs(recon_diff):,.2f} — "
                     f"staff handed in less than they collected.")
     for s in shortfalls:
         gaps.append(f"  • {s['staff']}: expected {s['expected']}, "

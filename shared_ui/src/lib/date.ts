@@ -51,3 +51,26 @@ export function resortRecentMonths(count: number, from: Date = new Date()): stri
     return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
   })
 }
+
+/**
+ * The BUSINESS day at the resort, as `YYYY-MM-DD`.
+ *
+ * A resort day is not a calendar day. It runs 06:00 → 06:00 EAT
+ * (app/services/business_day.py, configurable as business_day_start_hour), so
+ * the bar still serving at 01:00 and the night manager closing the till at
+ * 03:00 are working YESTERDAY'S date. Every screen that asks "how did today
+ * go" — reconciliation, receipts, variance, attendance — has to ask for the
+ * business day or it shows zeros to the person who just worked the night.
+ *
+ * Found on the owner's Three-Way Reconciliation at 00:11 EAT: the picker
+ * defaulted to the new calendar date and the whole evening's trading —
+ * KSh 322,700 of it — read as KSh 0.00, "Balanced".
+ */
+export function resortBusinessDay(d: Date = new Date(), startHour = 6): string {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: RESORT_TZ, hour: '2-digit', hour12: false,
+    }).format(d)
+  )
+  return hour < startHour ? resortDatePlus(-1, d) : resortToday(d)
+}

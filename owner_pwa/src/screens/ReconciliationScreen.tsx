@@ -29,7 +29,17 @@ interface ReconData {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const _tz = 'Africa/Nairobi'
-const todayNairobi = () => new Intl.DateTimeFormat('en-CA', { timeZone: _tz }).format(new Date())
+// The resort's day runs 06:00 → 06:00 EAT, so before 6am the business day is
+// still yesterday's date. Defaulting to the calendar date showed the night
+// manager closing up at 00:11 an empty reconciliation for the evening he had
+// just worked — KSh 322,700 of trading, reported as KSh 0.00 and "Balanced".
+const todayNairobi = () => {
+  const now = new Date()
+  const hour = Number(new Intl.DateTimeFormat('en-GB',
+    { timeZone: _tz, hour: '2-digit', hour12: false }).format(now))
+  const d = hour < 6 ? new Date(now.getTime() - 86_400_000) : now
+  return new Intl.DateTimeFormat('en-CA', { timeZone: _tz }).format(d)
+}
 
 const kes = (v: string | number) =>
   `KSh ${parseFloat(String(v)).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
