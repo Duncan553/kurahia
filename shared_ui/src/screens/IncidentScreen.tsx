@@ -44,6 +44,7 @@ function fmtDate(iso: string | null) {
 
 function LogForm() {
   const { addToast } = useToastStore()
+  const qc = useQueryClient()
   const [description, setDescription] = useState('')
   const [location, setLocation]       = useState('')
   const [severity, setSeverity]       = useState<Severity>('MEDIUM')
@@ -58,6 +59,12 @@ function LogForm() {
     onSuccess: () => {
       addToast({ type: 'success', message: 'Incident logged.' })
       setDescription(''); setLocation(''); setSeverity('MEDIUM'); setGuest('')
+      // The list of incidents sits directly under this form on the same screen.
+      // Without this it kept saying "No incidents recorded" underneath a toast
+      // that said the incident was logged — and the person who just reported a
+      // guest's injury has every reason to believe the screen over the toast,
+      // and to report it again.
+      qc.invalidateQueries({ queryKey: ['incidents'] })
     },
     onError: (e: unknown) => {
       const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error
