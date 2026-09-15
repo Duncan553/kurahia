@@ -7,6 +7,27 @@ import { RequireRole } from '../components/AuthGate'
 import { useAuthStore } from '../stores/authStore'
 import { todayKey } from '../lib/format'
 
+// What the backend knows about a category: how one stock unit breaks down, and
+// the pack it is bought in. Mirrors CATEGORY_PACK_DEFAULTS in app/inventory/items.py.
+interface CategoryDefault {
+  pack_size?: number | null
+  pack_unit?: string | null
+  purchase_pack_name?: string | null
+  purchase_pack_size?: number | null
+}
+
+// The kinds of thing a resort store holds. The first block auto-fills from the
+// backend's defaults; the rest are here so every item can still say what it is.
+const CATEGORY_CHOICES = [
+  'beer', 'soda', 'water', 'mixer', 'spirit', 'wine',
+  'honey', 'syrup',
+  'produce', 'meat', 'dairy', 'dry goods', 'cleaning', 'gas', 'other',
+]
+
+// Picking one of these ticks the liquor flag for you — forgetting it is how
+// spirits end up outside the licence report.
+const ALCOHOL_CATEGORIES = new Set(['beer', 'spirit', 'wine'])
+
 const UNIT_SUGGESTIONS = [
   'kg', 'g', 'litre', 'ml',
   'bottle', 'crate of 24', 'crate of 12', 'can',
@@ -28,6 +49,12 @@ interface InventoryItem {
   below_reorder: boolean
   is_watch_list: boolean
   is_staff_food: boolean
+  is_alcoholic?: boolean
+  category?: string | null
+  pack_size?: string | null
+  pack_unit?: string | null
+  purchase_pack_name?: string | null
+  purchase_pack_size?: string | null
 }
 
 interface CountResult {
@@ -166,11 +193,25 @@ export default function InventoryCountScreen() {
 
   // ── Add-item drawer ────────────────────────────────────────────────────────
   const [addOpen,    setAddOpen]    = useState(false)
+  // The item being edited, or null when the drawer is adding a new one. Same
+  // form either way — a mistyped pack ("1 kg = 5009 mlpotato") was previously
+  // permanent, because the only way into the catalogue was creating a row.
+  const [editing,    setEditing]    = useState<InventoryItem | null>(null)
   const [newName,    setNewName]    = useState('')
   const [newUnit,    setNewUnit]    = useState('')
   const [newDeptId,  setNewDeptId]  = useState('')
   const [newReorder, setNewReorder] = useState('')
   const [newWatch,   setNewWatch]   = useState(false)
+  // How the item is KNOWN: what kind of thing it is, how one stock unit breaks
+  // down into portions (1 bottle = 750 ml), and how it arrives at the door
+  // (1 crate = 25 bottles). Without these three, a recipe cannot cost a shot
+  // and receiving has to do crate maths in someone's head.
+  const [newCategory, setNewCategory] = useState('')
+  const [newPackSize, setNewPackSize] = useState('')
+  const [newPackUnit, setNewPackUnit] = useState('')
+  const [newPurName,  setNewPurName]  = useState('')
+  const [newPurSize,  setNewPurSize]  = useState('')
+  const [newAlcohol,  setNewAlcohol]  = useState(false)
 
   const { data: departments } = useQuery<Department[]>({
     queryKey: ['departments'],
@@ -178,8 +219,47 @@ export default function InventoryCountScreen() {
     staleTime: 5 * 60_000,
   })
 
+  // The pack knowledge the backend already holds (beer crate = 25, spirit
+  // bottle = 750 ml, ...). Fetched rather than duplicated here so there is one
+  // place where "a crate is 25" is written down.
+  const { data: catDefaults } = useQuery<Record<string, CategoryDefault>>({
+    queryKey: ['category-defaults'],
+    queryFn: () => api.get('/inventory/items/category-defaults').then((r) => r.data),
+    staleTime: 60 * 60_000,
+  })
+
+  /** Pick a category: fill in what is known, leave the rest for the user. */
+  function chooseCategory(cat: string) {
+    setNewCategory(cat)
+    const d = catDefaults?.[cat]
+    if (!d) return
+    if (d.pack_size != null) setNewPackSize(String(d.pack_size))
+    if (d.pack_unit)         setNewPackUnit(d.pack_unit)
+    if (d.purchase_pack_name) setNewPurName(d.purchase_pack_name)
+    if (d.purchase_pack_size != null) setNewPurSize(String(d.purchase_pack_size))
+    setNewAlcohol(ALCOHOL_CATEGORIES.has(cat))
+  }
+
+  /** Open the same form over an existing item, prefilled with what it says now. */
+  function openEditDrawer(item: InventoryItem) {
+    setEditing(item)
+    setNewName(item.name)
+    setNewUnit(item.unit)
+    setNewDeptId(item.department_id)
+    setNewReorder(item.reorder_level ?? '')
+    setNewWatch(item.is_watch_list)
+    setNewCategory(item.category ?? '')
+    setNewPackSize(item.pack_size ?? '')
+    setNewPackUnit(item.pack_unit ?? '')
+    setNewPurName(item.purchase_pack_name ?? '')
+    setNewPurSize(item.purchase_pack_size ?? '')
+    setNewAlcohol(!!item.is_alcoholic)
+    setAddOpen(true)
+  }
+
   // Pre-select the currently viewed department when drawer opens
   function openAddDrawer() {
+    setEditing(null)
     if (selectedDeptId) {
       setNewDeptId(selectedDeptId)
     } else {
@@ -190,29 +270,70 @@ export default function InventoryCountScreen() {
     setNewUnit('')
     setNewReorder('')
     setNewWatch(false)
+    setNewCategory(''); setNewPackSize(''); setNewPackUnit('')
+    setNewPurName('');  setNewPurSize('');  setNewAlcohol(false)
     setAddOpen(true)
   }
 
   const addItemMutation = useMutation({
-    mutationFn: () => api.post('/inventory/items', {
+    // Same body both ways; the only difference is whether the row exists yet.
+    mutationFn: () => (editing
+      ? api.patch(`/inventory/items/${editing.id}`, itemBody())
+      : api.post('/inventory/items', itemBody())
+    ).then((r) => r.data),
+    onSuccess: (data: { name: string }) => {
+      addToast({ type: 'success', message: editing
+        ? `"${data.name}" updated.`
+        : `"${data.name}" added to inventory.` })
+      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory-items-all'] })
+      setAddOpen(false)
+      setEditing(null)
+      setNewName(''); setNewUnit(''); setNewReorder(''); setNewWatch(false)
+      setNewCategory(''); setNewPackSize(''); setNewPackUnit('')
+      setNewPurName('');  setNewPurSize('');  setNewAlcohol(false)
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Could not save the item. Try again.'
+      addToast({ type: 'error', message: msg })
+    },
+  })
+
+  // Disable, never delete: the item stops appearing in lists and recipes but
+  // every movement that ever pointed at it still resolves.
+  const disableMutation = useMutation({
+    mutationFn: () => api.post(`/inventory/items/${editing!.id}/disable`).then((r) => r.data),
+    onSuccess: () => {
+      addToast({ type: 'success', message: `"${editing?.name}" disabled.` })
+      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory-items-all'] })
+      setAddOpen(false)
+      setEditing(null)
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Could not disable the item.'
+      addToast({ type: 'error', message: msg })
+    },
+  })
+
+  /** What the form is saying right now — the same shape for add and edit. */
+  function itemBody() {
+    return {
       name:           newName.trim(),
       unit:           newUnit.trim(),
       department_id:  newDeptId,
       reorder_level:  newReorder ? parseFloat(newReorder) : 0,
       is_watch_list:  newWatch,
-    }).then((r) => r.data),
-    onSuccess: (data: { name: string }) => {
-      addToast({ type: 'success', message: `"${data.name}" added to inventory.` })
-      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
-      setAddOpen(false)
-      setNewName(''); setNewUnit(''); setNewReorder(''); setNewWatch(false)
-    },
-    onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-        ?? 'Could not add item. Try again.'
-      addToast({ type: 'error', message: msg })
-    },
-  })
+      category:            newCategory || undefined,
+      pack_size:           newPackSize ? parseFloat(newPackSize) : undefined,
+      pack_unit:           newPackUnit || undefined,
+      purchase_pack_name:  newPurName  || undefined,
+      purchase_pack_size:  newPurSize  ? parseFloat(newPurSize) : undefined,
+      is_alcoholic:        newAlcohol,
+    }
+  }
 
   const addFormValid = newName.trim() && newUnit.trim() && newDeptId
 
@@ -406,7 +527,7 @@ export default function InventoryCountScreen() {
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                   <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                New PO
+                New item
               </motion.button>
             </div>
           </motion.div>
@@ -722,7 +843,7 @@ export default function InventoryCountScreen() {
                         <path d="M16 24h16M16 30h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                       </svg>}
                       title="No inventory items configured yet."
-                      description="Ask the owner to add items first."
+                      description="Use \u201cNew item\u201d above to add the first one."
                     />
                   )}
 
@@ -758,8 +879,17 @@ export default function InventoryCountScreen() {
                                   Watch
                                 </span>
                               )}
+                              {/* Correcting a wrong pack has to be possible from
+                                  the same screen that shows it is wrong. */}
+                              <button
+                                onClick={() => openEditDrawer(item)}
+                                className="ml-auto text-xs font-semibold text-ink-tertiary
+                                  hover:text-ink-primary px-2 py-1 rounded-lg hover:bg-white/5"
+                              >
+                                Edit
+                              </button>
                               {submitted && (
-                                <span className="ml-auto text-[#fa5c29]">
+                                <span className="text-[#fa5c29]">
                                   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                                     <circle cx="8" cy="8" r="8" opacity="0.2"/>
                                     <path d="M4.5 8l2.5 2.5L11.5 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
@@ -1008,7 +1138,11 @@ export default function InventoryCountScreen() {
       </div>
 
       {/* ── Add item drawer ─────────────────────────────────────────── */}
-      <Drawer open={addOpen} onClose={() => setAddOpen(false)} title="Add inventory item">
+      <Drawer
+        open={addOpen}
+        onClose={() => { setAddOpen(false); setEditing(null) }}
+        title={editing ? `Edit ${editing.name}` : 'Add inventory item'}
+      >
         <form
           onSubmit={(e) => { e.preventDefault(); if (addFormValid) addItemMutation.mutate() }}
           className="space-y-4"
@@ -1054,6 +1188,123 @@ export default function InventoryCountScreen() {
               ))}
             </select>
           </div>
+
+          {/* What kind of thing it is — drives the pack defaults below */}
+          <div>
+            <label className="block text-sm font-medium text-ink-tertiary mb-1.5">
+              What is it? <span className="font-normal text-ink-tertiary/60">(fills the packs below)</span>
+            </label>
+            <select
+              style={{ colorScheme: 'dark' }}
+              value={newCategory}
+              onChange={(e) => chooseCategory(e.target.value)}
+              className="w-full rounded-xl glass-card bg-transparent px-4 py-3
+                text-sm text-ink-primary focus:outline-none focus:border-primary-main
+                focus:ring-2 focus:ring-[#fa5c29]/20"
+            >
+              <option value="">Not saying</option>
+              {CATEGORY_CHOICES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* One stock unit, broken down. 1 kg = 8 onions. 1 bottle = 750 ml. */}
+          <div>
+            <label className="block text-sm font-medium text-ink-tertiary mb-1.5">
+              One {newUnit || 'unit'} holds
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number" min="0" step="0.01" inputMode="decimal"
+                value={newPackSize}
+                onChange={(e) => setNewPackSize(e.target.value)}
+                placeholder="8"
+                className="w-1/3 rounded-xl glass-card bg-transparent px-4 py-3
+                  text-sm text-ink-primary focus:outline-none focus:border-primary-main"
+              />
+              <input
+                type="text"
+                value={newPackUnit}
+                onChange={(e) => setNewPackUnit(e.target.value)}
+                placeholder="onions / ml / slices"
+                className="flex-1 rounded-xl glass-card bg-transparent px-4 py-3
+                  text-sm text-ink-primary focus:outline-none focus:border-primary-main"
+              />
+            </div>
+            <p className="text-xs text-ink-tertiary mt-1.5 px-1">
+              What a recipe asks for. One onion per burger only works if the kitchen
+              knows how many onions are in a kilo.
+            </p>
+          </div>
+
+          {/* How it arrives at the delivery door. 1 crate = 25 bottles. */}
+          <div>
+            <label className="block text-sm font-medium text-ink-tertiary mb-1.5">
+              Bought as <span className="font-normal text-ink-tertiary/60">(optional)</span>
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newPurName}
+                onChange={(e) => setNewPurName(e.target.value)}
+                placeholder="crate / box / bale"
+                className="flex-1 rounded-xl glass-card bg-transparent px-4 py-3
+                  text-sm text-ink-primary focus:outline-none focus:border-primary-main"
+              />
+              <input
+                type="number" min="0" step="0.01" inputMode="decimal"
+                value={newPurSize}
+                onChange={(e) => setNewPurSize(e.target.value)}
+                placeholder="25"
+                className="w-1/3 rounded-xl glass-card bg-transparent px-4 py-3
+                  text-sm text-ink-primary focus:outline-none focus:border-primary-main"
+              />
+            </div>
+          </div>
+
+          {/* Say it back in plain words, so a wrong number is obvious here and
+              not at the first stock take. */}
+          {(newPurSize || newPackSize) && (
+            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 space-y-1">
+              {newPurSize && (
+                <p className="text-sm text-ink-primary">
+                  1 {newPurName || 'pack'} = <strong>{newPurSize}</strong> {newUnit || 'unit'}
+                </p>
+              )}
+              {newPackSize && (
+                <p className="text-sm text-ink-primary">
+                  1 {newUnit || 'unit'} = <strong>{newPackSize}</strong> {newPackUnit || 'portions'}
+                  {newPackUnit === 'ml' && Number(newPackSize) > 0 && (
+                    <span className="text-ink-tertiary"> · {Math.floor(Number(newPackSize) / 30)} shots of 30ml</span>
+                  )}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Liquor flag — the licence report is built from it */}
+          <button
+            type="button"
+            onClick={() => setNewAlcohol((a) => !a)}
+            className={[
+              'w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-sm',
+              newAlcohol
+                ? 'border-primary-main/40 bg-primary-main/5 text-primary-main'
+                : 'border-white/10 bg-white/5 text-ink-tertiary',
+            ].join(' ')}
+          >
+            <span className="font-medium">This is alcohol</span>
+            <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+              newAlcohol ? 'border-primary-main bg-primary-main' : 'border-white/20'
+            }`}>
+              {newAlcohol && (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </span>
+          </button>
 
           {/* Reorder level */}
           <div>
@@ -1114,10 +1365,23 @@ export default function InventoryCountScreen() {
                   <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3"/>
                   <path d="M21 12a9 9 0 01-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                Adding...
+                {editing ? 'Saving...' : 'Adding...'}
               </span>
-            ) : 'Add to inventory'}
+            ) : (editing ? 'Save changes' : 'Add to inventory')}
           </button>
+
+          {editing && (
+            <button
+              type="button"
+              onClick={() => disableMutation.mutate()}
+              disabled={disableMutation.isPending}
+              className="w-full min-h-[44px] rounded-xl border border-status-failed/40
+                text-status-failed text-sm font-semibold hover:bg-status-failed/5
+                disabled:opacity-50"
+            >
+              {disableMutation.isPending ? 'Disabling...' : 'Disable this item'}
+            </button>
+          )}
         </form>
       </Drawer>
 
