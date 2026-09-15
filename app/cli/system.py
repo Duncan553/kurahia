@@ -1,7 +1,7 @@
 """
 cli/system.py — Operational tooling.
 
-flask system status         — health check + pending counts
+flask system_cli status    — health check + pending counts
 flask system backup         — database backup (SQLite: file copy; Postgres: pg_dump)
 flask audit verify-chain    — walk the audit-log hash chain
 flask judge run-weekly      — fire the weekly ratio analysis

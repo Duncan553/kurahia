@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton, EmptyState, SearchInput, Button, useToastStore, ErrorBoundary, resortToday, resortDatePlus } from '@shared'
 import { useAuthStore } from '../stores/authStore'
+import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 
 interface VillaTab {
@@ -95,7 +96,13 @@ export default function VillaScreen() {
     ? tabs.filter(t => (t.reference ?? 'Villa Guest').toLowerCase().includes(searchQ.toLowerCase()))
     : tabs
 
+  // /bookings/availability is FRONT_DESK_LEVEL (3), and the Villa tile already
+// requires it — but a tile is not a lock. Typing the URL reached a screen
+// whose every query 403s, which renders as an empty villa board rather than
+// as a refusal.
   return (
+    <RequireRole minLevel={3}>
+
     <div className="min-h-screen p-4 md:p-6">
       <ErrorBoundary level="tile">
       <motion.div className="max-w-3xl mx-auto space-y-6"
@@ -295,5 +302,6 @@ export default function VillaScreen() {
       </motion.div>
       </ErrorBoundary>
     </div>
+    </RequireRole>
   )
 }

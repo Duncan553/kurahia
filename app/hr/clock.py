@@ -36,7 +36,7 @@ WIFI_REJECT_MSG = (
 WIFI_UNCONFIGURED_MSG = (
     "No staff network has been set up yet, so clock-in cannot verify anyone is "
     "on site. The owner needs to add the resort's network before anyone can "
-    "clock in. (Run `flask system status` to confirm.)"
+    "clock in. (Run `flask system_cli status` to confirm.)"
 )
 
 

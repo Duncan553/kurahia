@@ -484,6 +484,92 @@ def main():
     else:
         print(f"  ✓ all {checked} GET paths answer without a server error")
 
+    # ── Can the people who SEE a screen actually use it? ─────────────────────
+    #
+    # Nine times this session a control was offered to somebody the API then
+    # refused: the check-in tile, self-pay, the variance tab, stock-count, the
+    # cash tile, the STK-push level, the waiver level, the Gate hub, and the
+    # Events create button. Every one had the same shape — the screen's floor
+    # and the endpoint's floor disagreed — and none of the existing scans could
+    # see it, because they compare a tile against a screen and stop at the
+    # front door.
+    #
+    # This asks the API itself, as a real person at each level, rather than
+    # inferring from source. GET only: probing writes as five roles would
+    # change the data it is measuring.
+    #
+    # A 403 is only worth reporting when someone who can OPEN the screen gets
+    # it. Owner-private money is a deliberate wall, not a bug — the manager is
+    # refused /finance/dashboard on purpose, and no manager screen asks for it.
+    print("\nwhat each role gets from the endpoints their screens call:")
+
+    # The screen each path is called from, and that screen's own guard. A
+    # refusal only matters when the person could have OPENED the screen that
+    # asks — a waiter refused /audit/logs is the system working.
+    # The APP is a floor before any screen guard is. owner_pwa's AuthGate
+    # refuses anyone under role_level 10 at the door, which is why none of its
+    # screens carry a RequireRole of their own — and why the first version of
+    # this check reported a waiter being refused /audit/logs by the owner's
+    # Audit screen. A waiter cannot reach that screen; they cannot reach that
+    # APP. Reading the screen guard alone made 117 deliberate walls look like
+    # bugs, which is the same cry-wolf failure as the sweep's.
+    APP_FLOOR = {"owner_pwa": 10, "station_pwa": 0, "employee_pwa": 0, "shared_ui": 0}
+    guard_of = {}
+    for pkg, floor in APP_FLOOR.items():
+        src = Path(pkg) / "src"
+        if not src.exists():
+            continue
+        for f in src.rglob("*.tsx"):
+            m = re.search(r"<RequireRole\s+minLevel=\{(\d+)\}", f.read_text(errors="ignore"))
+            screen_floor = int(m.group(1)) if m else 0
+            # A screen reached through two apps takes the LOWER floor — that is
+            # the door the weakest person actually comes through.
+            lvl = max(floor, screen_floor)
+            guard_of[f.name] = min(guard_of.get(f.name, lvl), lvl)
+
+    ROLES = [("waiter", "ivan.kipchoge", 1), ("spa/water", "esther.kamau", 2),
+             ("front desk", "grace.muthoni", 3), ("manager", "brian.mwangi", 5),
+             ("owner", "amara.wanjiku", 10)]
+    real = []
+    with app.app_context():
+        c = app.test_client()
+        for label, username, level in ROLES:
+            u = db.session.query(User).filter_by(username=username).first()
+            if not u:
+                continue
+            h = {"Authorization": f"Bearer {create_access_token(identity=u.id)}"}
+            for path, methods in sorted(calls.items()):
+                if "GET" not in methods:
+                    continue
+                try:
+                    adapter.match(path, method="GET")
+                except Exception:
+                    continue
+                r = c.get(path, headers=h, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+                if r.status_code != 403:
+                    continue
+                # Which screens ask for it, and could this person have opened one?
+                for f in methods.get("GET", set()):
+                    name = Path(f).name
+                    if guard_of.get(name, 0) <= level:
+                        real.append((label, path, name))
+
+    # Known blind spot, stated rather than hidden: attribution is per FILE, so a
+    # path inside a section that only renders for managers — IncidentScreen's
+    # "All Incidents" list, for instance — still counts as called by everyone
+    # who can open the file. Reading the render condition would mean reading
+    # JSX control flow, which is where a checker starts lying. Better to over-
+    # report three and say so than to under-report the one that matters.
+    if real:
+        print(f"  ✗ {len(real)} case(s) where a role can open the screen but the"
+              f" endpoint behind it refuses them:")
+        print("     (per-file attribution — a path inside a manager-only SECTION"
+              " still lists here)")
+        for label, path, screen in real:
+            print(f"      {label:<11} {path:<42} {screen}")
+    else:
+        print("  ✓ every GET a screen makes is allowed to everyone that screen lets in")
+
     # ── Internal navigation ───────────────────────────────────────────────────
     # The API contract is only half of it. A screen can also navigate to one of
     # its OWN routes that no longer exists, and nothing complains: React Router

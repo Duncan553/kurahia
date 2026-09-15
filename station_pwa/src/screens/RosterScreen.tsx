@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, useToastStore, Skeleton } from '@shared'
+import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -58,7 +59,12 @@ export default function RosterScreen() {
   const departments = meta?.departments ?? []
   const isLoading = sLoad || rLoad
 
+  // /hr/roster is manager-only, and this screen is only ever offered from the
+// Manage grid, which is itself manager-only — so the guard was thought to be
+// somewhere else. Typing /manager/roster got in anyway.
   return (
+    <RequireRole minLevel={5}>
+
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-ink-primary font-serif">Today's Roster</h1>
@@ -117,5 +123,6 @@ export default function RosterScreen() {
         </div>
       )}
     </div>
+    </RequireRole>
   )
 }
