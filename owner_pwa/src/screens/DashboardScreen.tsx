@@ -363,28 +363,54 @@ function ResortHealthSection() {
     queryFn: () => api.get<OverviewData>('/dashboard/overview').then(r => r.data),
     staleTime: 5 * 60_000,
   })
+  // Real incidents — accidents, injuries, safety concerns — not judge alerts.
+  const { data: incidents = [] } = useQuery<{ actioned: boolean }[]>({
+    queryKey: ['dash-incidents'],
+    queryFn: () => api.get('/incidents').then(r => Array.isArray(r.data) ? r.data as { actioned: boolean }[] : []),
+    staleTime: 60_000,
+    retry: false,
+  })
+  const { data: gate } = useQuery<{ inside_now: number }>({
+    queryKey: ['dash-gate-today'],
+    queryFn: () => api.get('/gate/today-stats').then(r => r.data as { inside_now: number }),
+    staleTime: 60_000,
+    retry: false,
+  })
 
   /* Guest satisfaction score */
   const satisfactionScore = feedback?.overall_avg ? parseFloat(feedback.overall_avg).toFixed(1) : '—'
 
-  /* Spa utilization — derive from bookings occupancy_by_type */
-  const spaOccupancy = bookingsData?.occupancy_by_type?.['spa'] ?? bookingsData?.occupancy_by_type?.['SPA'] ?? 0
-  const spaUtilization = spaOccupancy > 0 ? Math.min(spaOccupancy * 10, 100) : 0
-
-  /* Dining reservations — arrivals today as proxy */
-  const diningReservations = overview?.bookings.arrivals_today ?? 0
-
-  /* Active incidents */
-  const activeIncidents = alerts.length
+  /* Resort Health — four numbers, each of which is a real measurement.
+   *
+   * It used to be two invented ones and a mislabelled one:
+   *
+   *   "Spa Utilization"      was occupancy_by_type['spa'] * 10, capped at 100.
+   *                          There is no 'spa' key — the API returns
+   *                          {'VILLA': 6} — so it read 0% forever, and had the
+   *                          key existed the number would still have been a
+   *                          made-up multiple of a room count.
+   *   "Dining Reservations"  was arrivals_today, labelled as something else.
+   *   "Incidents ... Active" was alerts.length — the JUDGE's theft alerts,
+   *                          under the word Incidents. So two guests hurt at
+   *                          the jet ski dock and the pool steps, neither
+   *                          acknowledged, showed on the owner's front page as
+   *                          "Incidents 0 Active".
+   *
+   * A dashboard that invents a number teaches its reader to trust none of
+   * them. Every tile below now names exactly what it counts.
+   */
+  const openIncidents = incidents.filter(i => !i.actioned).length
+  const arrivalsToday = overview?.bookings.arrivals_today ?? 0
+  const insideNow = gate?.inside_now
 
   /* Department breakdown */
   const deptScores = feedback?.by_department ?? []
 
   const metrics = [
     { label: 'Guest Satisfaction', value: satisfactionScore, sub: '/ 5.0' },
-    { label: 'Spa Utilization', value: `${spaUtilization}%`, sub: '' },
-    { label: 'Dining Reservations', value: String(diningReservations), sub: '' },
-    { label: 'Incidents', value: String(activeIncidents), sub: 'Active' },
+    { label: 'Arrivals Today',     value: String(arrivalsToday), sub: 'checking in' },
+    { label: 'Guests Inside',      value: insideNow === undefined ? '—' : String(insideNow), sub: 'on wristbands' },
+    { label: 'Open Incidents',     value: String(openIncidents), sub: 'not yet actioned' },
   ]
 
   return (
@@ -531,7 +557,24 @@ function BudgetBurnTile() {
 }
 
 interface CalendarEntry { id: string; title: string; date: string; is_peak: boolean; type: string }
-interface CalendarData { calendar_entries: CalendarEntry[]; events: { id: string; name: string; date: string }[] }
+// `events` carries title/starts_at, NOT name/date. The interface asserted the
+// wrong names and TypeScript believed it — an API shape is a claim, not a
+// check — so every upcoming event drew a bullet with two blank lines beside
+// it: a wedding on the owner's front page, invisible.
+interface CalendarData {
+  calendar_entries: CalendarEntry[]
+  events: { id: string; title: string; starts_at: string; status?: string }[]
+}
+
+// These are DATES. Rendering them through the device's clock moves a holiday
+// by a day either side of UTC — the same trap the station calendar had.
+function fmtWhen(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('en-KE', {
+    weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC',
+  })
+}
 
 function CalendarTile() {
   const { data, isLoading, isError } = useQuery<CalendarData>({
@@ -557,7 +600,7 @@ function CalendarTile() {
               <span className={`shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full ${e.is_peak ? 'bg-status-failed' : 'bg-status-neutral'}`} />
               <div className="min-w-0">
                 <p className="text-xs font-medium text-ink-primary truncate">{e.title}</p>
-                <p className="text-[10px] text-ink-tertiary">{e.date}</p>
+                <p className="text-[10px] text-ink-tertiary">{fmtWhen(e.date)}</p>
               </div>
             </div>
           ))}
@@ -565,8 +608,8 @@ function CalendarTile() {
             <div key={e.id} className="flex items-start gap-2">
               <span className="shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full bg-primary-main" />
               <div className="min-w-0">
-                <p className="text-xs font-medium text-ink-primary truncate">{e.name}</p>
-                <p className="text-[10px] text-ink-tertiary">{e.date}</p>
+                <p className="text-xs font-medium text-ink-primary truncate">{e.title}</p>
+                <p className="text-[10px] text-ink-tertiary">{fmtWhen(e.starts_at)}</p>
               </div>
             </div>
           ))}
