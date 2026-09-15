@@ -134,13 +134,38 @@ def issue_band(actor_id: str, method: str, mpesa_code: str | None,
 
 # ── Deactivation / forfeit ────────────────────────────────────────────────────
 
+class BandDebtError(Exception):
+    """Raised when a band is closed while the guest still owes money."""
+
+
 def close_band(band: Wristband, actor_id: str,
-               new_status: str, reason: str | None = None) -> None:
+               new_status: str, reason: str | None = None,
+               allow_debt: bool = False) -> None:
     """
     Close a band: set status, close its tab. Used for both DEACTIVATED and FORFEITED.
     Unused credit is forfeit — no refund logic exists or will be added.
+
+    Forfeiting CREDIT and writing off a DEBT are opposite things, and this
+    function used to do both. It imported get_tab_balance and never read it, so
+    "Deactivate Band — guest leaving" closed the tab whatever the balance was:
+    a guest who had spent 3,500 against a 3,000 band walked out owing 500, the
+    tab went CLOSED, and that 500 left every list of money still owed. Found by
+    pressing the button on band #5 with "Outstanding balance — guest must settle
+    before leaving" printed on the screen right above it.
+
+    A debt now blocks the close. The end-of-day sweep passes allow_debt=True —
+    it must not stall on one unpaid band — and records what it wrote off.
     """
     from app.services.tab import get_tab_balance
+
+    if not allow_debt:
+        balance = get_tab_balance(band.tab_id)
+        if balance > Decimal("0"):
+            raise BandDebtError(
+                f"Band #{band.band_number} still owes KSh {balance:,.2f}. "
+                f"Take the payment first — then close the band."
+            )
+
     band.status = new_status
     band.deactivated_at_utc = datetime.now(timezone.utc)
     band.deactivated_by_id = actor_id
@@ -173,7 +198,14 @@ def forfeit_day(date_str: str, actor_id: str) -> tuple[int, Decimal]:
         # balance < 0 means credit remaining (unused portion of entry fee)
         if balance < Decimal("0"):
             total_unused += abs(balance)
-        close_band(band, actor_id, WristbandStatus.FORFEITED.value, "EOD forfeit")
+        # A band still owing at the sweep is a debt nobody collected. The sweep
+        # closes it (it cannot leave bands open overnight) but says so in the
+        # band's own notes, so the morning has something to read.
+        reason = "EOD forfeit"
+        if balance > Decimal("0"):
+            reason = f"EOD forfeit — UNPAID KSh {balance:,.2f} written off"
+        close_band(band, actor_id, WristbandStatus.FORFEITED.value, reason,
+                   allow_debt=True)
         count += 1
     return count, total_unused
 

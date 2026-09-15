@@ -7,8 +7,10 @@ Role levels:
   MANAGER_LEVEL = 5 (reconciliation + headcount reporting)
 """
 import uuid
+from decimal import Decimal
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
+from sqlalchemy import func
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
 from app.extensions import db
@@ -18,6 +20,7 @@ from app.models.gate_headcount import GateHeadcount
 from app.models.payment import PaymentMethod
 from app.models.audit_log import AuditLog
 from app.services.gate import (
+    BandDebtError,
     issue_band, close_band, forfeit_day,
     get_band_by_number, get_active_bands, get_reconciliation, check_gate_signals,
 )
@@ -49,6 +52,18 @@ def _band_dict(band: Wristband, include_balance: bool = False) -> dict:
     }
     if include_balance:
         d["tab_balance"] = str(get_tab_balance(band.tab_id))
+        # What the guest paid in, and what they have spent — the two numbers a
+        # printed band has to carry. The balance alone cannot say them: it is
+        # one net figure, so a band that has spent its whole 3,000 and a band
+        # that was never loaded both read 0. The gate slip prints all three.
+        from app.models.payment import Payment
+        from app.models.charge import Charge
+        paid_in = db.session.query(func.coalesce(func.sum(Payment.amount), 0)).filter(
+            Payment.tab_id == band.tab_id).scalar()
+        spent = db.session.query(func.coalesce(func.sum(Charge.amount), 0)).filter(
+            Charge.tab_id == band.tab_id).scalar()
+        d["paid_in"] = str(Decimal(str(paid_in)))
+        d["spent"]   = str(Decimal(str(spent)))
     return d
 
 
@@ -123,9 +138,15 @@ def deactivate_band(band_number):
     if not band:
         return jsonify({"error": f"No active band #{band_number} found for today."}), 404
 
-    close_band(band, actor.id, WristbandStatus.DEACTIVATED.value,
-               reason=request.get_json(silent=True, force=True) and
-               (request.get_json() or {}).get("notes"))
+    # A guest who still owes cannot simply be closed out — the debt would be
+    # closed with the tab and vanish from every list of money still owed.
+    try:
+        close_band(band, actor.id, WristbandStatus.DEACTIVATED.value,
+                   reason=(request.get_json(silent=True) or {}).get("notes"))
+    except BandDebtError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
+
     db.session.flush()
     AuditLog.log(actor=actor.username, action="gate.deactivate_band",
                  details=f"band={band_number}")
