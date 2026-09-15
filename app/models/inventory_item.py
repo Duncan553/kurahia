@@ -44,6 +44,18 @@ class InventoryItem(db.Model):
     pack_unit = db.Column(db.String(30), nullable=True)
     category  = db.Column(db.String(50), nullable=True)
 
+    # ── How this is BOUGHT ───────────────────────────────────────────────────
+    # Stock is counted in `unit` (bottle, kg), but nobody buys a bottle of
+    # Tusker — they buy a crate of 25, a box of 24 waters, a bale of flour.
+    # Receiving used to mean doing that multiplication in your head and typing
+    # 150, which is where "6 crates" quietly becomes 120 or 250 bottles and the
+    # count never reconciles again.
+    #
+    # purchase_pack_size is how many `unit`s are in one pack: crate = 25 bottles.
+    # NULL means the item is bought in its own unit (a kg of onions is a kg).
+    purchase_pack_name = db.Column(db.String(30), nullable=True)   # "crate", "box", "bale"
+    purchase_pack_size = db.Column(db.Numeric(12, 4), nullable=True)  # 25
+
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
     # Server-stamped at catalog creation — used for "new item" trust-tier criterion
@@ -61,6 +73,19 @@ class InventoryItem(db.Model):
         db.UniqueConstraint("name", "department_id", name="uq_item_name_dept"),
         db.CheckConstraint("reorder_level >= 0", name="ck_item_reorder_nonneg"),
     )
+
+    def pack_to_stock(self, packs: Decimal) -> Decimal:
+        """Convert a bought quantity to stock units. 6 crates → 150 bottles.
+
+        The mirror of recipe_to_stock: one turns what the CHEF says into stock,
+        this turns what the SUPPLIER delivers into stock. Both exist so the
+        ledger can hold one canonical unit while the people using it speak
+        their own — crates at the door, bottles on the shelf, millilitres in
+        the glass.
+        """
+        if self.purchase_pack_size and Decimal(str(self.purchase_pack_size)) > 0:
+            return packs * Decimal(str(self.purchase_pack_size))
+        return packs
 
     def recipe_to_stock(self, recipe_qty: Decimal) -> Decimal:
         """Convert a recipe quantity to stock units. 50ml recipe → 0.0667 bottles (pack_size=750)."""

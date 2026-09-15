@@ -21,7 +21,12 @@ import { Input, Select, FormField, Button, useToastStore, ErrorBoundary, EmptySt
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 
-interface InvItem { id: string; name: string; unit: string; cost_per_unit: string | null }
+interface InvItem {
+  id: string; name: string; unit: string; cost_per_unit: string | null
+  // How the item ARRIVES: 1 crate = 25 bottles. Null for anything bought in
+  // its own unit — a kg of onions is a kg.
+  purchase_pack_name: string | null; purchase_pack_size: string | null
+}
 interface Supplier { id: string; name: string; is_active: boolean }
 interface PurchaseReq {
   id: string; item_id: string; item_name?: string
@@ -38,6 +43,10 @@ export default function PurchaseRecordScreen() {
 
   const [itemId,    setItemId]    = useState('')
   const [qty,       setQty]       = useState('')
+  // Count what the supplier actually handed over. Six crates is six crates;
+  // making a storeman multiply by 25 in his head at the delivery door is how
+  // "6 crates" becomes 120 or 250 bottles and the count never reconciles again.
+  const [inPacks,   setInPacks]   = useState(true)
   const [cost,      setCost]      = useState('')
   const [supplier,  setSupplier]  = useState('')
   const [reqId,     setReqId]     = useState('')
@@ -70,11 +79,25 @@ export default function PurchaseRecordScreen() {
   // Unit cost is what actually lands on the ingredient. Showing it live means
   // a fat-fingered total is caught here rather than three months into a margin
   // report that quietly reads wrong.
+  // The pack, if this item has one, and whether we are currently counting in it.
+  const pack     = useMemo(() => {
+    const n = item?.purchase_pack_name, sz = parseFloat(item?.purchase_pack_size ?? '')
+    return n && sz > 0 ? { name: n, size: sz } : null
+  }, [item])
+  const usingPack = !!pack && inPacks
+
+  // What actually goes on the shelf: 6 crates → 150 bottles.
+  const stockQty = useMemo(() => {
+    const q = parseFloat(qty)
+    if (!q || q <= 0) return null
+    return usingPack ? q * pack!.size : q
+  }, [qty, usingPack, pack])
+
   const unitCost = useMemo(() => {
-    const q = parseFloat(qty), c = parseFloat(cost)
-    if (!q || q <= 0 || isNaN(c)) return null
-    return c / q
-  }, [qty, cost])
+    const c = parseFloat(cost)
+    if (!stockQty || isNaN(c)) return null
+    return c / stockQty
+  }, [stockQty, cost])
 
   const save = useMutation({
     mutationFn: async () => {
@@ -84,7 +107,8 @@ export default function PurchaseRecordScreen() {
       const { data: up } = await api.post<{ path: string }>('/uploads/receipt', form)
       return api.post('/inventory/purchases', {
         item_id: itemId,
-        quantity: qty,
+        // Always stored in the item's own unit — the ledger holds one language.
+        quantity: String(stockQty ?? qty),
         actual_cost: cost,
         supplier_name: supplier.trim() || null,
         purchase_request_id: reqId || null,
@@ -93,7 +117,10 @@ export default function PurchaseRecordScreen() {
       })
     },
     onSuccess: () => {
-      addToast({ type: 'success', message: `Purchase recorded. ${item?.name ?? 'Stock'} is up by ${qty} ${item?.unit ?? ''}.` })
+      addToast({ type: 'success',
+        message: `Purchase recorded. ${item?.name ?? 'Stock'} is up by `
+          + `${stockQty ?? qty} ${item?.unit ?? ''}`
+          + (usingPack ? ` (${qty} ${pack!.name}${parseFloat(qty) === 1 ? '' : 's'}).` : '.') })
       setItemId(''); setQty(''); setCost(''); setSupplier(''); setReqId(''); setReceipt(null)
       setIdemKey(crypto.randomUUID())
       qc.invalidateQueries({ queryKey: ['inv-items'] })
@@ -172,9 +199,30 @@ export default function PurchaseRecordScreen() {
               </FormField>
 
               <div className="grid grid-cols-2 gap-3">
-                <FormField label={`Quantity${item ? ` (${item.unit})` : ''}`} htmlFor="qty" required>
+                <FormField
+                  label={`Quantity${item ? ` (${usingPack ? pack!.name + 's' : item.unit})` : ''}`}
+                  htmlFor="qty" required>
                   <Input id="qty" required type="number" min="0" step="0.001" inputMode="decimal"
                     placeholder="0" value={qty} onChange={e => setQty(e.target.value)} />
+                  {pack && (
+                    <div className="flex gap-1 mt-1.5">
+                      {[[true, `${pack.name}s`], [false, `${item!.unit}s`]].map(([v, label]) => (
+                        <button key={String(v)} type="button"
+                          onClick={() => setInPacks(v as boolean)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
+                            inPacks === v
+                              ? 'bg-primary-main text-white border-primary-main'
+                              : 'border-white/15 text-ink-tertiary hover:text-ink-secondary'
+                          }`}>
+                          {label as string}
+                        </button>
+                      ))}
+                      <span className="self-center text-[11px] text-ink-tertiary ml-1">
+                        1 {pack.name} = {pack.size} {item!.unit}
+                        {usingPack && stockQty ? ` → ${stockQty} ${item!.unit}` : ''}
+                      </span>
+                    </div>
+                  )}
                 </FormField>
                 <FormField label="Total paid (KSh)" htmlFor="cost" required>
                   <Input id="cost" required type="number" min="0" step="0.01" inputMode="decimal"

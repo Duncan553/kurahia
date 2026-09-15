@@ -4,6 +4,7 @@ Disable never delete — is_active=False removes from operational views.
 Catalog changes (add / disable / enable) notify the owner via the notification dispatcher.
 """
 import uuid
+from decimal import Decimal
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -18,12 +19,35 @@ from app.services.stock import get_current_stock
 
 items_bp = Blueprint("inv_items", __name__, url_prefix="/inventory/items")
 
+# Two different questions, and the confusion between them is what makes a stock
+# system unusable:
+#
+#   pack_size / pack_unit      — how one STOCK unit breaks down for a recipe.
+#                                One bottle of vodka is 750 ml, so a 45 ml tot
+#                                is 0.06 of a bottle.
+#   purchase_pack_*            — how the item ARRIVES. Nobody buys a bottle of
+#                                Tusker; they buy a crate of 25.
+#
+# Defaults only. Every one of them is editable per item, because a supplier's
+# crate is whatever that supplier says it is, and an onion in Juja is not the
+# same size as an onion in a textbook.
 CATEGORY_PACK_DEFAULTS = {
-    "spirit":      {"pack_size": 750, "pack_unit": "ml"},
-    "wine":        {"pack_size": 750, "pack_unit": "ml"},
-    "beer":        {"pack_size": 1,   "pack_unit": None},
-    "soda":        {"pack_size": 300, "pack_unit": "ml"},
-    "mixer":       {"pack_size": 300, "pack_unit": "ml"},
+    # name:        recipe breakdown            how it is bought
+    "spirit":      {"pack_size": 750, "pack_unit": "ml",
+                    "purchase_pack_name": "case",  "purchase_pack_size": 12},
+    "wine":        {"pack_size": 750, "pack_unit": "ml",
+                    "purchase_pack_name": "case",  "purchase_pack_size": 12},
+    # A Kenyan returnable beer crate is 25 × 500 ml. (Cans come in 24s — that
+    # is a different pack, and getting the two mixed up is a 1-bottle-a-crate
+    # drift that nobody can ever explain at a stock take.)
+    "beer":        {"pack_size": 1,   "pack_unit": None,
+                    "purchase_pack_name": "crate", "purchase_pack_size": 25},
+    "soda":        {"pack_size": 300, "pack_unit": "ml",
+                    "purchase_pack_name": "crate", "purchase_pack_size": 24},
+    "water":       {"pack_size": 500, "pack_unit": "ml",
+                    "purchase_pack_name": "box",   "purchase_pack_size": 24},
+    "mixer":       {"pack_size": 300, "pack_unit": "ml",
+                    "purchase_pack_name": "crate", "purchase_pack_size": 24},
     "honey":       {"pack_size": 1000, "pack_unit": "g"},
     "syrup":       {"pack_size": 1000, "pack_unit": "g"},
 }
@@ -105,6 +129,8 @@ def create_item():
     category    = (data.get("category") or "").strip() or None
     pack_size   = data.get("pack_size")
     pack_unit   = (data.get("pack_unit") or "").strip() or None
+    pp_name     = (data.get("purchase_pack_name") or "").strip() or None
+    pp_size     = data.get("purchase_pack_size")
 
     if not name or not unit or not dept_id:
         return jsonify({"error": "name, unit, and department_id are required"}), 400
@@ -115,11 +141,16 @@ def create_item():
         return jsonify({"error": "Department not found or disabled."}), 404
 
     # Smart defaults: when category is set but pack_size isn't, apply known defaults
-    if category and pack_size is None:
+    if category:
         defaults = CATEGORY_PACK_DEFAULTS.get(category.lower())
         if defaults:
-            pack_size = pack_size or defaults["pack_size"]
-            pack_unit = pack_unit or defaults["pack_unit"]
+            if pack_size is None:
+                pack_size = defaults.get("pack_size")
+                pack_unit = pack_unit or defaults.get("pack_unit")
+            # How it is bought, filled in the same way and just as editable.
+            if pp_size is None:
+                pp_name = pp_name or defaults.get("purchase_pack_name")
+                pp_size = defaults.get("purchase_pack_size")
 
     existing = db.session.query(InventoryItem).filter_by(name=name, department_id=dept_id).first()
     if existing:
@@ -136,6 +167,8 @@ def create_item():
             category=category,
             pack_size=str(pack_size) if pack_size is not None else None,
             pack_unit=pack_unit,
+            purchase_pack_name=pp_name,
+            purchase_pack_size=str(pp_size) if pp_size is not None else None,
         )
         db.session.add(item)
 
@@ -178,9 +211,37 @@ def edit_item(item_id):
         if "category" in data:
             item.category = data["category"].strip() if data["category"] else None
         if "pack_size" in data:
+            # Changing how a stock unit breaks down REINTERPRETS every recipe
+            # written against it. A burger holding "0.05" of Onions means 0.05
+            # KG while onions have no pack; the moment you say a kg is 7 onions,
+            # that same 0.05 means a twentieth of an onion, and the burger
+            # quietly stops consuming anything. The recipe did not change — the
+            # language it is written in did — so the numbers are translated to
+            # keep every dish consuming exactly what it consumed before.
+            from app.models.recipe_line import RecipeLine
+            old_pack = Decimal(str(item.pack_size)) if item.pack_size else Decimal("1")
+            new_pack = (Decimal(str(data["pack_size"]))
+                        if data["pack_size"] is not None else Decimal("1"))
             item.pack_size = str(data["pack_size"]) if data["pack_size"] is not None else None
+            if new_pack > 0 and old_pack > 0 and new_pack != old_pack:
+                factor = new_pack / old_pack
+                lines = db.session.query(RecipeLine).filter_by(
+                    inventory_item_id=item.id, is_active=True).all()
+                for rl in lines:
+                    rl.quantity = Decimal(str(rl.quantity)) * factor
+                    if data.get("pack_unit"):
+                        rl.unit = str(data["pack_unit"])
+                if lines:
+                    AuditLog.log(actor=actor.username, action="inventory.recipe.rescale",
+                                 target=item.name,
+                                 details=f"{len(lines)} recipe line(s) x{factor}")
         if "pack_unit" in data:
             item.pack_unit = data["pack_unit"].strip() if data["pack_unit"] else None
+        if "purchase_pack_name" in data:
+            item.purchase_pack_name = (data["purchase_pack_name"] or "").strip() or None
+        if "purchase_pack_size" in data:
+            item.purchase_pack_size = (str(data["purchase_pack_size"])
+                                       if data["purchase_pack_size"] is not None else None)
 
     AuditLog.log(actor=actor.username, action="inventory.item.edit", target=item.name)
     db.session.commit()
@@ -245,6 +306,8 @@ def list_items():
             "pack_size":      str(it.pack_size) if it.pack_size is not None else None,
             "pack_unit":      it.pack_unit,
             "category":       it.category,
+            "purchase_pack_name": it.purchase_pack_name,
+            "purchase_pack_size": str(it.purchase_pack_size) if it.purchase_pack_size is not None else None,
         }
         if for_count:
             tier, reason = compute_trust_tier(it)
