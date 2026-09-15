@@ -40,6 +40,133 @@ const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error
   ?? 'Something went wrong. Try again.'
 
+/**
+ * Equipment — the craft and kit a guest is put on or handed.
+ *
+ * POST /equipment has existed since Phase A with no caller in any app, so the
+ * water post's pre-use safety check — the one thing standing between a guest
+ * and a jet ski with no kill-switch lanyard — could never run: its screen said
+ * "No equipment configured. Ask the owner to add equipment records first" and
+ * the owner had nowhere to add them.
+ *
+ * The types below are the ones with a checklist behind them
+ * (app/equipment/safety_templates.py). Anything else is accepted by the API but
+ * has no checklist, so the safety screen would have nothing to ask.
+ */
+const EQUIPMENT_TYPES = [
+  { value: 'jetski',      label: 'Jet ski' },
+  { value: 'motorboat',   label: 'Motorboat' },
+  { value: 'paddle_boat', label: 'Paddle boat' },
+  { value: 'bicycle',     label: 'Bicycle' },
+]
+
+interface EquipmentRow {
+  id: string
+  name: string
+  equipment_type: string
+  status: string
+  is_active: boolean
+  is_due_service?: boolean
+}
+
+function EquipmentSection() {
+  const qc = useQueryClient()
+  const addToast = useToastStore(s => s.addToast)
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const [type, setType] = useState('jetski')
+  const [interval, setInterval_] = useState('')
+
+  const { data: items = [], isLoading } = useQuery<EquipmentRow[]>({
+    queryKey: ['equipment'],
+    queryFn: () => api.get<EquipmentRow[]>('/equipment').then(r => Array.isArray(r.data) ? r.data : []),
+    staleTime: 60_000,
+  })
+
+  const createMut = useMutation({
+    mutationFn: () => api.post('/equipment', {
+      name: name.trim(),
+      equipment_type: type,
+      service_interval_days: interval ? parseInt(interval, 10) : undefined,
+    }).then(r => r.data),
+    onSuccess: () => {
+      addToast({ type: 'success', message: `${name.trim()} added. The water post can check it before use.` })
+      setName(''); setInterval_(''); setAdding(false)
+      qc.invalidateQueries({ queryKey: ['equipment'] })
+    },
+    onError: (e) => addToast({ type: 'error',
+      message: (e as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Could not add that.' }),
+  })
+
+  const disableMut = useMutation({
+    mutationFn: (eq: EquipmentRow) => api.post(`/equipment/${eq.id}/disable`),
+    onSuccess: () => {
+      addToast({ type: 'success', message: 'Taken out of service.' })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
+    },
+  })
+
+  return (
+    <section className="mt-10">
+      <header className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">What we put guests on</p>
+          <h2 className="text-2xl font-bold font-serif text-ink-primary">Equipment</h2>
+          <p className="text-sm text-ink-secondary mt-1">
+            Each one gets a pre-use safety check at the water post before a guest touches it.
+          </p>
+        </div>
+        <Button variant="ghost" onClick={() => setAdding(a => !a)}>{adding ? 'Cancel' : '+ Add'}</Button>
+      </header>
+
+      {adding && (
+        <form
+          onSubmit={e => { e.preventDefault(); if (name.trim()) createMut.mutate() }}
+          className="glass-card rounded-2xl p-4 mb-4 space-y-3">
+          <Input label="Name" placeholder="e.g. Jet ski #2" value={name}
+            onChange={e => setName(e.target.value)} />
+          <Select label="Type" value={type} onChange={e => setType(e.target.value)}
+            options={EQUIPMENT_TYPES} />
+          <Input label="Service every (days, optional)" type="number" min="1"
+            placeholder="e.g. 90" value={interval}
+            onChange={e => setInterval_(e.target.value)} />
+          <Button type="submit" disabled={!name.trim() || createMut.isPending}>
+            Add equipment
+          </Button>
+        </form>
+      )}
+
+      {isLoading ? (
+        <p className="text-sm text-ink-tertiary">Loading…</p>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-ink-tertiary">
+          Nothing registered yet. The water post cannot run a safety check until a boat or
+          jet ski is on this list.
+        </p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {items.map(eq => (
+            <div key={eq.id} className="glass-card rounded-2xl p-4 flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-semibold text-ink-primary truncate">{eq.name}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary-dark mt-0.5">
+                  {EQUIPMENT_TYPES.find(t => t.value === eq.equipment_type)?.label ?? eq.equipment_type}
+                  {eq.is_due_service ? ' · service due' : ''}
+                </p>
+              </div>
+              <button onClick={() => disableMut.mutate(eq)}
+                className="text-[11px] px-2 py-1 rounded-lg text-ink-tertiary hover:underline shrink-0">
+                Out of service
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function ResourcesScreen() {
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
@@ -243,6 +370,7 @@ export default function ResourcesScreen() {
               <Button type="submit" loading={editMut.isPending} disabled={!f.name.trim()}>Save changes</Button>
             </form>
           </Modal>
+          <EquipmentSection />
         </div>
       </ErrorBoundary>
     </RequireRole>
