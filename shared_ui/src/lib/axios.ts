@@ -13,6 +13,13 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
   if (token) config.headers.Authorization = `Bearer ${token}`
+  // A FormData body must carry multipart/form-data WITH the boundary the
+  // browser generates. The instance-wide JSON header above overrode that, so
+  // every upload (purchase receipts, menu photos, villa pictures, profile
+  // photos) reached Flask with no parsable file and came back 400 "No file
+  // uploaded" — a purchase cannot be recorded at all, since the receipt is
+  // mandatory. Deleting the header here lets the browser set its own.
+  if (config.data instanceof FormData) delete config.headers['Content-Type']
   return config
 })
 
