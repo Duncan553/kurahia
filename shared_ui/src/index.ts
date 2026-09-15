@@ -1,3 +1,4 @@
+export { imageUrl } from './lib/imageUrl'
 export { Avatar, initialsFor } from './components/Avatar'
 export type { AvatarProps, AvatarSize } from './components/Avatar'
 

@@ -20,6 +20,10 @@ function bypassPageNavigations(req: { headers: Record<string, string | string[] 
 }
 
 const PROXIED_PATHS = [
+  // Uploaded photos are served by the API (app/uploads serve_image), not
+  // from this app's public/ folder — without the proxy Vite answers an <img>
+  // with index.html and the picture renders broken.
+  '/images',
   '/auth', '/hr', '/notifications', '/conduct', '/suggestions', '/health', '/inventory',
   '/gate', '/bookings', '/bookable-resources', '/booking-payments', '/front-desk',
   '/waivers', '/tabs', '/orders', '/order-items', '/receipts',

@@ -173,8 +173,11 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(guests_bp)
     app.register_blueprint(dashboard_bp)
 
-    from app.uploads import uploads_bp
+    from app.uploads import uploads_bp, images_bp
     app.register_blueprint(uploads_bp)
+    # Uploaded photos are served by the API, not by whichever PWA happens to
+    # own a public/ folder — see app/uploads/__init__.py for what that cost.
+    app.register_blueprint(images_bp)
 
     from app.events import events_bp, event_types_bp
     app.register_blueprint(events_bp)

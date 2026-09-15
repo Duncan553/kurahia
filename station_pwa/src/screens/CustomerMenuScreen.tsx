@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { ErrorBoundary } from '@shared'
+import { ErrorBoundary, imageUrl } from '@shared'
 import api from '../lib/axios'
 
 interface MenuItem {
@@ -72,7 +72,7 @@ export default function CustomerMenuScreen() {
                     {/* Photo */}
                     <div className="h-28 bg-gradient-to-br from-white/5 to-transparent flex items-center justify-center">
                       {item.image_path ? (
-                        <img src={item.image_path} alt={item.name} className="w-full h-full object-cover" />
+                        <img src={imageUrl(item.image_path)} alt={item.name} className="w-full h-full object-cover" />
                       ) : (
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="opacity-20 text-ink-tertiary">
                           <path d="M3 6l3 6v8M8 6c0 3-1.5 5-3 6M12 3v18M16 6c0 3 1.5 5 3 6M21 6l-3 6v8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

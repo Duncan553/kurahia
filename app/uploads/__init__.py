@@ -1,15 +1,25 @@
 """
 uploads/ — File upload endpoints for images (menu, profile, receipt, villa).
 
-All uploaded files go to the PWA's public/images/ directory so they're
-served statically by Vite dev server and precached by the service worker.
+Files are written under one storage root (employee_pwa/public/images/... for
+historical reasons; override with UPLOAD_ROOT) and SERVED BACK BY THIS API at
+GET /images/<folder>/<file>.
 
-Supports: JPEG, PNG, WebP. Max 5MB per file.
+They used to be served only by whichever Vite dev server happened to own that
+public/ folder. That worked for exactly one app: a photo uploaded from the
+station app landed in the employee app's folder, so the menu — drawn by the
+station app and the waiter screens — asked its own origin for a file that was
+never there. Vite answered 200 with index.html (SPA fallback), so the <img>
+got HTML instead of a JPEG and every guest-facing picture rendered broken with
+nothing in the console to say why. In production it is worse: dist/ is built
+once, and nothing uploaded afterwards can ever appear in it.
+
+Supports: JPEG, PNG, WebP. Max 5MB per file, downscaled to 1200px on save.
 """
 import os
 import uuid
 from pathlib import Path
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, send_from_directory, abort
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user
 from app.extensions import db
@@ -71,6 +81,50 @@ def _upload_dir(category: str) -> Path:
     return path
 
 
+# Longest edge a stored image is allowed to keep. A phone camera hands over a
+# 4000px, 4MB photo; the menu screen then loads nineteen of them at once over
+# resort wifi and the tablet stops responding — which is exactly what happened
+# the first time real pictures went in. 1200px is larger than any tile the apps
+# draw, so nothing looks soft.
+MAX_EDGE = 1200
+JPEG_QUALITY = 82
+
+
+def _shrink(path: Path) -> None:
+    """Downscale and re-encode in place. Never fails an upload.
+
+    Pillow is optional: if it is missing the file simply stays as uploaded,
+    because a big photo is worth more than a refused purchase receipt.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        return
+    try:
+        with Image.open(path) as img:
+            img.load()
+            fmt = (img.format or "").upper()
+            too_big = max(img.size) > MAX_EDGE
+            if not too_big and path.stat().st_size <= 400_000:
+                return
+            # Transparency cannot survive JPEG, so flatten onto white rather
+            # than let it turn black.
+            if img.mode in ("RGBA", "LA", "P"):
+                img = img.convert("RGBA")
+                flat = Image.new("RGB", img.size, (255, 255, 255))
+                flat.paste(img, mask=img.split()[-1])
+                img = flat
+            else:
+                img = img.convert("RGB")
+            if too_big:
+                img.thumbnail((MAX_EDGE, MAX_EDGE), Image.LANCZOS)
+            img.save(path, "JPEG", quality=JPEG_QUALITY, optimize=True)
+    except Exception:
+        # A file Pillow cannot read is still a file the guest may have meant to
+        # send. Leave it exactly as it arrived.
+        return
+
+
 @uploads_bp.post("/<category>")
 @require_active_user
 def upload_file(category):
@@ -105,6 +159,7 @@ def upload_file(category):
     unique_name = f"{uuid.uuid4().hex[:12]}.{ext}"
     dest = _upload_dir(category) / unique_name
     file.save(str(dest))
+    _shrink(dest)
 
     # Derive the URL from where the file ACTUALLY went, not from the category
     # name. Those two disagree: UPLOAD_TARGETS maps "profile" -> images/profiles,
@@ -123,3 +178,25 @@ def upload_file(category):
     db.session.commit()
 
     return jsonify({"path": public_path, "filename": unique_name}), 201
+
+
+# Folder name -> category, so the URL the upload handed back resolves to the
+# same directory the file went into. One map, both directions.
+_FOLDER_TO_CATEGORY = {t.rsplit("/", 1)[-1]: c for c, t in UPLOAD_TARGETS.items()}
+
+
+images_bp = Blueprint("images", __name__, url_prefix="/images")
+
+
+@images_bp.get("/<folder>/<path:filename>")
+def serve_image(folder, filename):
+    """Serve an uploaded image.
+
+    Public on purpose: these are menu photographs and villa pictures shown to
+    guests on the kiosk before anybody signs in. send_from_directory refuses
+    paths that escape the directory, so a filename cannot walk the disk.
+    """
+    category = _FOLDER_TO_CATEGORY.get(folder)
+    if not category:
+        abort(404)
+    return send_from_directory(_upload_dir(category), filename, max_age=60 * 60 * 24 * 30)
