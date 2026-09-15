@@ -1,11 +1,13 @@
-# Waterfront — Resort Operations
+# Kurahia — Resort Operations
 
 A complete operating system for a boutique resort: point of sale, stock, staff,
 bookings, gate wristbands and the owner's books, in one codebase. Every sale,
 shift and shilling is recorded once, by the person who was standing there, and
 the owner can read the whole property from a phone.
 
-Built and run for a lakeside resort in Juja, Kenya.
+Built for, and running at, Waterfront Juja — a lakeside resort in Juja Farm,
+Kiambu. Designed and built solo: backend, three front ends, test suite and
+deployment.
 
 **1,441 automated tests · a full simulated working day green at 38/38 · 70
 dashboards and tills opened as the person who uses each one**
@@ -196,5 +198,5 @@ anti-theft playbook — are deliberately kept out of this repository. They hold
 no credentials, but they describe what the system does *not* catch, and that is
 not something to publish.
 
-Licensed for the property it was built for. The author retains the underlying
+Licensed to the property it was built for. The author retains the underlying
 software.
