@@ -20,16 +20,16 @@
  * throwing.
  *
  * Run against live dev servers:
- *   backend :5000   employee :5173   owner :5174   station :5176
+ *   backend :5000   employee :5179   owner :5178   station :5177
  */
 import { test, expect, Page, BrowserContext } from '@playwright/test'
 import fs from 'fs'
 import path from 'path'
 
 const API      = 'http://localhost:5000'
-const EMPLOYEE = 'http://localhost:5173'
-const OWNER    = 'http://localhost:5174'
-const STATION  = 'http://localhost:5176'
+const EMPLOYEE = 'http://localhost:5179'
+const OWNER    = 'http://localhost:5178'
+const STATION  = 'http://localhost:5177'
 const PASSWORD = process.env.SEED_PASSWORD ?? 'Kurahia1!'
 
 const OUT = path.resolve(__dirname, 'sweep-results')
@@ -40,7 +40,14 @@ fs.mkdirSync(OUT, { recursive: true })
 const VIEWPORTS = [
   { name: 'phone',   width: 390,  height: 844,  touch: true  },
   { name: 'tablet',  width: 820,  height: 1180, touch: true  },
+  { name: 'laptop',  width: 1366, height: 768,  touch: false },
   { name: 'desktop', width: 1440, height: 900,  touch: false },
+  // The big touch monitor on a counter — the shape a Kenyan POS usually takes,
+  // and the one nobody designs for: a wide screen that is still a TOUCH
+  // device, so the 44px rule applies at 1920 exactly as it does at 390. A
+  // layout that only ever gets checked on a laptop passes the width and fails
+  // the finger.
+  { name: 'counter-touch', width: 1920, height: 1080, touch: true },
 ]
 
 type Finding = {

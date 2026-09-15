@@ -125,6 +125,37 @@ export default function ManagerScreen() {
     staleTime: 60_000,
   })
 
+  // What each tile is actually holding right now.
+  //
+  // Fourteen tiles in one grid, every one the same colour, the same size, the
+  // same weight, each captioned with a sentence describing itself — a menu, not
+  // a dashboard. A manager opening this could not tell from it that eighteen
+  // people were waiting on a leave answer. Nothing on the screen said anything;
+  // it just listed the places where things might be said.
+  //
+  // So the tiles carry their own count, and the ones with something waiting
+  // look like it. This is not decoration: the number IS the reason to tap.
+  const { data: leavePending = [] } = useQuery<unknown[]>({
+    queryKey: ['mgr-leave-pending'],
+    queryFn: () => api.get('/hr/leave-requests', { params: { status: 'PENDING' } })
+      .then(r => Array.isArray(r.data) ? r.data : []),
+    staleTime: 60_000, retry: false,
+  })
+  // A LIST, not { rows: [...] }. The first version guessed the wrapper and the
+  // tile silently showed no count — a query that succeeds and reads as empty
+  // is worse than one that fails, because nothing anywhere says so.
+  const { data: attendance = [] } = useQuery<{ clocked_in_at?: string | null }[]>({
+    queryKey: ['mgr-attendance-today'],
+    queryFn: () => api.get('/hr/attendance/today')
+      .then(r => Array.isArray(r.data) ? r.data : []),
+    staleTime: 60_000, retry: false,
+  })
+  const { data: frontDesk } = useQuery<{ arrivals?: unknown[]; departures?: unknown[] }>({
+    queryKey: ['mgr-front-desk'],
+    queryFn: () => api.get('/front-desk/today').then(r => r.data),
+    staleTime: 60_000, retry: false,
+  })
+
   const deptName = (id: string) => meta?.departments.find(d => d.id === id)?.name ?? 'Other'
   const low = items.filter(i => i.below_reorder)
   const budgets = (Array.isArray(budgetData) ? budgetData : budgetData?.budgets ?? []).filter(r => parseFloat(r.budget) > 0)
@@ -144,14 +175,26 @@ export default function ManagerScreen() {
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
-  const ACTIONS: { label: string; desc: string; path: string; svg: React.ReactNode }[] = [
+  const clockedIn = attendance.length
+    ? attendance.filter(r => !!r.clocked_in_at).length
+    : null
+  const arrivals = (frontDesk?.arrivals?.length ?? 0) + (frontDesk?.departures?.length ?? 0)
+
+  // `tone` decides whether a count is just information or a thing waiting on a
+  // person. Only "waiting" gets the accent, so the accent keeps meaning
+  // something — a grid where every tile glows is the flat grid again in
+  // brighter paint.
+  type Badge = { n: number; tone: 'waiting' | 'info'; noun: string }
+  const ACTIONS: {
+    label: string; desc: string; path: string; svg: React.ReactNode; badge?: Badge | null
+  }[] = [
     { label: 'Receipts', desc: 'Every bill raised today', path: '/receipts', svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M5 2h10v16l-2.5-1.5L10 18l-2.5-1.5L5 18V2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
         <path d="M8 7h4M8 10h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ) },
-    { label: 'Receive Stock', desc: 'Record a purchase + receipt', path: '/manager/receive', svg: (
+    { label: 'Receive Stock', desc: 'Record a purchase + receipt', path: '/manager/receive', badge: low.length ? { n: low.length, tone: 'waiting' as const, noun: 'low' } : null, svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M3 7l7-4 7 4v6l-7 4-7-4V7z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
         <path d="M10 10v7M3 7l7 3 7-3" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
@@ -195,14 +238,14 @@ export default function ManagerScreen() {
         <path d="M7 1v4M13 1v4M3 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ) },
-    { label: 'Attendance', desc: "Today's roster — who clocked in", path: '/manager/attendance', svg: (
+    { label: 'Attendance', desc: "Today's roster — who clocked in", path: '/manager/attendance', badge: clockedIn !== null ? { n: clockedIn, tone: 'info' as const, noun: 'on shift' } : null, svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <circle cx="10" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.5"/>
         <path d="M3 18c0-3.5 3-6 7-6s7 2.5 7 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M13.5 13l2 2 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ) },
-    { label: 'Front House', desc: 'Arrivals, departures, occupancy', path: '/manager/front-desk', svg: (
+    { label: 'Front House', desc: 'Arrivals, departures, occupancy', path: '/manager/front-desk', badge: arrivals ? { n: arrivals, tone: 'info' as const, noun: 'today' } : null, svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <rect x="2" y="6" width="16" height="11" rx="2" stroke="currentColor" strokeWidth="1.5"/>
         <path d="M7 6V4a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -216,14 +259,14 @@ export default function ManagerScreen() {
         <path d="M5 10h.01M15 10h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ) },
-    { label: 'Leave', desc: 'Approve or reject leave requests', path: '/manager/leave', svg: (
+    { label: 'Leave', desc: 'Approve or reject leave requests', path: '/manager/leave', badge: leavePending.length ? { n: leavePending.length, tone: 'waiting' as const, noun: 'waiting' } : null, svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/>
         <path d="M7 1v4M13 1v4M3 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M7 12l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ) },
-    { label: 'Purchases', desc: 'Review restock requests & budgets', path: '/manager/purchases', svg: (
+    { label: 'Purchases', desc: 'Review restock requests & budgets', path: '/manager/purchases', badge: pending.length ? { n: pending.length, tone: 'waiting' as const, noun: 'to review' } : null, svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M3 3h2l2 8h8l2-6H7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         <circle cx="9" cy="15" r="1.5" stroke="currentColor" strokeWidth="1.5"/>
@@ -418,10 +461,26 @@ export default function ManagerScreen() {
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main
                     glass-card hover:bg-white/8"
                   aria-label={`${a.label} — ${a.desc}`}>
-                  <span className="text-ink-secondary">{a.svg}</span>
+                  <span className="flex w-full items-start justify-between gap-2">
+                    <span className={a.badge?.tone === 'waiting' ? 'text-primary-main' : 'text-ink-secondary'}>
+                      {a.svg}
+                    </span>
+                    {a.badge && (
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums
+                        ${a.badge.tone === 'waiting'
+                          ? 'bg-primary-main text-white'
+                          : 'bg-white/10 text-ink-secondary'}`}>
+                        {a.badge.n}
+                      </span>
+                    )}
+                  </span>
                   <div>
                     <p className="text-xs text-ink-primary font-semibold">{a.label}</p>
-                    <p className="text-[9px] text-ink-tertiary mt-0.5 leading-tight">{a.desc}</p>
+                    <p className="text-[9px] mt-0.5 leading-tight">
+                      <span className={a.badge?.tone === 'waiting' ? 'text-primary-main' : 'text-ink-tertiary'}>
+                        {a.badge ? `${a.badge.n} ${a.badge.noun}` : a.desc}
+                      </span>
+                    </p>
                   </div>
                 </motion.button>
               ))}

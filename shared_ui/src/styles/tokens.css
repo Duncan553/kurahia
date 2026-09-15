@@ -190,12 +190,52 @@ html { --font-size-base: 16px; }
    become opaque with real, deliberate steps between them. The photograph still
    opens both apps — the login screens carry their own <img>, which is where
    atmosphere belongs and where there is no data to read. */
+/* ── The ground ──────────────────────────────────────────────────
+   The resort, behind the whole app — and the reason it is safe to be there.
+
+   The first attempt put this photograph behind every screen while the cards on
+   top were TRANSLUCENT, and that could not be made to work: contrast over a
+   photograph is not a number, it is a range. A card drifting over a sunlit
+   patch of the image lightened underneath its own text — ink-tertiary fell to
+   3.9:1, the accent to 2.7:1, error red to 2.4:1 — so it was pulled out and
+   replaced with a flat gradient. Correct, and lifeless: the app looked like a
+   spreadsheet of a resort.
+
+   What changed is the cards. Every surface that holds text is now OPAQUE, so
+   the photograph cannot reach any of it. It lives in the gutters, behind the
+   header, around the edges of the content — where it gives the app its place —
+   and stops dead at the first pixel of anything readable. Layers, bottom up:
+
+     1. #091920      a solid floor, so nothing is ever transparent to the host
+     2. the photo    at 0.38, scaled slightly so no edge seam shows
+     3. a scrim      dark, and heavier at the top where the header sits
+
+   Fixed attachment, so the ground stays put while content scrolls over it —
+   the photo reads as the room the app is standing in rather than as wallpaper
+   sliding past. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -2;
-  background: linear-gradient(168deg, #0c1f27 0%, #091920 52%, #0b1d24 100%);
+  background:
+    /* Vignette — pulls the eye off the edges and onto the content column. */
+    radial-gradient(ellipse 85% 70% at 50% 45%, transparent 0%, rgba(6, 18, 24, 0.55) 100%),
+    /* The scrim. Heavy enough that the photograph reads as depth rather than
+       as a picture of a building competing with the numbers on top of it —
+       you should feel the place, not study it. */
+    linear-gradient(180deg, rgba(9, 25, 32, 0.945) 0%, rgba(9, 25, 32, 0.90) 35%, rgba(11, 29, 36, 0.955) 100%),
+    url('/images/resort-bg.jpg') center 42% / cover no-repeat,
+    linear-gradient(168deg, #0c1f27 0%, #091920 52%, #0b1d24 100%);
+  background-color: #091920;
+}
+
+/* Asked for plainness, give plainness. Both of these mean "I do not want
+   decoration behind my content", and a photograph is decoration. */
+@media (prefers-reduced-transparency), (prefers-contrast: more) {
+  body::before {
+    background: linear-gradient(168deg, #0c1f27 0%, #091920 52%, #0b1d24 100%);
+  }
 }
 body::after {
   content: '';

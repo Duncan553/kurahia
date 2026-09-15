@@ -127,7 +127,8 @@ function BottomDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'sid
             // below the fold on an 800px viewport, permanently.
             animate={{ y: 0, transition: { type: 'spring', stiffness: 300, damping: 35 } }}
             exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeIn' } }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-cream-card rounded-t-2xl shadow-xl overflow-hidden flex flex-col"
+            className="fixed bottom-0 left-0 right-0 z-50 mx-auto w-full max-w-2xl
+              bg-cream-card rounded-t-2xl shadow-xl overflow-hidden flex flex-col"
             style={{ height: `${snapHeightVh}vh` }}
           >
             {/* Drag handle */}
@@ -201,7 +202,7 @@ function RightDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'side
             initial={{ x: '100%' }}
             animate={{ x: 0, transition: { duration: 0.25, ease: 'easeOut' } }}
             exit={{ x: '100%', transition: { duration: 0.2, ease: 'easeIn' } }}
-            className="fixed top-0 right-0 bottom-0 z-50 w-[400px] bg-cream-card shadow-xl overflow-y-auto p-6"
+            className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-[400px] bg-cream-card shadow-xl overflow-y-auto p-6"
           >
             {title && <h2 className="text-xl font-bold text-ink-primary mb-4">{title}</h2>}
             {children}

@@ -320,6 +320,13 @@ def all_path_literals():
     lits = set()
     for root in APPS:
         for f in Path(root).rglob("*.ts*"):
+            # main.tsx and AppLayout.tsx are ROUTER manifests: every "/calendar"
+            # in them is a browser route, not an API call. Counting those as
+            # callers is how POST /calendar hid — no screen can create a
+            # calendar entry, so the Calendar screen is empty forever, and this
+            # scan called it covered because the router mentions the word.
+            if f.name in ("main.tsx", "AppLayout.tsx"):
+                continue
             text = f.read_text(encoding="utf-8", errors="ignore")
             lits |= set(re.findall(r"""['"`](/[a-z][a-z0-9\-]*(?:/[^'"`\s${]*)*)['"`]""", text))
     return lits
@@ -327,20 +334,42 @@ def all_path_literals():
 
 def orphan_scan(app, calls):
     """Real routes that no screen calls. Returns the ones worth a door."""
-    called = set()
-    for path in set(calls) | all_path_literals():
+    # Per METHOD, not per path.
+    #
+    # The first version collected a bare set of paths, so a route family counted
+    # as covered the moment ANY method on it had a caller. POST /calendar has
+    # never been called by anything — no screen can mark a peak date or a
+    # holiday, so the Calendar screen is empty forever and always will be — and
+    # this scan called it fine, because GET /calendar is read by two apps. A
+    # write endpoint hiding behind its own read sibling is precisely the orphan
+    # worth finding, and it was the one shape guaranteed to be missed.
+    called: dict[str, set[str]] = {}
+    for path, methods in calls.items():
         # A call built at runtime ("/tabs/${id}") was normalised to "/tabs/1"
         # by the scanner above; compare on the static head so a dynamic caller
         # still counts as covering its route family.
         parts = [p for p in path.split("/") if p]
         for i in range(len(parts), 0, -1):
-            called.add("/" + "/".join(parts[:i]))
+            called.setdefault("/" + "/".join(parts[:i]), set()).update(
+                m.upper() for m in methods)
 
-    def is_called(rule):
+    # Literals found loose in the source (a path held in a variable) carry no
+    # method with them, so they cover every method — deliberately generous, to
+    # keep this reporting real orphans rather than clever ones.
+    for path in all_path_literals():
+        parts = [p for p in path.split("/") if p]
+        for i in range(len(parts), 0, -1):
+            called.setdefault("/" + "/".join(parts[:i]), set()).add("*")
+
+    def methods_called_for(rule) -> set[str]:
         r = str(rule)
         # Flask writes params as <id>; a caller reaches them as a value.
         head = r.split("<")[0].rstrip("/") or "/"
-        return head in called or r in called or any(c.startswith(head + "/") for c in called)
+        hit = set()
+        for c, ms in called.items():
+            if c == head or c == r or c.startswith(head + "/"):
+                hit |= ms
+        return hit
 
     orphans, by_design = [], []
     for rule in sorted(app.url_map.iter_rules(), key=str):
@@ -349,10 +378,14 @@ def orphan_scan(app, calls):
         methods = sorted(rule.methods - {"HEAD", "OPTIONS"})
         if not methods:
             continue
-        if is_called(rule):
+        hit = methods_called_for(rule)
+        if "*" in hit:
+            continue
+        unreached = [m for m in methods if m not in hit]
+        if not unreached:
             continue
         (by_design if str(rule).startswith(NON_UI_PREFIXES) else orphans).append(
-            (str(rule), ",".join(methods)))
+            (str(rule), ",".join(unreached)))
 
     print("\nendpoints with no screen behind them:")
     if not orphans:

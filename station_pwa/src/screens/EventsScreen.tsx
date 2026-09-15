@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Skeleton, EmptyState, StatusBadge, ErrorBoundary, Modal, Button, useToastStore } from '@shared'
 import type { StatusValue } from '@shared'
-import { RequireRole } from '../components/AuthGate'
+import { IfRole } from '../components/AuthGate'
 import api from '../lib/axios'
 import { toDateKey, todayKey, formatTime } from '../lib/format'
 
@@ -287,11 +287,11 @@ export default function EventsScreen() {
           title="No upcoming events."
           description="When weddings, conferences, or special bookings are scheduled, they'll show up here."
         />
-        <RequireRole minLevel={5}>
+        <IfRole minLevel={5}>
           <Button variant="primary" size="sm" className="mt-4" onClick={() => setShowCreate(true)}>
             + Create Event
           </Button>
-        </RequireRole>
+        </IfRole>
         <CreateEventModal open={showCreate} onClose={() => setShowCreate(false)} />
       </div>
     )
@@ -316,11 +316,11 @@ export default function EventsScreen() {
             Weddings, conferences, special bookings
           </p>
         </div>
-        <RequireRole minLevel={5}>
+        <IfRole minLevel={5}>
           <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
             + Create Event
           </Button>
-        </RequireRole>
+        </IfRole>
       </motion.div>
       <CreateEventModal open={showCreate} onClose={() => setShowCreate(false)} />
 

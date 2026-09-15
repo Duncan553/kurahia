@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { ErrorBoundary, StatusBadge } from '@shared'
-import type { StatusValue } from '@shared'
+import { ErrorBoundary, Button, Modal, useToastStore } from '@shared'
+import { IfRole } from '../components/AuthGate'
 import api from '../lib/axios'
 
 /* ── Types ──────────────────────────────────────────────────────────────────── */
@@ -21,12 +21,28 @@ interface CalendarEntry {
 
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
 
-// Entry type to badge status mapping
-function typeStatus(t: string): StatusValue {
-  if (t === 'HOLIDAY')          return 'paid'
-  if (t === 'PEAK')             return 'failed'
-  if (t === 'PLANNING_MEETING') return 'active'
-  return 'info' // EXTERNAL_OBSERVANCE
+// What the entry IS, said in its own words.
+//
+// This used to borrow StatusBadge by mapping PEAK onto the 'failed' status,
+// purely to get the red. StatusBadge carries its own label with its colour,
+// so a busy Saturday was badged "Failed" with a cross next to it — the screen
+// telling a manager that the resort's best weekend of the month had gone
+// wrong. A calendar entry has no status; it has a kind.
+const TYPE_CHIP: Record<string, { label: string; cls: string }> = {
+  HOLIDAY:             { label: 'Holiday',    cls: 'text-status-paid bg-status-paid/15 border-status-paid/25' },
+  PEAK:                { label: 'Peak day',   cls: 'text-status-failed bg-status-failed/15 border-status-failed/25' },
+  PLANNING_MEETING:    { label: 'Planning',   cls: 'text-primary-main bg-primary-main/15 border-primary-main/25' },
+  EXTERNAL_OBSERVANCE: { label: 'Observance', cls: 'text-ink-tertiary bg-white/5 border-white/10' },
+}
+
+function TypeChip({ type }: { type: string }) {
+  const c = TYPE_CHIP[type] ?? TYPE_CHIP.EXTERNAL_OBSERVANCE
+  return (
+    <span className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5
+      text-[11px] font-semibold ${c.cls}`}>
+      {c.label}
+    </span>
+  )
 }
 
 // Entry type display color for the calendar dot
@@ -39,8 +55,10 @@ function dotColor(t: string): string {
 
 // Format readable date
 function fmtDate(iso: string): string {
+  // timeZone UTC for the same reason dateMap uses getUTC*: these are dates,
+  // and rendering them through the device's clock shifts the day.
   return new Date(iso).toLocaleDateString('en-KE', {
-    day: 'numeric', month: 'short',
+    day: 'numeric', month: 'short', timeZone: 'UTC',
   })
 }
 
@@ -80,19 +98,31 @@ function MonthGrid({ year, month, entries }: {
   const todayDate = today.getDate()
 
   // Build a map: "YYYY-MM-DD" -> entries on that date
+  // A calendar entry is a DATE, not an instant, and every read of it here works
+  // in UTC to keep it that way.
+  //
+  // The grid's cell key is a plain `2026-09-25` built from the visible month.
+  // Reading the entry through the device's clock put those two out of step:
+  // "25 September" arrived as 2026-09-24T21:00:00Z in Nairobi (UTC+3), and a
+  // three-day mark on the 25th–27th drew its dots on the 24th–26th. It would
+  // have drifted the other way for anyone west of London, so the same holiday
+  // would land on different days on the owner's phone and the station tablet.
+  //
+  // Hence getUTC* throughout, and dates written as midnight UTC on the way in.
   const dateMap = useMemo(() => {
     const map = new Map<string, CalendarEntry[]>()
+    const key = (d: Date) =>
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+      + `-${String(d.getUTCDate()).padStart(2, '0')}`
     for (const e of entries) {
       // An entry can span multiple days; mark each day it covers
-      const start = new Date(e.date_start)
+      const cursor = new Date(e.date_start)
       const end = new Date(e.date_end)
-      const cursor = new Date(start)
-      while (cursor <= end) {
-        const key = cursor.toISOString().slice(0, 10)
-        const arr = map.get(key) ?? []
+      while (key(cursor) <= key(end)) {
+        const arr = map.get(key(cursor)) ?? []
         arr.push(e)
-        map.set(key, arr)
-        cursor.setDate(cursor.getDate() + 1)
+        map.set(key(cursor), arr)
+        cursor.setUTCDate(cursor.getUTCDate() + 1)
       }
     }
     return map
@@ -173,17 +203,15 @@ function MonthGrid({ year, month, entries }: {
               <div key={e.id} className="glass-card rounded-xl p-3 border border-white/10">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-ink-primary">{e.title}</p>
-                  <StatusBadge status={typeStatus(e.entry_type)} />
+                  <TypeChip type={e.entry_type} />
                 </div>
                 <p className="text-[10px] text-ink-tertiary mt-1">
-                  {e.entry_type.replace(/_/g, ' ')}
-                  {' · '}
                   {fmtDate(e.date_start)} - {fmtDate(e.date_end)}
                 </p>
                 {e.description && (
                   <p className="text-xs text-ink-secondary mt-1">{e.description}</p>
                 )}
-                {e.is_peak && (
+                {e.is_peak && e.entry_type !== 'PEAK' && (
                   <span className="inline-block mt-1 text-[10px] font-bold text-status-failed
                     bg-status-failed/15 px-2 py-0.5 rounded-full">
                     PEAK
@@ -225,20 +253,20 @@ function UpcomingList({ entries }: { entries: CalendarEntry[] }) {
           {/* Date badge */}
           <div className="shrink-0 w-12 text-center">
             <p className="text-lg font-bold tabular-nums text-[#fa5c29]">
-              {new Date(e.date_start).getDate()}
+              {new Date(e.date_start).getUTCDate()}
             </p>
             <p className="text-[10px] font-semibold uppercase text-ink-tertiary">
-              {new Date(e.date_start).toLocaleDateString('en-KE', { month: 'short' })}
+              {new Date(e.date_start).toLocaleDateString('en-KE', { month: 'short', timeZone: 'UTC' })}
             </p>
           </div>
           {/* Entry info */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-semibold text-ink-primary truncate">{e.title}</p>
-              <StatusBadge status={typeStatus(e.entry_type)} size="sm" />
+              <TypeChip type={e.entry_type} />
             </div>
             <p className="text-[10px] text-ink-tertiary mt-0.5">
-              {e.entry_type.replace(/_/g, ' ')}
+              {fmtDate(e.date_start)}
               {e.planning_trigger_offset_days && (
                 <> · Reminder {e.planning_trigger_offset_days}d before</>
               )}
@@ -253,6 +281,145 @@ function UpcomingList({ entries }: { entries: CalendarEntry[] }) {
   )
 }
 
+
+/* ── Mark a date ──────────────────────────────────────────────────────────────
+ * POST /calendar has existed the whole time and nothing in any of the three
+ * apps called it. So the Calendar could be read and never written: the screen
+ * drew a month grid and a legend for four colours that could not appear,
+ * forever, because no person had a way to say "the 25th is a peak day".
+ * A read-only calendar is not a calendar; it is a picture of one.
+ *
+ * Manager and above, matching the endpoint's own floor — and IfRole, so
+ * everyone else simply does not see the button rather than being told off.
+ */
+const ENTRY_TYPES = [
+  { value: 'PEAK',                 label: 'Peak day',    hint: 'Busy — staff up, stock up' },
+  { value: 'HOLIDAY',              label: 'Holiday',     hint: 'Public holiday' },
+  { value: 'PLANNING_MEETING',     label: 'Planning',    hint: 'Raises a reminder beforehand' },
+  { value: 'EXTERNAL_OBSERVANCE',  label: 'Observance',  hint: 'Good to know, not a peak' },
+]
+
+function MarkDateModal({ open, onClose, year, month }: {
+  open: boolean; onClose: () => void; year: number; month: number
+}) {
+  const qc = useQueryClient()
+  const addToast = useToastStore(s => s.addToast)
+  const [title, setTitle] = useState('')
+  const [entryType, setEntryType] = useState('PEAK')
+  // Default to today when the visible month is the current one, otherwise the
+  // 1st — so the field is never empty and never a date in another month.
+  const now = new Date()
+  const defaultDay = (now.getFullYear() === year && now.getMonth() === month)
+    ? now.getDate() : 1
+  const iso = (d: number) =>
+    `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  const [start, setStart] = useState(iso(defaultDay))
+  const [end, setEnd] = useState(iso(defaultDay))
+  const [offset, setOffset] = useState('')
+
+  const mut = useMutation({
+    mutationFn: () => api.post('/calendar', {
+      title: title.trim(),
+      entry_type: entryType,
+      // Midnight UTC, NOT local midnight. `new Date('2026-09-25T00:00:00')`
+      // is parsed in the device's zone, so in Nairobi it becomes the 24th at
+      // 21:00Z and the mark lands a day early for everyone.
+      date_start: `${start}T00:00:00Z`,
+      date_end:   `${end}T23:59:59Z`,
+      ...(entryType === 'PLANNING_MEETING' && offset.trim()
+        ? { planning_trigger_offset_days: parseInt(offset, 10) } : {}),
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['calendar-entries'] })
+      setTitle(''); setOffset('')
+      onClose()
+      addToast({ type: 'success', message: 'Marked on the calendar.' })
+    },
+    onError: (e) => addToast({ type: 'error',
+      message: (e as { response?: { data?: { error?: string } } })
+        ?.response?.data?.error ?? 'Could not save that.' }),
+  })
+
+  const field = "w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm "
+              + "text-ink-primary focus:outline-none focus:border-primary-main"
+
+  return (
+    <Modal open={open} onClose={onClose} title="Mark a date">
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="cal-title"
+                 className="block text-[11px] uppercase tracking-wider text-ink-tertiary mb-1">
+            What is it
+          </label>
+          <input id="cal-title" value={title} onChange={e => setTitle(e.target.value)}
+                 placeholder="e.g. Madaraka Day weekend" className={field} />
+        </div>
+
+        <div>
+          <p className="text-[11px] uppercase tracking-wider text-ink-tertiary mb-1">Type</p>
+          <div className="grid grid-cols-2 gap-2">
+            {ENTRY_TYPES.map(t => (
+              <button key={t.value} onClick={() => setEntryType(t.value)}
+                className={`p-3 rounded-xl text-left border transition-colors ${
+                  entryType === t.value
+                    ? 'bg-primary-main text-white border-primary-main'
+                    : 'text-ink-secondary border-white/10 hover:border-primary-main/50'
+                }`}>
+                <span className="block text-sm font-semibold">{t.label}</span>
+                <span className="block text-[11px] opacity-80">{t.hint}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="cal-start"
+                   className="block text-[11px] uppercase tracking-wider text-ink-tertiary mb-1">
+              From
+            </label>
+            <input id="cal-start" type="date" value={start}
+                   onChange={e => { setStart(e.target.value); if (e.target.value > end) setEnd(e.target.value) }}
+                   className={field} />
+          </div>
+          <div>
+            <label htmlFor="cal-end"
+                   className="block text-[11px] uppercase tracking-wider text-ink-tertiary mb-1">
+              To
+            </label>
+            <input id="cal-end" type="date" value={end} min={start}
+                   onChange={e => setEnd(e.target.value)} className={field} />
+          </div>
+        </div>
+
+        {entryType === 'PLANNING_MEETING' && (
+          <div>
+            <label htmlFor="cal-offset"
+                   className="block text-[11px] uppercase tracking-wider text-ink-tertiary mb-1">
+              Remind this many days before
+            </label>
+            <input id="cal-offset" type="number" min="1" inputMode="numeric"
+                   value={offset} onChange={e => setOffset(e.target.value)}
+                   placeholder="e.g. 7" className={field} />
+            <p className="text-[11px] text-ink-tertiary mt-1">
+              Leave blank for no reminder.
+            </p>
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-1">
+          <Button variant="ghost" size="lg" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" size="lg" className="flex-1"
+                  loading={mut.isPending} disabled={!title.trim()}
+                  onClick={() => mut.mutate()}>
+            Mark it
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 /* ── Main screen ─────────────────────────────────────────────────────────────── */
 
 export default function CalendarScreen() {
@@ -260,6 +427,7 @@ export default function CalendarScreen() {
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [showMark, setShowMark] = useState(false)
 
   // Fetch entries for the visible month (with some margin)
   const fromDt = new Date(year, month, 1).toISOString()
@@ -289,15 +457,24 @@ export default function CalendarScreen() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+          className="mb-6 flex items-start justify-between gap-3"
         >
-          <h1 className="font-serif text-2xl md:text-3xl font-bold text-ink-primary">
-            Calendar
-          </h1>
-          <p className="text-sm text-ink-secondary mt-1">
-            Peak dates, holidays, and planning events
-          </p>
+          <div>
+            <h1 className="font-serif text-2xl md:text-3xl font-bold text-ink-primary">
+              Calendar
+            </h1>
+            <p className="text-sm text-ink-secondary mt-1">
+              Peak dates, holidays, and planning events
+            </p>
+          </div>
+          <IfRole minLevel={5}>
+            <Button variant="primary" size="sm" onClick={() => setShowMark(true)}>
+              + Mark a date
+            </Button>
+          </IfRole>
         </motion.div>
+        <MarkDateModal open={showMark} onClose={() => setShowMark(false)}
+                       year={year} month={month} />
 
         {/* Month navigation + view toggle */}
         <div className="flex items-center justify-between mb-4">

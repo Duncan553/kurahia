@@ -83,7 +83,7 @@ export default function LoginScreen() {
 
       {/* Ambient glow — faint orange radial behind the card for depth */}
       <div
-        className="pointer-events-none absolute w-[480px] h-[480px] rounded-full opacity-[0.07]"
+        className="pointer-events-none absolute w-[480px] h-[480px] max-w-full rounded-full opacity-[0.07]"
         style={{
           background: 'radial-gradient(circle, #fa5c29 0%, transparent 70%)',
         }}

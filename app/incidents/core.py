@@ -11,6 +11,9 @@ from app.extensions import db
 from app.models.user import User
 from app.models.incident import Incident, IncidentSeverity
 from app.models.audit_log import AuditLog
+from app.models.notification import (
+    Notification, NotificationStatus, NotificationChannel,
+)
 from app.utils.auth_decorators import require_active_user
 
 incidents_bp = Blueprint("incidents", __name__, url_prefix="/incidents")
@@ -70,12 +73,55 @@ def log_incident():
         idempotency_key = idem_key,
     )
     db.session.add(inc)
+    db.session.flush()          # inc.id, for the notifications below
     AuditLog.log(
         actor=actor.username, action="incident.log",
         target=inc.id, details=f"severity={severity} location={location}",
     )
+    _alert_managers(inc, actor)
     db.session.commit()
     return jsonify(_incident_dict(inc)), 201
+
+
+def _alert_managers(inc, reporter) -> None:
+    """Put the incident in front of somebody.
+
+    Logging one wrote the row and an audit line and told NOBODY. Listing them
+    is manager-only, so a guest hurt at the jet ski dock sat in a table until
+    a manager happened to open a screen they have no reason to open — while
+    the person who filed it saw "Incident logged." and reasonably believed it
+    had been raised. The one thing an incident report exists to do is reach
+    someone who can act, and it was the one thing missing.
+
+    Every severity goes out, not just HIGH: the severity is the reporter's
+    guess made in the moment, and "low" is exactly how a small thing that was
+    actually a big thing gets described. A manager can read three lines.
+    """
+    managers = db.session.query(User).filter(
+        User.is_active.is_(True)
+    ).join(User.role).filter(
+        # Same floor as list_incidents — telling someone who cannot then open
+        # the list would be a notification with nowhere to go.
+        db.text("roles.level >= :lvl")
+    ).params(lvl=MANAGER_LEVEL).all()
+
+    now = datetime.now(timezone.utc)
+    for m in managers:
+        db.session.add(Notification(
+            recipient_user_id = m.id,
+            reference_type    = "incident",
+            reference_id      = inc.id,
+            subject           = f"{inc.severity} incident — {inc.location}",
+            body              = (f"{reporter.username} logged: {inc.description}"
+                                 + (f" Guest: {inc.involved_guest}." if inc.involved_guest else "")),
+            status            = NotificationStatus.DELIVERED.value,
+            channel           = NotificationChannel.IN_APP.value,
+            scheduled_for_utc = now,
+            sent_at_utc       = now,
+            # One per manager per incident. A retried request reuses the
+            # incident's idempotency key upstream, so this never doubles.
+            idempotency_key   = f"incident-{inc.id}-{m.id}",
+        ))
 
 
 @incidents_bp.get("")

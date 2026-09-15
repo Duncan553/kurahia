@@ -159,11 +159,47 @@ def check_payroll_ready(app):
         note(f"{unset} active staff have no wage rate — payroll cannot pay them")
 
 
+# ── 6. A screen-sized refusal wrapped around a button ────────────────────────
+# RequireRole always answers with a full-page "This screen isn't yours to open"
+# panel, which is right for a screen and wrong for a control. Wrapped around a
+# button it drops a page-sized refusal into a header row and tells the person
+# the whole screen is forbidden when only that one action is. EventsScreen did
+# exactly this, and a gate lead opening Events read the entire screen as
+# closed to them. IfRole is the version for a control: it renders nothing.
+def check_role_gate_shape():
+    pwas = ["station_pwa", "owner_pwa", "employee_pwa", "shared_ui"]
+    offenders = []
+    for pkg in pwas:
+        src = ROOT / pkg / "src"
+        if not src.exists():
+            continue
+        for f in src.rglob("*.tsx"):
+            lines = f.read_text().splitlines()
+            for i, line in enumerate(lines):
+                if "<RequireRole" not in line:
+                    continue
+                # what does it actually wrap? first non-blank line after it
+                for nxt in lines[i + 1:]:
+                    if nxt.strip():
+                        break
+                else:
+                    continue
+                # A control, not a region. Layout wrappers are the legitimate use.
+                if re.match(r"<(Button|button|motion\.button|a)\b", nxt.strip()):
+                    offenders.append(
+                        f"{f.relative_to(ROOT)}:{i + 1} wraps {nxt.strip()[:40]}")
+    if offenders:
+        fail("role gate shape",
+             "RequireRole around a control renders a page-sized refusal — "
+             "use IfRole:\n      " + "\n      ".join(offenders))
+
+
 def main():
     print("preflight — the checks that would have caught the last set of bugs\n")
 
     check_server_freshness()
     check_migrations()
+    check_role_gate_shape()
 
     try:
         sys.path.insert(0, str(ROOT))

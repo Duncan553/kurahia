@@ -64,3 +64,26 @@ export function RequireRole({ minLevel, allow, children }: {
   }
   return <>{children}</>
 }
+
+
+// The same question asked about a CONTROL rather than a screen.
+//
+// RequireRole always answers with a full-page panel, because a screen someone
+// cannot open must say so rather than go blank. Wrapped around a button that
+// answer is wrong twice over: it drops a page-sized "This screen isn't yours
+// to open" into a layout where a small button belongs, and it says something
+// untrue — the Events screen IS theirs to open; only "+ Create Event" isn't.
+// A gate lead opening Events saw the refusal panel where the header's action
+// should sit and reasonably read the whole screen as forbidden.
+//
+// A control you cannot use simply should not be there. No explanation is owed
+// for a button that was never offered.
+export function IfRole({ minLevel, allow, children }: {
+  minLevel: number
+  allow?: (u: { role_level: number; can_count_stock?: boolean }) => boolean
+  children: ReactNode
+}) {
+  const user = useAuthStore((s) => s.user)
+  const permitted = user ? (allow ? allow(user) : user.role_level >= minLevel) : false
+  return permitted ? <>{children}</> : null
+}
