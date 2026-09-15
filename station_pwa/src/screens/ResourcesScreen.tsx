@@ -15,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Input, Select, FormField, Button, Modal, useToastStore, ErrorBoundary, EmptyState } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
+import { useAuthStore } from '@shared'
 
 interface Resource {
   id: string; name: string; resource_type: string
@@ -58,6 +59,7 @@ export default function ResourcesScreen() {
     staleTime: 5 * 60_000,
   })
   const departments = meta?.departments ?? []
+  const roleLevel = useAuthStore(s => s.user?.role_level ?? 0)
 
   const done = (msg: string) => {
     qc.invalidateQueries({ queryKey: ['bookable-resources'] })
@@ -67,10 +69,17 @@ export default function ResourcesScreen() {
   }
   const fail = (e: unknown) => addToast({ type: 'error', message: extractErr(e) })
 
+  // The rate is the owner's to set (app/bookings/resources.py) — the same rule
+  // that keeps wages off a manager's screen. This form sent base_price on every
+  // PATCH regardless, so a manager correcting a villa's SLEEPS count had the
+  // whole edit thrown back at them with "Only the owner can change resource
+  // pricing" — about a price they had not touched. Send the field only when the
+  // person is allowed to change it.
+  const mayPrice = roleLevel >= 10
   const body = () => ({
     name: f.name.trim(),
     resource_type: f.resource_type,
-    base_price: f.base_price || '0',
+    ...(mayPrice ? { base_price: f.base_price || '0' } : {}),
     capacity: f.capacity ? parseInt(f.capacity, 10) : null,
     department_id: f.department_id || null,
   })
@@ -117,6 +126,8 @@ export default function ResourcesScreen() {
         <FormField label="Nightly / session rate (KSh)" htmlFor="r-price" required>
           <Input id="r-price" required type="number" min="0" step="0.01" inputMode="decimal"
             placeholder="0.00" value={f.base_price}
+            readOnly={!mayPrice}
+            title={mayPrice ? undefined : 'Only the owner sets the rate'}
             onChange={e => setF({ ...f, base_price: e.target.value })} />
         </FormField>
         <FormField label="Sleeps / seats" htmlFor="r-cap">
