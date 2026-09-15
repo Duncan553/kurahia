@@ -155,6 +155,30 @@ def create_order():
                                      f"Check with the kitchen before ordering."
                         }), 409
 
+            # Nobody goes on the water without a signed waiver — including the
+            # day guest, who is the person most likely to be on it.
+            #
+            # The gate already existed for a VILLA guest (bookings/core.py,
+            # book_water_session) and did not exist here at all, so the whole
+            # day-visitor path — wristband, tap Jet Ski Ride, done — took no
+            # waiver. The reason was structural: a waiver could only attach to a
+            # booking, and a day guest has a tab, so the record could not exist
+            # to be checked.
+            #
+            # Gated on the item's CATEGORY, not its department: a Swimming Pool
+            # Day Pass and a Nature Trail live in the same department as the jet
+            # skis, and a hike does not need a water waiver. The category is
+            # owner-editable data, so which activities need one stays the
+            # resort's decision rather than a constant in here.
+            if (mi.category or "").strip().lower() == "water activities":
+                from app.services.booking import has_active_waiver_for_tab
+                if not has_active_waiver_for_tab(tab_id, "WATER_ACTIVITY"):
+                    return jsonify({
+                        "error": f"{mi.name} needs a signed water-activity waiver. "
+                                 f"Record the waiver for this wristband first, "
+                                 f"then add the activity."
+                    }), 403
+
             order_item = OrderItem(
                 order_id=order.id,
                 menu_item_id=mi.id,

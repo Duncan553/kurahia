@@ -337,6 +337,19 @@ def release_expired_holds(window_hours: int = 24, now: datetime | None = None) -
 
 # ── Waiver check ──────────────────────────────────────────────────────────────
 
+def has_active_waiver_for_tab(tab_id: str, activity_type: str) -> bool:
+    """True if the wristband holding this tab has signed for this activity.
+
+    The day-guest equivalent of has_active_waiver. A day visitor has a tab, not
+    a booking, so before waivers could attach to a tab there was no way to ask
+    this question — and the water POS therefore never asked it.
+    """
+    from app.models.waiver import Waiver
+    return db.session.query(Waiver).filter_by(
+        tab_id=tab_id, activity_type=activity_type, is_active=True
+    ).first() is not None
+
+
 def has_active_waiver(booking_id: str, activity_type: str) -> bool:
     """True if an active waiver exists for this booking and activity type."""
     return db.session.query(Waiver).filter_by(
