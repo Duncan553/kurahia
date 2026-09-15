@@ -147,7 +147,7 @@ export function Modal({ open, onClose, title, children, size = 'md', preventClos
               // The wrapper closes on click; the panel must not.
               onClick={(e) => e.stopPropagation()}
               className={[
-                'bg-cream-card shadow-xl overflow-y-auto',
+                'bg-cream-card shadow-xl overflow-y-auto overscroll-contain',
                 'p-6 max-h-[90vh]',
                 'w-full rounded-t-2xl',        // phone: full-width sheet
                 `md:rounded-2xl ${SIZE[size]}`, // desktop: rounded card, size-capped

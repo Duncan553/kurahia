@@ -142,7 +142,7 @@ function BottomDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'sid
                 drawer while the drag handle sat above it, so the content
                 overflowed by the handle's height and the last rows could not be
                 scrolled into view (scrollHeight === clientHeight, canScroll false). */}
-            <div className="px-6 pb-6 overflow-y-auto flex-1 min-h-0">
+            <div className="px-6 pb-6 overflow-y-auto overscroll-contain flex-1 min-h-0">
               {title && <h2 className="text-xl font-bold text-ink-primary mb-4">{title}</h2>}
               {children}
             </div>
@@ -202,7 +202,7 @@ function RightDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'side
             initial={{ x: '100%' }}
             animate={{ x: 0, transition: { duration: 0.25, ease: 'easeOut' } }}
             exit={{ x: '100%', transition: { duration: 0.2, ease: 'easeIn' } }}
-            className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-[400px] bg-cream-card shadow-xl overflow-y-auto p-6"
+            className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-[400px] bg-cream-card shadow-xl overflow-y-auto overscroll-contain p-6"
           >
             {title && <h2 className="text-xl font-bold text-ink-primary mb-4">{title}</h2>}
             {children}

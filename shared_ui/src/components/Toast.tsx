@@ -78,8 +78,12 @@ export function ToastContainer() {
   const toasts = useToastStore((s) => s.toasts)
   return (
     <>
-      {/* Desktop: top-4 right-4 */}
-      <div className="hidden md:flex fixed top-4 right-4 z-[60] flex-col gap-2 items-end pointer-events-none">
+      {/* Desktop: bottom-right, clear of the bottom nav.
+          It used to sit top-4 right-4 — directly on top of the header action
+          buttons ("New item", "+ Add supplier"). A toast is still on screen
+          when you reach for the next Add, so the card swallowed the click and
+          the second entry in a row silently did nothing. */}
+      <div className="hidden md:flex fixed bottom-24 right-4 z-[60] flex-col gap-2 items-end pointer-events-none">
         <AnimatePresence mode="popLayout">
           {toasts.map((t) => (
             <div key={t.id} className="pointer-events-auto">

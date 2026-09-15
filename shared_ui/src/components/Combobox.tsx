@@ -63,6 +63,10 @@ export function Combobox({
         setOpen(false)
       }
     } else if (e.key === 'Escape') {
+      // Escape closes the SUGGESTION LIST, and stops there. Without this the
+      // same keypress carried on to the drawer's own Escape handler, which
+      // closed the whole form and threw away everything typed so far.
+      e.stopPropagation()
       setOpen(false)
       setActiveIdx(-1)
     }
