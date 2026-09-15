@@ -42,10 +42,12 @@ BAND_CREDIT_CEILING_MULTIPLIER = Decimal("2")  # allow up to 2x the entry fee (K
 # an overnight villa, the far more expensive account, would accept a KSh 500,000
 # charge without a word. Proved by asking both: BAND refused, VILLA allowed.
 #
-# What actually backs a villa is the deposit. So the limit is what the guest has
-# already put down plus a headroom the resort sets, and it is a STOP, not a
-# block — front house can take a payment or raise the booking's own limit, and
-# the message says so rather than leaving a waiter stuck at the bar.
+# What backs a villa is the booking itself — the stay is committed and the
+# deposit secures it. So the ceiling is the stay's value plus this headroom,
+# which is the guest's EXTRAS allowance: food, drinks, the spa, the boat. It is
+# a STOP, not a block — front house can take a payment or raise the booking's
+# own limit, and the message says so rather than leaving a waiter stuck at the
+# bar with a guest in front of them.
 VILLA_DEFAULT_HEADROOM = Decimal("20000")
 
 
@@ -62,18 +64,32 @@ def check_tab_credit(tab_id: str, new_charge: Decimal) -> tuple[bool, str]:
         booking = db.session.query(Booking).filter_by(tab_id=tab_id).first()
         if not booking:
             return True, ""
-        # Front house may set a limit per booking; otherwise deposit + headroom.
+        # Front house may set a limit per booking; otherwise the stay itself
+        # plus headroom.
+        #
+        # It used to be deposit + headroom, and that is the wrong baseline: the
+        # whole stay is charged to the folio at check-in, so a 100,000 villa
+        # with a 30,000 deposit sat at 70,000 against a 50,000 ceiling before
+        # the guest had bought so much as a soda. Room service was then refused
+        # with "this room has reached its charging limit" on a room that had
+        # spent nothing. Reported from the floor, and reproduced.
+        #
+        # The room is not the risk: it is committed, secured by the deposit and
+        # settled at check-out. What needs a ceiling is what the guest can run
+        # up ON TOP of it — so the limit starts at the stay's own value and the
+        # headroom is the extras allowance.
         limit = getattr(booking, "credit_limit", None)
         if limit is None:
-            limit = Decimal(str(booking.deposit_required or 0)) + VILLA_DEFAULT_HEADROOM
+            limit = Decimal(str(booking.base_total or 0)) + VILLA_DEFAULT_HEADROOM
         limit = Decimal(str(limit))
         balance = get_tab_balance(tab_id)
         if balance + new_charge > limit:
             return False, (
-                f"This room has reached its charging limit of KSh {limit:,.2f}. "
+                f"This room has reached its charging limit of KSh {limit:,.2f} "
+                f"(the stay plus KSh {VILLA_DEFAULT_HEADROOM:,.0f} of extras). "
                 f"Current balance: KSh {balance:,.2f}. "
-                f"Send the guest to front house to settle part of the bill or "
-                f"raise the limit."
+                f"Front house can take a payment against the room or raise the "
+                f"limit for this booking."
             )
         return True, ""
 

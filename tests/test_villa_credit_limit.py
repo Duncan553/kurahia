@@ -63,12 +63,38 @@ class TestVillaCreditLimit:
             assert ok is False
             assert "front house" in msg.lower()
 
-    def test_the_default_limit_is_deposit_plus_headroom(self, app, villa_tab):
+    def test_the_default_limit_is_the_stay_plus_an_extras_allowance(self, app, villa_tab):
+        """The baseline moved, and this is why.
+
+        It used to be deposit + headroom. But the WHOLE STAY is charged to the
+        folio at check-in, so a 100,000 villa with a 30,000 deposit sat at
+        70,000 against a 50,000 ceiling before the guest had bought anything —
+        room service was refused on a room that had spent nothing, which is how
+        it was reported from the floor.
+
+        The room is not the risk: it is committed and the deposit secures it.
+        What needs a ceiling is what a guest can run up ON TOP of it, so the
+        limit is the stay's own value plus the extras allowance."""
         tab_id, _ = villa_tab
         with app.app_context():
-            limit = Decimal("30000") + VILLA_DEFAULT_HEADROOM
+            limit = Decimal("100000") + VILLA_DEFAULT_HEADROOM   # base_total, not deposit
             assert check_tab_credit(tab_id, limit - Decimal("1"))[0] is True
             assert check_tab_credit(tab_id, limit + Decimal("1"))[0] is False
+
+    def test_a_lunch_on_an_unpaid_room_is_not_refused(self, app, villa_tab):
+        """The bug in one line: the stay is on the folio, the guest orders lunch."""
+        tab_id, _ = villa_tab
+        with app.app_context():
+            from app.models.charge import Charge
+            from app.models.user import User as _U
+            who = db.session.query(_U).filter_by(username="manager1").one()
+            db.session.add(Charge(tab_id=tab_id, amount=Decimal("100000"),
+                                  description="Accommodation — Villa 9, 1 night",
+                                  created_by_id=who.id,
+                                  idempotency_key=str(uuid.uuid4())))
+            db.session.commit()
+            ok, msg = check_tab_credit(tab_id, Decimal("1800"))
+            assert ok is True, msg
 
     def test_front_house_can_raise_it_for_one_guest(self, app, villa_tab):
         tab_id, booking_id = villa_tab
