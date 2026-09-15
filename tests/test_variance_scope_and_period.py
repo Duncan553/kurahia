@@ -207,3 +207,47 @@ class TestTheVarianceNumbersThemselves:
         assert rows[short_id]["variance_pct"] == rows[over_id]["variance_pct"]
         assert float(rows[short_id]["variance"]) < 0
         assert float(rows[over_id]["variance"]) > 0
+
+
+def test_adjustment_movement_is_explained_not_variance(app, general_dept_id, manager_profile):
+    """A corrected delivery is written history, not stock from nowhere.
+
+    Receiving 4 crates as 4 bottles and fixing it writes an ADJUSTMENT for the
+    difference. Variance used to count only PURCHASE in and CONSUMPTION out, so
+    the correction landed in neither and the 92 bottles it put back on the shelf
+    were reported as "on the shelf with no purchase behind it" — KSh 17,620 of
+    phantom surplus across one afternoon's corrections.
+    """
+    from decimal import Decimal
+    from app.services.variance import compute_variance
+
+    with app.app_context():
+        item = InventoryItem(name=f"Adj test {uuid.uuid4().hex[:6]}", unit="bottle",
+                             department_id=general_dept_id, reorder_level="0")
+        db.session.add(item)
+        db.session.flush()
+        item_id = item.id
+
+        from app.models.user import User
+        actor = db.session.query(User).first()
+
+        start = datetime.now(timezone.utc) - timedelta(hours=1)
+        db.session.add(StockMovement(
+            item_id=item_id, change_amount=Decimal("4"), actor_id=actor.id,
+            reason=MovementReason.PURCHASE.value,
+            idempotency_key=f"adj-p-{uuid.uuid4().hex[:8]}"))
+        db.session.add(StockMovement(
+            item_id=item_id, change_amount=Decimal("92"), actor_id=actor.id,
+            reason=MovementReason.ADJUSTMENT.value,
+            idempotency_key=f"adj-f-{uuid.uuid4().hex[:8]}"))
+        db.session.add(StockCount(
+            item_id=item_id, counted_amount=Decimal("96"), actor_id=actor.id,
+            count_type="FULL", idempotency_key=f"adj-c-{uuid.uuid4().hex[:8]}"))
+        db.session.commit()
+
+        result = compute_variance(item_id, start,
+                                  datetime.now(timezone.utc) + timedelta(minutes=1))
+
+    assert result is not None
+    assert result["expected_closing"] == Decimal("96"), result
+    assert result["variance"] == Decimal("0"), result

@@ -3,12 +3,25 @@ variance.py — Layer 1 variance computation.
 
 Formula (per item, per period):
   opening          = most recent StockCount at or before period_start
-  purchases        = SUM of PURCHASE movements in period
-  consumption      = ABS(SUM of CONSUMPTION_REASONS in period) — SPOILAGE, STAFF_MEAL,
-                     SENT_BACK, SALE_PLACEHOLDER and SALE. SALE matters most: it is
-                     what a POS sale writes, so leaving it out would report every
-                     dish sold as unexplained loss.
-  expected_closing = opening + purchases - consumption
+  explained        = SUM of EVERY movement in the period except COUNT
+  expected_closing = opening + explained
+
+The rule is the whole point: a movement is a written, audited explanation for
+stock arriving or leaving, so whatever a movement accounts for is NOT variance.
+Only what no movement explains is.
+
+That used to be a list — purchases in, CONSUMPTION_REASONS out — and any reason
+missing from the list silently became variance. A delivery corrected from 4 to
+96 bottles writes an ADJUSTMENT, which was in neither list, so 92 bottles of
+Coca-Cola reported as "on the shelf with no purchase behind it" (KSh 17,620
+across the corrections made in one afternoon). An event allocation would have
+reported the same way with the sign flipped: 50 kg of beef sent to a wedding,
+read as theft.
+
+  purchases        = SUM of PURCHASE movements — reported for the breakdown
+  consumption      = ABS(SUM of CONSUMPTION_REASONS) — reported for the breakdown
+  other_movements  = everything else except COUNT (adjustments, transfers,
+                     event allocations) — also explained, also not variance
   actual_closing   = most recent StockCount within the period
   variance         = actual_closing - expected_closing
 
@@ -105,7 +118,22 @@ def compute_variance(item_id: str, period_start: datetime, period_end: datetime)
     # These movements are negative; abs() to get a positive "consumed" number
     consumption = abs(Decimal(str(consumption_raw))) if consumption_raw is not None else Decimal("0")
 
-    expected_closing = opening + purchases - consumption
+    # Everything else the period wrote down — adjustments, transfers, event
+    # allocations. Explained movement, therefore not variance. COUNT is
+    # excluded because a count IS the reconciliation; counting it would make
+    # every variance zero.
+    other_raw = db.session.query(func.sum(StockMovement.change_amount)).filter(
+        StockMovement.item_id == item_id,
+        StockMovement.reason.notin_(
+            [MovementReason.PURCHASE.value, MovementReason.COUNT.value]
+            + [r.value for r in CONSUMPTION_REASONS]
+        ),
+        StockMovement.timestamp_utc > period_start,
+        StockMovement.timestamp_utc <= period_end,
+    ).scalar()
+    other_movements = Decimal(str(other_raw)) if other_raw is not None else Decimal("0")
+
+    expected_closing = opening + purchases - consumption + other_movements
 
     # Closing anchor: most recent count strictly within the period
     closing_count = (
@@ -163,6 +191,7 @@ def compute_variance(item_id: str, period_start: datetime, period_end: datetime)
         "purchases":        purchases,
         "consumption":      consumption,
         "expected_closing": expected_closing,
+        "other_movements": other_movements,
         "actual_closing":   actual_closing,
         "variance":         variance,
         "variance_pct":     variance_pct,
