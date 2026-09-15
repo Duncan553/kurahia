@@ -30,6 +30,7 @@ from app.models.menu_item import MenuItem, PrepStation, StockTracking
 from app.models.role import Role
 from app.models.tab import Tab, TabType
 from app.models.user import User
+from tests.helpers import manager_auth
 
 PW = "TestPass1!"
 
@@ -64,15 +65,23 @@ def _make_user(username, role_name, level, dept_name, **role_flags):
     return u.id
 
 
-def _open_tab(client, token, reference=None, tab_type=None):
+def _open_tab(client, token, reference=None, tab_type=None, assign_to=None):
     payload = {}
     if reference:
         payload["reference"] = reference
     if tab_type:
         payload["tab_type"] = tab_type
-    rv = client.post("/tabs", json=payload, headers=_hdr(token))
+    # See tests/helpers.py: only a manager may open an account by hand now, and
+    # a table becomes a waiter's by being ASSIGNED to them.
+    rv = client.post("/tabs", json=payload, headers=manager_auth(client))
     assert rv.status_code == 201, rv.get_json()
-    return rv.get_json()["id"]
+    tab_id = rv.get_json()["id"]
+    if assign_to:
+        user = db.session.query(User).filter_by(username=assign_to).first()
+        rv = client.post(f"/tabs/{tab_id}/assign", json={"employee_id": user.id},
+                         headers=manager_auth(client))
+        assert rv.status_code == 200, rv.get_json()
+    return tab_id
 
 
 @pytest.fixture
@@ -146,8 +155,11 @@ class TestTabCloseScope:
         assert rv.status_code == 403
         assert "serving" in rv.get_json()["error"].lower()
 
-    def test_the_waiter_who_opened_it_can_close_it(self, client, waiter_token):
-        tab_id = _open_tab(client, waiter_token, "Terrace 4")
+    def test_the_waiter_the_table_belongs_to_can_close_it(self, client, waiter_token):
+        """Theirs by ASSIGNMENT. Nobody on the floor opens an account with no
+        guest attached any more, so a manager opens it and hands the table
+        over — and the person holding it can still settle and close it."""
+        tab_id = _open_tab(client, waiter_token, "Terrace 4", assign_to="waiter1")
         rv = client.post(f"/tabs/{tab_id}/close", json={}, headers=_hdr(waiter_token))
         assert rv.status_code == 200
         assert rv.get_json()["status"] == "CLOSED"
@@ -185,10 +197,20 @@ class TestTabReadScope:
         rv = client.get(f"/tabs/{tab_id}", headers=_hdr(waiter_token))
         assert rv.status_code == 200, "so the detail must open it"
 
-    def test_a_villa_folio_is_not_offered_and_not_opened(
+    def test_a_till_sees_a_room_bill_but_cannot_settle_or_close_it(
             self, client, waiter_token, manager_token, app):
-        """A villa tab is a guest's whole stay. It is neither listed to a waiter
-        nor opened for one — the two rules have to agree in BOTH directions."""
+        """A guest spends all over the property and settles when it suits them,
+        so the person in front of them has to be able to show the WHOLE bill —
+        every department, what is already cleared, what is left.
+
+        What a till does NOT get is authority over the account:
+          · a room is settled at front house, where the deposit was taken and
+            check-out happens — not at a table;
+          · closing it belongs to front desk (villa) and the gate (band).
+
+        This test has been rewritten twice as the rule settled, and the shape
+        that matters is the one it holds now: SEE everything, CHANGE nothing.
+        """
         tab = Tab(reference="Villa 1 / Njeri Kamau", tab_type=TabType.VILLA.value,
                   opened_by_id=db.session.query(User).filter_by(
                       username="manager1").first().id)
@@ -197,11 +219,20 @@ class TestTabReadScope:
         tab_id = tab.id
 
         listed = client.get("/tabs?mine=true", headers=_hdr(waiter_token)).get_json()
-        assert not any(t["id"] == tab_id for t in listed), "not offered"
+        assert not any(t["id"] == tab_id for t in listed), "not one of their tables"
 
         rv = client.get(f"/tabs/{tab_id}", headers=_hdr(waiter_token))
-        assert rv.status_code == 403, "and not openable"
-        assert "serving" in rv.get_json()["error"].lower()
+        assert rv.status_code == 200, "but serving it is the waiter's job"
+        body = rv.get_json()
+        assert body["service_view"] is True, "seen from a till, not from the desk"
+        assert "charges" in body and "payments" in body, "the whole bill, or it is useless"
+        assert body["balance"] is not None, "the number the guest is asking about"
+
+        rv = client.post(f"/tabs/{tab_id}/payments",
+                         json={"amount": "500.00", "method": "CASH"},
+                         headers=_hdr(waiter_token))
+        assert rv.status_code == 403, "a room is settled at front house"
+        assert "front house" in rv.get_json()["error"].lower()
 
 
 # ── 3. "this consumes nothing" is a manager's signature ──────────────────────

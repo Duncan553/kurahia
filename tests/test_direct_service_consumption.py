@@ -24,6 +24,7 @@ from app.models.menu_item import MenuItem, PrepStation, StockTracking
 from app.models.recipe_line import RecipeLine
 from app.models.stock_movement import StockMovement, MovementReason
 from app.services.stock import get_current_stock
+from tests.helpers import manager_auth
 
 
 @pytest.fixture
@@ -69,9 +70,13 @@ def spa_service(app):
 
 
 def _open_tab(client, token) -> str:
+    # A spa sale belongs to a guest's band or room like any other. What this
+    # file tests is what a SALE does to stock, so the account is opened through
+    # the manager override (tests/helpers.py) and the selling is done by the
+    # role under test.
     rv = client.post("/tabs", json={"reference": f"spa-{uuid.uuid4().hex[:6]}",
                                     "idempotency_key": str(uuid.uuid4())},
-                     headers={"Authorization": f"Bearer {token}"})
+                     headers=manager_auth(client))
     assert rv.status_code == 201, rv.get_json()
     return rv.get_json()["id"]
 

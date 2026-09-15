@@ -25,6 +25,7 @@ from app.models.inventory_item import InventoryItem
 from app.models.menu_item import MenuItem, PrepStation
 from app.models.order_item import OrderItem, OrderItemStatus
 from app.models.recipe_line import RecipeLine
+from tests.helpers import manager_auth
 
 
 def _auth(token):
@@ -73,7 +74,9 @@ def a_menu(app, client, waiter_token, food_item_id):
 
     rv = client.post("/tabs", json={"reference": f"me-{uuid.uuid4().hex[:6]}",
                                     "idempotency_key": str(uuid.uuid4())},
-                     headers=_auth(waiter_token))
+                     # A manager opens the account: nobody on the floor may open
+                     # one with no wristband and no room behind it.
+                     headers=manager_auth(client))
     tab_id = rv.get_json()["id"]
     order = Order(tab_id=tab_id, created_by_id=owner_id,
                   idempotency_key=str(uuid.uuid4()))

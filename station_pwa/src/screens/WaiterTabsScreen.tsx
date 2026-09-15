@@ -44,6 +44,7 @@ function timeSinceOpen(opened_at: string): string {
 
 export default function WaiterTabsScreen() {
   const navigate = useNavigate()
+  const roleLevel = useAuthStore(s => s.user?.role_level ?? 0)
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
   const user = useAuthStore(s => s.user)
@@ -165,7 +166,7 @@ export default function WaiterTabsScreen() {
             {isManager ? 'All Tables' : 'My Tables'}
           </h1>
         </div>
-        <Button variant="primary" size="sm" onClick={() => setOpen(true)}>+ New Table</Button>
+        <Button variant="primary" size="sm" onClick={() => setOpen(true)}>+ Open a table</Button>
       </div>
 
       {/* ── HERO: Ready-for-pickup pings — BIGGEST element when present ── */}
@@ -404,29 +405,51 @@ export default function WaiterTabsScreen() {
         )}
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="New Table" size="sm">
+      {/* A table is not an account. The guest's account is their wristband or
+          their room, and both exist before they order — the gate took 3,000 for
+          one, front desk took a deposit for the other. This used to open a
+          free-text table with nobody attached and nothing paid, which is how
+          somebody eats without ever passing the gate. */}
+      <Modal open={open} onClose={() => setOpen(false)} title="Open a table" size="sm">
         <div className="space-y-4">
           <div>
             <label className="block text-[10px] tracking-widest uppercase text-ink-tertiary mb-1">
-              Table / Reference
+              Guest's wristband number
             </label>
             <input
               autoFocus
+              inputMode="numeric"
               value={ref}
               onChange={e => setRef(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && openMut.mutate(ref)}
-              placeholder="e.g. Table 7, Beach Bar 3"
+              onKeyDown={e => e.key === 'Enter' && bandMut.mutate(ref)}
+              placeholder="e.g. 6"
               className="w-full rounded-xl glass-card bg-transparent px-4 py-3
                 text-base text-ink-primary placeholder:text-ink-tertiary
                 focus:outline-none focus:border-primary-main"
             />
+            <p className="text-xs text-ink-tertiary mt-2">
+              Staying in a villa? Close this and use <span className="text-ink-secondary">
+              charge to the room</span> instead. No band at all — send them to the gate.
+            </p>
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button variant="primary" size="sm" loading={openMut.isPending} onClick={() => openMut.mutate(ref)}>
-              Open Table
+            <Button variant="primary" size="sm" loading={bandMut.isPending}
+              onClick={() => bandMut.mutate(ref)}>
+              Open this band
             </Button>
           </div>
+          {/* The exception, and it is signed for: a manager may still open a
+              table with no band (a lost band, a gate tablet that is down). The
+              endpoint refuses everyone below manager, so this is hidden rather
+              than offered and then 403'd. */}
+          {roleLevel >= 5 && (
+            <button
+              onClick={() => openMut.mutate(ref || 'Manager override — no band')}
+              className="w-full pt-2 text-xs text-ink-tertiary hover:text-ink-secondary underline">
+              Manager: open without a band
+            </button>
+          )}
         </div>
       </Modal>
       </ErrorBoundary>

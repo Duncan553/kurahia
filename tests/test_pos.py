@@ -22,17 +22,30 @@ import uuid
 import pytest
 from decimal import Decimal
 from app.extensions import db as _db
+from tests.helpers import manager_auth
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
-def _open_tab(client, token, reference=None):
+# Who a tab belongs to is decided by ASSIGNMENT now, not by who created it.
+# The floor cannot open an account with nobody attached — every bill belongs to
+# a wristband or a room — so a manager opens it and hands it over, and these
+# tests say which waiter it was handed to.
+def _open_tab(client, token, reference=None, assign_to=None):
     payload = {}
     if reference:
         payload["reference"] = reference
-    rv = client.post("/tabs", json=payload, headers={"Authorization": f"Bearer {token}"})
-    assert rv.status_code == 201
-    return rv.get_json()["id"]
+    rv = client.post("/tabs", json=payload, headers=manager_auth(client))
+    assert rv.status_code == 201, rv.get_json()
+    tab_id = rv.get_json()["id"]
+    if assign_to:
+        from app.extensions import db
+        from app.models.user import User
+        user = db.session.query(User).filter_by(username=assign_to).first()
+        rv = client.post(f"/tabs/{tab_id}/assign", json={"employee_id": user.id},
+                         headers=manager_auth(client))
+        assert rv.status_code == 200, rv.get_json()
+    return tab_id
 
 
 def _create_order(client, token, tab_id, menu_item_id, qty=1):
@@ -385,7 +398,7 @@ def test_ready_notifies_order_creator(client, waiter_token, kitchen_token, food_
 def test_cancel_after_send_reverses_charge(client, waiter_token, food_item_id, drink_item_id):
     """Cancel a sent item → negative reversal charge → balance drops."""
     wh = {"Authorization": f"Bearer {waiter_token}"}
-    tab_id = _open_tab(client, waiter_token, reference="Table R")
+    tab_id = _open_tab(client, waiter_token, reference="Table R", assign_to="waiter1")
     order_id = _create_order(client, waiter_token, tab_id, food_item_id)  # 1200
     _send_order(client, waiter_token, order_id)
 
@@ -553,8 +566,11 @@ def test_chef_cannot_relabel_a_dish_into_a_drink(client, chef_token, food_item_i
 # The weaker gate was on the stronger data.
 
 def test_waiter_can_open_their_own_tabs_bill(client, waiter_token, food_item_id):
-    """A waiter closing their own table needs the bill."""
-    tab_id = _open_tab(client, waiter_token)
+    """A waiter closing their own table needs the bill.
+
+    Theirs by ASSIGNMENT: a manager opens the account (nobody may open one with
+    no guest attached) and hands the table over."""
+    tab_id = _open_tab(client, waiter_token, assign_to="waiter1")
     rv = client.get(f"/receipts/{tab_id}", headers={"Authorization": f"Bearer {waiter_token}"})
     assert rv.status_code == 200
     assert rv.get_json()["tab_id"] == tab_id
@@ -760,11 +776,20 @@ def test_bar_posted_waiter_can_still_take_orders(client, app, food_item_id, wifi
     client.post("/hr/clock-in", json={}, headers={"Authorization": f"Bearer {token}"},
                 environ_base={"REMOTE_ADDR": "127.0.0.1"})
 
+    # The account is opened by a manager and handed to this waiter — the floor
+    # cannot open one with nobody attached. What is under test is whether a
+    # waiter posted to the BAR can still take an order once they have a table.
     rv = client.post("/tabs", json={"reference": "Bar stool 1", "idempotency_key": str(uuid.uuid4())},
-                     headers={"Authorization": f"Bearer {token}"})
+                     headers=manager_auth(client))
     assert rv.status_code in (200, 201), rv.get_json()
 
     tab_id = rv.get_json()["id"]
+    with client.application.app_context():
+        from app.models.user import User as _U
+        bar_waiter = _db.session.query(_U).filter_by(username="barwaiter1").first()
+    if bar_waiter:
+        client.post(f"/tabs/{tab_id}/assign", json={"employee_id": bar_waiter.id},
+                    headers=manager_auth(client))
     rv = client.post("/orders", json={"tab_id": tab_id,
                                       "items": [{"menu_item_id": food_item_id, "quantity": 1}],
                                       "idempotency_key": str(uuid.uuid4())},

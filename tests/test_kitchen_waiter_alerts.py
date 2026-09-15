@@ -12,6 +12,7 @@ plate is collected.
 """
 import uuid
 import pytest
+from tests.helpers import open_tab
 from decimal import Decimal
 
 from app.extensions import db
@@ -45,7 +46,10 @@ def kitchen_item(app):
 
 
 def _send_order(client, waiter_token, item_id, reference="Table 9"):
-    tab = client.post("/tabs", json={"reference": reference}, headers=auth(waiter_token)).get_json()
+    # The floor cannot open a nameless account any more — every bill belongs to
+    # a wristband or a room. This test is about the kitchen seeing the order,
+    # not about who may open an account, so it uses the manager override.
+    tab = open_tab(client, reference)
     order = client.post("/orders", json={
         "tab_id": tab["id"], "items": [{"menu_item_id": item_id, "quantity": 1}],
     }, headers=auth(waiter_token)).get_json()

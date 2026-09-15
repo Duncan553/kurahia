@@ -24,6 +24,7 @@ from app.extensions import db
 from app.models.charge import Charge
 from app.models.system_setting import SystemSetting
 from app.services.tax import get_vat_rate, split_inclusive, VAT_RATE_KEY
+from tests.helpers import manager_auth
 
 
 def _auth(token):
@@ -72,7 +73,9 @@ def sold_item(app, client, waiter_token, food_item_id):
     """Open a tab, order the seeded food item, send it — producing a charge."""
     rv = client.post("/tabs", json={"reference": f"vat-{uuid.uuid4().hex[:6]}",
                                     "idempotency_key": str(uuid.uuid4())},
-                     headers=_auth(waiter_token))
+                     # A manager opens the account: nobody on the floor may open
+                     # one with no wristband and no room behind it.
+                     headers=manager_auth(client))
     tab_id = rv.get_json()["id"]
 
     rv = client.post("/orders", json={
@@ -140,7 +143,9 @@ def test_summary_groups_by_the_rate_that_applied(app, client, manager_token, wai
 
     rv = client.post("/tabs", json={"reference": f"vat2-{uuid.uuid4().hex[:6]}",
                                     "idempotency_key": str(uuid.uuid4())},
-                     headers=_auth(waiter_token))
+                     # A manager opens the account: nobody on the floor may open
+                     # one with no wristband and no room behind it.
+                     headers=manager_auth(client))
     tab2 = rv.get_json()["id"]
     rv = client.post("/orders", json={
         "tab_id": tab2, "items": [{"menu_item_id": food_item_id, "quantity": 1}],

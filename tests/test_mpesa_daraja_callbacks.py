@@ -9,6 +9,7 @@ from app.models.payment_reconciliation import PaymentReconciliation, PaymentReco
 from app.models.pending_stk_push import PendingSTKPush
 from app.models.audit_log import AuditLog
 from app.extensions import db
+from tests.helpers import manager_auth
 
 
 @pytest.fixture(autouse=True)
@@ -386,7 +387,7 @@ def test_charge_leaves_no_payment_behind_when_the_prompt_fails(client, app, wait
     monkeypatch.setattr(mpesa_daraja, "_get_oauth_token", lambda: (None, "Daraja OAuth failed"))
 
     hdr = {"Authorization": f"Bearer {waiter_token}"}
-    tab_id = client.post("/tabs", json={}, headers=hdr).get_json()["id"]
+    tab_id = client.post("/tabs", json={}, headers=manager_auth(client)).get_json()["id"]
 
     before = db.session.query(Payment).count()
 
@@ -420,7 +421,7 @@ def test_charge_creates_exactly_one_payment_when_the_prompt_goes_out(client, app
     monkeypatch.setattr(mpesa_daraja.httpx, "post", lambda *a, **kw: _Resp())
 
     hdr = {"Authorization": f"Bearer {waiter_token}"}
-    tab_id = client.post("/tabs", json={}, headers=hdr).get_json()["id"]
+    tab_id = client.post("/tabs", json={}, headers=manager_auth(client)).get_json()["id"]
 
     rv = client.post("/finance/mpesa/charge",
                      json={"tab_id": tab_id, "amount": 1500, "phone_number": "0712345678",

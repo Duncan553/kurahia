@@ -875,10 +875,22 @@ def test_get_tab_is_scoped_like_the_receipt_regression(
     assert denied.status_code == 403
     assert "only open a bill for a table you are serving" in denied.get_json()["error"]
 
-    # The door beside it, which used to be open.
+    # The door beside it, which used to be wide open and is now a narrower one.
+    #
+    # It is not shut: a guest in a villa orders lunch, and the waiter carrying
+    # it has to be able to see what is on the room and say what it comes to.
+    # What they get is the SERVICE VIEW — the bill, with no authority over it:
+    # they cannot settle a room (front house does) and cannot close it
+    # (check-out does). The folio door above stays 403, which is the difference
+    # this regression was written to protect.
     rv = client.get(f"/tabs/{tab_id}", headers=auth(waiter_token))
-    assert rv.status_code == 403
-    assert "only open a table you are serving" in rv.get_json()["error"]
+    assert rv.status_code == 200
+    assert rv.get_json()["service_view"] is True
+
+    denied_pay = client.post(f"/tabs/{tab_id}/payments",
+                             json={"amount": "100.00", "method": "CASH"},
+                             headers=auth(waiter_token))
+    assert denied_pay.status_code == 403, "a room is settled at front house"
 
     # Front desk and above still get the whole tab — settling accounts is the job.
     body = client.get(f"/tabs/{tab_id}", headers=auth(manager_token)).get_json()

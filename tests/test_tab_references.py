@@ -20,6 +20,7 @@ import pytest
 
 from app.extensions import db
 from app.models.tab import Tab
+from tests.helpers import manager_auth
 
 
 def _auth(token):
@@ -29,7 +30,9 @@ def _auth(token):
 def _open(client, token, reference):
     rv = client.post("/tabs", json={"reference": reference,
                                     "idempotency_key": str(uuid.uuid4())},
-                     headers=_auth(token))
+                     # A manager opens the account: nobody on the floor may open
+                     # one with no wristband and no room behind it.
+                     headers=manager_auth(client))
     assert rv.status_code == 201, rv.get_json()
     return rv.get_json()["id"]
 

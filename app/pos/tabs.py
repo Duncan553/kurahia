@@ -126,6 +126,28 @@ def open_tab():
     if tab_type not in TabType.__members__:
         return jsonify({"error": f"tab_type must be one of {list(TabType.__members__)}."}), 400
 
+    # Every bill belongs to a guest, and at this resort a guest is either
+    # wearing a wristband or staying in a villa. Both accounts already exist
+    # before anyone orders: the gate creates the band's tab when it takes the
+    # KSh 3,000, front desk creates the villa's when it takes the deposit.
+    #
+    # A free-text table ("Table 7") is a THIRD kind of account with nobody
+    # attached and nothing paid in advance — someone can walk past the gate,
+    # sit down, eat, and the only trace is a nameless row. Fifteen such tabs
+    # were open on the live database, three with no reference at all and one
+    # holding KSh 1,800 since the day before.
+    #
+    # So the floor cannot open one. A manager still can, because real days have
+    # exceptions — a lost band, a gate tablet that is down — and an exception a
+    # manager signs for is not the same as a hole anyone can walk through. The
+    # audit line below records who did it either way.
+    if tab_type == TabType.WALK_IN.value and actor.role.level < MANAGER_LEVEL:
+        return jsonify({
+            "error": "Every bill belongs to a wristband or a room. Ask the guest "
+                     "for their band number, or open their room. If they have "
+                     "neither, send them to the gate for a band."
+        }), 403
+
     with db.session.begin_nested():
         tab = Tab(tab_type=tab_type, reference=reference, opened_by_id=actor.id)
         db.session.add(tab)
@@ -179,6 +201,79 @@ def _may_touch_tab(actor, tab, *, closing: bool = False) -> bool:
     return tab.assigned_to_id is None and tab.tab_type == TabType.WALK_IN.value
 
 
+def _may_serve_tab(actor, tab) -> bool:
+    """May this person put an order on somebody else's room or wristband?
+
+    This is how the resort actually works: a guest wearing a band or staying in
+    a villa walks the property, spends at the restaurant, the bar, the spa and
+    the boat, and settles when it suits them — at any till, in parts if they
+    like. So the person in front of them has to be able to show the WHOLE bill,
+    including what has already been cleared, and take money against it.
+
+    What this view withholds is not information, it is AUTHORITY: closing the
+    account stays with front desk (check-out) and the gate (the band). Money
+    can come in anywhere; an account is closed in one place, where somebody is
+    accountable for it being clear.
+
+    It grants no new power. POST /orders never checked tab ownership, so any
+    clocked-in staff member could already put a line on a room; the screen that
+    does it simply 403'd on the way in, so the waiter could not see what they
+    had sent. That is why the waiter's "charge to the room", the spa till and
+    the water till all dead-ended on "Not your table".
+    """
+    if tab.status != TabStatus.OPEN.value:
+        return False
+    return tab.tab_type in (TabType.VILLA.value, TabType.BAND.value)
+
+
+def _service_view(tab):
+    """The guest's running bill, seen from a till that cannot close it.
+
+    Same numbers as the full view — every charge from every department, every
+    payment already made, the balance — because a guest asking "what do I owe?"
+    at the bar is asking about their whole day, not the bar's share of it. The
+    difference from the full view is what the SCREEN may do with it: no close,
+    no check-out. Those belong to front desk and the gate.
+    """
+    orders   = db.session.query(Order).filter_by(tab_id=tab.id).all()
+    charges  = db.session.query(Charge).filter_by(tab_id=tab.id).all()
+    payments = db.session.query(Payment).filter_by(tab_id=tab.id).all()
+    balance  = get_tab_balance(tab.id)
+    body = {
+        "id":           tab.id,
+        "reference":    tab.reference,
+        "tab_type":     tab.tab_type,
+        "status":       tab.status,
+        "service_view": True,
+        "balance":      str(balance),
+        "charges":  [{"id": c.id, "description": c.description, "amount": str(c.amount),
+                      "created_at": c.created_at.isoformat()} for c in charges],
+        "payments": [{"id": p.id, "method": p.method, "amount": str(p.amount),
+                      "received_by": p.received_by.username if p.received_by else None,
+                      "created_at": p.created_at_utc.isoformat()} for p in payments],
+        "orders": [
+            {
+                "id": o.id,
+                "status": o.status,
+                "items": [
+                    {"id": oi.id, "name": oi.menu_item.name if oi.menu_item else None,
+                     "quantity": str(oi.quantity), "status": oi.status,
+                     "notes": oi.notes}
+                    for oi in o.items
+                ],
+            }
+            for o in orders
+        ],
+    }
+    if tab.tab_type == TabType.BAND.value:
+        # A band is prepaid, so the till MUST see what is left or it cannot
+        # refuse an overspend at the counter. Gate staff already see this same
+        # number for every band on the gate hub.
+        bal = get_tab_balance(tab.id)
+        body["credit_remaining"] = str(-bal) if bal < 0 else "0.00"
+    return body
+
+
 @tabs_bp.get("/<tab_id>")
 @require_active_user
 def get_tab(tab_id):
@@ -201,7 +296,10 @@ def get_tab(tab_id):
     if not tab:
         return jsonify({"error": "Tab not found."}), 404
 
-    if not _may_touch_tab(actor, tab):
+    full = _may_touch_tab(actor, tab)
+    if not full:
+        if _may_serve_tab(actor, tab):
+            return jsonify(_service_view(tab)), 200
         return jsonify({
             "error": "You can only open a table you are serving. "
                      "Ask front desk or a manager for anything else."

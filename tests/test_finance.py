@@ -22,6 +22,7 @@ import uuid
 import pytest
 from decimal import Decimal
 from datetime import datetime, timezone, timedelta
+from tests.helpers import manager_auth
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
@@ -39,7 +40,7 @@ def _make_tab_and_pay(client, token, amount, method="CASH", mpesa_code=None):
         service = db.session.query(MenuItem).filter_by(name="Pool Access").first()
         svc_id = service.id
 
-    rv = client.post("/tabs", json={}, headers={"Authorization": f"Bearer {token}"})
+    rv = client.post("/tabs", json={}, headers=manager_auth(client))
     tab_id = rv.get_json()["id"]
 
     rv = client.post("/orders", json={
@@ -270,17 +271,28 @@ def test_manager_can_create_budget_but_not_change_one(
 ):
     """The budget authorization split, as implemented in app/finance/budgets.py.
 
-    This test previously asserted that a manager could NOT create a budget.
-    Commit dc203ed deliberately widened creation to manager+ ("manager can set
-    budgets"), leaving edit/disable/enable owner-only — changing or removing a
-    budget already in force is more sensitive than setting one for the first
-    time. The test was never updated, so it failed AND the real boundary
-    (manager blocked from EDITING) had no coverage at all. It does now.
+    This test has moved twice, and the reason is worth keeping.
+
+    It first asserted a manager could NOT create a budget. Commit dc203ed
+    widened creation to manager+, the test was never updated, and the real
+    boundary (manager blocked from EDITING) went uncovered.
+
+    It is now owner-only again, and this time because of what a budget MEANS:
+    inside their budget a manager may approve purchases without asking anyone
+    (app/inventory/purchases.py::approve_request). A manager who can set that
+    number is setting their own spending limit, which is not a limit at all.
     """
-    # ── A manager CAN set a budget for the first time ──
-    rv = client.post("/finance/budgets", json={
+    # ── A manager cannot set one: that is the owner deciding what they may spend ──
+    denied = client.post("/finance/budgets", json={
         "department_id": general_dept_id, "period": "2099-02", "amount": "50000",
     }, headers={"Authorization": f"Bearer {manager_token}"})
+    assert denied.status_code == 403
+    assert "owner" in denied.get_json()["error"].lower()
+
+    # ── The owner sets it ──
+    rv = client.post("/finance/budgets", json={
+        "department_id": general_dept_id, "period": "2099-02", "amount": "50000",
+    }, headers={"Authorization": f"Bearer {owner_token}"})
     assert rv.status_code == 201
     budget_id = rv.get_json()["id"]
 
@@ -388,7 +400,7 @@ def test_void_rate_computed(client, owner_token, waiter_token, food_item_id):
     to   = (now + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
 
     for cancel in [True, True, True, False]:
-        rv = client.post("/tabs", json={}, headers={"Authorization": f"Bearer {waiter_token}"})
+        rv = client.post("/tabs", json={}, headers=manager_auth(client))
         tab_id = rv.get_json()["id"]
         rv = client.post("/orders", json={
             "tab_id": tab_id,

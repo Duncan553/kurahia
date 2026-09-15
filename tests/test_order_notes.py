@@ -5,10 +5,16 @@ import pytest
 from app.extensions import db
 from app.models.order_item import OrderItem
 from app.models.menu_item import MenuItem
+from tests.helpers import manager_auth
 
 
 def _open_tab(client, token):
-    rv = client.post("/tabs", json={}, headers={"Authorization": f"Bearer {token}"})
+    # The floor cannot open an account with nobody attached any more — every
+    # bill belongs to a wristband or a room. These tests are about what
+    # happens to an order once an account exists, so they open one through
+    # the manager override (tests/helpers.py). `token` is kept in the
+    # signature because callers pass the role whose behaviour is under test.
+    rv = client.post("/tabs", json={}, headers=manager_auth(client))
     return rv.get_json()["id"]
 
 

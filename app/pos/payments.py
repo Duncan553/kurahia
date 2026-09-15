@@ -9,11 +9,14 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_decorators import require_active_user, require_clocked_in
 from app.utils.money import parse_amount, parse_quantity
 from app.extensions import db
-from app.models.tab import Tab, TabStatus
+from app.models.tab import Tab, TabStatus, TabType
 from app.models.payment import Payment, PaymentMethod
 from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.services.tab import get_tab_balance
+
+# Front desk and above: the people who take a deposit and run a check-out.
+FRONT_DESK_LEVEL = 3
 
 payments_bp = Blueprint("payments", __name__, url_prefix="/tabs")
 
@@ -28,6 +31,22 @@ def record_payment(tab_id):
         return jsonify({"error": "Tab not found."}), 404
     if tab.status == TabStatus.CLOSED.value:
         return jsonify({"error": "This tab is already closed. No further payments can be recorded."}), 400
+
+    # A wristband is settled wherever the guest happens to be — the bar, the
+    # boat, the gate on the way out. A VILLA is not: a stay is settled at front
+    # house, where the deposit was taken, the whole folio is in front of
+    # somebody, and check-out happens. Letting a waiter take KSh 100,000 of room
+    # settlement at a table puts that cash on the wrong person's reconciliation
+    # and leaves check-out guessing what has been paid.
+    #
+    # Seeing the bill is a different question and stays open to every till: a
+    # guest at the bar asking "what is on my room?" should get an answer, and
+    # GET /tabs/:id gives them one.
+    if tab.tab_type == TabType.VILLA.value and actor.role.level < FRONT_DESK_LEVEL:
+        return jsonify({
+            "error": "A room account is settled at front house. Send the guest "
+                     "there, or they can leave it all for check-out."
+        }), 403
 
     data     = request.get_json(silent=True) or {}
     raw_amt  = data.get("amount")
