@@ -34,7 +34,15 @@ class OrderItemStatus(str, enum.Enum):
 # and is applied directly by the manager refund endpoint.
 VALID_TRANSITIONS = {
     OrderItemStatus.PENDING:  {OrderItemStatus.RECEIVED, OrderItemStatus.CANCELLED},
-    OrderItemStatus.RECEIVED: {OrderItemStatus.READY,    OrderItemStatus.CANCELLED},
+    # RECEIVED -> PENDING is the one step BACKWARDS in this table, and it is
+    # here because a cook tapping "Start cooking" on the wrong ticket is the
+    # commonest mistake on a busy pass — every kitchen display system has a
+    # recall for exactly this. It is safe: stock moves when an item is marked
+    # READY, not when it is received, so taking a start back consumes nothing
+    # and reverses nothing. Going back from READY is a different question and
+    # stays closed — that one did move stock.
+    OrderItemStatus.RECEIVED: {OrderItemStatus.READY, OrderItemStatus.CANCELLED,
+                               OrderItemStatus.PENDING},
     OrderItemStatus.READY:    {OrderItemStatus.SERVED, OrderItemStatus.CANCELLED},
     OrderItemStatus.SERVED:   set(),   # terminal (refund via POST /order-items/:id/refund)
     OrderItemStatus.CANCELLED: set(),  # terminal

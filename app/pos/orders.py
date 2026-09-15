@@ -385,6 +385,37 @@ def receive_item(oi_id):
     return jsonify({"id": oi.id, "status": oi.status}), 200
 
 
+@orders_bp.post("/order-items/<oi_id>/unreceive")
+@require_active_user
+@require_clocked_in
+def unreceive_item(oi_id):
+    """Take a start back — the wrong ticket was tapped.
+
+    Nothing has been consumed at this point: stock moves when an item is marked
+    READY. So this puts the line back on the board as if it had never been
+    started, and the audit log keeps the fact that it happened.
+    """
+    actor = db.session.get(User, get_jwt_identity())
+    oi = db.session.get(OrderItem, oi_id)
+    if not oi:
+        return jsonify({"error": "Order item not found."}), 404
+    if not _can_operate_station(actor, oi.prep_station_snapshot):
+        return jsonify({
+            "error": f"Only {oi.prep_station_snapshot} staff or a manager can change this item."
+        }), 403
+    if not oi.can_transition_to(OrderItemStatus.PENDING):
+        return jsonify({
+            "error": f"This item is {oi.status} — only one that has just been started "
+                     f"can be put back on the board."
+        }), 400
+    with db.session.begin_nested():
+        oi.status      = OrderItemStatus.PENDING.value
+        oi.received_at = None
+    AuditLog.log(actor=actor.username, action="order_item.unreceive", target=oi_id)
+    db.session.commit()
+    return jsonify({"id": oi.id, "status": oi.status}), 200
+
+
 @orders_bp.post("/order-items/<oi_id>/ready")
 @require_active_user
 @require_clocked_in
@@ -564,13 +595,24 @@ def staff_cash_report():
 # ── Internal helper ───────────────────────────────────────────────────────────
 
 def _maybe_complete_order(order: Order):
-    """Auto-set order to FULLY_SERVED if all items are in terminal states."""
+    """Close an order out once every line has reached a terminal state.
+
+    Served and cancelled are both terminal, but they are not the same ending.
+    An order whose every line was CANCELLED was being marked FULLY_SERVED —
+    including a DRAFT order that never reached a kitchen, which then rendered
+    beside real tickets and counted as served work in anything grouping by
+    status. Nothing was served. Say so.
+    """
     # REFUNDED is terminal: a served item reversed by a manager still counts as resolved
     terminal = {OrderItemStatus.SERVED.value, OrderItemStatus.CANCELLED.value,
                 OrderItemStatus.REFUNDED.value}
-    if all(oi.status in terminal for oi in order.items):
-        order.status       = OrderStatus.FULLY_SERVED.value
-        order.completed_at = datetime.now(timezone.utc)
+    if not order.items or not all(oi.status in terminal for oi in order.items):
+        return
+
+    all_cancelled = all(oi.status == OrderItemStatus.CANCELLED.value for oi in order.items)
+    order.status = (OrderStatus.CANCELLED.value if all_cancelled
+                    else OrderStatus.FULLY_SERVED.value)
+    order.completed_at = datetime.now(timezone.utc)
 
 
 # ── Refund endpoint ───────────────────────────────────────────────────────────

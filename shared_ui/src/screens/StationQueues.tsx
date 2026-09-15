@@ -5,6 +5,12 @@ import api from '../lib/axios'
 import { useToastStore, Icon } from '../index'
 import { playOrderAlert, isMuted, setMuted as setAudioMuted } from '../lib/audio'
 
+// A guest note that mentions an allergy is treated differently from "no onions".
+// Kept deliberately small and obvious: staff write in English and Swahili, so
+// this catches the words that actually get typed rather than trying to parse
+// the sentence.
+const ALLERGY_WORDS = /allerg|anaphyla|epipen|intoleran|coeliac|celiac|gluten|nut\b|nuts|shellfish|peanut/i
+
 const MUTE_STORAGE_KEY = 'kurahia-audio-muted'
 
 type Station = 'KITCHEN' | 'BAR'
@@ -82,7 +88,7 @@ function OrderTicket({
 }: {
   group: OrderGroup
   station: Station
-  onAction: (id: string, action: 'receive' | 'ready') => void
+  onAction: (id: string, action: 'receive' | 'ready' | 'unreceive') => void
   isPending: boolean
 }) {
   const [tick, setTick] = useState(0)
@@ -148,8 +154,24 @@ function OrderTicket({
             <span className="text-lg font-bold text-primary-main min-w-[2rem]">{item.quantity}×</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-ink-primary leading-tight">{item.menu_item}</p>
+              {/* What the guest asked for. This was the DIMMEST line on the
+                  ticket — small grey italic under the dish — including one
+                  reading "no chilli at all - guest allergic". A cook reading a
+                  wall-mounted tablet at arm's length in a hot kitchen needs
+                  this at least as loud as the dish name, and louder when it
+                  says allergy: getting it wrong is not a complaint, it is an
+                  ambulance. */}
               {item.notes && (
-                <p className="text-xs text-ink-tertiary mt-0.5">— {item.notes}</p>
+                <p className={`mt-1 px-2 py-1 rounded text-sm font-semibold leading-snug ${
+                  ALLERGY_WORDS.test(item.notes)
+                    ? 'bg-status-failed/15 text-status-failed border border-status-failed/30'
+                    : 'bg-white/10 text-ink-primary'
+                }`}>
+                  {ALLERGY_WORDS.test(item.notes) && (
+                    <Icon name="alert" size={13} strokeWidth={2.5} className="inline mr-1 -mt-0.5" />
+                  )}
+                  {item.notes}
+                </p>
               )}
               {item.allergens && (
                 <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded bg-status-failed/15 text-status-failed text-[10px] font-bold border border-status-failed/25">
@@ -182,6 +204,20 @@ function OrderTicket({
 
         {allReceived && (
           <>
+            {/* Tapped the wrong ticket. Nothing has been consumed yet — stock
+                moves at READY — so the line goes back on the board as new,
+                which is what every kitchen display calls a recall. */}
+            <button
+              onClick={() => group.items.forEach(it => onAction(it.order_item_id, 'unreceive'))}
+              disabled={isPending}
+              title="Put this ticket back — it was started by mistake"
+              className="px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider
+                         border border-white/15 text-ink-secondary hover:bg-white/5
+                         disabled:opacity-50 focus-visible:outline-none
+                         focus-visible:ring-2 focus-visible:ring-primary-main"
+            >
+              Undo
+            </button>
             <button
               onClick={() => group.items.forEach(it => onAction(it.order_item_id, 'ready'))}
               disabled={isPending}
@@ -275,7 +311,7 @@ function StationBoard({ station }: { station: Station }) {
   }, [items, station])
 
   const actMut = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: 'receive' | 'ready' }) =>
+    mutationFn: ({ id, action }: { id: string; action: 'receive' | 'ready' | 'unreceive' }) =>
       api.post(`/order-items/${id}/${action}`),
     onSuccess: (_, v) => {
       qc.invalidateQueries({ queryKey: ['queue', station] })

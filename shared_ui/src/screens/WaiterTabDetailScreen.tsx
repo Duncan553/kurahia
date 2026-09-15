@@ -10,6 +10,11 @@ import type { IconName } from '../index'
 import api from '../lib/axios'
 import { useAuthStore } from '../stores/authStore'
 
+// One tap instead of a sentence. Kept short on purpose: a list long enough to
+// need scrolling is slower than typing, and these six cover what guests
+// actually ask for here. Anything else still goes in the note field.
+const QUICK_NOTES = ['No chilli', 'No onions', 'Well done', 'Extra spicy', 'No ice', 'Allergy'] as const
+
 const FRONT_DESK_LEVEL = 3   // must match app/reports/routes.py + app/notifications/core.py
 
 interface MenuItem {
@@ -18,7 +23,12 @@ interface MenuItem {
 }
 interface OrderItem { id: string; name: string | null; quantity: string; status: string; notes: string | null }
 interface TabDetail {
-  id: string; reference: string | null; status: string; balance: string
+  // balance is NULL on a room account a server is charging to (service_view):
+  // the folio belongs to front desk, and a missing number is safer than a
+  // wrong one. Every money block below is gated on !serviceView for that reason.
+  id: string; reference: string | null; status: string; balance: string | null
+  service_view?: boolean
+  credit_remaining?: string
   tab_type: string
   charges: { id: string; description: string; amount: string }[]
   payments: { id: string; method: string; amount: string }[]
@@ -135,15 +145,33 @@ export default function WaiterTabDetailScreen() {
   // Villa 1's card got an empty POS captioned "Walk-in", showing "Balance due
   // KSh 0" on a folio owing 70,000, with a live "Close Table" button. Show what
   // the server actually said and go no further.
+  // Which list belongs to this till? The till is the PERSON, not the tab: a
+  // wristband can be spent anywhere on the property, but the water attendant
+  // sells activities, the spa sells services, and only the waiter sells both
+  // kitchen and bar. Before this, opening a band at the water till showed the
+  // whole restaurant — tilapia and burgers at the jet-ski desk.
+  //
+  // Activities and services live in the same menu table as food (they are
+  // priced, sold and charged identically), so nothing new is modelled here;
+  // the server's own dept_name filter — the one ServicePayScreen already
+  // uses — decides what this person sells.
+  const myDept = useAuthStore(s => s.user?.department) ?? null
+  const ownListDept = (myDept === 'Water Activities' || myDept === 'Spa & Gym') ? myDept : null
+  const ownListLabel = myDept === 'Water Activities' ? 'Activities'
+                     : myDept === 'Spa & Gym' ? 'Services' : 'Menu'
+
   const { data: items = [], isLoading: menuLoading } = useQuery<MenuItem[]>({
-    queryKey: ['menu-items'],
-    queryFn: () => api.get<MenuItem[]>('/menu/items').then(r => r.data),
+    queryKey: ['menu-items', ownListDept],
+    queryFn: () => api.get<MenuItem[]>(
+      ownListDept ? `/menu/items?dept_name=${encodeURIComponent(ownListDept)}` : '/menu/items'
+    ).then(r => r.data),
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
     // NONE = self-serve items with no kitchen/bar prep step (spa & gym services,
     // water-activity add-ons). Fetch the superset here; which of them are
     // actually relevant depends on what kind of tab this is — see stationItems.
     select: (all) => all.filter(i => i.prep_station === 'KITCHEN' || i.prep_station === 'BAR' || i.prep_station === 'NONE'),
+    // (a spa/water list is already scoped by the server; nothing is dropped here)
   })
 
   // ── Derived ─────────────────────────────────────────────────────────────
@@ -156,10 +184,13 @@ export default function WaiterTabDetailScreen() {
     // wristband (BAND) — the one path spa/water staff reach this same screen
     // through, via ServicePayScreen's band lookup. Mixing water-activity
     // tickets into a waiter's own table menu was a real reported bug.
+    // Spa and water: the server already sent only their own department's list,
+    // and Food/Drinks means nothing there — show it whole.
+    if (ownListDept) return items
     const relevant = tab?.tab_type === 'BAND' ? items : items.filter(i => i.prep_station !== 'NONE')
     if (activeStation === 'ALL') return relevant
     return relevant.filter(i => i.prep_station === activeStation)
-  }, [items, activeStation, tab?.tab_type])
+  }, [items, activeStation, tab?.tab_type, ownListDept])
 
   const categories = useMemo(() => {
     const cats = [...new Set(stationItems.map(i => i.category ?? 'Other'))]
@@ -182,6 +213,13 @@ export default function WaiterTabDetailScreen() {
 
   const draftTotal = draftEntries.reduce((s, e) => s + e.price * e.qty, 0)
   const draftCount = draftEntries.reduce((s, e) => s + e.qty, 0)
+  // A guest wearing a band or staying in a villa spends all over the property
+  // and settles when it suits them — at any till, in parts. So a till sees the
+  // WHOLE bill and can take money against it. serviceView means one thing only:
+  // this till may not CLOSE the account. Check-out is front desk's, closing a
+  // band is the gate's, because somebody has to be accountable for it ending
+  // clear.
+  const serviceView = tab?.service_view === true
   const bal = parseFloat(tab?.balance ?? '0')
 
   // Auto-fill the exact amount owed (charges minus payments minus any band
@@ -194,7 +232,18 @@ export default function WaiterTabDetailScreen() {
     if (bal > 0) setPay(p => (p.amount ? p : { ...p, amount: String(bal) }))
   }, [bal])
 
-  const allOrderItems = (tab?.orders ?? []).flatMap(o => o.items)
+  // An order whose /send was refused — a room over its charging limit, a band
+  // without the credit — stays DRAFT, and its items keep the PENDING status
+  // they were born with. They used to render in the same list as real kitchen
+  // tickets, so the waiter saw food on its way that no kitchen had ever seen
+  // (band #5's jet ski sat like that for hours, uncharged). Worse, a PENDING
+  // line holds a table open forever: allItemsResolved below could never go
+  // true, so the table could not be closed and became one of the ">24h open"
+  // tabs preflight keeps reporting.
+  //
+  // Sent work and unsent work are two different things. Only sent work counts.
+  const allOrderItems = (tab?.orders ?? []).filter(o => o.status !== 'DRAFT').flatMap(o => o.items)
+  const unsentItems   = (tab?.orders ?? []).filter(o => o.status === 'DRAFT').flatMap(o => o.items)
   // Mirrors the backend's is_tab_closable (app/services/tab.py): only SERVED/CANCELLED
   // are terminal. Balance alone isn't enough — a PENDING/RECEIVED/READY item still
   // blocks close, and the button used to show as ready anyway, then 400 on tap.
@@ -339,7 +388,14 @@ export default function WaiterTabDetailScreen() {
 
   const menuPane = (
     <div className="flex flex-col h-full">
-      {/* Kitchen / Bar station toggle */}
+      {/* Kitchen / Bar station toggle — a waiter sells both. A spa or water
+          till sells one list and gets its name instead of a toggle. */}
+      {ownListDept ? (
+        <div className="shrink-0 px-3 pt-3 pb-1">
+          <p className="py-2 text-center text-xs font-semibold tracking-widest uppercase
+            text-ink-secondary bg-white/5 rounded-lg">{ownListLabel}</p>
+        </div>
+      ) : (
       <div className="shrink-0 px-3 pt-3 pb-1 flex gap-1">
         {([['ALL', 'All'], ['KITCHEN', 'Food'], ['BAR', 'Drinks']] as const).map(([key, label]) => (
           <button key={key} onClick={() => { setActiveStation(key); setActiveCat('All') }}
@@ -352,6 +408,7 @@ export default function WaiterTabDetailScreen() {
           </button>
         ))}
       </div>
+      )}
       {/* Category tabs */}
       <div className="shrink-0 px-3 pt-1 pb-2 overflow-x-auto flex gap-2 scrollbar-hide">
         {categories.map(cat => (
@@ -467,6 +524,10 @@ export default function WaiterTabDetailScreen() {
             <p className="font-bold text-ink-primary text-lg truncate max-w-xs">{tab?.reference ?? 'Walk-in'}</p>
             <p className="text-xs text-ink-tertiary">Tab #{tabId?.slice(0, 8)}</p>
           </div>
+          {/* The number the guest is asking about, wherever they are standing.
+              A band in credit shows the credit; anything owed shows what is
+              owed. It briefly read "Room" here on a room account, which is a
+              label, not an answer. */}
           <span className={`text-sm font-bold tabular-nums px-2 py-1 rounded-lg ${
             bal > 0 ? 'bg-status-failed/10 text-status-failed' : 'bg-status-paid/10 text-status-paid'
           }`}>
@@ -532,6 +593,33 @@ export default function WaiterTabDetailScreen() {
                         text-ink-secondary placeholder:text-ink-tertiary/50
                         focus:outline-none focus:border-primary-main"
                     />
+                    {/* The note field has always been here, and typing a
+                        sentence on a tablet with a guest waiting is why it went
+                        unused. These are the requests that actually get made,
+                        one tap each, and they reach the cook in the same words
+                        every time — "No chilli" reads the same on every ticket,
+                        where free text gives you "no chill", "hakuna pilipili"
+                        and "NO CHILLI!!" for the same thing. */}
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {QUICK_NOTES.map(q => {
+                        const cur = draftNotes[e.id] ?? ''
+                        const on  = cur.split(' · ').includes(q)
+                        return (
+                          <button key={q} type="button"
+                            onClick={() => setDraftNotes(n => {
+                              const parts = (n[e.id] ?? '').split(' · ').filter(Boolean)
+                              const next  = on ? parts.filter(x => x !== q) : [...parts, q]
+                              return { ...n, [e.id]: next.join(' · ') }
+                            })}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors ${
+                              on ? 'bg-primary-main text-white border-primary-main'
+                                 : 'border-white/15 text-ink-tertiary hover:text-ink-secondary'
+                            }`}>
+                            {q}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -547,6 +635,33 @@ export default function WaiterTabDetailScreen() {
           <div className="flex flex-col items-center justify-center py-12 gap-2">
             <p className="text-sm text-ink-tertiary text-center">
               Tap menu items to start the order &middot; Karibu
+            </p>
+          </div>
+        )}
+
+        {/* Never reached the kitchen — the send was refused */}
+        {unsentItems.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-status-failed mb-2">
+              Not sent — the kitchen has not seen these
+            </p>
+            {unsentItems.map(oi => (
+              <div key={oi.id} className="flex items-center gap-2 py-2 border-b border-white/10 last:border-0">
+                <span className="flex-1 min-w-0 text-sm text-ink-secondary truncate">
+                  {oi.quantity}× {oi.name}
+                </span>
+                <motion.button whileTap={{ scale: 0.92 }}
+                  onClick={() => setCancelId(oi.id)}
+                  aria-label={`Discard ${oi.name}`}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold
+                    border border-status-failed/40 text-status-failed">
+                  Discard
+                </motion.button>
+              </div>
+            ))}
+            <p className="text-xs text-ink-tertiary pt-2">
+              The account would not take the charge. Settle part of the bill, raise the
+              limit, or take payment at the till — then order again.
             </p>
           </div>
         )}
@@ -623,14 +738,44 @@ export default function WaiterTabDetailScreen() {
           </div>
         )}
 
-        {/* Balance */}
+        {/* Balance — or, on a room account, what the server IS allowed to know */}
         <div className="flex justify-between items-center p-3 rounded-xl glass-card text-ink-primary">
-          <span className="font-semibold text-sm">{bal < 0 ? 'Band credit left' : 'Balance due'}</span>
+          <span className="font-semibold text-sm">{bal < 0 ? 'Credit left' : 'Balance due'}</span>
           <span className="text-lg font-bold tabular-nums">{bal < 0 ? kes(-bal) : kes(tab?.balance ?? '0')}</span>
         </div>
+        {serviceView && (
+          <p className="text-xs text-ink-tertiary px-1">
+            {tab?.tab_type === 'BAND'
+              ? 'Prepaid at the gate. They can spend anywhere on the property and settle here, at another till, or at the gate on the way out.'
+              : `On ${tab?.reference ?? 'the room account'}. They can settle any part of it here, or leave it all for check-out.`}
+          </p>
+        )}
+
+        {/* Paper for the guest. A bill before they pay, a receipt after —
+            same document, and which one it is depends on what is still owed.
+            On a room account the folio belongs to front desk, so no print
+            here: the guest gets their paper at check-out. */}
+        {(tab?.charges ?? []).length > 0 && (
+          <button
+            onClick={() => navigate(`/print/tab/${tabId}?print=1`)}
+            className="w-full py-2.5 rounded-xl glass-card text-sm text-ink-secondary
+              hover:bg-white/5 transition-colors">
+            {bal <= 0 ? 'Print receipt' : 'Print bill'}
+          </button>
+        )}
 
         {/* Payment form */}
-        {bal > 0 && tab?.status !== 'CLOSED' && (
+        {/* A band is settled wherever the guest is standing. A room is settled at
+            front house, where the deposit was taken and check-out happens — so
+            a till shows the room's bill and points at the desk instead of
+            offering a payment the API would refuse. */}
+        {serviceView && tab?.tab_type === 'VILLA' && bal > 0 && (
+          <p className="text-center text-xs text-ink-tertiary py-2">
+            Settled at front house — or left for check-out. Tell them what is on
+            the room; the desk takes the money.
+          </p>
+        )}
+        {!(serviceView && tab?.tab_type === 'VILLA') && bal > 0 && tab?.status !== 'CLOSED' && (
           <div className="space-y-3">
             <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Record Payment</p>
             {/* Three across — two columns stranded Card on its own row. */}
@@ -679,7 +824,17 @@ export default function WaiterTabDetailScreen() {
         )}
 
         {/* Close tab */}
-        {bal <= 0 && tab?.status !== 'CLOSED' && allItemsResolved && (
+        {/* Closing is not a till's job: a villa ends at check-out, a band ends
+            at the gate. Both of those also have to be satisfied the account is
+            clear, which is the whole point of ending it in one place. */}
+        {serviceView && bal <= 0 && tab?.status !== 'CLOSED' && (
+          <p className="text-center text-xs text-ink-tertiary py-2">
+            {tab?.tab_type === 'BAND'
+              ? 'Settled. The gate closes the band when the guest leaves.'
+              : 'Nothing outstanding right now. Front desk closes the account at check-out.'}
+          </p>
+        )}
+        {!serviceView && bal <= 0 && tab?.status !== 'CLOSED' && allItemsResolved && (
           <Button variant="primary" size="lg" className="w-full" loading={closeMut.isPending}
             onClick={() => closeMut.mutate()}>
             <span className="inline-flex items-center gap-2">
@@ -687,7 +842,7 @@ export default function WaiterTabDetailScreen() {
             </span>
           </Button>
         )}
-        {bal <= 0 && tab?.status !== 'CLOSED' && !allItemsResolved && (
+        {!serviceView && bal <= 0 && tab?.status !== 'CLOSED' && !allItemsResolved && (
           <p className="text-center text-xs text-ink-tertiary py-2">
             Waiting on the kitchen/bar to finish and serve every item before this table can close.
           </p>
@@ -717,11 +872,14 @@ export default function WaiterTabDetailScreen() {
                 </Button>
               </>
             ) : (
-              // Both actions require front desk level+ on the backend (app/reports/routes.py,
-              // app/notifications/core.py) — these buttons used to show for every waiter
-              // regardless, so closing a table always ended in two dead 403s.
+              // The A4 PDF and the WhatsApp copy both need front desk level on the
+              // backend (app/reports/routes.py, app/notifications/core.py), so they
+              // stay hidden here — they used to show for every waiter and ended in
+              // two dead 403s. The till receipt above is the waiter's own: it needs
+              // nothing but the tab they already have open.
               <p className="text-center text-xs text-ink-tertiary py-2">
-                Ask front desk to print or send this receipt.
+                Use <span className="text-ink-secondary font-semibold">Print receipt</span> above
+                for the guest's copy. Front desk can also send it by WhatsApp.
               </p>
             )}
           </div>
@@ -742,7 +900,12 @@ export default function WaiterTabDetailScreen() {
 
   // ── Cancel confirmation modal ──────────────────────────────────────────
 
-  const cancelItem = cancelId ? allOrderItems.find(oi => oi.id === cancelId) : null
+  // Look in BOTH lists. allOrderItems stopped including unsent draft lines when
+  // those got their own section, and this kept using it — so tapping Discard on
+  // an unsent line opened a confirm dialog with a title and nothing in it.
+  const cancelItem = cancelId
+    ? [...allOrderItems, ...unsentItems].find(oi => oi.id === cancelId)
+    : null
   const cancelModal = (
     <Modal open={!!cancelId} onClose={() => setCancelId(null)} title="Cancel Item">
       {cancelItem && (
