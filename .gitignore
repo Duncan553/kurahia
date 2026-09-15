@@ -35,3 +35,27 @@ test-results/
 #
 # To bring one back: git add -f docs/THE_FILE.md
 docs/
+
+# ── Operational documents — on disk, never in the repo ──────────────────
+# None of these hold a live credential (checked: no real keys, no real phone
+# numbers, every .env.example value is a placeholder). They are out because of
+# what they TELL somebody, not what they leak:
+#
+#   HUMAN_THREATS.md      The owner's anti-theft runbook. Section 2 is titled
+#                         "What the system cannot catch" and names detection
+#                         thresholds — a map for anyone wanting to steal.
+#   DISASTER_RECOVERY.md  Backup schedule and restore procedure.
+#   DEPLOY.md             Server and deployment topology.
+#   PAYMENTS_DESIGN.md    The money path, end to end.
+#   CLAUDE.md             Internal brief: the client's name, business state,
+#                         and how I work. Goes nowhere near a repo that gets
+#                         shown to another property.
+#   .claude/              Working notes and session skills.
+#
+# To bring one back: git add -f THE_FILE.md
+HUMAN_THREATS.md
+DISASTER_RECOVERY.md
+DEPLOY.md
+PAYMENTS_DESIGN.md
+CLAUDE.md
+.claude/

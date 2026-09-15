@@ -117,7 +117,7 @@ def seed_owner(username, password):
 
 @seed_bp.cli.command("kurahia-inventory")
 def seed_kurahia_inventory():
-    """Seed real Waterfront Country Club inventory: bar, kitchen, pool, housekeeping."""
+    """Seed real Waterfront Juja inventory: bar, kitchen, pool, housekeeping."""
     from app.models.inventory_item import InventoryItem
 
     def _get_dept(name: str):
