@@ -1,5 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { PaymentRef } from '../components/PaymentRef'
+import { MpesaPrompt } from '../components/MpesaPrompt'
+import { useMpesaPrompt } from '../hooks/useMpesaPrompt'
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -38,7 +40,12 @@ const kes = (v: string | number) =>
 const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
 // Cash, M-Pesa, Card. Bank transfer removed — see GateHubScreen.
-const METHODS = ['CASH', 'MPESA', 'CARD'] as const
+// Label alongside the value — the derived label read "Mpesa".
+const METHODS = [
+  { value: 'CASH',  label: 'Cash'   },
+  { value: 'MPESA', label: 'M-Pesa' },
+  { value: 'CARD',  label: 'Card'   },
+] as const
 
 /** Fetch a PDF from the backend using the JWT token, then trigger a browser download. */
 const downloadPdf = async (url: string, filename: string) => {
@@ -98,21 +105,13 @@ export default function WaiterTabDetailScreen() {
   const [payRef, setPayRef] = useState('')
   // The guest's number, for the M-Pesa prompt. Kept separate from the code
   // field: one is what you ask the guest for BEFORE paying, the other is what
-  // they read back to you AFTER.
-  const [payPhone, setPayPhone] = useState('')
-
+  // they read back to you AFTER. The phone itself lives inside MpesaPrompt.
   // Ask whether the prompt route is switched on BEFORE offering it. The first
   // version offered "Send prompt" unconditionally: it created the payment,
   // then the charge 503'd because the socket is dormant, and the bill read
   // SETTLED with no money behind it. Recording a payment that did not happen
   // is the worst failure this screen can produce.
-  const { data: mpesaStatus } = useQuery<{ configured: boolean; message: string }>({
-    queryKey: ['mpesa-status'],
-    queryFn: () => api.get('/finance/mpesa/status').then(r => r.data),
-    staleTime: 5 * 60_000,
-    retry: false,
-  })
-  const canPrompt = mpesaStatus?.configured === true
+  const { canPrompt } = useMpesaPrompt(api)
   const [idem, setIdem] = useState(() => crypto.randomUUID())
   const [cancelId, setCancelId] = useState<string | null>(null)
   const [receiptPhone, setReceiptPhone] = useState('')
@@ -225,36 +224,35 @@ export default function WaiterTabDetailScreen() {
   // Send the M-Pesa prompt to the guest's phone, rather than asking them to
   // push to the paybill and read a code back.
   //
-  // The payment row is created first because /finance/mpesa/charge references
-  // it, and the callback from Safaricom needs something to confirm AGAINST.
-  // If the guest declines, that row simply stays unreconciled — which is
-  // exactly where a manually recorded M-Pesa payment sits today, so this is
-  // never worse than the path it replaces, and when the guest approves it is
-  // confirmed by Safaricom instead of by a manager's tick.
+  // If the guest declines, the row stays unreconciled — exactly where a
+  // manually recorded M-Pesa payment sits today, so this is never worse than
+  // the path it replaces; and when they approve, Safaricom confirms it
+  // instead of a manager's tick.
   const stkMut = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (phone: string) => {
       // Guard again at the moment of the tap, not only at render: the socket
       // could have been switched off since this screen loaded, and a stale
       // "configured" would recreate the phantom-payment bug.
       if (!canPrompt) {
-        throw new Error(mpesaStatus?.message
-          || 'M-Pesa prompts are not switched on. Take the code from the guest instead.')
+        throw new Error('M-Pesa prompts are not switched on yet. '
+          + 'Ask the guest to pay the paybill and type their code instead.')
       }
-      const { data: paid } = await api.post(`/tabs/${tabId}/payments`, {
-        method: 'MPESA', amount: pay.amount, idempotency_key: idem,
-      })
+      // One call, one transaction. The till used to write the payment row
+      // first and pass its id in — and a prompt that then failed to send left
+      // that row behind, so the bill read SETTLED against money nobody had
+      // been asked for. The charge endpoint now creates the row itself and
+      // keeps it only if Safaricom accepted the push.
       return api.post('/finance/mpesa/charge', {
         tab_id: tabId,
-        payment_id: paid.payment_id ?? paid.id,
         amount: Math.round(parseFloat(pay.amount || '0')),
-        phone_number: payPhone.trim(),
+        phone_number: phone,
+        idempotency_key: idem,
       }).then(r => r.data)
     },
     onSuccess: (d: { customer_message?: string }) => {
       qc.invalidateQueries({ queryKey: ['tab', tabId] })
       qc.invalidateQueries({ queryKey: ['my-tabs'] })
       setPay(p => ({ ...p, amount: '' }))
-      setPayPhone('')
       setIdem(crypto.randomUUID())
       addToast({ type: 'success',
         message: d?.customer_message || 'Prompt sent — ask the guest to check their phone.' })
@@ -635,15 +633,16 @@ export default function WaiterTabDetailScreen() {
         {bal > 0 && tab?.status !== 'CLOSED' && (
           <div className="space-y-3">
             <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Record Payment</p>
-            <div className="grid grid-cols-2 gap-4">
-              {METHODS.map(m => (
-                <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
+            {/* Three across — two columns stranded Card on its own row. */}
+            <div className="grid grid-cols-3 gap-3">
+              {METHODS.map(({ value, label }) => (
+                <button key={value} onClick={() => setPay(p => ({ ...p, method: value }))}
                   className={`py-2 rounded-xl text-sm font-semibold border transition-colors ${
-                    pay.method === m
+                    pay.method === value
                       ? 'bg-primary-main text-white border-primary-main'
                       : 'bg-transparent text-ink-secondary border-white/10 hover:border-primary-main/50'
                   }`}>
-                  {m.charAt(0) + m.slice(1).toLowerCase()}
+                  {label}
                 </button>
               ))}
             </div>
@@ -651,41 +650,10 @@ export default function WaiterTabDetailScreen() {
                 guest approves on their own phone and Safaricom confirms it
                 back — so it comes first, and typing a code afterwards stays
                 available for a guest who paid the paybill themselves. */}
-            {pay.method === 'MPESA' && !canPrompt && (
-              <p className="text-[11px] text-ink-tertiary">
-                Phone prompts are not switched on yet — ask the guest to pay the
-                paybill and type their M-Pesa code below.
-              </p>
-            )}
-            {pay.method === 'MPESA' && canPrompt && (
-              <div className="rounded-xl glass-surface p-3 space-y-2">
-                <p className="text-[11px] uppercase tracking-wider text-ink-tertiary">
-                  Ask the guest to approve on their phone
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    type="tel" inputMode="tel"
-                    aria-label="Guest phone number for the M-Pesa prompt"
-                    placeholder="07xx xxx xxx"
-                    value={payPhone}
-                    onChange={e => setPayPhone(e.target.value)}
-                    className="flex-1 min-w-0 rounded-xl glass-card bg-transparent px-3 py-2
-                      text-sm text-ink-primary focus:outline-none focus:border-primary-main"
-                  />
-                  <Button
-                    variant="primary" size="sm"
-                    loading={stkMut.isPending}
-                    disabled={!payPhone.trim() || !(parseFloat(pay.amount || '0') > 0)}
-                    onClick={() => stkMut.mutate()}
-                  >
-                    Send prompt
-                  </Button>
-                </div>
-                <p className="text-[11px] text-ink-tertiary">
-                  They enter their M-Pesa PIN and Safaricom confirms it back —
-                  nothing to type in afterwards.
-                </p>
-              </div>
+            {pay.method === 'MPESA' && (
+              <MpesaPrompt canPrompt={canPrompt}
+                amount={parseFloat(pay.amount || '0')}
+                sending={stkMut.isPending} onSend={p => stkMut.mutate(p)} />
             )}
 
             <PaymentRef method={pay.method} value={payRef} onChange={setPayRef} />

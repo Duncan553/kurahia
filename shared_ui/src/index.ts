@@ -6,6 +6,7 @@ export type { ButtonProps, ButtonVariant, ButtonSize } from './components/Button
 
 export { Input } from './components/Input'
 export { PaymentRef } from './components/PaymentRef'
+export { MpesaPrompt } from './components/MpesaPrompt'
 export type { InputProps } from './components/Input'
 
 export { Select } from './components/Select'
@@ -84,6 +85,7 @@ export { resortToday, resortMonth, resortDatePlus, resortRecentMonths, RESORT_TZ
 
 // ── Hooks ──
 export { useIsDesktop } from './hooks/useIsDesktop'
+export { useMpesaPrompt } from './hooks/useMpesaPrompt'
 
 // ── Motion presets ──
 export { slideUp, fadeScale, slideFromRight } from './motion/presets'

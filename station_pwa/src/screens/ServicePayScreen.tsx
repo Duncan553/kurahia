@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Skeleton, EmptyState, Button, useToastStore, ErrorBoundary, PaymentRef } from '@shared'
+import { Skeleton, EmptyState, Button, useToastStore, ErrorBoundary, PaymentRef, MpesaPrompt, useMpesaPrompt } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 
@@ -14,7 +14,13 @@ const kes = (v: string | number) =>
 const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
 // Cash, M-Pesa, Card. Bank transfer removed — see GateHubScreen.
-const METHODS = ['CASH', 'MPESA', 'CARD']
+// Label alongside the value: deriving it from the enum produced "Mpesa",
+// which is not how the service is written anywhere in Kenya.
+const METHODS: { value: string; label: string }[] = [
+  { value: 'CASH',  label: 'Cash'   },
+  { value: 'MPESA', label: 'M-Pesa' },
+  { value: 'CARD',  label: 'Card'   },
+]
 
 export default function ServicePayScreen() {
   const dept = useAuthStore(s => s.user?.department)
@@ -29,6 +35,9 @@ export default function ServicePayScreen() {
   const [requestText, setRequestText] = useState('')
   const [band, setBand] = useState('')
   const idem = useState(() => crypto.randomUUID())[0]
+  // Can this till push a prompt to the guest's phone, or must it ask for a
+  // code? Answered by the server before the button is drawn.
+  const { canPrompt } = useMpesaPrompt(api)
 
   const { data: items = [], isLoading } = useQuery<MenuItem[]>({
     queryKey: ['service-menu', dept],
@@ -49,6 +58,24 @@ export default function ServicePayScreen() {
     }, 0)
   , [draft, items])
   const draftCount = Object.values(draft).reduce((s, q) => s + q, 0)
+
+  // A water activity cannot be sold to a nameless tab.
+  //
+  // The waiver is the resort's liability cover, and it hangs off the guest's
+  // identity — their wristband or their villa booking. "Sell" on this screen
+  // opens a fresh walk-in tab belonging to nobody, so a waiver can never be
+  // attached to it, and the sale is refused at the last step with the basket
+  // already built and the guest already waiting.
+  //
+  // Same rule as the server (item CATEGORY, not department — Pool Pass and
+  // Nature Trail sell normally), said at the top instead of at the till.
+  const waiverItems = useMemo(() =>
+    Object.entries(draft).filter(([, q]) => q > 0)
+      .map(([id]) => items.find(i => i.id === id))
+      .filter((i): i is MenuItem => !!i
+        && (i.category || '').trim().toLowerCase() === 'water activities')
+  , [draft, items])
+  const needsBand = waiverItems.length > 0
 
   const checkoutMut = useMutation({
     mutationFn: async () => {
@@ -72,6 +99,42 @@ export default function ServicePayScreen() {
     onSuccess: () => {
       setDraft({}); setPay(p => ({ ...p, amount: '' })); setStage('select')
       addToast({ type: 'success', message: 'Payment recorded & tab closed.' })
+    },
+    onError: (e) => addToast({ type: 'error', message: e instanceof Error ? e.message : extractErr(e) }),
+  })
+
+  // Pay by prompt. Same three writes as Confirm — tab, order, sent — but the
+  // payment is then charged to the guest's phone instead of being asserted by
+  // the attendant, and the tab is NOT closed here. It closes when Safaricom
+  // confirms: the callback claims this payment row and settles the balance.
+  // Closing it on the way out would be claiming money that has not moved.
+  const stkMut = useMutation({
+    mutationFn: async (phone: string) => {
+      // Re-check at the tap, not only at render — the socket can go dormant
+      // while this screen sits open, and a stale "configured" is how the
+      // phantom-payment bug happened the first time.
+      if (!canPrompt) throw new Error(
+        'M-Pesa prompts are not switched on yet. Ask the guest to pay the paybill and type their code instead.')
+      if (!(total > 0)) throw new Error('Nothing to charge.')
+      const orderItems = Object.entries(draft).filter(([, q]) => q > 0)
+        .map(([menu_item_id, quantity]) => ({ menu_item_id, quantity }))
+      const { data: newTab } = await api.post('/tabs', { idempotency_key: idem })
+      const { data: order } = await api.post('/orders', { tab_id: newTab.id, items: orderItems })
+      await api.post(`/orders/${order.id}/send`)
+      // The charge endpoint writes the payment row itself, inside the same
+      // transaction as the push — so a prompt that fails to send leaves no
+      // payment behind on a tab that would then read as settled.
+      return api.post('/finance/mpesa/charge', {
+        tab_id: newTab.id,
+        amount: Math.round(total),
+        phone_number: phone,
+        idempotency_key: crypto.randomUUID(),
+      }).then(r => r.data)
+    },
+    onSuccess: (d: { customer_message?: string }) => {
+      setDraft({}); setPay(p => ({ ...p, amount: '' })); setStage('select')
+      addToast({ type: 'success',
+        message: d?.customer_message || 'Prompt sent — ask the guest to check their phone.' })
     },
     onError: (e) => addToast({ type: 'error', message: e instanceof Error ? e.message : extractErr(e) }),
   })
@@ -197,7 +260,21 @@ export default function ServicePayScreen() {
                       <span className="text-sm text-ink-secondary">{draftCount} item{draftCount !== 1 ? 's' : ''}</span>
                       <span className="text-lg font-bold tabular-nums text-ink-primary">{kes(total)}</span>
                     </div>
-                    <Button variant="primary" size="lg" className="w-full" onClick={() => { setPay(p => ({ ...p, amount: String(total) })); setStage('pay') }}>
+                    {needsBand && (
+                      <div className="rounded-xl border border-status-failed/30 bg-status-failed/10 p-4 space-y-1">
+                        <p className="text-sm font-semibold text-status-failed">
+                          {waiverItems.map(i => i.name).join(', ')}{' '}
+                          {waiverItems.length === 1 ? 'needs' : 'need'} a signed waiver
+                        </p>
+                        <p className="text-xs text-ink-secondary">
+                          A waiver is signed against the guest, not the till. Open their
+                          wristband above and charge it to the band — or send them to the
+                          gate for one first.
+                        </p>
+                      </div>
+                    )}
+                    <Button variant="primary" size="lg" className="w-full" disabled={needsBand}
+                      onClick={() => { setPay(p => ({ ...p, amount: String(total) })); setStage('pay') }}>
                       Proceed to Payment →
                     </Button>
                   </div>
@@ -210,16 +287,25 @@ export default function ServicePayScreen() {
                   <p className="text-xs text-ink-tertiary mb-1">Collect</p>
                   <p className="text-3xl font-bold tabular-nums text-ink-primary">{kes(total)}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {METHODS.map(m => (
-                    <button key={m} onClick={() => setPay(p => ({ ...p, method: m }))}
+                {/* Three across. Two columns was right when there were four
+                    methods; with three it left Card stranded on its own row. */}
+                <div className="grid grid-cols-3 gap-3">
+                  {METHODS.map(({ value, label }) => (
+                    <button key={value} onClick={() => setPay(p => ({ ...p, method: value }))}
                       className={`py-3 rounded-xl text-sm font-semibold border transition-colors ${
-                        pay.method === m ? 'bg-primary-main text-white border-primary-main' : 'text-ink-secondary border-white/10'
+                        pay.method === value ? 'bg-primary-main text-white border-primary-main' : 'text-ink-secondary border-white/10'
                       }`}>
-                      {m.charAt(0) + m.slice(1).toLowerCase()}
+                      {label}
                     </button>
                   ))}
                 </div>
+                {/* Prompting comes first — the guest approves on their own
+                    phone and Safaricom confirms it back. Typing a code stays
+                    available for a guest who already paid the paybill. */}
+                {pay.method === 'MPESA' && (
+                  <MpesaPrompt canPrompt={canPrompt} amount={total}
+                    sending={stkMut.isPending} onSend={p => stkMut.mutate(p)} />
+                )}
                 <PaymentRef method={pay.method} value={payRef} onChange={setPayRef} />
                 <input type="number" min="0" step="0.01" inputMode="decimal"
                   placeholder="Amount received (KSh)"

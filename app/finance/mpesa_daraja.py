@@ -11,6 +11,7 @@ import base64
 import os
 import re
 import time
+import uuid
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 import httpx
@@ -24,6 +25,7 @@ from app.models.payment import Payment, PaymentMethod
 from app.models.payment_reconciliation import PaymentReconciliation, PaymentReconciliationStatus
 from app.models.audit_log import AuditLog
 from app.models.pending_stk_push import PendingSTKPush
+from app.models.tab import Tab
 
 mpesa_daraja_bp = Blueprint("mpesa_daraja", __name__, url_prefix="/finance")
 
@@ -216,7 +218,7 @@ def initiate_stk_push(amount, phone_number, tab_id, payment_id):
 
         if data.get("ResponseCode") == "0":
             checkout_id = data.get("CheckoutRequestID")
-            _register_pending_stk(checkout_id, tab_id)
+            _register_pending_stk(checkout_id, tab_id, payment_id)
             return True, {
                 "checkout_request_id": checkout_id,
                 "merchant_request_id": data.get("MerchantRequestID"),
@@ -332,8 +334,13 @@ def handle_stk_callback(payload: dict) -> Tuple[bool, any]:
     if not receipt:
         return False, "STK callback missing MpesaReceiptNumber."
 
-    # Idempotency — duplicate callback on same receipt number
-    existing = db.session.query(Payment).filter_by(idempotency_key=receipt).first()
+    # Idempotency — duplicate callback on the same receipt. Checked two ways
+    # because the row this callback lands on may be one the till created
+    # (idempotency_key = the till's uuid) rather than one born here
+    # (idempotency_key = the receipt). Only mpesa_code is the same in both.
+    existing = db.session.query(Payment).filter(
+        db.or_(Payment.idempotency_key == receipt, Payment.mpesa_code == receipt)
+    ).first()
     if existing:
         return True, existing.id
 
@@ -342,6 +349,45 @@ def handle_stk_callback(payload: dict) -> Tuple[bool, any]:
         checkout_request_id=checkout_request_id
     ).first()
     tab_id = pending_row.tab_id if pending_row else None
+
+    # The till creates the Payment row BEFORE asking for the prompt, because
+    # /mpesa/charge needs something to reference. If we then created a second
+    # row here, the guest's one payment would clear the tab twice — a bill of
+    # 750 settled by 1500 that never existed. Claim the row we already made.
+    prior = (db.session.get(Payment, pending_row.payment_id)
+             if pending_row and pending_row.payment_id else None)
+    if prior is not None and prior.mpesa_code is None:
+        try:
+            # Safaricom is the authority on how much actually moved. Our row
+            # held an expectation; this is the fact, so it wins — and if the
+            # two differ the audit line says so rather than hiding it.
+            if Decimal(str(prior.amount)) != amount:
+                AuditLog.log(
+                    actor="daraja", action="payment.stk_amount_corrected",
+                    target=receipt,
+                    details=f"expected={prior.amount} confirmed={amount} payment={prior.id}",
+                )
+                prior.amount = amount
+            prior.mpesa_code = receipt
+
+            db.session.add(PaymentReconciliation(
+                payment_id=prior.id,
+                method=PaymentMethod.MPESA.value,
+                matched=True,
+                statement_ref=receipt,
+                status=PaymentReconciliationStatus.MATCHED.value,
+            ))
+            AuditLog.log(
+                actor="daraja", action="payment.stk_confirmed", target=receipt,
+                details=f"amount={amount} checkout_id={checkout_request_id} "
+                        f"tab_id={prior.tab_id} claimed_payment={prior.id}",
+            )
+            db.session.delete(pending_row)
+            db.session.commit()
+            return True, prior.id
+        except Exception as e:
+            db.session.rollback()
+            return False, f"STK callback claim failed: {type(e).__name__}: {e}"
 
     try:
         payment = Payment(
@@ -408,20 +454,74 @@ def mpesa_charge():
         }), 503
 
     data = request.get_json(silent=True) or {}
-    for field in ("amount", "phone_number", "tab_id", "payment_id"):
+    for field in ("amount", "phone_number", "tab_id"):
         if data.get(field) is None:
             return jsonify({"error": f"Missing required field: {field}."}), 400
+
+    tab = db.session.get(Tab, str(data["tab_id"]))
+    if tab is None:
+        return jsonify({"error": "That tab no longer exists."}), 404
+
+    # The payment row this prompt is for.
+    #
+    # It used to be the till's job to create it first and pass the id in. That
+    # put the two halves in different transactions: if the prompt then failed
+    # to send — dormant socket, Daraja down, a phone number Safaricom rejects —
+    # the payment row survived on its own, and the bill read SETTLED against
+    # money that was never asked for, let alone paid. The till had no way to
+    # take it back; Payments are append-only.
+    #
+    # So the row is born HERE, and only survives if the prompt actually went
+    # out. A caller may still pass its own payment_id (the gate does: its entry
+    # fee is written by issue_band before this is ever called), and that path
+    # is unchanged.
+    payment_id  = data.get("payment_id")
+    created_here = False
+    if payment_id is None:
+        idem = str(data.get("idempotency_key") or uuid.uuid4())
+        # A retried tap must reach the same row, not a second one.
+        prior = db.session.query(Payment).filter_by(idempotency_key=idem).first()
+        if prior is not None:
+            payment_id = prior.id
+        else:
+            try:
+                amount_dec = Decimal(str(data["amount"]))
+            except Exception:
+                return jsonify({"error": "Amount is not a number."}), 400
+            if amount_dec <= 0:
+                return jsonify({"error": "Amount must be more than zero."}), 400
+            payment = Payment(
+                tab_id=tab.id,
+                amount=amount_dec,
+                method=PaymentMethod.MPESA.value,
+                received_by_id=actor.id,
+                idempotency_key=idem,
+            )
+            db.session.add(payment)
+            db.session.flush()        # id, but NOT committed yet
+            payment_id  = payment.id
+            created_here = True
 
     ok, result = initiate_stk_push(
         amount=data["amount"],
         phone_number=data["phone_number"],
-        tab_id=data["tab_id"],
-        payment_id=data["payment_id"],
+        tab_id=tab.id,
+        payment_id=payment_id,
     )
     if not ok:
+        # Nothing was sent, so nothing is owed. The row goes back with it.
+        if created_here:
+            db.session.rollback()
         return jsonify({"error": result}), 400
+
+    AuditLog.log(actor=actor.username, action="payment.stk_requested",
+                 target=str(payment_id),
+                 details=f"tab={tab.id} amount={data['amount']} "
+                         f"checkout={result['checkout_request_id']}")
+    db.session.commit()
     return jsonify({
         "status": "pending",
+        "payment_id": payment_id,
         "checkout_request_id": result["checkout_request_id"],
         "customer_message": result["customer_message"],
     }), 200

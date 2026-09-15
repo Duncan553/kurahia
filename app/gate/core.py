@@ -40,6 +40,12 @@ def _band_dict(band: Wristband, include_balance: bool = False) -> dict:
         "notes":        band.notes,
         "issued_by":    band.issued_by.username if band.issued_by else None,
         "issued_at":    band.created_at_utc.isoformat(),
+        # The entry fee's payment row. The gate needs it to send an M-Pesa
+        # prompt: /finance/mpesa/charge must reference a payment, and at the
+        # gate the only payment is the one issue_band() already created.
+        # Without it the gate could offer every method EXCEPT the one the
+        # guest is most likely to use with no cash in hand.
+        "entry_payment_id": band.entry_payment_id,
     }
     if include_balance:
         d["tab_balance"] = str(get_tab_balance(band.tab_id))

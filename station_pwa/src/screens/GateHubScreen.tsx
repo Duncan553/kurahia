@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Modal, useToastStore, ErrorBoundary, PaymentRef } from '@shared'
+import { Modal, useToastStore, ErrorBoundary, PaymentRef, MpesaPrompt, useMpesaPrompt } from '@shared'
+import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 import { formatBandBalance } from '../lib/format'
 
@@ -118,6 +119,9 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
   const [idemKey, setIdemKey]     = useState(genKey)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [lastBand, setLastBand]   = useState<number | null>(null)
+  // Can this gate push a prompt to the guest's phone? Asked before the
+  // button exists, never assumed.
+  const { canPrompt } = useMpesaPrompt(api)
 
   const mut = useMutation({
     mutationFn: () =>
@@ -142,6 +146,56 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
     onError: (e) => { setConfirmOpen(false); addToast({ type: 'error', message: extractErr(e) }) },
   })
 
+  // Issue by prompt. The band is issued first because the charge endpoint
+  // needs a payment to reference, and at the gate that payment is the entry
+  // fee issue_band() already wrote. The guest walks in wearing the band while
+  // their phone is still buzzing — which is how a gate has to work — and if
+  // they decline, the payment row simply stays unreconciled and surfaces on
+  // the manager's Pending Payments list, exactly where a manually typed
+  // M-Pesa payment with a wrong code lands today.
+  const stkMut = useMutation({
+    mutationFn: async (phone: string) => {
+      // Re-check at the tap: the socket can be switched off while this screen
+      // sits open, and offering a prompt we cannot send is how a band once got
+      // issued against money that never moved.
+      if (!canPrompt) throw new Error(
+        'M-Pesa prompts are not switched on yet. Ask the guest to pay the paybill and type their code instead.')
+      const { data: band } = await api.post<{ band_number: number; tab_id: string; entry_payment_id: string }>(
+        '/gate/issue-band', { method: 'MPESA', idempotency_key: idemKey })
+      try {
+        await api.post('/finance/mpesa/charge', {
+          tab_id: band.tab_id,
+          payment_id: band.entry_payment_id,
+          amount: ENTRY_FEE,
+          phone_number: phone,
+        })
+      } catch (e) {
+        // The band is already on the guest's wrist and its entry fee is
+        // already recorded — issue_band writes both in one transaction, and
+        // Payments cannot be taken back. So the failure has to be SAID, with
+        // the band number in it, or the attendant waves a guest through
+        // against money that was never requested.
+        throw new Error(
+          `Band #${band.band_number} is issued but the prompt did not send (${extractErr(e)}). `
+          + `Collect KSh ${ENTRY_FEE.toLocaleString()} another way and note band #${band.band_number}.`)
+      }
+      return band
+    },
+    onSuccess: (band) => {
+      setLastBand(band.band_number)
+      setIdemKey(genKey())
+      setPayRef('')
+      onIssued()
+      addToast({ type: 'success',
+        message: `Band #${band.band_number} issued — prompt sent, ask the guest to check their phone.` })
+    },
+    onError: (e) => {
+      setIdemKey(genKey())   // the band was issued; a retry must not return it again as 'duplicate'
+      onIssued()
+      addToast({ type: 'error', message: e instanceof Error ? e.message : extractErr(e) })
+    },
+  })
+
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
@@ -151,7 +205,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
       </div>
 
       {/* Payment method toggle */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {METHODS.map(({ value, label }) => (
           <motion.button key={value} onClick={() => setMethod(value)}
             whileTap={{ scale: 0.97 }}
@@ -164,6 +218,14 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
           </motion.button>
         ))}
       </div>
+
+      {/* Prompting comes first when it is available — the guest approves on
+          their own phone and Safaricom confirms it back, so the entry fee
+          arrives already matched instead of waiting on a typed code. */}
+      {method === 'MPESA' && (
+        <MpesaPrompt canPrompt={canPrompt} amount={ENTRY_FEE}
+          sending={stkMut.isPending} onSend={p => stkMut.mutate(p)} />
+      )}
 
       <PaymentRef method={method} value={payRef} onChange={setPayRef} />
 
@@ -236,7 +298,13 @@ export default function GateHubScreen() {
     qc.invalidateQueries({ queryKey: ['gate-active-bands'] })
   }
 
+  // Every endpoint behind this screen is GATE_LEVEL (3): issue-band,
+  // today-stats, active-bands. Without this guard the screen still drew —
+  // stats bar of em-dashes, an Issue button that 403s — for anyone who typed
+  // the URL or was handed the tablet. A refusal rendered as an empty
+  // dashboard is the worst of both: it looks broken rather than forbidden.
   return (
+    <RequireRole minLevel={3}>
     <div className="min-h-screen p-4 md:p-6">
       <ErrorBoundary level="tile">
       <motion.div className="max-w-3xl mx-auto"
@@ -275,5 +343,6 @@ export default function GateHubScreen() {
       </motion.div>
       </ErrorBoundary>
     </div>
+    </RequireRole>
   )
 }

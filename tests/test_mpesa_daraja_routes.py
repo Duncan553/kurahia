@@ -90,12 +90,31 @@ def test_charge_missing_body_field(client, manager_token, configured_env):
     """Missing required field → 400 naming the missing field."""
     rv = client.post(
         "/finance/mpesa/charge",
-        json={"amount": 100, "phone_number": "0712345678", "tab_id": "t1"},
-        # payment_id absent
+        json={"amount": 100, "tab_id": "t1"},
+        # phone_number absent — there is nobody to prompt
         headers={"Authorization": f"Bearer {manager_token}"},
     )
     assert rv.status_code == 400
-    assert "payment_id" in rv.get_json()["error"]
+    assert "phone_number" in rv.get_json()["error"]
+
+
+def test_charge_no_longer_demands_a_payment_id(client, manager_token, configured_env):
+    """
+    payment_id used to be required, which forced the till to write the payment
+    row itself in a separate transaction — so a prompt that failed to send left
+    that row behind as money nobody had asked for. The endpoint now creates the
+    row and keeps it only if the prompt goes out, so the field is optional.
+
+    404 here (not 400) is the point: the request got past validation and was
+    refused on the tab, which does not exist in this test.
+    """
+    rv = client.post(
+        "/finance/mpesa/charge",
+        json={"amount": 100, "phone_number": "0712345678", "tab_id": "t1"},
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert rv.status_code == 404
+    assert "payment_id" not in (rv.get_json().get("error") or "")
 
 
 # ── POST /finance/mpesa/callback — public ────────────────────────────────────

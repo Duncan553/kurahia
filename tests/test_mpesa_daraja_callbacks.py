@@ -257,3 +257,203 @@ def test_pending_stk_unique_checkout_request_id(app):
     with pytest.raises(IntegrityError):
         db.session.flush()
     db.session.rollback()
+
+
+def test_stk_callback_claims_the_till_payment_instead_of_doubling(app):
+    """
+    The till creates the Payment row before asking for the prompt (the charge
+    endpoint needs something to reference). When Safaricom confirms, that row
+    must be CLAIMED — not joined by a second one, which would clear the tab
+    twice on one guest's single payment.
+    """
+    from app.models.tab import Tab
+    from app.models.user import User
+    from decimal import Decimal
+    user = db.session.query(User).first()
+    tab = Tab(status="OPEN", opened_by_id=user.id)
+    db.session.add(tab)
+    db.session.flush()
+
+    # What the till writes before it calls /finance/mpesa/charge
+    till_row = Payment(
+        tab_id=tab.id, amount=Decimal("750.00"), method="MPESA",
+        received_by_id=user.id, idempotency_key="till-uuid-1",
+    )
+    db.session.add(till_row)
+    db.session.flush()
+
+    mpesa_daraja._register_pending_stk("ws_CO_CLAIM", tab.id, till_row.id)
+
+    ok, payment_id = mpesa_daraja.handle_stk_callback(
+        _stk_success_payload(checkout_id="ws_CO_CLAIM", receipt="CLAIM123XY", amount=750)
+    )
+
+    assert ok is True
+    assert payment_id == till_row.id          # the same row, not a new one
+    assert db.session.query(Payment).filter_by(tab_id=tab.id).count() == 1
+    assert db.session.get(Payment, till_row.id).mpesa_code == "CLAIM123XY"
+
+    recon = db.session.query(PaymentReconciliation).filter_by(payment_id=till_row.id).first()
+    assert recon.status == PaymentReconciliationStatus.MATCHED.value
+
+    # A retried callback must not add a second row either
+    ok2, payment_id2 = mpesa_daraja.handle_stk_callback(
+        _stk_success_payload(checkout_id="ws_CO_CLAIM", receipt="CLAIM123XY", amount=750)
+    )
+    assert ok2 is True and payment_id2 == till_row.id
+    assert db.session.query(Payment).filter_by(tab_id=tab.id).count() == 1
+
+
+def test_stk_callback_confirmed_amount_wins_over_the_expectation(app):
+    """
+    If Safaricom confirms a different amount than the till expected, the money
+    that actually moved is what the tab records — and the correction is audited,
+    not silent.
+    """
+    from app.models.tab import Tab
+    from app.models.user import User
+    from decimal import Decimal
+    user = db.session.query(User).first()
+    tab = Tab(status="OPEN", opened_by_id=user.id)
+    db.session.add(tab)
+    db.session.flush()
+
+    till_row = Payment(
+        tab_id=tab.id, amount=Decimal("750.00"), method="MPESA",
+        received_by_id=user.id, idempotency_key="till-uuid-2",
+    )
+    db.session.add(till_row)
+    db.session.flush()
+    mpesa_daraja._register_pending_stk("ws_CO_DIFF", tab.id, till_row.id)
+
+    ok, payment_id = mpesa_daraja.handle_stk_callback(
+        _stk_success_payload(checkout_id="ws_CO_DIFF", receipt="DIFF456ZZ", amount=500)
+    )
+
+    assert ok is True
+    assert Decimal(str(db.session.get(Payment, payment_id).amount)) == Decimal("500")
+    assert db.session.query(AuditLog).filter_by(
+        action="payment.stk_amount_corrected").count() == 1
+
+
+def test_initiate_stk_push_records_the_payment_it_was_asked_about(app, monkeypatch):
+    """
+    The wiring, not just the callback: initiate_stk_push() must persist the
+    payment_id it was handed. Without it the callback has nothing to claim and
+    silently creates a second payment — the double-pay this pair guards.
+    """
+    for k, v in {
+        "MPESA_CONSUMER_KEY": "k", "MPESA_CONSUMER_SECRET": "s",
+        "MPESA_SHORTCODE": "174379", "MPESA_PASSKEY": "p",
+        "MPESA_CALLBACK_URL": "https://example.com/cb", "MPESA_ENV": "sandbox",
+    }.items():
+        monkeypatch.setenv(k, v)
+
+    monkeypatch.setattr(mpesa_daraja, "_get_oauth_token", lambda: ("tok", None))
+
+    class _Resp:
+        def raise_for_status(self): pass
+        def json(self): return {
+            "ResponseCode": "0", "CheckoutRequestID": "ws_CO_WIRE",
+            "MerchantRequestID": "m1", "CustomerMessage": "Check your phone",
+        }
+    monkeypatch.setattr(mpesa_daraja.httpx, "post", lambda *a, **kw: _Resp())
+
+    ok, result = mpesa_daraja.initiate_stk_push(
+        amount=750, phone_number="0712345678", tab_id="tab-1", payment_id="pay-1",
+    )
+
+    assert ok is True
+    row = db.session.query(PendingSTKPush).filter_by(
+        checkout_request_id="ws_CO_WIRE").first()
+    assert row.payment_id == "pay-1"
+
+
+def test_charge_leaves_no_payment_behind_when_the_prompt_fails(client, app, waiter_token, monkeypatch):
+    """
+    The hole this endpoint was reshaped to close: a prompt that fails to send
+    must leave NO payment row. The till used to write the row itself, so a
+    failed prompt left a bill reading SETTLED against money nobody asked for.
+    """
+    for k, v in {
+        "MPESA_CONSUMER_KEY": "k", "MPESA_CONSUMER_SECRET": "s",
+        "MPESA_SHORTCODE": "174379", "MPESA_PASSKEY": "p",
+        "MPESA_CALLBACK_URL": "https://example.com/cb", "MPESA_ENV": "sandbox",
+    }.items():
+        monkeypatch.setenv(k, v)
+
+    # Daraja refuses — the shape of a dead socket, a bad number, a timeout
+    monkeypatch.setattr(mpesa_daraja, "_get_oauth_token", lambda: (None, "Daraja OAuth failed"))
+
+    hdr = {"Authorization": f"Bearer {waiter_token}"}
+    tab_id = client.post("/tabs", json={}, headers=hdr).get_json()["id"]
+
+    before = db.session.query(Payment).count()
+
+    rv = client.post("/finance/mpesa/charge",
+                     json={"tab_id": tab_id, "amount": 1500, "phone_number": "0712345678",
+                           "idempotency_key": "till-fail-1"},
+                     headers=hdr)
+
+    assert rv.status_code == 400, rv.get_json()
+    assert db.session.query(Payment).count() == before
+    assert db.session.query(Payment).filter_by(idempotency_key="till-fail-1").first() is None
+
+
+def test_charge_creates_exactly_one_payment_when_the_prompt_goes_out(client, app, waiter_token, monkeypatch):
+    """The success path: one payment row, linked to the tab, and the pending
+    row carries its id so the callback claims it instead of doubling it."""
+    for k, v in {
+        "MPESA_CONSUMER_KEY": "k", "MPESA_CONSUMER_SECRET": "s",
+        "MPESA_SHORTCODE": "174379", "MPESA_PASSKEY": "p",
+        "MPESA_CALLBACK_URL": "https://example.com/cb", "MPESA_ENV": "sandbox",
+    }.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setattr(mpesa_daraja, "_get_oauth_token", lambda: ("tok", None))
+
+    class _Resp:
+        def raise_for_status(self): pass
+        def json(self): return {
+            "ResponseCode": "0", "CheckoutRequestID": "ws_CO_ROUTE",
+            "MerchantRequestID": "m1", "CustomerMessage": "Check your phone",
+        }
+    monkeypatch.setattr(mpesa_daraja.httpx, "post", lambda *a, **kw: _Resp())
+
+    hdr = {"Authorization": f"Bearer {waiter_token}"}
+    tab_id = client.post("/tabs", json={}, headers=hdr).get_json()["id"]
+
+    rv = client.post("/finance/mpesa/charge",
+                     json={"tab_id": tab_id, "amount": 1500, "phone_number": "0712345678",
+                           "idempotency_key": "till-ok-1"},
+                     headers=hdr)
+    assert rv.status_code == 200, rv.get_json()
+    pid = rv.get_json()["payment_id"]
+
+    rows = db.session.query(Payment).filter_by(tab_id=tab_id).all()
+    assert len(rows) == 1 and rows[0].id == pid
+
+    pending = db.session.query(PendingSTKPush).filter_by(
+        checkout_request_id="ws_CO_ROUTE").first()
+    assert pending.payment_id == pid
+
+    # A retried tap reaches the same row, not a second one
+    rv2 = client.post("/finance/mpesa/charge",
+                      json={"tab_id": tab_id, "amount": 1500, "phone_number": "0712345678",
+                            "idempotency_key": "till-ok-1"},
+                      headers=hdr)
+    assert rv2.status_code == 200
+    assert db.session.query(Payment).filter_by(tab_id=tab_id).count() == 1
+
+
+def test_charge_refuses_a_tab_that_does_not_exist(client, waiter_token, monkeypatch):
+    """A stale screen pointing at a deleted tab must not open a payment."""
+    for k, v in {
+        "MPESA_CONSUMER_KEY": "k", "MPESA_CONSUMER_SECRET": "s",
+        "MPESA_SHORTCODE": "174379", "MPESA_PASSKEY": "p",
+        "MPESA_CALLBACK_URL": "https://example.com/cb", "MPESA_ENV": "sandbox",
+    }.items():
+        monkeypatch.setenv(k, v)
+    rv = client.post("/finance/mpesa/charge",
+                     json={"tab_id": "no-such-tab", "amount": 100, "phone_number": "0712345678"},
+                     headers={"Authorization": f"Bearer {waiter_token}"})
+    assert rv.status_code == 404

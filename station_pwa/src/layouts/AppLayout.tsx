@@ -112,8 +112,11 @@ const NAV_ITEMS: NavItem[] = [
   // Rooms, where the person handing a villa to a guest can see and set it.
   // The record still names the housekeeper (front desk picks who cleaned it),
   // so accountability did not move even though the screen did.
+  // level >= 3 to match GATE_LEVEL in app/gate/core.py. Department alone would
+  // offer the Gate tile to a level-1 gate staffer whose every tap 403s — the
+  // same fault Villa and Check-In below already carry a level for.
   { id: 'gate-hub', path: '/gate/hub', label: 'Gate', Icon: GateIcon,
-    visible: (_l, d) => deptIs(d, 'gate', 'entry', 'secur') },
+    visible: (l, d) => l >= 3 && deptIs(d, 'gate', 'entry', 'secur') },
   // level >= 3, for the same reason Villa above carries it: CheckInScreen is
   // RequireRole minLevel={3} and app/bookings/core.py refuses check_in below
   // FRONT_DESK_LEVEL. Offered to the whole department regardless of level, this

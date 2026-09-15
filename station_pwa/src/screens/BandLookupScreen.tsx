@@ -126,7 +126,9 @@ export default function BandLookupScreen() {
             Band #{input} not found for today.
           </p>
           <p className="text-xs text-ink-tertiary mt-1">
-            Check the number is correct or try a different date.
+            Bands are looked up for today only. Check the number on the
+            wristband — or the band may already have been closed when the
+            guest left.
           </p>
         </div>
       )}
