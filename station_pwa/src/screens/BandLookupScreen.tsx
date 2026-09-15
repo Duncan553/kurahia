@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useToastStore } from '@shared'
 import api from '../lib/axios'
 import { formatBandBalance } from '../lib/format'
@@ -23,6 +24,7 @@ function StatusDot({ status }: { status: string }) {
 }
 
 export default function BandLookupScreen() {
+  const navigate = useNavigate()
   const addToast = useToastStore((s) => s.addToast)
   const [input,   setInput]   = useState('')
   const [loading, setLoading] = useState(false)
@@ -185,6 +187,18 @@ export default function BandLookupScreen() {
               </p>
             </div>
           )}
+
+          {/* Reprint: bands get wet, torn and left in a car. The slip carries
+              the barcode a scanner reads, so a lost one is worth reprinting
+              rather than re-keying all day. */}
+          <div className="px-5 py-3 border-t border-white/10">
+            <button
+              onClick={() => navigate(`/print/band/${result.band_number}?print=1`)}
+              className="w-full py-3 rounded-xl text-sm font-semibold glass-card
+                text-ink-secondary hover:bg-white/5 transition-colors">
+              Print this band
+            </button>
+          </div>
 
           {/* Guest leaving — close the band. Backend refuses if balance > 0. */}
           {result.status.toUpperCase() === 'ACTIVE' && (

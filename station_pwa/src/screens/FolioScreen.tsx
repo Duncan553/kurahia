@@ -250,6 +250,18 @@ export default function FolioScreen() {
             </div>
           )}
 
+          {/* The guest's copy. Before they pay it reads BILL, after it reads
+              RECEIPT — the same itemised list either way, which is what a guest
+              asks for at check-out: what did I actually buy? */}
+          <div className="mt-3">
+            <button
+              onClick={() => navigate(`/print/tab/${tabId}?print=1`)}
+              className="w-full py-2.5 rounded-xl glass-card text-sm text-ink-secondary
+                hover:bg-white/5 transition-colors">
+              {owes ? 'Print bill' : 'Print receipt'}
+            </button>
+          </div>
+
           <Modal open={paying} onClose={() => setPaying(false)} title="Take payment" size="sm">
             <form onSubmit={e => { e.preventDefault(); payMut.mutate() }} className="flex flex-col gap-4">
               <FormField label="How are they paying?" htmlFor="pay-method" required>

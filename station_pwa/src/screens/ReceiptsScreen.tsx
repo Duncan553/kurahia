@@ -158,8 +158,19 @@ export default function ReceiptsScreen() {
               {receipts.map(r => {
                 const bal = parseFloat(r.balance)
                 return (
+                  <div key={r.tab_id} className="relative">
+                  {/* Every bill of the day, and a way to put it on paper. A
+                      guest who asks "what did we actually buy?" an hour later
+                      is asking for this list, printed. */}
                   <button
-                    key={r.tab_id}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/print/tab/${r.tab_id}?print=1`) }}
+                    aria-label={`Print ${r.reference || 'walk-in'} bill`}
+                    className="absolute top-2 right-2 z-10 px-2.5 py-1 rounded-lg text-[11px]
+                      font-semibold border border-white/15 text-ink-tertiary
+                      hover:text-ink-primary hover:bg-white/5 transition-colors">
+                    Print
+                  </button>
+                  <button
                     onClick={() => navigate(`/folio/${r.tab_id}`)}
                     className="glass-card p-4 text-left w-full hover:brightness-110 transition
                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
@@ -190,6 +201,7 @@ export default function ReceiptsScreen() {
                       </div>
                     </div>
                   </button>
+                  </div>
                 )
               })}
             </div>

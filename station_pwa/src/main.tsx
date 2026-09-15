@@ -64,6 +64,8 @@ import InventoryCountScreen from './screens/InventoryCountScreen'
 import MenuManageScreen from './screens/MenuManageScreen'
 import CashReconScreen from './screens/CashReconScreen'
 import StaffAccountsScreen from './screens/StaffAccountsScreen'
+import PrintTabScreen from '@shared/screens/PrintTabScreen'
+import PrintBandScreen from '@shared/screens/PrintBandScreen'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -141,6 +143,11 @@ const router = createBrowserRouter([
           { path: '*', element: <NotFoundScreen /> },
         ],
       },
+      // Paper. Inside AuthGate (only staff print), outside AppLayout: a receipt
+      // with a navigation bar across it wastes half the roll, and the browser
+      // print dialog captures whatever is on the page.
+      { path: '/print/tab/:tabId',       element: <PrintTabScreen />  },
+      { path: '/print/band/:bandNumber', element: <PrintBandScreen /> },
     ],
   },
 ])

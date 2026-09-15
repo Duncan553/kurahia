@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Modal, useToastStore, ErrorBoundary, PaymentRef, MpesaPrompt, useMpesaPrompt } from '@shared'
@@ -119,6 +120,7 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
   const [idemKey, setIdemKey]     = useState(genKey)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [lastBand, setLastBand]   = useState<number | null>(null)
+  const navigate = useNavigate()
   // Can this gate push a prompt to the guest's phone? Asked before the
   // button exists, never assumed.
   const { canPrompt } = useMpesaPrompt(api)
@@ -251,6 +253,19 @@ function IssueSection({ onIssued }: { onIssued: () => void }) {
             className="text-center text-sm text-ink-tertiary">
             Last issued: <span className="font-bold text-ink-primary">#{lastBand}</span>
           </motion.p>
+        )}
+        {/* The number only existed on this screen. The guest walked in with
+            nothing in their hand and the gate had to remember it — so print it:
+            the number, a barcode of it for the scanner at the exit, what was
+            loaded and the terms. */}
+        {lastBand !== null && (
+          <motion.button
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            onClick={() => navigate(`/print/band/${lastBand}?print=1`)}
+            className="mx-auto mt-2 block px-5 py-2.5 rounded-xl glass-card text-sm
+              text-ink-secondary hover:bg-white/5 transition-colors">
+            Print band #{lastBand}
+          </motion.button>
         )}
       </AnimatePresence>
 
