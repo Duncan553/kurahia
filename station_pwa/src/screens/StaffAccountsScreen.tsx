@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RequireRole } from '../components/AuthGate'
-import { Button, SearchInput, ErrorBoundary, useToastStore } from '@shared'
+import { Button, SearchInput, ErrorBoundary, useToastStore, roleLabel } from '@shared'
 import api from '../lib/axios'
 import { useAuthStore } from '../stores/authStore'
 
@@ -263,7 +263,7 @@ export default function StaffAccountsScreen() {
               <div key={u.id} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl glass-card ${!u.is_active ? 'opacity-60' : ''}`}>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink-primary truncate">{u.username}</p>
-                  <p className="text-xs text-ink-secondary">{u.role}{u.department ? ` · ${u.department}` : ''}</p>
+                  <p className="text-xs text-ink-secondary">{roleLabel(u.role)}{u.department ? ` · ${u.department}` : ''}</p>
                   {/* Monthly pay, editable in place. Everyone here is paid
                       monthly, so the period is not asked — it is sent as
                       MONTHLY. The server still accepts HOURLY and DAILY for
@@ -343,7 +343,7 @@ export default function StaffAccountsScreen() {
                         this manager may assign — otherwise the box would look
                         blank for no visible reason. */}
                     {!meta?.roles.some(r => r.name === u.role) && (
-                      <option value="">{u.role} (cannot change)</option>
+                      <option value="">{roleLabel(u.role)} (cannot change)</option>
                     )}
                     {meta?.roles.map(r => (
                       <option key={r.id} value={r.id}>{r.name}</option>

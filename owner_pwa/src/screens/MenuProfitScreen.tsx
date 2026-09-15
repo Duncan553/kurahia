@@ -55,6 +55,12 @@ const STYLE: Record<string, { label: string; ring: string; text: string; blurb: 
 const kes = (v: string | number) =>
   `KSh ${parseFloat(String(v)).toLocaleString('en-KE', { maximumFractionDigits: 0 })}`
 
+function fmtSold(raw: string): string {
+  const n = parseFloat(raw)
+  if (isNaN(n)) return raw
+  return Number.isInteger(n) ? String(n) : n.toFixed(1)
+}
+
 export default function MenuProfitScreen() {
   // Default to the last 30 days: long enough for popularity to mean something,
   // short enough that a menu change from last quarter is not still counted.
@@ -138,7 +144,7 @@ export default function MenuProfitScreen() {
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-ink-primary">{r.name}</p>
                         <p className="text-xs text-ink-tertiary">
-                          {r.category ?? 'Uncategorised'} · {r.units_sold} sold
+                          {r.category ?? 'Uncategorised'} · {fmtSold(r.units_sold)} sold
                         </p>
                       </div>
                       <div className="text-right shrink-0">

@@ -30,6 +30,18 @@ class MessageType(str, enum.Enum):
     RECEIPT            = "RECEIPT"
 
 
+def _kind(message_type) -> str:
+    """The enum's VALUE, lower-cased — never the member.
+
+    `f"{MessageType.BOOKING_CONFIRMED}"` renders as
+    "MessageType.BOOKING_CONFIRMED" on Python 3.12, so the audit trail carried
+    an internal class name where a message kind belonged. Existing rows keep
+    what they were written with, because the log is append-only and rewriting
+    history is the one thing it exists to prevent.
+    """
+    return getattr(message_type, "value", str(message_type)).lower()
+
+
 # ── Message templates ────────────────────────────────────────────────────────
 # Each key maps to a format string. The caller passes a context dict whose
 # keys must match the {placeholders} in the template.
@@ -84,7 +96,7 @@ def notify_guest(
         logger.error(detail)
         AuditLog.log(
             actor="guest_notify",
-            action=f"guest.notify.{message_type}.render_error",
+            action=f"guest.notify.{_kind(message_type)}.render_error",
             target=guest_phone,
             details=detail,
         )
@@ -112,7 +124,7 @@ def notify_guest(
     if wa_status != "DISABLED":
         AuditLog.log(
             actor="guest_notify",
-            action=f"guest.notify.{message_type}.whatsapp",
+            action=f"guest.notify.{_kind(message_type)}.whatsapp",
             target=guest_phone,
             details=f"status={wa_status} | {wa_msg}",
         )
@@ -129,7 +141,7 @@ def notify_guest(
     sms_status, sms_msg = send_sms(guest_phone, body)
     AuditLog.log(
         actor="guest_notify",
-        action=f"guest.notify.{message_type}.sms",
+        action=f"guest.notify.{_kind(message_type)}.sms",
         target=guest_phone,
         details=f"status={sms_status} | {sms_msg}",
     )
@@ -143,7 +155,7 @@ def notify_guest(
     # ── Fallback: logged only ────────────────────────────────────────────
     AuditLog.log(
         actor="guest_notify",
-        action=f"guest.notify.{message_type}.logged_only",
+        action=f"guest.notify.{_kind(message_type)}.logged_only",
         target=guest_phone,
         details=f"No delivery channel available. Message: {body}",
     )

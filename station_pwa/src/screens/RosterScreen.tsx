@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, useToastStore, Skeleton } from '@shared'
+import { Button, useToastStore, Skeleton, roleLabel } from '@shared'
 import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 
@@ -91,7 +91,7 @@ export default function RosterScreen() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-ink-primary truncate">{u.username}</p>
                   <p className="text-xs text-ink-tertiary truncate">
-                    {u.role} · home: {u.department ?? '—'}
+                    {roleLabel(u.role)} · home: {u.department ?? '—'}
                     {isOverridden && <span className="text-status-pending font-semibold"> · on {rostered!.department} today</span>}
                   </p>
                 </div>

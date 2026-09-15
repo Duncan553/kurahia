@@ -172,7 +172,7 @@ export default function AppLayout() {
       <aside className="hidden sm:flex flex-col w-16 lg:w-56 shrink-0 border-r border-white/5"
         style={{ background: 'var(--color-chrome-95)', backdropFilter: 'blur(20px)' }}>
 
-        {/* Logo — matches Stitch: circle icon + "Waterfront Juja" + "WATERFRONT CLUB" */}
+        {/* Logo — circle mark + "Waterfront Juja" over the property line. */}
         <div className="p-4 lg:p-5 border-b border-white/5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-primary-main/15 border border-primary-main/20 flex items-center justify-center shrink-0">
@@ -180,7 +180,7 @@ export default function AppLayout() {
             </div>
             <div className="hidden lg:block">
               <p className="text-sm font-serif font-bold text-ink-primary">Waterfront Juja</p>
-              <p className="text-[8px] tracking-[0.2em] uppercase text-[#ffb59f]/60">Waterfront Club</p>
+              <p className="text-[8px] tracking-[0.2em] uppercase text-[#ffb59f]/60">Juja Farm, Kiambu</p>
             </div>
           </div>
         </div>

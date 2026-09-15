@@ -60,6 +60,16 @@ const PERIOD_BADGE: Record<string, string> = {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
+function fmtHours(raw: string): string {
+  const n = parseFloat(raw)
+  if (isNaN(n)) return '—'
+  const h = Math.floor(n)
+  const m = Math.round((n - h) * 60)
+  if (h === 0 && m === 0) return 'no hours'
+  if (h === 0) return `${m}m`
+  return m === 0 ? `${h}h` : `${h}h ${m}m`
+}
+
 export default function PayrollDraftScreen() {
   const { data, isLoading, isError } = useQuery<PayrollData>({
     queryKey: ['payroll', CURRENT_PERIOD],
@@ -155,7 +165,7 @@ export default function PayrollDraftScreen() {
                     )}
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs text-ink-tertiary tabular-nums">{e.hours_worked}h worked</p>
+                    <p className="text-xs text-ink-tertiary tabular-nums">{fmtHours(e.hours_worked)} worked</p>
                     {gross != null ? (
                       <>
                         <p className="text-xs text-ink-tertiary tabular-nums mt-0.5">

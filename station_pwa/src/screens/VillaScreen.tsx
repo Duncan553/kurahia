@@ -110,7 +110,7 @@ export default function VillaScreen() {
 
       <motion.div variants={fadeIn} transition={{ duration: 0.3, ease: 'easeOut' }}>
         <h1 className="text-2xl font-bold font-serif text-ink-primary">Villas</h1>
-        <p className="text-xs text-amber-200/40 mt-0.5">Waterfront Country Club</p>
+        <p className="text-xs text-amber-200/40 mt-0.5">Waterfront Juja</p>
       </motion.div>
 
       {/* Villa cards with availability status */}

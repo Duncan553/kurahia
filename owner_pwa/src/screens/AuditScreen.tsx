@@ -38,6 +38,145 @@ interface Verification {
 const PAGE = 50
 
 /** Group a verb like "menu.item.edit" by its first segment, for colouring. */
+
+/**
+ * An audit line, written the way the owner would say it.
+ *
+ * The trail is the screen that has to survive an argument — "who voided that,
+ * and when" — so it is the last place that should be written in code. It read
+ * `booking.waiver.create` and `order_item.ready` with a raw row id beneath,
+ * which is fine for me and useless to the person who owns the resort.
+ *
+ * Rule first, table second. Actions are consistently `noun.verb`, so the rule
+ * handles the ninety-odd that exist and any the owner's own new roles create
+ * later; the table only overrides the ones where plain de-underscoring would
+ * read oddly. A code with no entry still comes out as words, never as a dot.
+ */
+const SAID: Record<string, string> = {
+  'user.login':                 'signed in',
+  'user.self_register':         'created their own account',
+  'user.login.pending_pin_setup':'signed in, PIN not set yet',
+  'auth.login.rate_limited':    'was blocked after too many sign-in attempts',
+  'hr.clock_in':                'clocked in',
+  'hr.clock_out':               'clocked out',
+  'hr.roster.assign':           'put someone on a station',
+  'hr.leave.create':            'requested leave',
+  'order.create':               'started an order',
+  'order.send':                 'sent an order to the kitchen',
+  'order_item.receive':         'started cooking an item',
+  'order_item.ready':           'marked an item ready',
+  'order_item.serve':           'served an item',
+  'order_item.cancel':          'cancelled an item',
+  'tab.open':                   'opened an account',
+  'tab.close':                  'closed an account',
+  'payment.record':             'recorded a payment',
+  'payment.stk_requested':      'sent an M-Pesa prompt to a guest',
+  'payment.stk_confirmed':      'had an M-Pesa payment confirmed by Safaricom',
+  'payment.mpesa_c2b':          'received an M-Pesa payment to the till',
+  'gate.issue_band':            'issued a wristband',
+  'gate.band.deactivate':       'closed a wristband',
+  'gate.deactivate_band':       'closed a wristband',
+  'gate.forfeit_day':           "closed the day's unused wristband credit",
+  'booking.check_in':           'checked a guest in',
+  'booking.check_out':          'checked a guest out',
+  'booking.waiver.create':      'recorded a signed waiver',
+  'booking.occupant.add':       'added someone to a villa',
+  'menu.recipe.set':            'set a recipe',
+  'inventory.purchase':         'recorded a purchase',
+  'inventory.count':            'counted stock',
+  'finance.cash.reconcile':     'reconciled cash',
+  'incident.log':               'logged an incident',
+  'incident.action':            'actioned an incident',
+  'housekeeping.auto_dirty':    'marked a room for cleaning (automatic)',
+  'calendar.create':            'marked a date on the calendar',
+  'booking.payment':            'took a booking payment',
+  'booking.create':             'made a booking',
+  'booking.confirm':            'confirmed a booking',
+  'booking.resource.create':    'added a villa',
+  'booking.resource.disable':   'took a villa out of service',
+  'feedback.create':            'left guest feedback',
+  'equipment.maintenance':      'logged equipment maintenance',
+  'equipment.create':           'added equipment',
+  'equipment.disable':          'took equipment out of service',
+  'suggestion.submit':          'sent a suggestion',
+  'suggestion.review':          'answered a suggestion',
+  'purchase_request.create':    'raised a purchase request',
+  'purchase_request.propose':   'costed a purchase request',
+  'purchase_request.approve':   'approved a purchase',
+  'purchase_request.reject':    'rejected a purchase',
+  'hr.leave.approve':           'approved leave',
+  'hr.leave.reject':            'rejected leave',
+  'hr.roster.generate':         "generated the day's roster",
+  'hr.profile.set_payment':     'set a wage rate',
+  'hr.profile.create':          'added a staff record',
+  'hr.profile.disable':         'switched off a staff record',
+  'hr.shift.create':            'scheduled a shift',
+  'hr.shift.cancel':            'cancelled a shift',
+  'guest.rename':               'corrected a guest name',
+  'user.password_reset':        'reset a password',
+  'password.lockout':           'was locked out after failed attempts',
+  'upload.receipt':             'attached a receipt photo',
+  'housekeeping.start':         'started cleaning a room',
+  'housekeeping.assign':        'assigned a room to a cleaner',
+  'housekeeping.complete':      'finished cleaning a room',
+  'event_type.create':          'added an event type',
+  'menu.item.create':           'added a menu item',
+  'menu.item.edit':             'changed a menu item',
+  'menu.item.disable':          'took a menu item off the menu',
+  'inventory.item.create':      'added a stock item',
+  'inventory.item.edit':        'changed a stock item',
+  'inventory.item.disable':     'switched off a stock item',
+  'user.create':                'created an account',
+  'user.edit':                  'changed an account',
+  'user.activate':              'switched an account on',
+  'user.deactivate':            'switched an account off',
+  'supplier.create':            'added a supplier',
+  'audit.verify':               'verified the history',
+}
+
+// Guest-message rows written before the enum leak was fixed read
+// "guest.notify.MessageType.BOOKING_CONFIRMED.sms". They are append-only, so
+// they stay as written and are translated on the way out instead.
+function guestMessage(action: string): string | null {
+  const m = action.match(/^guest\.notify\.(?:MessageType\.)?([A-Za-z_]+)\.(\w+)$/)
+  if (!m) return null
+  const kind = m[1].toLowerCase().replace(/_/g, ' ')
+  const how = { sms: 'by SMS', whatsapp: 'by WhatsApp', logged_only: 'recorded only',
+                render_error: 'but the message could not be built' }[m[2]] ?? m[2]
+  return `sent a guest a ${kind} message ${how}`
+}
+
+const THING: Record<string, string> = {
+  user: 'account', hr: 'staff record', order_item: 'order line', gate: 'wristband',
+  tab: 'account', menu: 'menu', inventory: 'stock', booking: 'booking',
+  finance: 'money record', equipment: 'equipment', supplier: 'supplier',
+  auth: 'sign-in', guest: 'guest message', judge: 'alert', admin: 'setting',
+  suggestion: 'suggestion', conduct: 'conduct record', notification: 'notification',
+}
+const DID: Record<string, string> = {
+  create: 'added', edit: 'changed', disable: 'switched off', enable: 'switched on',
+  activate: 'switched on', deactivate: 'switched off', delete: 'removed',
+  set: 'set', assign: 'assigned', cancel: 'cancelled', confirm: 'confirmed',
+  record: 'recorded', close: 'closed', open: 'opened', send: 'sent',
+  log: 'logged', action: 'actioned', reconcile: 'reconciled', count: 'counted',
+}
+
+function said(action: string): string {
+  const exact = SAID[action]
+  if (exact) return exact
+  const guest = guestMessage(action)
+  if (guest) return guest
+  const parts = action.split('.')
+  const verb = DID[parts[parts.length - 1]]
+  const noun = THING[parts[0]]
+  if (verb && noun) {
+    const middle = parts.length > 2 ? ` ${parts[1].replace(/_/g, ' ')}` : ''
+    return `${verb} a${/^[aeiou]/.test(noun) ? 'n' : ''} ${noun}${middle}`
+  }
+  // Never fall through to a dotted code. Words, even if clumsy ones.
+  return action.replace(/[._]/g, ' ')
+}
+
 function domainOf(action: string) {
   return action.split('.')[0]
 }
@@ -159,7 +298,7 @@ export default function AuditScreen() {
                 text-sm text-ink-primary focus:outline-none focus:border-primary-main"
             >
               <option value="">Everything</option>
-              {actions.map(a => <option key={a} value={a}>{a}</option>)}
+              {actions.map(a => <option key={a} value={a}>{said(a)}</option>)}
             </select>
           </div>
           <div>
@@ -219,13 +358,14 @@ export default function AuditScreen() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-ink-primary">{e.actor}</span>
-                      <span className="text-xs font-mono text-primary-light">{e.action}</span>
+                      <span className="text-xs text-ink-primary">{said(e.action)}</span>
                       <span className="text-[10px] uppercase tracking-wide text-ink-tertiary">
                         {domainOf(e.action)}
                       </span>
                     </div>
                     {e.target && (
-                      <p className="text-xs text-ink-secondary mt-0.5 truncate">on {e.target}</p>
+                      <p className="text-[10px] font-mono text-ink-tertiary mt-0.5 truncate"
+                         title={e.target}>ref {e.target.slice(0, 8)}</p>
                     )}
                     {/* The details carry the answer — "price 1800 -> 900" is the
                         whole reason to open this screen. */}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Drawer, Button, useToastStore, Skeleton } from '@shared'
+import { Drawer, Button, useToastStore, Skeleton, roleLabel } from '@shared'
 import api from '../lib/axios'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ function StaffCard({
         </p>
         <p className="text-xs text-ink-secondary truncate">
           @{user.username}
-          {user.role && <span className="ml-1">· {user.role}</span>}
+          {user.role && <span className="ml-1">· {roleLabel(user.role)}</span>}
           {user.department && <span className="ml-1">· {user.department}</span>}
         </p>
         {!profile && (
@@ -152,7 +152,7 @@ function UserDrawer({
           </div>
         </div>
         <div className="text-xs text-ink-secondary space-y-1 pt-2 border-t border-cream-deep">
-          <p>Role: <span className="font-medium text-ink-primary">{user.role}</span></p>
+          <p>Role: <span className="font-medium text-ink-primary">{roleLabel(user.role)}</span></p>
           {user.department && <p>Dept: <span className="font-medium text-ink-primary">{user.department}</span></p>}
           {profile?.phone && <p>Phone: <span className="font-medium text-ink-primary">{profile.phone}</span></p>}
           {profile?.hire_date && <p>Hired: <span className="font-medium text-ink-primary">{profile.hire_date}</span></p>}

@@ -42,7 +42,7 @@ export default function CustomerMenuScreen() {
           <h1 className="font-serif text-4xl md:text-5xl font-bold text-ink-primary tracking-tight">
             Our Menu
           </h1>
-          <p className="text-ink-tertiary mt-2">Waterfront Country Club</p>
+          <p className="text-ink-tertiary mt-2">Waterfront Juja</p>
         </div>
 
         {/* Loading */}

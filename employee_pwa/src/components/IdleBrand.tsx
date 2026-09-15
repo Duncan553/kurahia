@@ -54,7 +54,7 @@ export default function IdleBrand() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1, duration: 0.8 }}
               >
-                Waterfront Country Club
+                Waterfront Juja
               </motion.p>
               <motion.p
                 className="text-xs text-white/25 tracking-[0.3em] uppercase mt-2"

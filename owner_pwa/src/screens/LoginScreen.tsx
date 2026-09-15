@@ -112,7 +112,7 @@ export default function LoginScreen() {
             Waterfront Juja
           </h1>
           <p className="text-xs text-ink-tertiary mt-1.5 tracking-wide uppercase">
-            Waterfront Club
+            Owner
           </p>
         </div>
 
@@ -220,7 +220,7 @@ export default function LoginScreen() {
 
         {/* Footer */}
         <p className="text-center text-[10px] text-ink-tertiary mt-8 tracking-widest uppercase">
-          Waterfront Country Club &middot; Juja
+          Waterfront Juja &middot; Juja Farm, Kiambu
         </p>
       </motion.div>
     </div>
