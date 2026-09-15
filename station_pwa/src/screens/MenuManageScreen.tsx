@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Select, Skeleton, useToastStore, Drawer, Combobox, SearchInput, ErrorBoundary } from '@shared'
+import { Button, Select, Skeleton, useToastStore, Drawer, Combobox, SearchInput, ErrorBoundary, imageUrl } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
 
@@ -480,7 +480,7 @@ export default function MenuManageScreen() {
                 {/* Item image: show thumbnail if exists, upload button always */}
                 <label className="shrink-0 cursor-pointer group relative">
                   {it.image_path ? (
-                    <img src={it.image_path} alt={it.name}
+                    <img src={imageUrl(it.image_path)} alt={it.name}
                       className="w-10 h-10 rounded-lg object-cover glass-card" />
                   ) : (
                     <div className="w-10 h-10 rounded-lg border border-dashed border-white/20
@@ -564,7 +564,13 @@ export default function MenuManageScreen() {
                     for anyone below a manager: a pour measure is the theft lever,
                     so the API refuses it. Opening an editor that cannot save is
                     how a person learns to distrust the screen. */}
-                {it.prep_station !== 'NONE' && (isManager || !it.is_alcoholic) && (
+                {/* A massage DOES consume oil and a boat ride DOES burn fuel, so
+                    "no queue" items get a recipe too — the API already allows a
+                    manager to write one (pos/menu.py set_recipe). Hiding it left
+                    "Consumes nothing" as the only offer, which is how spa oil
+                    gets bought, used, and never deducted. Below manager the old
+                    rule stands: kitchen/bar, nothing alcoholic. */}
+                {(isManager || (it.prep_station !== 'NONE' && !it.is_alcoholic)) && (
                   <button
                     onClick={() => openRecipe(it)}
                     aria-label={`Edit recipe for ${it.name}`}

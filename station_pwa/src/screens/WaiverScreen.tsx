@@ -29,25 +29,38 @@ export default function WaiverScreen() {
 
   const [guestName,    setGuestName]    = useState('')
   const [bookingId,    setBookingId]    = useState(params.get('booking') ?? '')
+  // Who is signing: a villa guest (booking) or a day guest (wristband). The API
+  // has taken either for a while; this screen only ever sent a booking, so the
+  // people most likely to be on the water — day guests with a band — could not
+  // sign at all. Wristband is the default because that is the common case at
+  // the water post; front desk arrives with ?booking=… and gets the other.
+  const [signer,       setSigner]       = useState<'BAND' | 'BOOKING'>(
+    params.get('booking') ? 'BOOKING' : 'BAND')
+  const [bandNumber,   setBandNumber]   = useState('')
   const [activityType, setActivityType] = useState('WATER_ACTIVITY')
   const [notes,        setNotes]        = useState('')
   const [idemKey,      setIdemKey]      = useState(genKey)
 
   // Track which fields have been blurred so we only show errors after interaction
   const [touched, setTouched] = useState({ guestName: false, bookingId: false })
+  const usingBand = signer === 'BAND'
 
   const touch = (field: keyof typeof touched) =>
     setTouched((prev) => ({ ...prev, [field]: true }))
 
   const guestErr   = touched.guestName && !guestName.trim() ? 'Guest name is required.' : ''
-  const bookingErr = touched.bookingId && !bookingId.trim() ? 'Booking ID is required.' : ''
-  const isValid    = !!guestName.trim() && !!bookingId.trim()
+  const refErr     = touched.bookingId && !(usingBand ? bandNumber.trim() : bookingId.trim())
+    ? (usingBand ? 'Wristband number is required.' : 'Booking ID is required.') : ''
+  const isValid    = !!guestName.trim() && !!(usingBand ? bandNumber.trim() : bookingId.trim())
 
   const mutation = useMutation({
     mutationFn: () =>
       api.post<WaiverResponse>('/waivers', {
         signed_by_name:  guestName.trim(),
-        booking_id:      bookingId.trim(),
+        // One or the other — the API refuses both together.
+        ...(usingBand
+          ? { band_number: Number(bandNumber.trim()) }
+          : { booking_id: bookingId.trim() }),
         activity_type:   activityType,
         notes:           notes.trim() || undefined,
         idempotency_key: idemKey,
@@ -58,6 +71,7 @@ export default function WaiverScreen() {
       // Full reset + new idempotency key
       setGuestName('')
       setBookingId('')
+      setBandNumber('')
       setNotes('')
       setActivityType('WATER_ACTIVITY')
       setTouched({ guestName: false, bookingId: false })
@@ -99,17 +113,46 @@ export default function WaiverScreen() {
         />
         {guestErr && <p className="text-sm text-status-failed -mt-2">{guestErr}</p>}
 
-        <Input
-          label="Booking ID *"
-          type="text"
-          autoComplete="off"
-          placeholder="e.g. abc123…"
-          value={bookingId}
-          onChange={(e) => setBookingId(e.target.value)}
-          onBlur={() => touch('bookingId')}
-          disabled={mutation.isPending}
-        />
-        {bookingErr && <p className="text-sm text-status-failed -mt-2">{bookingErr}</p>}
+        {/* Day guest or villa guest — both can be on the water. */}
+        <div className="flex gap-2">
+          {([['BAND', 'Wristband'], ['BOOKING', 'Villa booking']] as const).map(([v, label]) => (
+            <button key={v} type="button"
+              onClick={() => setSigner(v)}
+              className={`px-3 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+                signer === v
+                  ? 'bg-primary-main text-white border-primary-main'
+                  : 'border-white/15 text-ink-tertiary hover:text-ink-secondary'
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {usingBand ? (
+          <Input
+            label="Wristband # *"
+            type="number"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="e.g. 4"
+            value={bandNumber}
+            onChange={(e) => setBandNumber(e.target.value)}
+            onBlur={() => touch('bookingId')}
+            disabled={mutation.isPending}
+          />
+        ) : (
+          <Input
+            label="Booking ID *"
+            type="text"
+            autoComplete="off"
+            placeholder="e.g. abc123…"
+            value={bookingId}
+            onChange={(e) => setBookingId(e.target.value)}
+            onBlur={() => touch('bookingId')}
+            disabled={mutation.isPending}
+          />
+        )}
+        {refErr && <p className="text-sm text-status-failed -mt-2">{refErr}</p>}
 
         <Select
           label="Activity type"

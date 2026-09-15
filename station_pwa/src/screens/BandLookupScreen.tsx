@@ -160,7 +160,7 @@ export default function BandLookupScreen() {
                 'text-2xl font-bold tabular-nums',
                 balance > 0 ? 'text-status-failed' : 'text-status-paid',
               ].join(' ')}>
-                KES {bandBalance?.amount}
+                KSh {bandBalance?.amount}
               </p>
             </div>
           </div>
@@ -181,10 +181,21 @@ export default function BandLookupScreen() {
           </div>
 
           {balance > 0 && (
-            <div className="px-5 py-4 border-t border-white/10 bg-status-failed/5">
+            <div className="px-5 py-4 border-t border-white/10 bg-status-failed/5 space-y-3">
               <p className="text-xs text-status-failed font-medium">
                 Outstanding balance — guest must settle before leaving.
               </p>
+              {/* The gate is the last till the guest passes, and every tab screen
+                  tells them they can settle "at the gate on the way out" — so the
+                  gate needs somewhere to take the money. Without this the only
+                  honest options were to send a leaving guest back to a waiter or
+                  to close the band on a debt, which the API rightly refuses. */}
+              <button
+                onClick={() => navigate(`/pos/tabs/${result.tab_id}`)}
+                className="w-full py-3 rounded-xl text-sm font-semibold bg-primary-main
+                  text-white hover:bg-primary-main/90 transition-colors">
+                Take payment — KSh {bandBalance?.amount}
+              </button>
             </div>
           )}
 
