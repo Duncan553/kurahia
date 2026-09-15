@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import api from '../../lib/axios'
 import { useKioskStore } from '../../stores/kioskStore'
 import { useKioskIdle } from '../../hooks/useKioskIdle'
-import { useToastStore } from '@shared'
+import { useToastStore, imageUrl } from '@shared'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -18,6 +18,7 @@ interface MenuItem {
   department_id: string
   is_active: boolean
   in_stock: boolean | null  // null = no recipe configured; false = stock depleted
+  image_path: string | null
 }
 
 interface PinLoginResponse {
@@ -100,13 +101,28 @@ function CategorySection({ name, items }: { name: string; items: MenuItem[] }) {
                     soldOut ? 'opacity-40' : '',
                   ].join(' ')}
                 >
-                  <span className={`text-lg text-ticket-ink ${soldOut ? 'line-through' : ''}`}>
-                    {item.name}
-                    {soldOut && (
-                      <span className="text-sm font-normal not-italic ml-2 no-underline">
-                        — Sold out
-                      </span>
+                  {/* The picture, on the one screen a GUEST actually reads.
+                      Every menu item carries a photograph and the upload
+                      control literally says "Guests choose from the picture" —
+                      but the kiosk was the only menu in the building showing
+                      none of them. */}
+                  <span className="flex items-center gap-4 min-w-0">
+                    {item.image_path && (
+                      <img
+                        src={imageUrl(item.image_path)}
+                        alt=""
+                        loading="lazy"
+                        className="w-16 h-16 rounded-xl object-cover shrink-0"
+                      />
                     )}
+                    <span className={`text-lg text-ticket-ink ${soldOut ? 'line-through' : ''}`}>
+                      {item.name}
+                      {soldOut && (
+                        <span className="text-sm font-normal not-italic ml-2 no-underline">
+                          — Sold out
+                        </span>
+                      )}
+                    </span>
                   </span>
                   <span className="text-lg font-bold text-ticket-ink tabular-nums ml-6 shrink-0">
                     {soldOut ? '—' : formatKsh(item.price)}
