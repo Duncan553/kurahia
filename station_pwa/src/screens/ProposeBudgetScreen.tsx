@@ -24,8 +24,8 @@ function statusValue(s: string): StatusValue {
   const map: Record<string, StatusValue> = {
     PENDING:   'pending',
     PROPOSED:  'pending',
-    APPROVED:  'paid',
-    REJECTED:  'cancelled',
+    APPROVED:  'approved',
+    REJECTED:  'rejected',
     FULFILLED: 'checked-out',
   }
   return map[s] ?? 'pending'

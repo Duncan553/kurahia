@@ -20,7 +20,7 @@ interface LeaveRequest {
 
 function statusVal(s: string): StatusValue {
   const map: Record<string, StatusValue> = {
-    PENDING: 'pending', APPROVED: 'paid', REJECTED: 'cancelled', CANCELLED: 'inactive',
+    PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected', CANCELLED: 'inactive',
   }
   return map[s] ?? 'pending'
 }

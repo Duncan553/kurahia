@@ -12,8 +12,19 @@ Rule: NEVER delete or update rows. Corrections = new rows with action="correctio
 """
 import uuid
 import hashlib
-from datetime import datetime, timezone
+import threading
+from datetime import datetime, timezone, timedelta
 from app.extensions import db
+
+# Appending to the chain is read-tail-then-write, which two threads can
+# interleave. with_for_update() below serialises that in Postgres; SQLite has no
+# row locks, and Flask's dev server is threaded, so there the DB lock does
+# nothing at all. This process-level lock covers that gap — and a single-process
+# deployment — at the cost of one mutex per audit write.
+#
+# It is not a substitute for the DB lock: two Gunicorn workers are two
+# processes and only the database can order them. Both, together.
+_APPEND_LOCK = threading.Lock()
 
 
 class AuditLog(db.Model):
@@ -95,26 +106,55 @@ class AuditLog(db.Model):
         # with_for_update() is a no-op on SQLite, which has no row locks; dev is
         # single-writer so it does not bite there, and production is Postgres
         # where the lock is real.
-        last = (db.session.query(cls)
-                .order_by(cls.timestamp.desc())
-                .with_for_update()
-                .first())
-        prev_hash = last.entry_hash if last else None
+        with _APPEND_LOCK:
+            # Take the write lock on the HEAD MARKER before reading the tail.
+            #
+            # The lock above only covers this process, and the read used to sit
+            # outside any write transaction: two threads both read the same
+            # tail, both chained off it, and the second entry silently skipped
+            # its predecessor. verify_chain() then reported BROKEN forever —
+            # from ordinary traffic. Three taps on "Start cooking" did it on the
+            # dev database.
+            #
+            # Writing to the head row first makes this a WRITE transaction from
+            # here on: SQLite takes its database write lock and Postgres takes
+            # the row lock, so a second writer waits until this one commits and
+            # then reads a tail that includes it. The marker has to be written
+            # anyway at the end of this method; touching it early costs nothing.
+            cls._touch_head()
 
-        now = datetime.now(timezone.utc)
-        entry_hash = cls._compute_hash(actor, action, target, now, prev_hash, details)
+            last = (db.session.query(cls)
+                    .order_by(cls.timestamp.desc())
+                    .with_for_update()
+                    .first())
+            prev_hash = last.entry_hash if last else None
 
-        entry = cls(
-            actor=actor,
-            action=action,
-            target=target,
-            details=details,
-            timestamp=now,
-            prev_hash=prev_hash,
-            entry_hash=entry_hash,
-        )
-        db.session.add(entry)
-        cls._remember_head(entry_hash)
+            now = datetime.now(timezone.utc)
+            # Two entries in the same microsecond would tie on timestamp, and
+            # verify_chain() walks in timestamp order — so a tie could be
+            # replayed in the wrong order and read as a break. Nudge the clock
+            # forward rather than let that happen.
+            if last is not None and last.timestamp is not None:
+                last_ts = last.timestamp
+                if last_ts.tzinfo is None:
+                    last_ts = last_ts.replace(tzinfo=timezone.utc)
+                if now <= last_ts:
+                    now = last_ts + timedelta(microseconds=1)
+
+            entry_hash = cls._compute_hash(actor, action, target, now, prev_hash, details)
+
+            entry = cls(
+                actor=actor,
+                action=action,
+                target=target,
+                details=details,
+                timestamp=now,
+                prev_hash=prev_hash,
+                entry_hash=entry_hash,
+            )
+            db.session.add(entry)
+            db.session.flush()
+            cls._remember_head(entry_hash)
         # Caller is responsible for db.session.commit()
         return entry
 
@@ -142,6 +182,26 @@ class AuditLog(db.Model):
     def _head_store():
         from app.models.system_setting import SystemSetting
         return SystemSetting
+
+    @classmethod
+    def _touch_head(cls) -> None:
+        """Claim the write lock on the head marker, creating it if absent.
+
+        Rewriting the row with its own value is enough: the point is not the
+        value but the lock the write takes, which serialises everyone else
+        appending to the chain until this transaction commits.
+        """
+        SystemSetting = cls._head_store()
+        row = db.session.get(SystemSetting, cls.HEAD_KEY)
+        if row is None:
+            db.session.add(SystemSetting(key=cls.HEAD_KEY, value=":0"))
+            db.session.flush()
+            return
+        db.session.execute(
+            db.update(SystemSetting)
+            .where(SystemSetting.key == cls.HEAD_KEY)
+            .values(value=row.value)
+        )
 
     @classmethod
     def _remember_head(cls, entry_hash: str) -> None:

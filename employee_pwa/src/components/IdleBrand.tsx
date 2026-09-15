@@ -46,7 +46,7 @@ export default function IdleBrand() {
                 animate={{ opacity: [0.6, 1, 0.6] }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
               >
-                KURAHIA
+                WATERFRONT JUJA
               </motion.p>
               <motion.p
                 className="text-sm md:text-base text-white/40 tracking-[0.4em] uppercase mt-4"

@@ -137,7 +137,7 @@ export default function PinSetupScreen() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.45, ease: 'easeOut' }}>
                 <p className="text-[10px] tracking-[0.3em] uppercase text-ink-secondary font-medium mb-3">
-                  KURAHIA STAFF
+                  WATERFRONT JUJA STAFF
                 </p>
                 <h1 className="font-serif text-5xl font-bold tracking-tight text-ink-primary leading-[0.92]">
                   SET YOUR<br />PIN.

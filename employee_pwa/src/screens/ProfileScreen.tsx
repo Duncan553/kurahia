@@ -183,7 +183,7 @@ export default function ProfileScreen() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="mb-6 p-4">
         <h1 className="font-serif text-2xl font-bold text-ink-primary">PROFILE.</h1>
-        <p className="text-xs text-ink-tertiary mt-1">KURAHIA STAFF</p>
+        <p className="text-xs text-ink-tertiary mt-1">WATERFRONT JUJA STAFF</p>
       </div>
 
       <div className="p-4 space-y-6">

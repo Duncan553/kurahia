@@ -31,6 +31,11 @@ interface StatusConfig {
 
 const CONFIG: Record<StatusValue, StatusConfig> = {
  paid: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Paid' },
+ // A leave request is APPROVED, not "Paid". Reusing the money word for every
+ // green outcome told a waiter his annual leave had been PAID: the badge on his
+ // own screen read "Paid" on a request the manager had simply agreed to.
+ approved: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Approved' },
+ rejected: { colorClass: 'bg-status-failed/15 text-status-failed border border-status-failed/25', icon: <XCircle />, label: 'Rejected' },
  active: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Active' },
  confirmed: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Confirmed' },
  'checked-in': { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Checked In' },
