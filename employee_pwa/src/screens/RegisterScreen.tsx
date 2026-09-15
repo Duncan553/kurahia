@@ -360,7 +360,7 @@ export default function RegisterScreen() {
             <button
               type="button"
               onClick={() => navigate('/login')}
-              className="text-primary-main hover:underline font-medium"
+              className="inline-block py-2 -my-2 align-baseline text-primary-main hover:underline font-medium"
             >
               Log in
             </button>

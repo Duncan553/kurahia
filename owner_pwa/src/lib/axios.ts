@@ -61,7 +61,27 @@ api.interceptors.response.use(
     const status: number | undefined = error.response?.status
 
     // ── 401: try to refresh once, then retry the original request ──────────
-    if (status === 401 && !original._retry) {
+    //
+    // The refresh call goes out on THIS instance, so without this guard a
+    // failed refresh re-entered the interceptor as just another 401: _retry
+    // was unset on it, isRefreshing was already true, and it got pushed onto
+    // the queue — the queue that only this try/catch ever drains, and which
+    // was at that moment awaiting the very promise it had just parked.
+    //
+    // Deadlock. The catch never ran, so clearAuth() and the redirect to
+    // /login never ran either, and every other request sat in the queue
+    // forever. The owner opened the app in the morning with an expired
+    // session and got their dashboard stuck on "Last updated: loading…" with
+    // two blank cards — no error, no sign-in prompt, nothing to do but guess.
+    //
+    // A 401 from /auth/* means the credentials are wrong or the refresh token
+    // is spent. There is nothing to refresh WITH, so it must fall through to
+    // the caller rather than try.
+    //
+    // shared_ui/src/lib/axios.ts — the copy the station and employee apps use
+    // — has had this guard all along. This file is the fork that never got it.
+    const isAuthEndpoint = original.url?.startsWith('/auth/')
+    if (status === 401 && !original._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         // Another refresh is already in flight — queue this request
         return new Promise<string>((resolve, reject) => {

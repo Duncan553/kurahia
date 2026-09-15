@@ -326,7 +326,13 @@ def _notify_waiter_ready(oi: OrderItem):
         return
     tab_ref   = order.tab.reference if order.tab and order.tab.reference else "Walk-in"
     item_name = oi.menu_item.name if oi.menu_item else "Item"
-    body = f"{tab_ref}: {oi.quantity}x {item_name} is ready for pickup."
+    # Quantity is a Decimal because some things are sold by weight, so the raw
+    # value reads "1.00x Grilled Tilapia" on the waiter's alert. Plates are
+    # counted, not weighed: drop the decimals when there are none, keep them
+    # when there are (0.5x is a real half portion).
+    qty = Decimal(str(oi.quantity))
+    qty_txt = str(qty.quantize(Decimal("1"))) if qty == qty.to_integral_value() else str(qty.normalize())
+    body = f"{tab_ref}: {qty_txt}x {item_name} is ready for pickup."
 
     db.session.add(Notification(
         recipient_user_id=order.created_by_id,

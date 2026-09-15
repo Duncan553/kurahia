@@ -115,7 +115,9 @@ async function seedAuth(ctx: BrowserContext, app: string, username: string) {
  * The audit itself. Runs entirely in the page so it can read live layout.
  * ──────────────────────────────────────────────────────────────────────── */
 async function auditPage(page: Page, app: string, route: string, vp: typeof VIEWPORTS[0]) {
-  const result = await page.evaluate((minTap: number) => {
+  // async: the covered-control check has to scroll and wait before it
+  // believes what it sees.
+  const result = await page.evaluate(async (minTap: number) => {
     const out: { kind: string; detail: string }[] = []
     const vw = window.innerWidth
     const vh = window.innerHeight
@@ -191,12 +193,31 @@ async function auditPage(page: Page, app: string, route: string, vp: typeof VIEW
       // the viewport (the first version of this check) probed a point that was
       // not on the element at all, so anything below the fold reported itself as
       // "covered by the bottom nav" — 45 false positives in one run.
-      const cx = r.left + r.width / 2
-      const cy = r.top + r.height / 2
-      if (cx >= 0 && cx <= vw && cy >= 0 && cy <= vh) {
-        const hit = document.elementFromPoint(cx, cy)
-        if (hit && hit !== el && !el.contains(hit) && !hit.contains(el)) {
-          const blocker = (hit as HTMLElement)
+      //
+      // And it must survive a SCROLL before it counts. A control sitting under
+      // the nav at the current scroll position is not an unreachable control —
+      // the person scrolls, and there it is. Reporting those produced twelve
+      // findings in one run, every one of them a button that worked fine when
+      // you actually tried it, which is worse than reporting nothing: a check
+      // that cries wolf gets switched off, and then the real one goes unread.
+      //
+      // So: bring it into view, let the layout settle, and only believe the
+      // hit-test the second time.
+      const centreHitsSomethingElse = () => {
+        const b = el.getBoundingClientRect()
+        const x = b.left + b.width / 2
+        const y = b.top + b.height / 2
+        if (x < 0 || x > vw || y < 0 || y > vh) return null   // can't tell from here
+        const hit = document.elementFromPoint(x, y)
+        if (!hit || hit === el || el.contains(hit) || hit.contains(el)) return null
+        return hit as HTMLElement
+      }
+
+      if (centreHitsSomethingElse()) {
+        el.scrollIntoView({ block: 'center' })
+        await new Promise(res => setTimeout(res, 120))
+        const blocker = centreHitsSomethingElse()
+        if (blocker) {
           out.push({
             kind: 'COVERED_CONTROL',
             detail: `"${label}" is covered by <${blocker.tagName.toLowerCase()} class="${(blocker.className||'').toString().slice(0,60)}">`,

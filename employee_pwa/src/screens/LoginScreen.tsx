@@ -115,7 +115,7 @@ export default function LoginScreen() {
           <button
             type="button"
             onClick={() => navigate('/pin')}
-            className="text-primary-main hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main rounded"
+            className="inline-block py-2 -my-2 align-baseline text-primary-main hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main rounded"
           >
             Use PIN instead
           </button>
@@ -126,7 +126,7 @@ export default function LoginScreen() {
           <button
             type="button"
             onClick={() => navigate('/register')}
-            className="text-primary-main hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main rounded"
+            className="inline-block py-2 -my-2 align-baseline text-primary-main hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main rounded"
           >
             Join Waterfront Juja
           </button>

@@ -3,6 +3,7 @@ import type { ReactElement } from 'react'
 import { useNavigate, NavLink, Outlet, Navigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
+import { useOrderReadyPings } from '@shared'
 import api from '../lib/axios'
 
 // ── Icons (inline SVG, no library) ──────────────────────────────────────────
@@ -190,6 +191,53 @@ export function StationHome() {
   return <Navigate to={first?.path ?? '/incidents'} replace />
 }
 
+
+/**
+ * Plates waiting on the pass.
+ *
+ * Lives in the shell so it reaches the waiter on whatever screen they are on —
+ * the Tables list, a tab they are adding to, the till. The version that lived
+ * only on the Tables screen was invisible to a waiter doing their actual job.
+ *
+ * Deliberately NOT a toast. A toast is gone in four seconds and a waiter with
+ * both hands full cannot act on it; food waiting to be collected is a state,
+ * not an event, so it stays on screen until it is picked up. Tapping opens the
+ * tab it belongs to, because "which table was that" is the very next question.
+ */
+function ReadyBar() {
+  const navigate = useNavigate()
+  const pings = useOrderReadyPings(api)
+  if (!pings.length) return null
+
+  const first = pings[0]
+  return (
+    <button
+      onClick={() => {
+        // reference_id is the order ITEM; the tab is what a waiter navigates
+        // to, and the Tables screen is where every ping is listed with its
+        // dismiss control.
+        navigate('/pos/tabs')
+      }}
+      className="shrink-0 w-full flex items-center gap-3 px-4 py-2.5 text-left
+        bg-status-paid/15 border-b border-status-paid/30
+        hover:bg-status-paid/20 transition-colors
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-paid"
+      aria-live="polite"
+    >
+      <span className="shrink-0 w-2 h-2 rounded-full bg-status-paid animate-pulse" aria-hidden="true" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-ink-primary truncate">
+          {pings.length === 1 ? first.subject : `${pings.length} orders ready for pickup`}
+        </span>
+        <span className="block text-[11px] text-ink-secondary truncate">
+          {pings.length === 1 ? first.body : 'Tap to see which tables'}
+        </span>
+      </span>
+      <span className="shrink-0 text-[11px] font-bold text-status-paid">Collect →</span>
+    </button>
+  )
+}
+
 export default function AppLayout() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
@@ -233,6 +281,10 @@ export default function AppLayout() {
           </span>
         </button>
       </header>
+
+      {/* Food waiting on the pass — above the content, under the header, on
+          every screen this shell wraps. */}
+      <ReadyBar />
 
       {/* Page content */}
       <main className="flex-1 overflow-y-auto">

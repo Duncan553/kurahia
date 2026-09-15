@@ -354,7 +354,7 @@ export default function CheckInScreen() {
             {/* Where front desk adds a guest. Until now the only booking form
                 lived on the villa/housekeeping screen. */}
             <button onClick={() => navigate('/front-desk/new-booking')}
-              className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold
+              className="shrink-0 px-4 min-h-[44px] rounded-xl text-sm font-semibold
                 bg-primary-main text-white hover:opacity-90 active:scale-[0.98]
                 transition-all focus-visible:outline-none focus-visible:ring-2
                 focus-visible:ring-primary-dark">

@@ -86,6 +86,8 @@ export { resortToday, resortMonth, resortDatePlus, resortRecentMonths, RESORT_TZ
 // ── Hooks ──
 export { useIsDesktop } from './hooks/useIsDesktop'
 export { useMpesaPrompt } from './hooks/useMpesaPrompt'
+export { useOrderReadyPings } from './hooks/useOrderReadyPings'
+export type { ReadyPing } from './hooks/useOrderReadyPings'
 
 // ── Motion presets ──
 export { slideUp, fadeScale, slideFromRight } from './motion/presets'

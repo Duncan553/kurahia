@@ -292,7 +292,10 @@ export default function AppLayout() {
             </div>
             <div className="hidden lg:block flex-1 min-w-0">
               <p className="text-xs font-medium text-ink-primary truncate">{user?.username}</p>
-              <button onClick={signOut} className="text-[10px] text-status-failed/50 hover:text-status-failed">
+              <button onClick={signOut}
+                className="inline-flex items-center min-h-[44px] py-2 -my-2 pr-2
+                  text-[11px] text-status-failed/80 hover:text-status-failed
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed rounded">
                 Sign out
               </button>
             </div>
