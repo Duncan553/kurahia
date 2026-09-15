@@ -478,3 +478,127 @@ def record_purchase():
         "quantity":    str(qty),
         "actual_cost": str(cost),
     }), 201
+
+
+@purchases_bp.get("/purchases")
+@require_active_user
+def list_purchases():
+    """The deliveries recorded lately — newest first.
+
+    Exists so the receiving screen can show what was just entered. A storeman
+    who types 4 instead of 4 crates has no way to notice unless the last few
+    lines are on the screen in front of him.
+    """
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    limit = min(int(request.args.get("limit", 20)), 100)
+    rows = (db.session.query(Purchase)
+            .order_by(Purchase.timestamp_added.desc())
+            .limit(limit).all())
+    out = []
+    for p in rows:
+        item = db.session.get(InventoryItem, p.item_id)
+        out.append({
+            "id": p.id,
+            "item_id": p.item_id,
+            "item_name": item.name if item else "—",
+            "unit": item.unit if item else "",
+            "purchase_pack_name": item.purchase_pack_name if item else None,
+            "purchase_pack_size": str(item.purchase_pack_size) if item and item.purchase_pack_size else None,
+            "quantity": str(p.quantity),
+            "actual_cost": str(p.actual_cost),
+            "supplier_name": p.supplier_name,
+            "receipt_photo_path": p.receipt_photo_path,
+            "recorded_at": p.timestamp_added.isoformat() if p.timestamp_added else None,
+        })
+    return jsonify(out), 200
+
+
+@purchases_bp.post("/purchases/<purchase_id>/correct-quantity")
+@require_active_user
+def correct_purchase_quantity(purchase_id):
+    """Fix the quantity on a delivery that was keyed wrong.
+
+    The money and the receipt do not move — only how much actually arrived
+    against them. This is the one legitimate way stock can go UP outside a
+    purchase, and it is deliberately narrow:
+
+      * manager and above, audit-logged old → new,
+      * the difference is written as its own ADJUSTMENT movement, so the
+        history still shows what was first recorded and what corrected it,
+      * cost_per_unit is recomputed from every purchase of the item, so a
+        correction cannot leave the price of an ingredient reading wrong.
+
+    Without it a mis-keyed crate is permanent: a count may not add stock (that
+    is how invented stock gets laundered), and there is no other door.
+    """
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "Manager or above required."}), 403
+
+    purchase = db.session.get(Purchase, purchase_id)
+    if not purchase:
+        return jsonify({"error": "Purchase not found."}), 404
+
+    data = request.get_json(silent=True) or {}
+    try:
+        new_qty = Decimal(str(data.get("quantity")))
+    except (InvalidOperation, TypeError):
+        return jsonify({"error": "quantity must be a number"}), 400
+    if new_qty <= 0:
+        return jsonify({"error": "quantity must be positive"}), 400
+
+    old_qty = Decimal(str(purchase.quantity))
+    delta = new_qty - old_qty
+    if delta == 0:
+        return jsonify({"error": "That is already the quantity on this delivery."}), 400
+
+    item = db.session.get(InventoryItem, purchase.item_id)
+    if not item:
+        return jsonify({"error": "Item not found."}), 404
+
+    # A correction may not take stock below zero — that would mean the shortfall
+    # has already been sold or counted, and the honest answer is a count, not a
+    # rewrite of history.
+    from app.services.stock import get_current_stock
+    if get_current_stock(item.id) + delta < 0:
+        return jsonify({
+            "error": f"That would take {item.name} below zero. Some of it has already "
+                     f"been used — count it instead of correcting the delivery."
+        }), 400
+
+    with db.session.begin_nested():
+        db.session.add(StockMovement(
+            item_id=item.id,
+            change_amount=delta,
+            reason=MovementReason.ADJUSTMENT.value,
+            actor_id=actor.id,
+            notes=f"Delivery correction: {old_qty} → {new_qty} {item.unit}"
+                  + (f" ({data.get('reason')})" if data.get("reason") else ""),
+            idempotency_key=f"purchase-fix-{purchase.id}-{new_qty}",
+        ))
+        purchase.quantity = new_qty
+
+        # Re-derive the price from every purchase of this item, so one bad line
+        # cannot leave a permanent dent in the margin.
+        totals = db.session.query(
+            db.func.sum(Purchase.quantity), db.func.sum(Purchase.actual_cost)
+        ).filter(Purchase.item_id == item.id).first()
+        tot_qty, tot_cost = totals or (None, None)
+        if tot_qty and Decimal(str(tot_qty)) > 0:
+            item.cost_per_unit = Decimal(str(tot_cost)) / Decimal(str(tot_qty))
+
+    AuditLog.log(actor=actor.username, action="inventory.purchase.correct_quantity",
+                 target=f"{item.name}: {old_qty} -> {new_qty}")
+    db.session.commit()
+
+    return jsonify({
+        "id": purchase.id,
+        "item": item.name,
+        "quantity": str(new_qty),
+        "adjusted_by": str(delta),
+        "cost_per_unit": str(item.cost_per_unit),
+        "message": f"{item.name} corrected to {new_qty} {item.unit}.",
+    }), 200
