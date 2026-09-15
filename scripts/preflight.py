@@ -8,6 +8,7 @@ Run:  .venv/bin/python scripts/preflight.py
 Exit: 0 clean, 1 if anything needs a human.
 """
 import os
+import ast
 import re
 import subprocess
 import sys
@@ -87,11 +88,25 @@ def check_migrations():
         if not f.exists():
             continue
         text = f.read_text(encoding="utf-8", errors="ignore")
-        # Strip comments first. The first run flagged a migration whose only
-        # mention of batch_alter_table was a comment explaining why it does NOT
-        # use one — the check read its own advice back as a violation.
-        code = "\n".join(re.sub(r"#.*$", "", ln) for ln in text.splitlines())
-        if "batch_alter_table" in code and "add_column" in code and "existing_type" not in code:
+        # Read the CODE, not the prose. Stripping "#" comments was the first fix,
+        # after the check flagged a migration whose only mention of the call was
+        # a comment explaining why it does not use one. It happened again the
+        # moment that explanation moved into the module docstring, which no
+        # amount of comment-stripping will catch.
+        #
+        # So ask the parser what is actually called. A checker that reads its own
+        # advice back as a violation gets switched off, and the real findings go
+        # with it.
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            continue
+        called = {
+            n.func.attr for n in ast.walk(tree)
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+        }
+        code = text  # still used for the existing_type escape hatch below
+        if "batch_alter_table" in called and "add_column" in called and "existing_type" not in code:
             fail("migration",
                  f"{f.name} uses batch_alter_table for an add_column — batch mode "
                  f"rebuilds the table on SQLite. Plain op.add_column is enough.")
