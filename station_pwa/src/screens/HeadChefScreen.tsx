@@ -65,20 +65,44 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 const fadeIn = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } }
 
-/* ── Restock Request Form — sends a suggestion to management ────────────────── */
+/* ── Restock Request Form ────────────────────────────────────────────────────
+ *
+ * This raises a real PURCHASE REQUEST against a stock line, not a message.
+ *
+ * It used to POST /suggestions — free text to management — so the chain the
+ * resort actually runs on (request → manager costs it → approved inside the
+ * department budget, escalated to the owner past it → bought, with the receipt
+ * attached to the same row) had nothing feeding it. The manager's Purchases
+ * queue sat empty while restock requests arrived as chat.
+ *
+ * The note still travels, because "the fridge is making a noise" is worth
+ * saying, but it rides on the request instead of replacing it.
+ */
 function RestockRequestForm({ onClose, defaultSubject }: { onClose: () => void; defaultSubject: string }) {
   const addToast = useToastStore(s => s.addToast)
-  const [subject, setSubject] = useState('')
-  const [body, setBody]       = useState('')
+  const qc = useQueryClient()
+  const [itemId, setItemId] = useState('')
+  const [qty,    setQty]    = useState('')
+  const [note,   setNote]   = useState('')
+
+  // Only this station's stock — the API refuses another department's anyway.
+  const { data: items = [] } = useQuery<InvItem[]>({
+    queryKey: ['chef-inv-items'],
+    queryFn: () => api.get<InvItem[]>('/inventory/items').then(r => Array.isArray(r.data) ? r.data : []),
+    staleTime: 60_000,
+  })
+  const item = items.find(i => i.id === itemId)
 
   const mut = useMutation({
-    mutationFn: () => api.post('/suggestions', {
-      category: 'MANAGEMENT',
-      subject: subject.trim() || defaultSubject,
-      body: body.trim(),
+    mutationFn: () => api.post('/inventory/purchase-requests', {
+      item_id: itemId,
+      quantity: parseFloat(qty),
+      notes: note.trim() || defaultSubject,
     }),
     onSuccess: () => {
-      addToast({ type: 'success', message: 'Restock request sent to manager.' })
+      addToast({ type: 'success',
+        message: `Asked for ${qty} ${item?.unit ?? ''} of ${item?.name ?? 'stock'}. The manager sees it now.` })
+      qc.invalidateQueries({ queryKey: ['chef-inv-items'] })
       onClose()
     },
     onError: (e) => {
@@ -87,31 +111,58 @@ function RestockRequestForm({ onClose, defaultSubject }: { onClose: () => void; 
     },
   })
 
+  const ready = !!itemId && !!qty && parseFloat(qty) > 0
+
   return (
-    <form onSubmit={e => { e.preventDefault(); if (body.trim()) mut.mutate() }}
+    <form onSubmit={e => { e.preventDefault(); if (ready) mut.mutate() }}
       className="p-5 space-y-3">
       <p className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary mb-2">
         Request Restock
       </p>
-      <input
-        placeholder="Subject (e.g. Need more cooking oil)"
-        value={subject} onChange={e => setSubject(e.target.value)}
+
+      <select
+        style={{ colorScheme: 'dark' }}
+        value={itemId} onChange={e => setItemId(e.target.value)}
         className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
-          text-ink-primary focus:outline-none focus:border-primary-main"
-      />
+          text-ink-primary focus:outline-none focus:border-primary-main">
+        <option value="">What is finished?</option>
+        {items.map(i => (
+          <option key={i.id} value={i.id}>
+            {i.name} ({i.unit}){i.below_reorder ? ' — below reorder' : ''}
+          </option>
+        ))}
+      </select>
+
+      <div className="flex gap-2 items-center">
+        <input
+          type="number" min="0" step="0.001" inputMode="decimal"
+          placeholder="How much?"
+          value={qty} onChange={e => setQty(e.target.value)}
+          className="flex-1 rounded-xl glass-card bg-transparent px-4 py-3 text-sm
+            text-ink-primary focus:outline-none focus:border-primary-main"
+        />
+        {item && <span className="text-xs text-ink-tertiary shrink-0">{item.unit}</span>}
+      </div>
+      {item && (
+        <p className="text-[11px] text-ink-tertiary px-1">
+          On the shelf now: {parseFloat(item.current_stock).toLocaleString()} {item.unit}
+        </p>
+      )}
+
       <textarea
-        required placeholder="What do you need? Include items and estimated quantities."
-        value={body} onChange={e => setBody(e.target.value)} rows={3}
+        placeholder="Anything the manager should know (optional)"
+        value={note} onChange={e => setNote(e.target.value)} rows={2}
         className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
           text-ink-primary focus:outline-none focus:border-primary-main resize-none"
       />
+
       <div className="flex gap-2">
         <button type="button" onClick={onClose}
           className="flex-1 py-2.5 rounded-xl glass-card text-ink-tertiary text-sm font-semibold
             hover:bg-white/5 transition-colors">
           Cancel
         </button>
-        <button type="submit" disabled={!body.trim() || mut.isPending}
+        <button type="submit" disabled={!ready || mut.isPending}
           className="flex-1 py-2.5 rounded-xl bg-primary-main text-white text-sm font-semibold
             hover:bg-primary-main/90 transition-colors disabled:opacity-50">
           {mut.isPending ? 'Sending…' : 'Send Request'}

@@ -552,14 +552,31 @@ def test_a_manager_may_still_say_no(client, manager_token, someone_elses_request
     assert rv.get_json()["status"] == "REJECTED"
 
 
-def test_waiter_cannot_even_raise_or_see_purchase_requests(client, waiter_token,
-                                                           pending_request):
+def test_waiter_may_ask_but_not_decide_or_browse_purchase_requests(client, waiter_token,
+                                                                   pending_request):
+    """Asking is open to the floor; spending is not.
+
+    Raising a request used to be manager-only, which meant the people who
+    actually run out of things — the chef at 6am, the barman mid-service —
+    could not open the one door into the budget chain. Their "Request Restock"
+    button posted a free-text suggestion instead, and the manager's approval
+    queue sat empty while the kitchen went without tilapia.
+
+    What must not move is the rest of it: a waiter cannot browse the resort's
+    purchasing, cannot cost a request, and cannot approve one.
+    """
     assert client.get("/inventory/purchase-requests",
                       headers=H(waiter_token)).status_code == 403
-    assert client.post("/inventory/purchase-requests", headers=H(waiter_token),
-                       json={"item_description": "x", "quantity": "1"}).status_code == 403
     assert client.post(f"/inventory/purchase-requests/{pending_request}/approve",
                        headers=H(waiter_token), json={}).status_code == 403
+    assert client.post(f"/inventory/purchase-requests/{pending_request}/propose",
+                       headers=H(waiter_token),
+                       json={"estimated_cost": "1"}).status_code == 403
+
+    rv = client.post("/inventory/purchase-requests", headers=H(waiter_token),
+                     json={"item_description": "Serviettes", "quantity": "10"})
+    assert rv.status_code == 201, rv.get_json()
+    assert rv.get_json()["status"] == "PENDING"
 
 
 def test_owner_approves_the_managers_request(client, owner_token, manager_token,

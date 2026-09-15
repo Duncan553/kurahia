@@ -69,15 +69,23 @@ def list_requests():
     if sg and sg.lower() == "true":
         query = query.filter(PurchaseRequest.system_generated == True)
 
-    if actor.role.level < 10 and actor.department_id:
-        from app.models.user import User as U
-        dept_ids = [u.id for u in db.session.query(U).filter_by(department_id=actor.department_id).all()]
-        query = query.filter(
-            db.or_(
-                PurchaseRequest.requested_by_id.in_(dept_ids),
-                PurchaseRequest.requested_by_id.is_(None),
-            )
-        )
+    # No department narrowing. This endpoint is already manager-and-above, and
+    # approving spending across departments IS the manager's job: the chef asks
+    # for tilapia, the barman asks for tonic, and one person costs both against
+    # their budgets.
+    #
+    # It used to keep only requests raised by people in the ACTOR's own
+    # department. Waterfront's manager sits in "Management", where nobody else
+    # works, so the kitchen's request reached the approval screen and the screen
+    # said "No pending requests. All caught up." — the same mistake that once
+    # showed him 1 stock line out of 40 (app/inventory/items.py list_items).
+    #
+    # ?department= still narrows, by the DEPARTMENT THAT KEEPS THE STOCK, which
+    # is what a person means when they ask to see the bar's requests.
+    dept_filter = request.args.get("department")
+    if dept_filter:
+        query = (query.outerjoin(InventoryItem, PurchaseRequest.item_id == InventoryItem.id)
+                      .filter(InventoryItem.department_id == dept_filter))
 
     reqs = query.order_by(PurchaseRequest.created_at.desc()).all()
     return jsonify([{
@@ -100,9 +108,21 @@ def list_requests():
 @purchases_bp.post("/purchase-requests")
 @require_active_user
 def create_request():
+    """Ask for something to be bought.
+
+    The person who knows the tilapia is finished is the chef, not the manager,
+    and the manager is not standing in the store at 6am. This used to be
+    manager-only, so the one door into the budget chain — request, cost it,
+    approve inside the budget, escalate past it — could only be opened by the
+    person the chain exists to inform. The floor's "Request Restock" button had
+    to post a free-text suggestion instead, which no budget ever sees.
+
+    Asking is open to any active staff member. Costing it (propose), approving
+    it and buying it stay where they were: manager, and the owner past the
+    budget line. Below manager you may only ask for stock in your OWN
+    department — a barman does not order beef.
+    """
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
 
     data     = request.get_json(silent=True) or {}
     item_id  = data.get("item_id")
@@ -124,6 +144,13 @@ def create_request():
         item = db.session.get(InventoryItem, item_id)
         if not item or not item.is_active:
             return jsonify({"error": "Item not found or inactive."}), 404
+        if (actor.role.level < MANAGER_LEVEL
+                and actor.department_id
+                and item.department_id != actor.department_id):
+            return jsonify({
+                "error": f"{item.name} is not your department's stock. "
+                         f"Ask the department that keeps it, or your manager."
+            }), 403
 
     with db.session.begin_nested():
         pr = PurchaseRequest(
@@ -326,14 +353,23 @@ def approve_request(pr_id):
             }), 403
 
     with db.session.begin_nested():
-        pr.owner_id    = actor.id
-        pr.owner_notes = data.get("notes")
+        # WHO decided, not just that someone did. Both roles used to land in
+        # owner_id, so a request approved by the manager inside the budget read
+        # back as "owner: brian.mwangi" — and the one thing this chain exists to
+        # show is whether the owner had to be asked.
+        if actor.role.level >= OWNER_LEVEL:
+            pr.owner_id    = actor.id
+            pr.owner_notes = data.get("notes")
+        else:
+            pr.manager_id    = actor.id
+            pr.manager_notes = data.get("notes") or pr.manager_notes
         pr.status = RequestStatus.APPROVED if action == "approve" else RequestStatus.REJECTED
 
     AuditLog.log(
         actor=actor.username,
         action=f"purchase_request.{action}",
         target=pr.id,
+        details=("owner" if actor.role.level >= OWNER_LEVEL else "manager, inside budget"),
     )
     db.session.commit()
 

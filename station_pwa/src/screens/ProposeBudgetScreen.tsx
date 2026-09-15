@@ -51,6 +51,41 @@ export default function ProposeBudgetScreen() {
     refetchInterval: 60_000,
   })
 
+  // What each department may still spend this month. The manager's authority
+  // IS this number: inside it they decide, past it the owner does.
+  const { data: budgets } = useQuery<{ budgets: { department: string; remaining: string }[] }>({
+    queryKey: ['budget-status-now'],
+    queryFn: () => api.get(`/finance/budgets/status?period=${new Date().toISOString().slice(0, 7)}`)
+      .then((r) => r.data),
+    staleTime: 60_000,
+  })
+  const remainingFor = (dept: string) => {
+    const row = budgets?.budgets?.find((b) => b.department === dept)
+    return row ? parseFloat(row.remaining) : null
+  }
+
+  const decideMutation = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
+      api.post(`/inventory/purchase-requests/${id}/approve`, {
+        action, idempotency_key: crypto.randomUUID(),
+      }).then((r) => r.data),
+    onSuccess: (data: { status?: string; message?: string }, { action }) => {
+      addToast({ type: 'success',
+        message: data.message
+          ?? (action === 'approve' ? 'Approved — buy it and record the receipt.' : 'Rejected.') })
+      queryClient.invalidateQueries({ queryKey: ['purchase-requests-manager'] })
+      queryClient.invalidateQueries({ queryKey: ['budget-status-now'] })
+      setSelected(null)
+    },
+    onError: (err: unknown) => {
+      // The API's refusal IS the explanation — over budget, no budget set, or
+      // your own request. Show it, do not paraphrase it.
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Could not record that decision.'
+      addToast({ type: 'error', message: msg })
+    },
+  })
+
   const filtered = (requests ?? []).filter((r) => r.status === filter)
   const pendingCount = (requests ?? []).filter((r) => r.status === 'PENDING').length
 
@@ -293,21 +328,62 @@ export default function ProposeBudgetScreen() {
               />
             </div>
 
-            <p className="text-xs text-ink-tertiary">
-              This sends the estimated cost to the owner for final approval. You cannot approve purchases.
-            </p>
+            {/* What the manager may actually do, and why.
+                This used to read "You cannot approve purchases" and offer one
+                button to the owner — written before the owner delegated by
+                budget. A manager decides inside the department's remaining
+                budget; past it the API refuses and the owner decides. */}
+            {(() => {
+              const left = remainingFor(selected.department)
+              const c = parseFloat(cost || '0')
+              if (left === null) {
+                return (
+                  <p className="text-xs text-ink-tertiary">
+                    No budget set for {selected.department} this month, so the owner
+                    approves this one. Send them the estimate.
+                  </p>
+                )
+              }
+              return (
+                <p className="text-xs text-ink-tertiary">
+                  {selected.department} has <strong>KSh {left.toLocaleString()}</strong> left
+                  this month.{' '}
+                  {c > 0 && (c > left
+                    ? `KSh ${c.toLocaleString()} would take it past that — the owner decides.`
+                    : `KSh ${c.toLocaleString()} is inside it — you can approve this yourself.`)}
+                </p>
+              )
+            })()}
 
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={!costValid}
+                className="flex-1 py-4 rounded-2xl text-sm font-semibold glass-card
+                  text-ink-secondary hover:bg-white/5 transition-all disabled:opacity-50">
+                Send to owner
+              </button>
+              <button
+                type="button"
+                disabled={!costValid || decideMutation.isPending}
+                onClick={async () => {
+                  // Cost first, then decide — the API refuses an approval with
+                  // no estimate, because a budget cannot check a blank.
+                  await proposeMutation.mutateAsync({ id: selected.id })
+                  decideMutation.mutate({ id: selected.id, action: 'approve' })
+                }}
+                className="flex-1 py-4 rounded-2xl text-sm font-semibold bg-primary-main
+                  text-white hover:bg-primary-dark transition-all disabled:opacity-50">
+                Approve — buy it
+              </button>
+            </div>
             <button
-              type="submit"
-              disabled={!costValid}
-              className={[
-                'w-full py-4 rounded-2xl text-base font-semibold transition-all',
-                'bg-primary-main text-white hover:bg-primary-dark active:scale-[0.99]',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-              ].join(' ')}
-            >
-              Submit estimate to owner
+              type="button"
+              disabled={decideMutation.isPending}
+              onClick={() => decideMutation.mutate({ id: selected.id, action: 'reject' })}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold border
+                border-status-failed/40 text-status-failed hover:bg-status-failed/5">
+              Reject
             </button>
           </form>
         )}
