@@ -91,6 +91,40 @@ code {
 }
 .fact span { font-size: 0.83rem; color: var(--ink-2); line-height: 1.35; }
 
+/* ── The short version ────────────────────────────────────────────────────
+   A 5,000-word document is a 23-minute read, and nobody decides to buy
+   anything after 23 minutes of reading. Nothing below is cut — this is a way
+   IN. A reader gets the whole decision here in under a minute and goes deeper
+   only where they care. The price used to sit 89% of the way through; a buyer
+   should never have to hunt for it. */
+.short {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+  gap: 26px 34px; margin-top: 6px;
+}
+.short h3 {
+  font-size: 1.02rem; margin-bottom: 7px;
+  display: flex; align-items: baseline; gap: 9px;
+}
+.short h3::before {
+  content: attr(data-n);
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;
+  color: var(--accent); font-weight: 400;
+}
+.short p { color: var(--ink-2); font-size: 0.95rem; margin-bottom: 0; }
+.short ul { margin: 0; padding-left: 1.1em; color: var(--ink-2); font-size: 0.95rem; }
+.short li { margin-bottom: 4px; }
+
+/* ── Contents ─────────────────────────────────────────────────────────── */
+.toc { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 28px; }
+.toc-row {
+  background: var(--paper); padding: 11px 16px;
+  display: grid; grid-template-columns: 2.6rem minmax(9rem, 12rem) 1fr; gap: 14px; align-items: baseline;
+}
+@media (max-width: 620px) { .toc-row { grid-template-columns: 2.4rem 1fr; } .toc-row .toc-what { grid-column: 2; } }
+.toc-n { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--accent); }
+.toc-name { font-weight: 600; font-size: 0.95rem; }
+.toc-what { color: var(--ink-2); font-size: 0.89rem; }
+
 /* ── Sections ───────────────────────────────────────────────────────────── */
 section { padding-block: clamp(48px, 7vw, 86px); border-bottom: 1px solid var(--rule); }
 .sec-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 34px; max-width: var(--measure); }
@@ -205,6 +239,12 @@ footer .prose { max-width: 72ch; }
   .prov { font-size: 7.8pt; }
   /* Four facts in a row of three left one alone beside a grey gap. */
   .facts { break-inside: avoid; grid-template-columns: repeat(2, 1fr); }
+  .short { grid-template-columns: 1fr 1fr; gap: 14pt 20pt; }
+  .short > div { break-inside: avoid; }
+  /* The contents is one object. Split across a page it orphaned row 01
+     at the foot of one sheet and left the next half empty. */
+  .toc { break-inside: avoid; }
+  .short-sec { break-after: page; }
   a { text-decoration: none; }
 }
 </style>
@@ -218,10 +258,11 @@ footer .prose { max-width: 72ch; }
     <p class="lede">
       Every sale, every shift, every wristband and every shilling recorded once,
       in one place, by the person who was standing there &mdash; and readable by
-      you from anywhere. This document walks the system from your screen down to
-      the last till. Every screen in it is photographed, and for each one it says
-      what it does, what it puts in front of the person using it, and how it was
-      checked.
+      you from anywhere.
+      <br><br>
+      This document walks the system from your screen down to the last till.
+      Every screen in it is photographed, and each one says what it does and how
+      it was checked.
     </p>
     <div class="facts">
       <div class="fact"><b>{{N}}</b><span>screens, each photographed as the person who works that post</span></div>
@@ -230,6 +271,108 @@ footer .prose { max-width: 72ch; }
       <div class="fact"><b>16 Sept</b><span>date every figure here was read off the running system</span></div>
     </div>
   </header>
+
+  <!-- ══ The short version ══════════════════════════════════════════════ -->
+  <section class="short-sec">
+    <div class="sec-head">
+      <div class="num">The short version</div>
+      <h2>If you read nothing else, read this page</h2>
+      <p>
+        The rest of this document is the evidence. This is the decision.
+      </p>
+    </div>
+
+    <div class="short">
+      <div>
+        <h3 data-n="01">What it is</h3>
+        <p>
+          One system covering the gate, the villas, the restaurant and bar, the
+          spa, the water post, the store room, the staff and the money &mdash;
+          on the tablets and phones you already have. Not five tools that
+          disagree with each other.
+        </p>
+      </div>
+      <div>
+        <h3 data-n="02">What it costs</h3>
+        <p>
+          Bought outright, not rented. No monthly fee for using it. Five figures
+          to fill in, set out in full in section&nbsp;11:
+        </p>
+        <ul>
+          <li>The system &mdash; KSh ______</li>
+          <li>Setup and data entry &mdash; KSh ______</li>
+          <li>Shadow week &mdash; KSh ______</li>
+          <li>A new feature later &mdash; KSh ______</li>
+          <li>A repair &mdash; KSh ______</li>
+        </ul>
+      </div>
+      <div>
+        <h3 data-n="03">What you own</h3>
+        <p>
+          Waterfront Juja owns its data outright and the installed system is
+          yours to run. I keep the underlying software and may adapt it for
+          other properties &mdash; which is what keeps the price where it is,
+          and means you are buying something already built and already tested.
+        </p>
+      </div>
+      <div>
+        <h3 data-n="04">What you supply</h3>
+        <p>
+          Two things only, and neither can come from me:
+        </p>
+        <ul>
+          <li>Your staff WiFi details, so clock-in means something</li>
+          <li>M&#8209;Pesa business credentials from Safaricom</li>
+        </ul>
+        <p style="margin-top:8px">
+          Everything else &mdash; menu, villas, suppliers, staff, opening stock
+          &mdash; your own people enter once, on the screens themselves, with me
+          sitting beside your manager.
+        </p>
+      </div>
+      <div>
+        <h3 data-n="05">How it was checked</h3>
+        <p>
+          1,456 automated tests. A full trading day run end to end, then the
+          books closed and audited. Every screen opened as the person who works
+          that post. 296 role-and-screen combinations checked so nothing is
+          offered to someone the system would then refuse.
+        </p>
+      </div>
+      <div>
+        <h3 data-n="06">What happens first</h3>
+        <p>
+          We fill it with your real resort together, screen by screen. Then it
+          runs <em>alongside</em> what you do now for a week before anyone
+          relies on it &mdash; so if the two disagree, we find out while it
+          still costs nothing.
+        </p>
+      </div>
+    </div>
+
+    <div class="note">
+      <h3>Where to look for what</h3>
+      <p>
+        Sections 02 to 06 are the screens, in the order the property uses them
+        &mdash; your own first. Every screen in the system is photographed.
+      </p>
+    </div>
+
+    <div class="toc">
+      <div class="toc-row"><span class="toc-n">01</span><span class="toc-name">How to read this</span><span class="toc-what">How every claim here was checked</span></div>
+      <div class="toc-row"><span class="toc-n">02</span><span class="toc-name">The owner</span><span class="toc-what">Your 14 screens &mdash; money, staff, audit, settings</span></div>
+      <div class="toc-row"><span class="toc-n">03</span><span class="toc-name">Management</span><span class="toc-what">The 20 screens your manager runs the day from</span></div>
+      <div class="toc-row"><span class="toc-n">04</span><span class="toc-name">The floor</span><span class="toc-what">Gate, front desk, tills, kitchen, bar, spa, water</span></div>
+      <div class="toc-row"><span class="toc-n">05</span><span class="toc-name">The staff app</span><span class="toc-what">What each employee carries on their own phone</span></div>
+      <div class="toc-row"><span class="toc-n">06</span><span class="toc-name">The guest</span><span class="toc-what">What a visitor touches</span></div>
+      <div class="toc-row"><span class="toc-n">07</span><span class="toc-name">Taking money</span><span class="toc-what">Cash, M&#8209;Pesa, card &mdash; and the phone prompt</span></div>
+      <div class="toc-row"><span class="toc-n">08</span><span class="toc-name">The money rules</span><span class="toc-what">The rules you set, and what came back when tried</span></div>
+      <div class="toc-row"><span class="toc-n">09</span><span class="toc-name">Underneath</span><span class="toc-what">Why the numbers can be trusted</span></div>
+      <div class="toc-row"><span class="toc-n">10</span><span class="toc-name">Your data</span><span class="toc-what">What you enter, and what only you can supply</span></div>
+      <div class="toc-row"><span class="toc-n">11</span><span class="toc-name">Commercial</span><span class="toc-what">The five figures, in full</span></div>
+      <div class="toc-row"><span class="toc-n">12</span><span class="toc-name">The evidence</span><span class="toc-what">Every check, and everything found wrong</span></div>
+    </div>
+  </section>
 
   <!-- ══ 01 ═════════════════════════════════════════════════════════════ -->
   <section>
@@ -245,27 +388,40 @@ footer .prose { max-width: 72ch; }
     </div>
 
     <div class="prose">
+      <p>Four kinds of checking sit behind this document, and they catch
+      different things.</p>
+    </div>
+
+    <div class="grid-notes">
+      <div>
+        <h3>Automated tests hold the rules</h3>
+        <p>That money is never a rounded number. That a payment cannot be
+        recorded twice. That a disabled account stops working on the very next
+        request.</p>
+      </div>
+      <div>
+        <h3>A simulated day runs the property</h3>
+        <p>Gate opens, guests arrive, orders are sent, the kitchen cooks, cash
+        is counted, the day closes &mdash; then the books are closed and
+        audited.</p>
+      </div>
+      <div>
+        <h3>The screens were opened and used</h3>
+        <p>A test can tell you an endpoint answers and still not tell you the
+        button that calls it is reachable by the person who needs it.</p>
+      </div>
+      <div>
+        <h3>Every photograph had to prove itself</h3>
+        <p>Each capture waits for a phrase unique to that screen and checks it
+        was not bounced to a login page. If it cannot prove it, no image is
+        saved and the miss is recorded.</p>
+      </div>
+    </div>
+
+    <div class="prose">
       <p>
-        Four kinds of checking sit behind this document, and they catch different
-        things. <strong>Automated tests</strong> hold the rules: that money is
-        never a rounded number, that a payment cannot be recorded twice, that a
-        disabled account stops working on the very next request. A
-        <strong>simulated working day</strong> runs the whole property end to end
-        &mdash; gate opens, guests arrive, orders are sent, the kitchen cooks,
-        cash is counted, the day closes &mdash; and then closes the books and
-        audits itself. The <strong>screens themselves were opened in a browser
-        and used</strong>, because a test can tell you an endpoint answers and
-        still not tell you the button that calls it is reachable by the person
-        who needs it.
-      </p>
-      <p>
-        And <strong>every photograph here was taken by a process that had to
-        prove which screen it was on first.</strong> Each capture waits for a
-        phrase that appears on that screen and nowhere else, checks it has not
-        been bounced to a login page, and only then saves the image. If it cannot
-        prove it, no image is saved and the miss is recorded. That rule exists
-        because an earlier run once produced eight identical login screenshots
-        filed under eight different names.
+        That last rule exists because an earlier run once produced eight
+        identical login screenshots filed under eight different names.
       </p>
     </div>
 
@@ -280,12 +436,18 @@ footer .prose { max-width: 72ch; }
       <p>
         Four of those were found during this review, by opening every screen as
         every role and recording what each one asked the system for:
-        a waiter typing the manager's address got the manager's inbox, which
-        answered <em>refused</em> and rendered &ldquo;Nothing yet&rdquo;; the menu
-        manager opened for him with a price and a Remove on every row, none of
-        which would have worked; the stock screen showed the head chef &ldquo;No
-        pending requests&rdquo; when he was in fact being refused; and both
-        kitchen and bar boards opened for six roles who do not work those posts.
+      </p>
+      <ul style="margin:0 0 12px; padding-left:1.15em">
+        <li>A waiter typing the manager's address got the manager's inbox &mdash;
+            which answered <em>refused</em> and rendered &ldquo;Nothing yet&rdquo;.</li>
+        <li>The menu manager opened for him with a price and a Remove on every
+            row, none of which would have worked.</li>
+        <li>The stock screen told the head chef &ldquo;No pending requests&rdquo;
+            when he was in fact being refused.</li>
+        <li>Both kitchen and bar boards opened for six roles who do not work
+            those posts.</li>
+      </ul>
+      <p>
         All four are closed. <strong>296 role-and-screen combinations are now
         checked in a single run</strong>, and it currently reports none.
       </p>
@@ -453,13 +615,16 @@ footer .prose { max-width: 72ch; }
 
     <div class="prose">
       <p>
-        Filling the system with your real resort is not a job you hand over and
-        wait on. Almost all of it is done <strong>on the screens themselves</strong>,
-        by your own people, and it only has to be done once. The system tells you
-        what is still missing rather than quietly going along with it: the payroll
-        sheet prints &ldquo;no wage set&rdquo; beside anyone without a rate, the
-        budget tile stays blank until you set budgets, and a dish nobody has given
-        a recipe cannot be sold at all until somebody says how it draws on stock.
+        <strong>Filling the system with your real resort is not a job you hand
+        over and wait on.</strong> Almost all of it is done on the screens
+        themselves, by your own people, and it only has to be done once.
+      </p>
+      <p>
+        The system tells you what is still missing rather than quietly going
+        along with it. The payroll sheet prints &ldquo;no wage set&rdquo; beside
+        anyone without a rate. The budget tile stays blank until you set budgets.
+        And a dish nobody has given a recipe cannot be sold at all until somebody
+        says how it draws on stock.
       </p>
     </div>
 
@@ -476,9 +641,9 @@ footer .prose { max-width: 72ch; }
       <h3>The two things that cannot come from a screen</h3>
       <p>
         <strong>Your staff network.</strong> The resort's own WiFi name and the
-        range of addresses it hands out, registered once in Settings. Until it is,
-        clock-in refuses everybody &mdash; deliberately, because being on the
-        property's own network is what makes attendance mean anything.
+        range of addresses it hands out, registered once in Settings.
+        Until it is, clock-in refuses everybody &mdash; deliberately. Being on
+        the property's own network is what makes attendance mean anything.
       </p>
       <p>
         <strong>M&#8209;Pesa business credentials.</strong> Safaricom issues these

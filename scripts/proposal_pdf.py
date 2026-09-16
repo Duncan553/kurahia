@@ -37,14 +37,35 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def serve():
+class Reusable(socketserver.TCPServer):
+    # Without this a rebuild moments after the last one dies on "Address
+    # already in use", because the previous socket is still in TIME_WAIT.
+    allow_reuse_address = True
+
+
+def serve(port):
     # file:// cannot fetch the Google Fonts stylesheet, and a PDF set in Times
     # is not the document. Serve it over http so the page renders as designed.
-    with socketserver.TCPServer(("127.0.0.1", PORT), Quiet) as httpd:
+    with Reusable(("127.0.0.1", port), Quiet) as httpd:
         httpd.serve_forever()
 
 
-threading.Thread(target=serve, daemon=True).start()
+def free_port(start):
+    """Take `start` if it is free, otherwise the next port that is.
+
+    A leftover server from an earlier run used to kill the whole build with a
+    stack trace, for no better reason than a number being taken.
+    """
+    import socket
+    for candidate in range(start, start + 20):
+        with socket.socket() as probe:
+            if probe.connect_ex(("127.0.0.1", candidate)) != 0:
+                return candidate
+    raise SystemExit(f"no free port in {start}..{start + 19}")
+
+
+PORT = free_port(PORT)
+threading.Thread(target=serve, args=(PORT,), daemon=True).start()
 
 SCRIPT = f"""
 const {{ chromium }} = require('playwright');
