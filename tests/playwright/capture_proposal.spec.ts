@@ -55,7 +55,14 @@ const SHOT_LIST: Shot[] = [
   { id: '07_owner_staff', app: 'owner', user: OWNER, role: 'owner', route: '/staff',
     markers: ['staff', 'role'], notes: 'Who works here, what they reach, and the switch that ends it.' },
   { id: '08_owner_bookings', app: 'owner', user: OWNER, role: 'owner', route: '/bookings',
-    markers: ['booking', 'arriv'], notes: 'The villa book: who is in, who is coming, who owes a deposit.' },
+    markers: ['booking'], notes: 'The villa book: who is in, who is coming, who owes a deposit.',
+    // The screen opens on "In House", which is the right default and the wrong
+    // plate: both villas had checked out, so the book looked empty while three
+    // bookings sat one tab away. Show the whole book.
+    then: async page => {
+      await page.getByRole('tab', { name: 'All', exact: true }).click({ timeout: 10_000 })
+      await page.waitForTimeout(1200)
+    } },
   { id: '09_owner_menu_profit', app: 'owner', user: OWNER, role: 'owner', route: '/menu-profit',
     markers: ['margin', 'profit', 'menu'], notes: 'The menu sorted by what it earns, not by what sells.' },
   { id: '10_owner_feedback', app: 'owner', user: OWNER, role: 'owner', route: '/feedback',

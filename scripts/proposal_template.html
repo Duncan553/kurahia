@@ -1,0 +1,590 @@
+<meta charset="utf-8">
+<title>Waterfront Juja Operating System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+/* ── Tokens ────────────────────────────────────────────────────────────────
+   Taken from the product: the tills run on a deep teal-black with one coral
+   accent. The paper is pulled cool and slightly green rather than cream, so
+   the dark screenshots sit on it as plates in a book instead of fighting a
+   warm ground. */
+:root {
+  --paper:      #F1F3F1;
+  --paper-2:    #E7EBE8;
+  --ink:        #13201E;
+  --ink-2:      #55655F;
+  --ink-3:      #7C8C86;
+  --rule:       #D3DAD6;
+  --teal:       #0F4F49;
+  --accent:     #C0482A;
+  --accent-soft:#F3E2DC;
+  --plate-bg:   #0C1A18;
+  --measure: 66ch;
+  --wide: 1180px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0E1918; --paper-2: #16241F; --ink: #E8EDEA; --ink-2: #A2B2AC;
+    --ink-3: #7C8C86; --rule: #26352F; --teal: #6FBDAF; --accent: #FF7A54;
+    --accent-soft: #2A1B16; --plate-bg: #0C1A18;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E1918; --paper-2: #16241F; --ink: #E8EDEA; --ink-2: #A2B2AC;
+  --ink-3: #7C8C86; --rule: #26352F; --teal: #6FBDAF; --accent: #FF7A54;
+  --accent-soft: #2A1B16; --plate-bg: #0C1A18;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 16.5px; line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: var(--wide); margin: 0 auto; padding-inline: 24px; padding-block: 0; }
+@media (max-width: 640px) { .wrap { padding-inline: 18px; } }
+.prose { max-width: var(--measure); }
+
+h1, h2, h3 {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: -0.012em;
+}
+h1 { font-size: clamp(2.3rem, 6vw, 3.9rem); line-height: 1.04; font-weight: 700; }
+h2 { font-size: clamp(1.6rem, 3.6vw, 2.3rem); line-height: 1.12; }
+h3 { font-size: 1.16rem; line-height: 1.3; }
+p  { margin: 0 0 1.05em; }
+a  { color: var(--accent); }
+code {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.88em; color: var(--teal);
+}
+
+.eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.735rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ── Cover ──────────────────────────────────────────────────────────────── */
+.cover {
+  border-bottom: 1px solid var(--rule);
+  padding-block: clamp(48px, 9vw, 104px) clamp(36px, 6vw, 64px);
+  display: flex; flex-direction: column; gap: 28px;
+}
+.cover .lede {
+  font-size: clamp(1.05rem, 2.1vw, 1.28rem);
+  color: var(--ink-2); max-width: 58ch; margin: 0;
+}
+.facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 10px;
+}
+.fact { background: var(--paper); padding: 16px 18px; display: flex; flex-direction: column; gap: 3px; }
+.fact b {
+  font-family: 'Fraunces', Georgia, serif; font-size: 1.5rem; font-weight: 700;
+  line-height: 1; font-variant-numeric: tabular-nums;
+}
+.fact span { font-size: 0.83rem; color: var(--ink-2); line-height: 1.35; }
+
+/* ── Sections ───────────────────────────────────────────────────────────── */
+section { padding-block: clamp(48px, 7vw, 86px); border-bottom: 1px solid var(--rule); }
+.sec-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 34px; max-width: var(--measure); }
+.sec-head .num {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+  letter-spacing: 0.16em; color: var(--accent);
+}
+.sec-head p { margin: 6px 0 0; color: var(--ink-2); }
+
+/* ── Plates ───────────────────────────────────────────────────────────────
+   Numbered because they are exhibits in a sequence the reader walks, not
+   decoration. The first plate of each act runs full width; the rest pair up. */
+.plates { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 34px 30px; }
+.plate { margin: 0; }
+.plate.wide { grid-column: 1 / -1; }
+.plate img {
+  display: block; width: 100%; max-width: 100%; height: auto;
+  background: var(--plate-bg); border: 1px solid var(--rule); border-radius: 3px;
+}
+.plate figcaption {
+  display: grid; grid-template-columns: auto 1fr; gap: 12px;
+  margin-top: 10px; font-size: 0.88rem; color: var(--ink-2);
+}
+.plate.wide figcaption { max-width: 78ch; }
+.pnum {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.74rem; color: var(--accent);
+  padding-top: 0.24em; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.prov { display: block; margin-top: 5px; color: var(--ink-3); font-size: 0.82rem; }
+
+/* ── Feature entries ────────────────────────────────────────────────────── */
+.feature { border-top: 1px solid var(--rule); padding-top: 18px; margin-top: 26px; max-width: 80ch; }
+.feature-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.who {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--teal); border: 1px solid var(--rule);
+  border-radius: 2px; padding: 2px 7px; white-space: nowrap;
+}
+.dl { display: grid; grid-template-columns: 5.6rem 1fr; gap: 6px 16px; }
+@media (max-width: 560px) { .dl { grid-template-columns: 1fr; gap: 2px 0; } .dl dt { margin-top: 10px; } }
+.dl dt {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3); padding-top: 0.34em;
+}
+.dl dd { margin: 0; color: var(--ink-2); }
+.dl dd.checked { color: var(--ink); border-left: 2px solid var(--accent); padding-left: 12px; font-size: 0.95rem; }
+.dl dt.checked-dt { color: var(--accent); }
+
+/* ── Notes and lists ────────────────────────────────────────────────────── */
+.note {
+  background: var(--paper-2); border-left: 3px solid var(--teal);
+  padding: 18px 20px; margin: 30px 0 0; max-width: 78ch;
+}
+.note h3 { font-size: 1.02rem; margin-bottom: 7px; }
+.note p:last-child { margin-bottom: 0; }
+.note.found { border-left-color: var(--accent); background: var(--accent-soft); }
+
+.grid-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 26px; margin-top: 30px; }
+.grid-notes > div > h3 { margin-bottom: 6px; }
+.grid-notes p { color: var(--ink-2); margin-bottom: 0; font-size: 0.95rem; }
+
+ul.plain { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+ul.plain li { display: grid; grid-template-columns: auto 1fr; gap: 12px; color: var(--ink-2); }
+ul.plain li b {
+  font-family: 'IBM Plex Mono', monospace; color: var(--ink);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+
+/* ── Commercial ─────────────────────────────────────────────────────────── */
+.price-table { width: 100%; border-collapse: collapse; margin-top: 26px; max-width: 78ch; }
+.price-table th, .price-table td { text-align: left; padding: 14px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.price-table th { font-weight: 600; width: 34%; }
+.price-table td.what { color: var(--ink-2); font-size: 0.95rem; }
+.price-table td.fig { font-family: 'IBM Plex Mono', monospace; white-space: nowrap; text-align: right; color: var(--ink-3); width: 9.5rem; }
+@media (max-width: 560px) {
+  .price-table th, .price-table td { display: block; width: auto; border-bottom: 0; padding: 4px 0; }
+  .price-table tr { display: block; border-bottom: 1px solid var(--rule); padding-block: 12px; }
+  .price-table td.fig { text-align: left; }
+}
+
+footer { padding-block: 44px 64px; color: var(--ink-2); font-size: 0.9rem; }
+footer .prose { max-width: 72ch; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ── Print ────────────────────────────────────────────────────────────────
+   The client will read this on paper or as a PDF at least as often as on a
+   screen. Force the light palette (a dark PDF is unreadable and unprintable),
+   keep every plate whole on one page with its caption, and let sections start
+   where they fall rather than leaving half-empty pages behind. */
+@page { size: A4; margin: 14mm 12mm; }
+@media print {
+  :root {
+    --paper: #FFFFFF; --paper-2: #F2F4F2; --ink: #101C1A; --ink-2: #45554F;
+    --ink-3: #6A7A74; --rule: #C9D2CD; --teal: #0F4F49; --accent: #B2421F;
+    --accent-soft: #F7EAE4;
+  }
+  body { font-size: 10.2pt; line-height: 1.5; background: #fff; }
+  .wrap { max-width: none; padding-inline: 0; }
+  section { padding-block: 16pt; border-bottom: 0.5pt solid var(--rule); break-inside: auto; }
+  .cover { padding-block: 0 20pt; break-after: page; }
+  h1 { font-size: 30pt; }
+  h2 { font-size: 17pt; }
+  .sec-head { break-after: avoid; }
+  /* A plate and its caption are one object; splitting them across a page
+     break puts a photograph on one sheet and its explanation on the next. */
+  .plate, .feature, .note, .grid-notes > div, ul.plain li, .price-table tr { break-inside: avoid; }
+  .plates { grid-template-columns: 1fr 1fr; gap: 14pt 12pt; }
+  .plate.wide { grid-column: 1 / -1; }
+  .plate img { border: 0.5pt solid var(--rule); }
+  .plate figcaption { font-size: 8.4pt; margin-top: 5pt; }
+  .prov { font-size: 7.8pt; }
+  /* Four facts in a row of three left one alone beside a grey gap. */
+  .facts { break-inside: avoid; grid-template-columns: repeat(2, 1fr); }
+  a { text-decoration: none; }
+}
+</style>
+
+<div class="wrap">
+
+  <!-- ══ Cover ══════════════════════════════════════════════════════════ -->
+  <header class="cover">
+    <div class="eyebrow">Proposal &middot; Waterfront Juja &middot; Juja Farm, Kiambu</div>
+    <h1>One system for the<br>whole property</h1>
+    <p class="lede">
+      Every sale, every shift, every wristband and every shilling recorded once,
+      in one place, by the person who was standing there &mdash; and readable by
+      you from anywhere. This document walks the system from your screen down to
+      the last till. Every screen in it is photographed, and for each one it says
+      what it does, what it puts in front of the person using it, and how it was
+      checked.
+    </p>
+    <div class="facts">
+      <div class="fact"><b>{{N}}</b><span>screens, each photographed as the person who works that post</span></div>
+      <div class="fact"><b>1,456</b><span>automated tests passing, 5 skipped</span></div>
+      <div class="fact"><b>296</b><span>role-and-screen combinations opened to check nothing is offered that would be refused</span></div>
+      <div class="fact"><b>16 Sept</b><span>date every figure here was read off the running system</span></div>
+    </div>
+  </header>
+
+  <!-- ══ 01 ═════════════════════════════════════════════════════════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="num">01 &mdash; How to read this</div>
+      <h2>Nothing here is described from a drawing</h2>
+      <p>
+        Every screen below was opened and used before it was written about, and
+        photographed as the person whose job it is &mdash; the gate screen as the
+        gate lead, the kitchen board as the head chef, the clock as a waiter.
+        Each caption names the address and the account underneath it.
+      </p>
+    </div>
+
+    <div class="prose">
+      <p>
+        Four kinds of checking sit behind this document, and they catch different
+        things. <strong>Automated tests</strong> hold the rules: that money is
+        never a rounded number, that a payment cannot be recorded twice, that a
+        disabled account stops working on the very next request. A
+        <strong>simulated working day</strong> runs the whole property end to end
+        &mdash; gate opens, guests arrive, orders are sent, the kitchen cooks,
+        cash is counted, the day closes &mdash; and then closes the books and
+        audits itself. The <strong>screens themselves were opened in a browser
+        and used</strong>, because a test can tell you an endpoint answers and
+        still not tell you the button that calls it is reachable by the person
+        who needs it.
+      </p>
+      <p>
+        And <strong>every photograph here was taken by a process that had to
+        prove which screen it was on first.</strong> Each capture waits for a
+        phrase that appears on that screen and nowhere else, checks it has not
+        been bounced to a login page, and only then saves the image. If it cannot
+        prove it, no image is saved and the miss is recorded. That rule exists
+        because an earlier run once produced eight identical login screenshots
+        filed under eight different names.
+      </p>
+    </div>
+
+    <div class="note found">
+      <h3>The fault this system hunts hardest</h3>
+      <p>
+        It is not a crash. It is a screen that <em>opens</em> for somebody and
+        then fills with controls the system will refuse them &mdash; which
+        teaches staff the software is unreliable and that the way round it is to
+        stop using it.
+      </p>
+      <p>
+        Four of those were found during this review, by opening every screen as
+        every role and recording what each one asked the system for:
+        a waiter typing the manager's address got the manager's inbox, which
+        answered <em>refused</em> and rendered &ldquo;Nothing yet&rdquo;; the menu
+        manager opened for him with a price and a Remove on every row, none of
+        which would have worked; the stock screen showed the head chef &ldquo;No
+        pending requests&rdquo; when he was in fact being refused; and both
+        kitchen and bar boards opened for six roles who do not work those posts.
+        All four are closed. <strong>296 role-and-screen combinations are now
+        checked in a single run</strong>, and it currently reports none.
+      </p>
+    </div>
+
+    <div class="note">
+      <h3>On the hardware you already have</h3>
+      <p>
+        Every screen is built to work on a phone, a tablet, a laptop, a desktop
+        monitor, and a large counter touchscreen &mdash; the shape a till usually
+        takes here. The counter case is the one most systems miss: it is a wide
+        screen still operated by a finger, so every control is sized for a thumb
+        at 1920px exactly as it is at 390px.
+      </p>
+    </div>
+  </section>
+
+<!--ACTS-->
+
+  <!-- ══ 07 ═════════════════════════════════════════════════════════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="num">07 &mdash; Taking money</div>
+      <h2>Cash, M&#8209;Pesa, card &mdash; and the M&#8209;Pesa prompt</h2>
+      <p>
+        Three ways to pay, at every selling point: the gate, the restaurant and
+        bar, the spa and the water post, the villa folio and check-in. Nothing
+        else is offered, because a method staff cannot explain produces payments
+        nobody can verify.
+      </p>
+    </div>
+
+    <div class="grid-notes">
+      <div><h3>M&#8209;Pesa, by prompt</h3><p>The till pushes a prompt to the guest's own phone. They enter their PIN, Safaricom confirms it back, and the payment arrives already matched against the statement. Nothing is typed in from a screen the till cannot see.</p></div>
+      <div><h3>M&#8209;Pesa, by code</h3><p>For a guest who already paid the paybill themselves, a field for the code from their confirmation SMS. Optional on purpose &mdash; the guest is standing there and the SMS can be slow &mdash; but without it that payment cannot be matched at close of day, and the field says so.</p></div>
+      <div><h3>Card</h3><p>Recorded with the slip number so it can be matched against the card settlement. The swipe machine stays exactly as it is; the system records the payment and reconciles it.</p></div>
+      <div><h3>Cash</h3><p>Counted, handed over, and reconciled against what the system says that person took. Cash is the only one that needs a human to reconcile it &mdash; M&#8209;Pesa and card match themselves.</p></div>
+    </div>
+
+    <div class="note">
+      <h3>What the prompt needs from you</h3>
+      <p>
+        Sending a prompt requires Safaricom Daraja credentials issued to the
+        registered business &mdash; I cannot obtain them on your behalf. Until
+        they are in place the till says so in plain words and falls back to the
+        code field; it never offers a prompt it cannot send. The card and bank
+        paths work the same way: built, dormant, and activated by adding
+        credentials rather than by writing code.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══ 08 ═════════════════════════════════════════════════════════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="num">08 &mdash; The money rules</div>
+      <h2>One account, spent all over the property</h2>
+      <p>
+        These were decided by you during the build and are now enforced in the
+        code, not left to memory. Each one says what came back when it was tried.
+      </p>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>Spend all over, pay at any point</h3><span class="who">Any till</span></div>
+      <dl class="dl">
+        <dt>Does</dt><dd>A villa guest orders lunch, a spa client charges a massage, a swimmer buys a jet ski &mdash; all onto the account they already hold, settled when it suits them.</dd>
+        <dt>Shows</dt><dd>The till sees the whole bill &mdash; every department's charges, what is cleared, the balance &mdash; and for a wristband the credit left.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">A water attendant opened Band&nbsp;#5 and sold a jet ski at 3,500: the 3,000 prepaid was consumed and 500 left owing, confirmed in the ledger. A waiter charged lunch to Villa&nbsp;1 and the room balance moved 70,000 &rarr; 71,800.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>A room is settled at front house</h3><span class="who">Your rule</span></div>
+      <dl class="dl">
+        <dt>Does</dt><dd>A wristband is settled wherever the guest is standing. A stay is settled at front house, where the deposit was taken and check-out happens.</dd>
+        <dt>Shows</dt><dd>At a till, a room account shows its bill and points at the desk rather than offering a payment. At the desk, the full folio with a control to take payment.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">A waiter taking a payment against a villa was refused: &ldquo;A room account is settled at front house.&rdquo; Front desk settled the same folio &mdash; 100,000 charged, 30,000 deposit, 70,000 taken, balance 0 &mdash; and only then would check-out complete.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>A band closes only when it is clear</h3><span class="who">Gate</span></div>
+      <dl class="dl">
+        <dt>Does</dt><dd>Ends the day's account when the guest leaves &mdash; and refuses to end one that still owes.</dd>
+        <dt>Shows</dt><dd>The band, what is outstanding, and a refusal naming the amount if anything is.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">A band owing KSh 1,400 was refused: &ldquo;Band #7 still owes KSh 1,400.00. Take the payment first &mdash; then close the band.&rdquo; This was found open during review &mdash; the button closed a band owing 500 under a screen that said &ldquo;Outstanding balance&rdquo;.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>Every bill belongs to somebody</h3><span class="who">Floor</span></div>
+      <dl class="dl">
+        <dt>Does</dt><dd>Removes the anonymous table. To order, a guest holds a wristband or is staying in a villa &mdash; two accounts that already exist before anyone orders, because the gate took the entry fee for one and front desk took a deposit for the other.</dd>
+        <dt>Shows</dt><dd>&ldquo;Open a table&rdquo; asks for the wristband number. A manager may still open one by hand for a lost band or a gate tablet that is down, and that exception carries their name.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">A waiter opening a free-text table was refused: &ldquo;Every bill belongs to a wristband or a room.&rdquo; Fifteen such nameless accounts were found open during the review, one holding KSh 1,800 from the previous day.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>Spending authority is delegated by budget</h3><span class="who">You set &middot; the manager spends</span></div>
+      <dl class="dl">
+        <dt>Does</dt><dd>You set what a department may spend in a month. Inside that, a manager approves and gets on with it. Beyond it, the decision comes to you.</dd>
+        <dt>Shows</dt><dd>A manager approving past the line is told exactly where the line is. With no budget set, nothing is delegated. A manager may always reject &mdash; refusing spends nothing &mdash; and may never approve their own request, whatever the amount.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">Bar set at 120,000. Manager approved a 6,600 request &mdash; approved. Manager tried 132,000 &mdash; refused: &ldquo;KSh 80,160.00 is left of KSh 120,000.00 this month and this request is KSh 132,000.00. Only the owner can approve it.&rdquo; A manager setting their own budget was refused.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>Stock speaks three languages</h3><span class="who">Buying &middot; counting &middot; cooking</span></div>
+      <dl class="dl">
+        <dt>Does</dt><dd>Bought in crates and cases, counted in the item's own unit, cooked in portions. The system does the multiplication and works out what each bottle cost.</dd>
+        <dt>Shows</dt><dd>A unit switch on the quantity with the conversion stated on screen, the converted figure, and the unit cost against what it cost last time. In the kitchen, each ingredient in its portion unit with a live cost preview.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">Received 6 crates: the screen read &ldquo;1 crate = 25 bottle &rarr; 150 bottle&rdquo; and &ldquo;KSh 132 per bottle &middot; was 132.2&rdquo;. 1&nbsp;kg is now 7 onions, 8 tomatoes, 12 limes, 5 tilapia fillets; a spirit bottle is 750&nbsp;ml. Changing a portion definition rewrites every recipe written against it, so nothing silently starts consuming a different amount.</dd>
+      </dl>
+    </div>
+
+    <div class="note">
+      <h3>Villa rates were checked against your own website</h3>
+      <p>
+        Every nightly rate in the system matched. Two capacities did not: Villas
+        14 and 15 sleep eight, and the system had them at four. Corrected through
+        the manager's own screen &mdash; which also revealed that saving a
+        capacity change was being refused because the form sent the rate along
+        with it. Rates are yours alone to set.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══ 09 ═════════════════════════════════════════════════════════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="num">09 &mdash; Underneath</div>
+      <h2>The rules that hold whatever anyone types</h2>
+      <p>
+        These are not features you switch on. They are properties of the system,
+        and they are the reason the numbers above can be trusted.
+      </p>
+    </div>
+
+    <div class="grid-notes">
+      <div><h3>Live figures are derived, never stored</h3><p>Stock is the sum of every movement. A bill is charges minus payments. There is no &ldquo;current balance&rdquo; field for anyone to edit &mdash; the number is recalculated from the record every time it is read.</p></div>
+      <div><h3>History is frozen where it happened</h3><p>The price on a line of an old order is the price charged that day, kept with the line. Changing a menu price tomorrow does not rewrite last week's takings.</p></div>
+      <div><h3>Nothing is deleted</h3><p>Every record is disabled rather than removed. A staff member who leaves, a menu item withdrawn, a supplier dropped &mdash; all stay in the history already written.</p></div>
+      <div><h3>A double tap cannot become a double charge</h3><p>Every action carries a marker that makes repeating it harmless, enforced underneath the app and not only by the screen. A retried payment on a flaky connection lands once.</p></div>
+      <div><h3>Permission is re-checked on every request</h3><p>Signing in is not a pass for the day. The person's role and whether they are still active are re-read on each action, so disabling an account stops it on the next tap.</p></div>
+      <div><h3>Everything that can stay open has something that closes it</h3><p>Wristbands, shifts, tabs and leave requests all have a closing force that is not a human remembering &mdash; the roster closes shifts, stale tabs are raised, pending leave is chased daily and escalated to you after a week.</p></div>
+      <div><h3>The clock belongs to the system</h3><p>Times are stamped by the system itself, never taken from the tablet. A tablet with the wrong date cannot move a sale into yesterday.</p></div>
+      <div><h3>Money is never a rounded number</h3><p>Money is held exactly, to the cent, everywhere it travels. Shillings do not quietly disappear a cent at a time through rounding.</p></div>
+    </div>
+  </section>
+
+  <!-- ══ 10 ═════════════════════════════════════════════════════════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="num">10 &mdash; Your data</div>
+      <h2>Everything in this document is practice data</h2>
+      <p>
+        Every figure you have seen &mdash; the revenue, the twelve staff, Grilled
+        Tilapia at 1,800, the Mwangi Family in Villa 1 &mdash; is invented. It is
+        there so the screens could be photographed doing their job. None of it is
+        Waterfront Juja, and none of it carries over.
+      </p>
+    </div>
+
+    <div class="prose">
+      <p>
+        Filling the system with your real resort is not a job you hand over and
+        wait on. Almost all of it is done <strong>on the screens themselves</strong>,
+        by your own people, and it only has to be done once. The system tells you
+        what is still missing rather than quietly going along with it: the payroll
+        sheet prints &ldquo;no wage set&rdquo; beside anyone without a rate, the
+        budget tile stays blank until you set budgets, and a dish nobody has given
+        a recipe cannot be sold at all until somebody says how it draws on stock.
+      </p>
+    </div>
+
+    <div class="grid-notes">
+      <div><h3>Menu, prices and recipes</h3><p>Your head chef adds each dish, its price and its department, and says how it draws on stock. The recipe is what makes the figures on your Profit screen real.</p></div>
+      <div><h3>Villas and rates</h3><p>Each villa, what it sleeps, its nightly rate, and whether it is in service.</p></div>
+      <div><h3>Suppliers</h3><p>Who you buy from, so every delivery recorded is recorded against somebody.</p></div>
+      <div><h3>Staff, roles and wage rates</h3><p>Each person, their role and department, their PIN, and their rate. Payroll drafts from the clock records the moment a rate is set.</p></div>
+      <div><h3>Monthly budgets</h3><p>A spending limit per department, per month. The budget-burn tile stays blank until you set them.</p></div>
+      <div><h3>Opening stock</h3><p>One physical count on the day you start. Everything after that is the system's own running total.</p></div>
+    </div>
+
+    <div class="note">
+      <h3>The two things that cannot come from a screen</h3>
+      <p>
+        <strong>Your staff network.</strong> The resort's own WiFi name and the
+        range of addresses it hands out, registered once in Settings. Until it is,
+        clock-in refuses everybody &mdash; deliberately, because being on the
+        property's own network is what makes attendance mean anything.
+      </p>
+      <p>
+        <strong>M&#8209;Pesa business credentials.</strong> Safaricom issues these
+        to the registered business, so they have to come from you. They switch on
+        the phone prompt and the automatic matching. Everything else about
+        M&#8209;Pesa &mdash; taking the payment, recording the code, reconciling
+        it &mdash; works without them.
+      </p>
+    </div>
+
+    <div class="note">
+      <h3>How the first week actually goes</h3>
+      <p>
+        I sit with your manager and we fill it in together, screen by screen, from
+        whatever you already keep &mdash; a book, a spreadsheet, or a stack of
+        supplier invoices. Then the system runs alongside what you do now for a
+        week before anyone relies on it, so if the two disagree we find out while
+        it still costs nothing.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══ 11 ═════════════════════════════════════════════════════════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="num">11 &mdash; Commercial</div>
+      <h2>What it costs, and what you own</h2>
+      <p>
+        You buy the system outright and run it. It is not rented, and there is no
+        monthly fee attached to using it.
+      </p>
+    </div>
+
+    <table class="price-table">
+      <tbody>
+        <tr><th>The system</th><td class="what">Installed, seeded with your data, staff trained, running on your property</td><td class="fig">KSh __________</td></tr>
+        <tr><th>Setup and data entry</th><td class="what">Menu, villas, suppliers, staff, opening stock count</td><td class="fig">KSh __________</td></tr>
+        <tr><th>Shadow week</th><td class="what">The system running alongside your current process before you rely on it</td><td class="fig">KSh __________</td></tr>
+        <tr><th>A new feature, later</th><td class="what">Quoted per piece of work, only when you ask for one</td><td class="fig">KSh __________</td></tr>
+        <tr><th>If something breaks</th><td class="what">Called in and fixed as a paid update</td><td class="fig">KSh __________</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      <h3>Plainly, on ownership</h3>
+      <p>
+        Waterfront Juja owns its data outright and the installed system is yours
+        to run. I keep the underlying software and may adapt it for other
+        properties. That is what keeps the price where it is &mdash; you are not
+        funding a product from scratch &mdash; and it also means the thing you are
+        buying is already built and already tested, rather than a promise with a
+        timeline attached.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══ 12 ═════════════════════════════════════════════════════════════ -->
+  <section>
+    <div class="sec-head">
+      <div class="num">12 &mdash; The evidence</div>
+      <h2>How each claim in this document was checked</h2>
+    </div>
+
+    <ul class="plain">
+      <li><b>1,456</b><span>automated tests passing, 5 skipped &mdash; the rules, held on every change</span></li>
+      <li><b>68</b><span>interface tests on the shared controls all three apps are built from</span></li>
+      <li><b>{{N}} / {{N}}</b><span>screens photographed, each proving which screen it was on before the image was saved</span></li>
+      <li><b>{{N}}</b><span>distinct images verified by fingerprint &mdash; no screen photographed twice under two names</span></li>
+      <li><b>296</b><span>role-and-screen combinations opened, recording every request each screen made and what came back</span></li>
+      <li><b>0</b><span>screens offering a control the system then refuses</span></li>
+      <li><b>intact</b><span>audit chain verified end to end after a full trading day</span></li>
+      <li><b>balanced</b><span>books closed on that day: every shilling charged was paid or still owed, nothing sold gained stock, everyone who worked was on the board</span></li>
+    </ul>
+
+    <div class="note found">
+      <h3>Found by using it, and named rather than quietly repaired</h3>
+      <p>
+        The standard this document is held to is that nothing was checked by
+        reading the code and hoping. Where the review found something wrong, it is
+        listed here.
+      </p>
+    </div>
+
+    <ul class="plain" style="margin-top:22px">
+      <li><b>&rarr;</b><span>A grievance could be resolved and the person who filed it was never told.</span></li>
+      <li><b>&rarr;</b><span>Anyone could log a lost item; only a manager could read the list &mdash; so the desk a guest actually asks could never answer.</span></li>
+      <li><b>&rarr;</b><span>A wedding could be booked and then never confirmed, staffed, issued a crate or closed: the buttons did not exist.</span></li>
+      <li><b>&rarr;</b><span>Four screens opened for people the system would then refuse, two of them showing a refusal as reassuring good news.</span></li>
+      <li><b>&rarr;</b><span>A panel opened from inside a card anchored itself to the card, cutting half the form off the screen.</span></li>
+      <li><b>&rarr;</b><span>Three copies of one list of addresses, two of them stale &mdash; which is how a whole screen came to be unreachable.</span></li>
+      <li><b>&rarr;</b><span>An alarm on the login screen that was measuring the wrong thing and reporting a fault that did not exist.</span></li>
+      <li><b>&rarr;</b><span>Two tiles on the owner's own dashboard inventing their numbers, one reporting zero injuries while two guests had been hurt.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="prose">
+      <p>
+        Prepared for Waterfront Juja, Juja Farm, Kiambu. Every figure quoted in
+        this document was read off the running system on the day of writing; every
+        screen described was opened and used; every photograph was taken by a
+        process that had to prove which screen it was on before it was allowed to
+        save the image. Where something was found wrong during the review it is
+        named here rather than quietly repaired.
+      </p>
+    </div>
+  </footer>
+
+</div>

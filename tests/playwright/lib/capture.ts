@@ -109,6 +109,25 @@ export type Entry = {
   empty_state?: string
 }
 
+/**
+ * Text that only appears when a screen has CRASHED into its error boundary.
+ *
+ * A picture of a crash nearly went into the client proposal. The marker for
+ * that plate was the word "dispute", which matched the nav item beside the
+ * wreckage, so the capture believed it was on the right screen — and it was,
+ * technically. The screen was just broken.
+ *
+ * (That particular crash turned out to be a dev server holding a module from
+ * before StatusBadge learned the dispute statuses — our own tooling, not the
+ * product. Which is exactly why this has to be caught automatically: a crash
+ * is worth knowing about whoever caused it.)
+ */
+const CRASH_MARKERS = [
+  'Something went wrong',
+  'The screen hit an unexpected error',
+  'Your data is safe',
+]
+
 /** Text that only ever appears on a login / PIN screen — the blind-shot tripwire. */
 const LOGIN_MARKERS = [
   'Enter your PIN to start your shift',
@@ -209,6 +228,13 @@ export function makeCapturer(shotsDir: string, evidence: Entry[]) {
       }
       if (!hit) {
         entry.failure = `none of the expected markers rendered within 20s (final url=${url}). No image saved.`
+        evidence.push(entry); return
+      }
+      // Checked AFTER the marker, because a crashed screen still carries its
+      // nav — which is where the marker was matching.
+      const crash = CRASH_MARKERS.find(m => text.includes(m))
+      if (crash) {
+        entry.failure = `the screen crashed into its error boundary ("${crash}"). No image saved.`
         evidence.push(entry); return
       }
 
