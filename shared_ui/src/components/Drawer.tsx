@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import type { ReactNode } from 'react'
 
@@ -6,6 +7,31 @@ const FOCUSABLE = [
   'a[href]', 'button:not([disabled])', 'textarea:not([disabled])',
   'input:not([disabled])', 'select:not([disabled])', '[tabindex]:not([tabindex="-1"])',
 ].join(',')
+
+// ── Why every drawer goes through a portal ───────────────────────────────────
+//
+// `position: fixed` is only fixed to the VIEWPORT while no ancestor has a
+// transform, filter, perspective, or `contain`. Any one of those makes that
+// ancestor the containing block instead, and the drawer silently anchors to
+// a card somewhere in the middle of the page.
+//
+// Both traps are already everywhere in this app:
+//   - `.glass-card` sets `contain: layout paint` (tokens.css),
+//   - every framer-motion list item keeps a `transform` after it animates.
+//
+// Caught on /events: opening "Staff & stock" put a 594px drawer inside a 285px
+// event card, so it hung off the TOP of the card — the heading, the lifecycle
+// buttons and half the form were simply cut off the screen. Nothing was wrong
+// with the panel; it was measuring itself against the wrong box.
+//
+// A call site cannot fix this — it cannot know what its ancestors do. So the
+// component takes itself out of the tree entirely and renders on document.body,
+// which is what a modal layer is for. Guarded for SSR/test environments where
+// document may not exist yet.
+function DrawerPortal({ children }: { children: ReactNode }) {
+  if (typeof document === 'undefined') return null
+  return createPortal(children, document.body)
+}
 
 function useFocusTrap(ref: React.RefObject<HTMLElement | null>, active: boolean) {
   useEffect(() => {
@@ -87,6 +113,7 @@ function BottomDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'sid
   }
 
   return (
+    <DrawerPortal>
     <AnimatePresence>
       {open && (
         <>
@@ -150,6 +177,7 @@ function BottomDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'sid
         </>
       )}
     </AnimatePresence>
+    </DrawerPortal>
   )
 }
 
@@ -181,6 +209,7 @@ function RightDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'side
   }, [open])
 
   return (
+    <DrawerPortal>
     <AnimatePresence>
       {open && (
         <>
@@ -210,6 +239,7 @@ function RightDrawer({ open, onClose, title, children }: Omit<DrawerProps, 'side
         </>
       )}
     </AnimatePresence>
+    </DrawerPortal>
   )
 }
 

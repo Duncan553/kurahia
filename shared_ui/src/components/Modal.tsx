@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useIsDesktop } from '../hooks/useIsDesktop'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ReactNode } from 'react'
@@ -26,6 +27,16 @@ const FOCUSABLE = [
   'a[href]', 'button:not([disabled])', 'textarea:not([disabled])',
   'input:not([disabled])', 'select:not([disabled])', '[tabindex]:not([tabindex="-1"])',
 ].join(',')
+
+// Same containing-block trap as Drawer: `position: fixed` stops being fixed to
+// the viewport as soon as an ancestor has a transform, filter, perspective or
+// `contain`. `.glass-card` sets `contain: layout paint` and every animated
+// framer-motion row keeps a transform, so a modal opened from inside a card
+// would centre itself on THE CARD. Render on document.body instead.
+function ModalPortal({ children }: { children: ReactNode }) {
+  if (typeof document === 'undefined') return null
+  return createPortal(children, document.body)
+}
 
 function useFocusTrap(ref: React.RefObject<HTMLElement | null>, active: boolean) {
   useEffect(() => {
@@ -97,6 +108,7 @@ export function Modal({ open, onClose, title, children, size = 'md', preventClos
   }, [open])
 
   return (
+    <ModalPortal>
     <AnimatePresence>
       {open && (
         <>
@@ -160,5 +172,6 @@ export function Modal({ open, onClose, title, children, size = 'md', preventClos
         </>
       )}
     </AnimatePresence>
+    </ModalPortal>
   )
 }
