@@ -18,6 +18,18 @@ from app.models.audit_log import AuditLog
 lost_found_bp = Blueprint("lost_found", __name__, url_prefix="/lost-found")
 
 MANAGER_LEVEL = 5
+# Reading the list is a FRONT-DESK job, not a manager's.
+#
+# The list was manager-only while logging an item was open to everyone, which
+# made the feature unusable by the person who actually needs it: a guest comes
+# to the desk and asks whether anyone handed in a blue jacket, and front desk
+# could log the jacket but never see it. The manager is not standing at the
+# desk when that question is asked.
+#
+# Releasing the property stays at MANAGER_LEVEL (see PATCH below) — that is
+# where the risk is. "Yes, that iPhone is mine" needs a signature above the
+# desk; "is there a jacket in the box?" does not.
+DESK_LEVEL    = 3
 STAFF_LEVEL   = 1
 
 
@@ -44,8 +56,8 @@ def _item_dict(item: LostFound) -> dict:
 @require_active_user
 def list_lost_found():
     actor = db.session.get(User, get_jwt_identity())
-    if actor.role.level < MANAGER_LEVEL:
-        return jsonify({"error": "Manager or above required."}), 403
+    if actor.role.level < DESK_LEVEL:
+        return jsonify({"error": "Front desk or above required."}), 403
 
     # Optional filter by status
     status_filter = request.args.get("status")

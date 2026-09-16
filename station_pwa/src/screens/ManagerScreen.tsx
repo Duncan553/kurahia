@@ -258,6 +258,9 @@ export default function ManagerScreen() {
         <path d="M13.5 13l2 2 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ) },
+    { label: 'Lost & Found', desc: 'What guests left behind', path: '/lost-found', svg: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7h-3V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H4a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a1 1 0 0 0-1-1Z"/><path d="M9 7V5h6v2"/></svg>
+    ) },
     { label: 'Front House', desc: 'Arrivals, departures, occupancy', path: '/manager/front-desk', badge: arrivals ? { n: arrivals, tone: 'info' as const, noun: 'today' } : null, svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <rect x="2" y="6" width="16" height="11" rx="2" stroke="currentColor" strokeWidth="1.5"/>

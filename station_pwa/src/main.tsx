@@ -37,6 +37,7 @@ import NotFoundScreen from './screens/NotFoundScreen'
 // you leave the house, and again at the post while you work it.
 import EventsScreen from './screens/EventsScreen'
 import CalendarScreen from './screens/CalendarScreen'
+import LostFoundScreen from './screens/LostFoundScreen'
 
 import ManagerScreen from './screens/ManagerScreen'
 // ManagerScreen's own action tiles already pointed at all of these. Moving that
@@ -106,6 +107,7 @@ const router = createBrowserRouter([
           // existing link, notification route and deep link still resolves.
           { path: '/events',            element: <EventsScreen />         },
           { path: '/calendar',          element: <CalendarScreen />       },
+          { path: '/lost-found',        element: <LostFoundScreen />      },
           { path: '/manager',           element: <ManagerScreen />        },
           { path: '/manager/purchases', element: <ProposeBudgetScreen /> },
           { path: '/manager/menu',      element: <MenuManageScreen />     },
