@@ -52,14 +52,49 @@ TIMING_GAP_THRESHOLD_MS = 50   # difference larger than this is a meaningful lea
 #
 # The 30% tolerance is deliberately NOT widened. Loosening the bar to silence a
 # bad measurement would leave a real leak able to hide under it.
-def paired_medians(client, url, payload_a, payload_b, n=15, warmup=2):
-    """Median ms for each path, sampled alternately. Returns (median_a, median_b)."""
+def clear_lockout(app, username):
+    """Put a real account back to zero failed attempts.
+
+    The timing tests below fire 17 wrong credentials at the SAME real user.
+    The account locks on the 5th (FAILED_ATTEMPTS_LOCKOUT), and from then on
+    check_active_and_unlocked() returns before any Argon2 verify runs — so 13
+    of the 15 samples were timing a lockout rejection, not a hash. The median
+    for the real-user path collapsed to ~3ms and the test reported a 166ms
+    "timing leak" in a defence that was working perfectly.
+
+    That is the measurement being broken, not the system. Reset between
+    samples so every sample actually reaches the verify it claims to time.
+    """
+    from app.extensions import db as _db
+    from app.models.user import User as _User
+    with app.app_context():
+        u = _db.session.query(_User).filter_by(username=username).first()
+        if u:
+            u.failed_attempts = 0
+            u.locked_until = None
+            _db.session.commit()
+
+
+def paired_medians(client, url, payload_a, payload_b, n=15, warmup=2,
+                   before_each=None):
+    """Median ms for each path, sampled alternately. Returns (median_a, median_b).
+
+    `before_each` runs before every single request — used to clear the lockout
+    that would otherwise short-circuit the path we are trying to measure.
+    """
+    def _post(payload):
+        if before_each:
+            before_each()
+        return client.post(url, json=payload)
+
     for _ in range(warmup):
-        client.post(url, json=payload_a)
-        client.post(url, json=payload_b)
+        _post(payload_a)
+        _post(payload_b)
     a_samples, b_samples = [], []
     for _ in range(n):
         for payload, bucket in ((payload_a, a_samples), (payload_b, b_samples)):
+            if before_each:
+                before_each()          # outside the clock: it is setup, not cost
             t0 = time.perf_counter()
             client.post(url, json=payload)
             bucket.append((time.perf_counter() - t0) * 1000)
@@ -100,6 +135,7 @@ class TestUsernameEnumerationLogin:
             client, "/auth/login",
             {"username": "ghost_xyz_999", "password": "any"},
             {"username": "owner1", "password": "wrong_password"},
+            before_each=lambda: clear_lockout(app, "owner1"),
         )
         # Both paths must be within 30% of the slower one
         slower = max(median_no_user, median_wrong_pw)
@@ -144,6 +180,7 @@ class TestPINLoginEnumeration:
             client, "/auth/pin-login",
             {"username": "ghost_xyz_999", "pin": "0000"},
             {"username": "waiter1", "pin": "9999"},
+            before_each=lambda: clear_lockout(app, "waiter1"),
         )
         slower = max(median_no_user, median_wrong_pin)
         gap_ms = abs(median_wrong_pin - median_no_user)

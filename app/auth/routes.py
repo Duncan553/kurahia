@@ -24,7 +24,8 @@ from flask_jwt_extended import (
     get_jwt,
 )
 from app.extensions import db, limiter
-from app.models.user import User, _ph
+from app.models.user import User
+from app.models import user as user_model
 from app.models.role import Role
 from app.models.employee_profile import EmployeeProfile
 from app.models.department import Department
@@ -35,10 +36,43 @@ from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHas
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
-# Pre-computed at startup. Burned on every failed lookup so timing is constant
-# regardless of whether a username exists — prevents username enumeration via
-# response-time measurement.
-_DUMMY_HASH = _ph.hash("dummy-password-for-timing-equalization")
+# ── Timing equalization ──────────────────────────────────────────────────────
+#
+# A failed lookup burns an Argon2 verify so a wrong username costs the same as
+# a wrong password, and an attacker cannot enumerate usernames with a stopwatch.
+#
+# The catch is that the burn only equalizes while the dummy hash carries the
+# SAME cost parameters as the real ones. This used to be `_DUMMY_HASH =
+# _ph.hash(...)` at import, against an `_ph` copied out of app.models.user by
+# name — two snapshots taken at import time, both able to go stale:
+#
+#   - a rehash policy or a config-driven cost bump changes app.models.user._ph
+#     and this module keeps verifying against the OLD parameters for the life
+#     of the process, silently un-equalizing the very thing it exists to fix;
+#   - the test suite swaps in a cheap hasher (conftest.py) and the swap cannot
+#     reach a name already copied, so the timing tests measured an 8KiB dummy
+#     against a 64MiB real hash — a 168ms "leak" that exists nowhere but the
+#     harness.
+#
+# So: read the hasher at call time, and keep one dummy hash PER hasher. The
+# cache means the cost is still paid once, not on every failed login.
+_DUMMY_PLAINTEXT = "dummy-password-for-timing-equalization"
+_dummy_hashes: dict = {}
+
+
+def _burn_a_verify(candidate: str) -> None:
+    """Spend exactly what a real verify spends, and throw the answer away."""
+    ph = user_model._ph                      # live lookup, never a stale copy
+    h = _dummy_hashes.get(ph)
+    if h is None:
+        h = _dummy_hashes[ph] = ph.hash(_DUMMY_PLAINTEXT)
+    try:
+        ph.verify(h, candidate)
+    except (VerifyMismatchError, VerificationError, InvalidHashError):
+        pass
+
+
+_burn_a_verify("")   # warm the cache at import, as the old constant did
 
 
 # ── Password login (manager / owner) ─────────────────────────────────────────
@@ -66,10 +100,7 @@ def login():
     # exists or is active. Real users who hit this in production should be guided to
     # ask their manager to check users.is_active.
     if not user or not user.is_active:
-        try:
-            _ph.verify(_DUMMY_HASH, password)
-        except (VerifyMismatchError, VerificationError, InvalidHashError):
-            pass
+        _burn_a_verify(password)
         return jsonify({"error": "Invalid credentials."}), 401
 
     # User is active — check lockout only. Locked accounts get the lock message
@@ -142,10 +173,7 @@ def pin_login():
     # exists or is active. Real users who hit this in production should be guided to
     # ask their manager to check users.is_active.
     if not user or not user.is_active:
-        try:
-            _ph.verify(_DUMMY_HASH, pin)
-        except (VerifyMismatchError, VerificationError, InvalidHashError):
-            pass
+        _burn_a_verify(pin)
         return jsonify({"error": "Invalid credentials."}), 401
 
     ok, msg = check_active_and_unlocked(user)
