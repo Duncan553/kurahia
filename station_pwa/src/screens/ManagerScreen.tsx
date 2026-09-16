@@ -207,6 +207,13 @@ export default function ManagerScreen() {
         <circle cx="15" cy="16" r="1.4" stroke="currentColor" strokeWidth="1.5"/>
       </svg>
     ) },
+    // Staff write to management from their phones; nothing read those, so the
+    // MANAGEMENT channel filled up and no one ever opened it.
+    { label: 'From staff', desc: 'Suggestions sent to management', path: '/manager/suggestions', svg: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M3 5h14v9H8l-4 3v-3H3V5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+      </svg>
+    ) },
     { label: 'Villas', desc: 'What guests can book & rates', path: '/manager/resources', svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M3 10L10 4l7 6v7a1 1 0 01-1 1H4a1 1 0 01-1-1v-7z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>

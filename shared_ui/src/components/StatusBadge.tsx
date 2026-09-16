@@ -34,6 +34,9 @@ const CONFIG: Record<StatusValue, StatusConfig> = {
  // A leave request is APPROVED, not "Paid". Reusing the money word for every
  // green outcome told a waiter his annual leave had been PAID: the badge on his
  // own screen read "Paid" on a request the manager had simply agreed to.
+ // A suggestion is ACTIONED, not "approved" — the owner did something
+ // about it, they did not grant it.
+ actioned: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Actioned' },
  approved: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Approved' },
  rejected: { colorClass: 'bg-status-failed/15 text-status-failed border border-status-failed/25', icon: <XCircle />, label: 'Rejected' },
  active: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Active' },

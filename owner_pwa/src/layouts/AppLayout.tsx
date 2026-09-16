@@ -114,6 +114,9 @@ const SIDEBAR_ITEMS: NavItem[] = [
   { path: '/payroll',             label: 'Payroll',   Icon: PayrollIcon    },
   { path: '/staff',               label: 'Staff',     Icon: StaffIcon      },
   { path: '/feedback',            label: 'Feedback',  Icon: FeedbackIcon   },
+  // Staff write to the owner privately; counting those on a tile and giving
+  // nowhere to read them made the private channel a dead end.
+  { path: '/suggestions',         label: 'From staff', Icon: FeedbackIcon  },
   { path: '/bookings',            label: 'Bookings',  Icon: BookingsIcon   },
   { path: '/menu-profit',         label: 'Profit',    Icon: ProfitIcon     },
   { path: '/audit',               label: 'Audit',     Icon: AuditIcon      },
