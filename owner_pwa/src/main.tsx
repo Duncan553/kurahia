@@ -32,6 +32,7 @@ const SettingsScreen           = lazy(() => import('./screens/SettingsScreen'))
 const PurchaseApprovalsScreen  = lazy(() => import('./screens/PurchaseApprovalsScreen'))
 const FeedbackScreen           = lazy(() => import('./screens/FeedbackScreen'))
 const SuggestionsScreen        = lazy(() => import('./screens/SuggestionsScreen'))
+const DisputeQueueScreen       = lazy(() => import('@shared/screens/DisputeQueueScreen'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -67,6 +68,7 @@ const router = createBrowserRouter([
         { path: '/purchase-approvals',    element: <PurchaseApprovalsScreen />  },
         { path: '/feedback',               element: <FeedbackScreen />           },
         { path: '/suggestions',            element: <SuggestionsScreen />        },
+        { path: '/disputes',               element: <DisputeQueueScreen />       },
       ],
     }],
   },

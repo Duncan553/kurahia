@@ -363,16 +363,11 @@ function ResortHealthSection() {
     queryFn: () => api.get<FeedbackData>('/dashboard/feedback').then(r => r.data),
     staleTime: 5 * 60_000,
   })
-  const { data: bookingsData } = useQuery<BookingsData>({
-    queryKey: ['dash-bookings'],
-    queryFn: () => api.get<BookingsData>('/dashboard/bookings').then(r => r.data),
-    staleTime: 5 * 60_000,
-  })
-  const { data: alerts = [] } = useQuery<AlertItem[]>({
-    queryKey: ['dash-alerts'],
-    queryFn: () => api.get<AlertItem[]>('/dashboard/alerts').then(r => r.data),
-    staleTime: 5 * 60_000,
-  })
+  // /dashboard/bookings and /dashboard/alerts were read here and never used:
+  // the Hero section above already fetches both under the same TanStack keys
+  // and is the only thing that renders them. Same cache key means no second
+  // network call, so this cost nothing but a dead read — and a build error,
+  // since tsc flags the unused bindings.
   const { data: overview } = useQuery<OverviewData>({
     queryKey: ['dash-overview'],
     queryFn: () => api.get<OverviewData>('/dashboard/overview').then(r => r.data),

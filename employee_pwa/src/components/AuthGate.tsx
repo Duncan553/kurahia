@@ -1,29 +1,32 @@
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, Outlet, useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuthStore } from '../stores/authStore'
-import { useQuery } from '@tanstack/react-query'
-import api from '../lib/axios'
 import { EmptyState, Icon } from '@shared'
 
 export function AuthGate() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const location = useLocation()
 
+  // Signed in is the whole gate. Being CLOCKED IN is not a condition of
+  // reaching anything in this app any more.
+  //
+  // It used to be: any route except /clock and /kiosk bounced you to /clock,
+  // silently, if clock-status came back anything but CLOCK_IN. That rule was
+  // written when this app still carried the tills — you should not ring up a
+  // sale off the clock, fair enough. Those screens are station_pwa's now, and
+  // what is left here is a person's own HR: leave, absence, conduct, profile,
+  // calendar, disputes.
+  //
+  // Which turned the rule inside out. The absence notice — the screen whose
+  // entire purpose is "I am not coming in today" — could only be opened by
+  // someone already at work. So could a leave request, so could a grievance
+  // about the manager, so could reading your own profile. A waiter off duty
+  // typed /disputes, watched the URL flip to /clock, and was told nothing.
+  //
+  // It is the third rule to survive the app split by pointing at screens that
+  // left: HomeRedirect's station landing and AppLayout's department landing
+  // were the other two. The clock is still where everyone lands (HomeRedirect),
+  // it is just no longer a wall.
   if (!isAuthenticated) return <Navigate to="/login" replace />
-
-  const isKiosk = location.pathname.startsWith('/kiosk')
-  const isClockRoute = location.pathname === '/clock'
-
-  const { data: clockStatus } = useQuery({
-    queryKey: ['clock-status'],
-    queryFn: () => api.get('/hr/clock-status').then(r => r.data),
-    refetchInterval: 60_000,
-    enabled: !isKiosk && !isClockRoute,
-  })
-
-  if (!isKiosk && !isClockRoute && clockStatus && clockStatus.status !== 'CLOCK_IN') {
-    return <Navigate to="/clock" replace />
-  }
 
   return <Outlet />
 }

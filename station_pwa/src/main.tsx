@@ -24,6 +24,7 @@ import CheckInScreen from './screens/CheckInScreen'
 import BandLookupScreen from './screens/BandLookupScreen'
 import IncidentScreen from './screens/IncidentScreen'
 import SuggestionsInboxScreen from './screens/SuggestionsInboxScreen'
+import DisputeQueueScreen from './screens/DisputeQueueScreen'
 import NotFoundScreen from './screens/NotFoundScreen'
 
 // ── Work that used to live on the employee's personal phone ──────────
@@ -129,6 +130,7 @@ const router = createBrowserRouter([
           { path: '/manager/receive',   element: <PurchaseRecordScreen /> },
           { path: '/manager/suppliers', element: <SuppliersScreen />      },
           { path: '/manager/suggestions', element: <SuggestionsInboxScreen /> },
+          { path: '/manager/disputes',    element: <DisputeQueueScreen />     },
           { path: '/manager/resources', element: <ResourcesScreen />      },
           { path: '/manager/reconcile', element: <ReconcileScreen />      },
           // Level 3+: front desk needs this at check-out, waiters when closing a table.

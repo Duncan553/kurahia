@@ -159,8 +159,15 @@ const NAV_ITEMS: NavItem[] = [
     path: '/disputes',
     label: 'Disputes',
     Icon: DisputesIcon,
-    mode: 'both',
-    visible: (level) => level >= 5,
+    // Personal, and visible to EVERYONE. This entry used to read
+    // `mode: 'both'` + `visible: level >= 5` — left over from when this route
+    // carried the MANAGER'S dispute queue. The screen is now a filing form, so
+    // that rule hid the "raise a grievance" door from every single person it
+    // exists for: a waiter saw no tile, and the route only opened if you typed
+    // the URL. A grievance is also nobody's business on a shared station
+    // tablet, hence 'personal' rather than 'both'.
+    mode: 'personal',
+    visible: () => true,
   },
 ]
 

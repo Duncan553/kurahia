@@ -15,6 +15,7 @@ interface LoginResponse {
 interface JWTClaims {
   sub: string
   role_level: number
+  department?: string | null
 }
 
 export default function LoginScreen() {
@@ -49,7 +50,9 @@ export default function LoginScreen() {
         return
       }
       // Normal login — store auth and go to dashboard
-      setAuth({ id: claims.sub, username, role_level: claims.role_level }, data.access_token, data.refresh_token ?? '')
+      setAuth({ id: claims.sub, username, role_level: claims.role_level,
+                department: claims.department ?? null },
+              data.access_token, data.refresh_token ?? '')
       navigate('/')
     },
     onError: (err) => {

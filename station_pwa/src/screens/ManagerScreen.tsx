@@ -214,6 +214,12 @@ export default function ManagerScreen() {
         <path d="M3 5h14v9H8l-4 3v-3H3V5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
       </svg>
     ) },
+    { label: 'Disputes', desc: 'Formal complaints to resolve', path: '/manager/disputes', svg: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M10 3l7 12H3l7-12z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+        <path d="M10 8v3.5M10 13.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ) },
     { label: 'Villas', desc: 'What guests can book & rates', path: '/manager/resources', svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M3 10L10 4l7 6v7a1 1 0 01-1 1H4a1 1 0 01-1-1v-7z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>

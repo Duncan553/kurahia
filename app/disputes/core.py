@@ -140,6 +140,49 @@ def claim_dispute(dispute_id):
     return jsonify(_dispute_dict(dispute)), 200
 
 
+def _notify_reporter(dispute: Dispute, outcome: str) -> None:
+    """Tell the person who filed it that it was answered.
+
+    Resolving and dismissing wrote the outcome into the row and stopped there.
+    The reporter was never told: the notes existed, and the only way to find
+    them was to keep reopening the Disputes screen on the chance something had
+    changed. This is the one channel where being answered is the whole point of
+    using it — a grievance that is dealt with in silence reads as a grievance
+    that was ignored, and the next one does not get filed.
+
+    Mirrors app/hr/leave.py's decision notice, including the idempotency key,
+    so a double-tap on Resolve cannot send the same notice twice. Safe for
+    owner-only disputes: the recipient is the person who wrote it.
+    """
+    from app.models.notification import (
+        Notification, NotificationStatus, NotificationChannel,
+    )
+    profile = db.session.get(EmployeeProfile, dispute.reporter_employee_id) \
+        if dispute.reporter_employee_id else None
+    if not profile or not profile.user_id:
+        return
+    key = f"dispute-{outcome}-{dispute.id}"
+    if db.session.query(Notification).filter_by(idempotency_key=key).first():
+        return
+    word = "resolved" if outcome == "resolve" else "closed without action"
+    body = f"The complaint you raised on {dispute.created_at_utc:%d %b} was {word}."
+    if dispute.resolution_notes:
+        body += f" {dispute.resolution_notes}"
+    now = datetime.now(timezone.utc)
+    db.session.add(Notification(
+        recipient_user_id=profile.user_id,
+        reference_type="dispute_decision",
+        reference_id=dispute.id,
+        subject=f"Your complaint was {word}",
+        body=body,
+        status=NotificationStatus.DELIVERED.value,
+        channel=NotificationChannel.IN_APP.value,
+        scheduled_for_utc=now,
+        sent_at_utc=now,
+        idempotency_key=key,
+    ))
+
+
 @disputes_bp.post("/<dispute_id>/resolve")
 @require_active_user
 def resolve_dispute(dispute_id):
@@ -160,6 +203,7 @@ def resolve_dispute(dispute_id):
     dispute.resolution_notes = resolution
     dispute.updated_at_utc = datetime.now(timezone.utc)
     db.session.flush()
+    _notify_reporter(dispute, "resolve")
     AuditLog.log(actor=actor.username, action="dispute.resolve", target=dispute_id)
     db.session.commit()
     return jsonify(_dispute_dict(dispute)), 200
@@ -182,6 +226,7 @@ def dismiss_dispute(dispute_id):
     dispute.resolution_notes = (data.get("reason") or "Dismissed.").strip()
     dispute.updated_at_utc = datetime.now(timezone.utc)
     db.session.flush()
+    _notify_reporter(dispute, "dismiss")
     AuditLog.log(actor=actor.username, action="dispute.dismiss", target=dispute_id)
     db.session.commit()
     return jsonify(_dispute_dict(dispute)), 200

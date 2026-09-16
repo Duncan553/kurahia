@@ -117,6 +117,7 @@ const SIDEBAR_ITEMS: NavItem[] = [
   // Staff write to the owner privately; counting those on a tile and giving
   // nowhere to read them made the private channel a dead end.
   { path: '/suggestions',         label: 'From staff', Icon: FeedbackIcon  },
+  { path: '/disputes',            label: 'Disputes',  Icon: FeedbackIcon   },
   { path: '/bookings',            label: 'Bookings',  Icon: BookingsIcon   },
   { path: '/menu-profit',         label: 'Profit',    Icon: ProfitIcon     },
   { path: '/audit',               label: 'Audit',     Icon: AuditIcon      },

@@ -12,7 +12,7 @@ interface PinLoginResponse {
   refresh_token: string
 }
 
-interface JWTClaims { sub: string; role_level: number }
+interface JWTClaims { sub: string; role_level: number; department?: string | null }
 
 const KEYPAD = ['1','2','3','4','5','6','7','8','9','','0','⌫'] as const
 
@@ -50,7 +50,9 @@ export default function PinEntryScreen() {
     onSuccess: (data) => {
       setErrorMsg('')
       const claims = decodeJWT<JWTClaims>(data.access_token)
-      setAuth({ id: claims.sub, username, role_level: claims.role_level }, data.access_token, data.refresh_token)
+      setAuth({ id: claims.sub, username, role_level: claims.role_level,
+                department: claims.department ?? null },
+              data.access_token, data.refresh_token)
       navigate('/')
     },
 

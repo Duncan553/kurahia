@@ -30,6 +30,11 @@ const PROXIED_PATHS = [
   // Needed by the work screens moved here off the employee phone:
   // /admin (InventoryCount), /calendar (Calendar), /event-types (Events).
   '/admin', '/calendar', '/event-types', '/audit', '/reports', '/suppliers',
+  // '/disputes' was missing while the manager's dispute queue called it: Vite
+  // answered the fetch itself with a 404 and the screen crashed on
+  // "disputes.map is not a function" — a proxy gap wearing the costume of a
+  // frontend bug. Same shape as '/images' above.
+  '/disputes',
 ]
 
 const proxyConfig = Object.fromEntries(

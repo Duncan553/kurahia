@@ -5,6 +5,13 @@ export type StatusValue =
 | 'active' | 'inactive' | 'held'
 | 'confirmed' | 'checked-in' | 'checked-out'
 | 'cancelled' | 'no-show'
+// approved / rejected / actioned were added to CONFIG below but never to this
+// union, so `Record<StatusValue, StatusConfig>` rejected them and every caller
+// passing one was a type error — which nobody saw, because Vite does not
+// typecheck in dev. At runtime the lookup still worked; the first production
+// BUILD would have failed instead.
+| 'approved' | 'rejected' | 'actioned' | 'resolved' | 'dismissed'
+| 'under-review'
 
 export type BadgeSize = 'sm' | 'md'
 export type BadgeVariant = 'default' | 'pill'
@@ -37,6 +44,17 @@ const CONFIG: Record<StatusValue, StatusConfig> = {
  // A suggestion is ACTIONED, not "approved" — the owner did something
  // about it, they did not grant it.
  actioned: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Actioned' },
+ // A complaint is RESOLVED, not "Paid". The dispute queue mapped RESOLVED to
+ // the 'paid' badge because it was the green one — so a waiter's grievance
+ // about his shift rota came back stamped "Paid", which is both meaningless
+ // and, on a complaint that was ABOUT pay, actively misleading. Same mistake
+ // as the leave request that read "Paid" when it had merely been agreed to.
+ // "Active" was what a claimed complaint said — the word for a live wristband
+ // or a working account, not for "someone has picked this up and is looking
+ // into it", which is the one thing the person waiting wants to know.
+ 'under-review': { colorClass: 'bg-status-pending/15 text-status-pending border border-status-pending/30', icon: <Clock />, label: 'Under review' },
+ resolved: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Resolved' },
+ dismissed: { colorClass: 'bg-ink-tertiary/10 text-ink-secondary border border-ink-tertiary/20', icon: <XCircle />, label: 'Dismissed' },
  approved: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Approved' },
  rejected: { colorClass: 'bg-status-failed/15 text-status-failed border border-status-failed/25', icon: <XCircle />, label: 'Rejected' },
  active: { colorClass: 'bg-status-paid/15 text-status-paid border border-status-paid/25', icon: <Check />, label: 'Active' },
@@ -63,7 +81,15 @@ const SHAPE: Record<BadgeVariant, string> = {
 }
 
 export function StatusBadge({ status, size = 'md', variant = 'default' }: StatusBadgeProps) {
- const { colorClass, icon, label } = CONFIG[status]
+ // Fall back instead of destructuring straight off CONFIG. An unrecognised
+ // status — a new state added to the API, an old cached response, a typo in
+ // one caller's mapping — threw "Cannot destructure property 'colorClass' of
+ // undefined" and took the whole SCREEN down through the nearest error
+ // boundary. That is a label deciding a page is unusable. Seen for real: the
+ // owner's dispute queue went to "Couldn't load this" with the rows sitting
+ // right there in the response, because one status had no entry here.
+ const { colorClass, icon, label } =
+   CONFIG[status] ?? { ...CONFIG.info, label: String(status) }
  return (
  <span className={['inline-flex items-center font-medium', SHAPE[variant], SIZE[size], colorClass].join(' ')}>
  {icon}

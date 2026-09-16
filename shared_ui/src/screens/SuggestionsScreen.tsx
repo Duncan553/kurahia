@@ -15,6 +15,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Skeleton } from '../components/Skeleton'
 import { EmptyState } from '../components/EmptyState'
+import { Icon } from '../components/Icon'
 import { useToastStore } from '../stores/toastStore'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { StatusBadge } from '../components/StatusBadge'
@@ -150,7 +151,8 @@ export default function SuggestionsScreen() {
         {isError && <p className="text-sm text-ink-tertiary">Couldn&apos;t load these. Check the connection.</p>}
 
         {!isLoading && !isError && items.length === 0 && (
-          <EmptyState title="Nothing yet" description="Staff can write to you from the phone app, privately if they choose." />
+          <EmptyState icon={<Icon name="bell" size={40} />} title="Nothing yet"
+            description="Staff can write to you from the phone app, privately if they choose." />
         )}
 
         {priv.length > 0 && (
