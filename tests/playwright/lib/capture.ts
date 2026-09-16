@@ -99,6 +99,14 @@ export type Entry = {
   visible_numbers?: string[]
   failure?: string
   notes?: string
+  /** How much the screen actually rendered, and whether it rendered NOTHING.
+      A plate of an empty state is a true picture of a screen with no data in
+      it — fine for a test, useless in a document that has to show a client
+      what the thing does. Measured rather than eyeballed, because two earlier
+      guesses at "is this plate any good" (file size, then visible currency)
+      both lied: the kiosk menu is 96% flat background and reads beautifully. */
+  text_chars?: number
+  empty_state?: string
 }
 
 /** Text that only ever appears on a login / PIN screen — the blind-shot tripwire. */
@@ -116,6 +124,14 @@ function numbersFrom(text: string): string[] {
   for (const m of text.matchAll(/\b\d[\d,]*(?:\.\d+)?\s?(?:%|kg|litre|litres|items?|bands?|guests?|pending|unmatched)\b/gi)) out.add(m[0].trim())
   return [...out].slice(0, 14)
 }
+
+/** The words this app uses when a screen has nothing in it. */
+const EMPTY_STATES = [
+  'nothing yet', 'no requests', 'no pending', 'nothing to show', 'none yet',
+  'no items', 'no results', 'no bookings', 'no alerts', 'no incidents',
+  'no suggestions', 'no disputes', 'nothing here', 'all clear', 'all healthy',
+  'no staff', 'no shifts', 'no entries', 'empty',
+]
 
 function headingFrom(text: string): string {
   return text.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 6).join(' | ').slice(0, 200)
@@ -172,6 +188,8 @@ export function makeCapturer(shotsDir: string, evidence: Entry[]) {
 
       entry.heading_seen = headingFrom(text)
       entry.visible_numbers = numbersFrom(text)
+      entry.text_chars = text.replace(/\s+/g, ' ').trim().length
+      entry.empty_state = EMPTY_STATES.find(m => text.toLowerCase().includes(m))
 
       const url = page.url()
       const pathname = new URL(url).pathname
@@ -201,6 +219,14 @@ export function makeCapturer(shotsDir: string, evidence: Entry[]) {
       if (opts.then) {
         await opts.then(page)
         await page.waitForTimeout(700)
+        // Re-measure: `then` is what puts content on screens that are a bare
+        // form until somebody uses them. Band Lookup read 104 characters and
+        // "still empty" long after the fix, because the tape measure ran
+        // before the hook did.
+        const after = await page.locator('body').innerText().catch(() => '')
+        entry.text_chars = after.replace(/\s+/g, ' ').trim().length
+        entry.visible_numbers = numbersFrom(after)
+        entry.empty_state = EMPTY_STATES.find(m => after.toLowerCase().includes(m))
       }
 
       await page.screenshot({
