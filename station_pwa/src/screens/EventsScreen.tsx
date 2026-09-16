@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Skeleton, EmptyState, StatusBadge, ErrorBoundary, Modal, Button, useToastStore } from '@shared'
+import { Skeleton, EmptyState, StatusBadge, ErrorBoundary, Modal, Drawer, Button, Input, Select, useToastStore } from '@shared'
 import type { StatusValue } from '@shared'
 import { IfRole } from '../components/AuthGate'
 import api from '../lib/axios'
@@ -375,9 +375,254 @@ export default function EventsScreen() {
   )
 }
 
+// ── Running the event ───────────────────────────────────────────────────────
+//
+// Everything below this line was missing. The screen could CREATE an event and
+// then nothing: the four lifecycle transitions, the staffing, and the whole
+// inventory sub-ledger had endpoints and no buttons. A wedding could be
+// entered into the system and never confirmed, never staffed, never issued a
+// single crate, never closed — it just sat at PLANNED forever.
+
+interface Alloc {
+  id: string
+  inventory_item_id: string
+  item_name: string | null
+  allocated_quantity: string
+  status: string            // ALLOCATED | ISSUED | RETURNED | CONSUMED
+  notes: string | null
+}
+
+interface Profile { id: string; full_name: string; is_active?: boolean }
+interface InvItem { id: string; name: string; unit: string; is_active?: boolean }
+
+function allocBadge(s: string): StatusValue {
+  const map: Record<string, StatusValue> = {
+    ALLOCATED: 'pending', ISSUED: 'active', RETURNED: 'checked-out', CONSUMED: 'resolved',
+  }
+  return map[s.toUpperCase()] ?? 'info'
+}
+
+// Which buttons an event may legally show, mirroring VALID_EVENT_TRANSITIONS
+// in the backend. Offering a button the API will refuse is the same mistake as
+// the Cash tile that answered "this screen isn't yours" — the UI should only
+// show what will work.
+const NEXT: Record<string, { label: string; path: string; tone?: 'ghost' }[]> = {
+  PLANNED:     [{ label: 'Confirm it',  path: 'confirm' },
+                { label: 'Cancel',      path: 'cancel', tone: 'ghost' }],
+  CONFIRMED:   [{ label: 'Start',       path: 'start' },
+                { label: 'Cancel',      path: 'cancel', tone: 'ghost' }],
+  IN_PROGRESS: [{ label: 'Finish',      path: 'complete' }],
+  COMPLETED:   [],
+  CANCELLED:   [],
+}
+
+function RunPanel({ event, onClose }: { event: EventItem; onClose: () => void }) {
+  const qc = useQueryClient()
+  const addToast = useToastStore(s => s.addToast)
+
+  const [who, setWho] = useState('')
+  const [role, setRole] = useState('')
+  const [itemId, setItemId] = useState('')
+  const [qty, setQty] = useState('')
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['events'] })
+    qc.invalidateQueries({ queryKey: ['events', event.id, 'assignments'] })
+    qc.invalidateQueries({ queryKey: ['events', event.id, 'inventory'] })
+    // Issuing stock moves real stock, so the count screens must not keep
+    // showing the pre-issue number.
+    qc.invalidateQueries({ queryKey: ['inventory-items-all'] })
+  }
+  const fail = (e: unknown) => addToast({ message: extractErr(e), type: 'error' })
+
+  const { data: staff = [] } = useQuery<Profile[]>({
+    queryKey: ['hr-profiles'],
+    queryFn: () => api.get<Profile[]>('/hr/profiles').then(r => Array.isArray(r.data) ? r.data : []),
+    staleTime: 5 * 60_000,
+  })
+  const { data: items = [] } = useQuery<InvItem[]>({
+    queryKey: ['inventory-items-all'],
+    queryFn: () => api.get<InvItem[]>('/inventory/items').then(r => Array.isArray(r.data) ? r.data : []),
+    staleTime: 5 * 60_000,
+  })
+  const { data: assignments = [] } = useQuery<Assignment[]>({
+    queryKey: ['events', event.id, 'assignments'],
+    queryFn: () => api.get<Assignment[]>(`/events/${event.id}/assignments`).then(r => Array.isArray(r.data) ? r.data : []),
+  })
+  const { data: allocs = [] } = useQuery<Alloc[]>({
+    queryKey: ['events', event.id, 'inventory'],
+    queryFn: () => api.get<Alloc[]>(`/events/${event.id}/inventory`).then(r => Array.isArray(r.data) ? r.data : []),
+  })
+
+  const move = useMutation({
+    mutationFn: (path: string) => api.post(`/events/${event.id}/${path}`, {}),
+    onSuccess: (_d, path) => {
+      addToast({ message: `Event ${path === 'complete' ? 'finished' : path + 'ed'}.`, type: 'success' })
+      refresh()
+      if (path === 'cancel' || path === 'complete') onClose()
+    },
+    onError: fail,
+  })
+
+  const assign = useMutation({
+    mutationFn: () => api.post(`/events/${event.id}/assignments`,
+      { employee_id: who, role_on_event: role.trim() }),
+    onSuccess: (r) => {
+      const n = (r.data as { notifications_scheduled?: number })?.notifications_scheduled
+      addToast({
+        // Worth saying out loud: assigning someone to a CONFIRMED event is what
+        // sends them their reminders. On a PLANNED event it sends nothing, and
+        // a manager who does not know that thinks the staff were told.
+        message: n ? `Added. ${n} reminder${n === 1 ? '' : 's'} scheduled.`
+                   : 'Added. Reminders go out when the event is confirmed.',
+        type: 'success',
+      })
+      setWho(''); setRole(''); refresh()
+    },
+    onError: fail,
+  })
+
+  const unassign = useMutation({
+    mutationFn: (id: string) => api.post(`/events/${event.id}/assignments/${id}/cancel`, {}),
+    onSuccess: () => { addToast({ message: 'Taken off the event.', type: 'success' }); refresh() },
+    onError: fail,
+  })
+
+  const allocate = useMutation({
+    mutationFn: () => api.post(`/events/${event.id}/inventory/allocate`, {
+      inventory_item_id: itemId,
+      allocated_quantity: qty,
+      idempotency_key: crypto.randomUUID(),
+    }),
+    onSuccess: () => {
+      // Set aside ≠ gone. Nothing leaves the store until Issue.
+      addToast({ message: 'Set aside. Stock has not moved yet.', type: 'success' })
+      setItemId(''); setQty(''); refresh()
+    },
+    onError: fail,
+  })
+
+  const allocMove = useMutation({
+    mutationFn: ({ id, verb }: { id: string; verb: string }) =>
+      api.post(`/events/${event.id}/inventory/${id}/${verb}`, {}),
+    onSuccess: (_d, { verb }) => {
+      addToast({
+        message: verb === 'issue'  ? 'Issued — stock has left the store.'
+               : verb === 'return' ? 'Returned — back on the shelf.'
+               :                     'Marked used up.',
+        type: 'success',
+      })
+      refresh()
+    },
+    onError: fail,
+  })
+
+  const canEdit = ['PLANNED', 'CONFIRMED'].includes(event.status)
+  const live = assignments.filter(a => a.status !== 'CANCELLED')
+
+  return (
+    <div className="space-y-5">
+
+      {/* ── Lifecycle ───────────────────────────────────────────── */}
+      <div className="flex flex-wrap gap-2">
+        {(NEXT[event.status] ?? []).map(b => (
+          <Button key={b.path} variant={b.tone} disabled={move.isPending}
+            onClick={() => move.mutate(b.path)}>
+            {b.label}
+          </Button>
+        ))}
+        {(NEXT[event.status] ?? []).length === 0 && (
+          <p className="text-xs text-ink-tertiary">
+            This event is {event.status.toLowerCase().replace('_', ' ')}. Nothing left to do.
+          </p>
+        )}
+      </div>
+
+      {/* ── Who is working it ───────────────────────────────────── */}
+      <section className="space-y-2">
+        <h3 className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">
+          Who is working it
+        </h3>
+        {live.length === 0 && <p className="text-xs text-ink-tertiary">Nobody yet.</p>}
+        {live.map(a => (
+          <div key={a.id} className="flex items-center justify-between gap-2 text-sm">
+            <span className="text-ink-secondary min-w-0 truncate">
+              {a.employee_name ?? 'Staff'} — {a.role_on_event}
+              {a.status === 'ACKNOWLEDGED' && <span className="text-ink-tertiary"> · seen it</span>}
+            </span>
+            {canEdit && (
+              <button className="text-xs text-ink-tertiary hover:text-status-failed shrink-0"
+                onClick={() => unassign.mutate(a.id)}>Remove</button>
+            )}
+          </div>
+        ))}
+        {canEdit && (
+          <div className="flex flex-col sm:flex-row gap-2 pt-1">
+            <Select label="Person" value={who} onChange={e => setWho(e.target.value)}
+              options={[{ value: '', label: 'Pick someone' },
+                        ...staff.filter(s => s.is_active !== false)
+                                .map(s => ({ value: s.id, label: s.full_name }))]} />
+            <Input label="Doing what" value={role} onChange={e => setRole(e.target.value)}
+              placeholder="Bar, service, setup…" />
+            <Button className="sm:self-end" disabled={!who || !role.trim() || assign.isPending}
+              onClick={() => assign.mutate()}>Add</Button>
+          </div>
+        )}
+      </section>
+
+      {/* ── Stock for the event ─────────────────────────────────── */}
+      <section className="space-y-2">
+        <h3 className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">
+          Stock for the event
+        </h3>
+        {allocs.length === 0 && <p className="text-xs text-ink-tertiary">Nothing set aside.</p>}
+        {allocs.map(a => (
+          <div key={a.id} className="flex items-center justify-between gap-2 text-sm">
+            <span className="text-ink-secondary min-w-0 truncate">
+              {a.item_name ?? 'Item'} × {a.allocated_quantity}
+            </span>
+            <span className="flex items-center gap-2 shrink-0">
+              <StatusBadge status={allocBadge(a.status)} size="sm" />
+              {a.status === 'ALLOCATED' && (
+                <button className="text-xs text-[#fa5c29]"
+                  onClick={() => allocMove.mutate({ id: a.id, verb: 'issue' })}>Issue</button>
+              )}
+              {a.status === 'ISSUED' && (<>
+                <button className="text-xs text-ink-tertiary hover:text-ink-secondary"
+                  onClick={() => allocMove.mutate({ id: a.id, verb: 'return' })}>Came back</button>
+                <button className="text-xs text-[#fa5c29]"
+                  onClick={() => allocMove.mutate({ id: a.id, verb: 'consume' })}>Used up</button>
+              </>)}
+            </span>
+          </div>
+        ))}
+        {canEdit && (
+          <div className="flex flex-col sm:flex-row gap-2 pt-1">
+            <Select label="Item" value={itemId} onChange={e => setItemId(e.target.value)}
+              options={[{ value: '', label: 'Pick an item' },
+                        ...items.filter(i => i.is_active !== false)
+                                .map(i => ({ value: i.id, label: `${i.name} (${i.unit})` }))]} />
+            <Input label="How much" value={qty} inputMode="decimal"
+              onChange={e => setQty(e.target.value)} placeholder="12" />
+            <Button className="sm:self-end"
+              disabled={!itemId || !qty.trim() || allocate.isPending}
+              onClick={() => allocate.mutate()}>Set aside</Button>
+          </div>
+        )}
+        {!canEdit && allocs.length > 0 && (
+          <p className="text-xs text-ink-tertiary">
+            Nothing more can be set aside once the event has started.
+          </p>
+        )}
+      </section>
+    </div>
+  )
+}
+
 // ── EventCard ──────────────────────────────────────────────────────────────
 
 function EventCard({ event, isToday = false }: { event: EventItem; isToday?: boolean }) {
+  const [running, setRunning] = useState(false)
   // Fetch assignments for this event so we can show assigned staff
   const { data: assignments } = useQuery<Assignment[]>({
     queryKey: ['events', event.id, 'assignments'],
@@ -481,6 +726,21 @@ function EventCard({ event, isToday = false }: { event: EventItem; isToday?: boo
           </div>
         </div>
       )}
+
+      {/* The door to everything the screen could not previously do. Manager+
+          only, matching the API — every endpoint behind it is MANAGER_LEVEL
+          except acknowledging your own assignment. */}
+      <IfRole minLevel={5}>
+        <div className="pt-2 border-t border-white/5">
+          <Button size="sm" variant="ghost" onClick={() => setRunning(true)}>
+            Staff &amp; stock
+          </Button>
+        </div>
+      </IfRole>
+
+      <Drawer open={running} onClose={() => setRunning(false)} title={event.title}>
+        <RunPanel event={event} onClose={() => setRunning(false)} />
+      </Drawer>
     </div>
   )
 }
