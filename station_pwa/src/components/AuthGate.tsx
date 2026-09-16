@@ -41,7 +41,8 @@ export function RoleGate({ minLevel }: { minLevel: number }) {
 // predicate and the level check steps aside.
 export function RequireRole({ minLevel, allow, children }: {
   minLevel: number
-  allow?: (u: { role_level: number; can_count_stock?: boolean }) => boolean
+  allow?: (u: { role_level: number; can_count_stock?: boolean;
+               department?: string | null }) => boolean
   children: ReactNode
 }) {
   const user = useAuthStore((s) => s.user)
@@ -80,7 +81,8 @@ export function RequireRole({ minLevel, allow, children }: {
 // for a button that was never offered.
 export function IfRole({ minLevel, allow, children }: {
   minLevel: number
-  allow?: (u: { role_level: number; can_count_stock?: boolean }) => boolean
+  allow?: (u: { role_level: number; can_count_stock?: boolean;
+               department?: string | null }) => boolean
   children: ReactNode
 }) {
   const user = useAuthStore((s) => s.user)

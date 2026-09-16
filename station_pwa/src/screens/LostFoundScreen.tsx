@@ -20,6 +20,7 @@ import {
 } from '@shared'
 import type { StatusValue } from '@shared'
 import { useAuthStore } from '../stores/authStore'
+import { RequireRole } from '../components/AuthGate'
 import api from '../lib/axios'
 
 interface Item {
@@ -230,5 +231,19 @@ function LostFound() {
 }
 
 export default function LostFoundScreen() {
-  return <ErrorBoundary><LostFound /></ErrorBoundary>
+  // Level 3 — front desk and above, matching the API exactly (DESK_LEVEL in
+  // app/lost_found/__init__.py). Without this the route was open to anyone who
+  // typed the address: a waiter landed here, the list query fired, the API
+  // answered 403, and the screen showed an error where an explanation belongs.
+  //
+  // Nothing linked here for them — the tile lives on the manager grid — but
+  // "nothing links to it" is not a permission boundary. Roster and Shifts were
+  // guarded for exactly this reason after typing the address reached them.
+  return (
+    <ErrorBoundary>
+      <RequireRole minLevel={3}>
+        <LostFound />
+      </RequireRole>
+    </ErrorBoundary>
+  )
 }

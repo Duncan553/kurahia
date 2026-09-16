@@ -376,11 +376,19 @@ export default function InventoryCountScreen() {
   })
 
   // ── Pending purchase requests (for overview stat card) ──
+  //
+  // Manager-and-above ONLY, and this screen is deliberately wider than that:
+  // the people who count a station's stock are head chef, bar lead, spa, water,
+  // housekeeping and grounds. For every one of them this query answered 403 and
+  // the tile rendered "No pending requests" — a refusal wearing the face of
+  // good news, which is the worse of the two failures. Ask only if they may read.
+  const canSeeOrders = (user?.role_level ?? 0) >= 5
   const { data: pendingOrders = [] } = useQuery<PurchaseReq[]>({
     queryKey: ['inv-pending-orders'],
     queryFn: () => api.get<PurchaseReq[]>('/inventory/purchase-requests', { params: { status: 'PENDING' } })
       .then((r) => Array.isArray(r.data) ? r.data : []),
     staleTime: 60_000,
+    enabled: canSeeOrders,
   })
 
   const { data: variance, isFetching: varFetching, refetch: refetchVariance } = useQuery<VarianceReport>({
@@ -628,7 +636,8 @@ export default function InventoryCountScreen() {
                   </motion.div>
                 </ErrorBoundary>
 
-                {/* Pending Orders */}
+                {/* Pending Orders — only for the people allowed to read them. */}
+                {canSeeOrders && (
                 <ErrorBoundary level="tile">
                   <motion.div variants={fadeIn}>
                     <Glass>
@@ -646,6 +655,7 @@ export default function InventoryCountScreen() {
                     </Glass>
                   </motion.div>
                 </ErrorBoundary>
+                )}
               </div>
 
               {/* ── Main grid: Departmental Health + Activity Log ───── */}

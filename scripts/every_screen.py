@@ -225,14 +225,29 @@ def points_of_sale() -> None:
         act("Restaurant — sellable kitchen item", False, "none found")
         return
 
-    tab = requests.post(f"{BASE}/tabs", json={"reference": "Table 12"}, headers=w).json()
+    # The waiter charges the band the gate already opened, because a free-text
+    # table is refused now: "Every bill belongs to a wristband or a room."
+    # This driver used to POST /tabs {"reference": "Table 12"} and then read
+    # tab["id"] off a 403 body, dying with KeyError: 'id' — which reads as a
+    # broken system when it is only a driver that never caught up with the rule.
+    if not band_tab:
+        act("Restaurant — add to a band", False,
+            "no band was issued above, so there is nothing to charge")
+        return
+
     order = requests.post(f"{BASE}/orders",
-                          json={"tab_id": tab["id"],
+                          json={"tab_id": band_tab,
                                 "items": [{"menu_item_id": food["id"], "quantity": 1}]},
                           headers=w)
-    act("Restaurant — add to a table", order.status_code == 201,
-        f"{food['name']} on Table 12" if order.status_code == 201
+    act("Restaurant — add to a band", order.status_code == 201,
+        f"{food['name']} on band #{band_no}" if order.status_code == 201
         else f"{order.status_code} {order.text[:70]}")
+
+    # And prove the rule itself, rather than tripping over it.
+    walk_in = requests.post(f"{BASE}/tabs", json={"reference": "Table 12"}, headers=w)
+    act("Restaurant — anonymous table refused", walk_in.status_code == 403,
+        "403 — every bill belongs to a wristband or a room" if walk_in.status_code == 403
+        else f"ALLOWED with {walk_in.status_code} — the hole is open again")
     if order.status_code != 201:
         return
     oid = order.json()["id"]
@@ -256,25 +271,35 @@ def points_of_sale() -> None:
         srv = requests.post(f"{BASE}/order-items/{oi}/serve", headers=w)
         act("Waiter — mark served", srv.status_code == 200, f"{srv.status_code}")
 
-    bill = requests.get(f"{BASE}/tabs/{tab['id']}", headers=w).json()
-    pay = requests.post(f"{BASE}/tabs/{tab['id']}/payments",
-                        json={"method": "CASH", "amount": bill["balance"],
-                              "idempotency_key": str(uuid.uuid4())}, headers=w)
-    act("Restaurant — settle the bill", pay.status_code == 201,
-        f"KSh {bill['balance']} cash" if pay.status_code == 201
-        else f"{pay.status_code} {pay.text[:70]}")
-    closed = requests.post(f"{BASE}/tabs/{tab['id']}/close", headers=w)
-    act("Restaurant — close the table", closed.status_code == 200, f"{closed.status_code}")
+    bill = requests.get(f"{BASE}/tabs/{band_tab}", headers=w).json()
+    owing = float(bill.get("balance") or 0)
 
+    # A band that has not yet eaten through its KSh 3,000 entry credit reads as
+    # a NEGATIVE balance — the guest is in credit, and there is nothing to
+    # settle. Paying it anyway is refused ("Payment amount cannot be negative"),
+    # which is the system being right and this driver being lazy.
+    if owing > 0:
+        pay = requests.post(f"{BASE}/tabs/{band_tab}/payments",
+                            json={"method": "CASH", "amount": owing,
+                                  "idempotency_key": str(uuid.uuid4())}, headers=w)
+        act("Restaurant — settle the bill", pay.status_code == 201,
+            f"KSh {owing} cash" if pay.status_code == 201
+            else f"{pay.status_code} {pay.text[:70]}")
+    else:
+        act("Restaurant — still on prepaid credit", True,
+            f"balance {owing} — the entry fee has not been spent yet")
     # ── 3. Bar ────────────────────────────────────────────────────────────
     bar = hdr("bar")
     drink = next((i for i in items
                   if (i.get("prep_station") or "") == "BAR" and i.get("is_active")
                   and (i.get("stock_tracking") or "") != "UNTRACKED"), None)
     if drink:
-        t2 = requests.post(f"{BASE}/tabs", json={"reference": "Bar 3"}, headers=w).json()
+        b2 = requests.post(f"{BASE}/gate/issue-band",
+                           json={"payment_method": "CASH",
+                                 "idempotency_key": str(uuid.uuid4())},
+                           headers=hdr("gate")).json()
         o2 = requests.post(f"{BASE}/orders",
-                           json={"tab_id": t2["id"],
+                           json={"tab_id": b2.get("tab_id"),
                                  "items": [{"menu_item_id": drink["id"], "quantity": 1}]},
                            headers=w)
         requests.post(f"{BASE}/orders/{o2.json()['id']}/send", headers=w)
@@ -339,6 +364,21 @@ def points_of_sale() -> None:
                 f"band #{band_no} now {after.json().get('tab_balance')}")
         else:
             act("Wristband — credit moved with the sale", False, f"{after.status_code}")
+
+    # ── 8. The guest leaves ──────────────────────────────────────────────
+    # LAST, because one band carries the whole day: the restaurant, the bar,
+    # the water post and the spa all charge it. Closing it in the middle of
+    # that (which this driver did briefly) makes every till after it fail with
+    # "This tab is already closed" — a driver ordering fault that reads exactly
+    # like four broken screens.
+    #
+    # A band is closed at the gate, never by the waiter who served it, and only
+    # when it is clear.
+    if band_no:
+        closed = requests.post(f"{BASE}/gate/deactivate-band/{band_no}",
+                               headers=hdr("gate"))
+        act("Gate — close the band on the way out", closed.status_code == 200,
+            f"{closed.status_code} {closed.text[:70]}")
 
 
 # ══════════════════════════════════════════════════════════════════════════

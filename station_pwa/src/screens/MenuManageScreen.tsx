@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Select, Skeleton, useToastStore, Drawer, Combobox, SearchInput, ErrorBoundary, imageUrl } from '@shared'
 import { useAuthStore } from '../stores/authStore'
 import api from '../lib/axios'
+import { RequireRole } from '../components/AuthGate'
 
 // Manager: add, price, disable, enable menu items + set recipes per dish.
 // prep_station controls routing: KITCHEN/BAR → queue; NONE → instant (spa/gym/water).
@@ -63,7 +64,7 @@ function stationDeptId(station: string, depts: { id: string; name: string }[]): 
   return target ? (depts.find(d => d.name === target)?.id ?? '') : ''
 }
 
-export default function MenuManageScreen() {
+function MenuManage() {
   const qc         = useQueryClient()
   const addToast   = useToastStore(s => s.addToast)
   const user       = useAuthStore(s => s.user)
@@ -796,5 +797,29 @@ export default function MenuManageScreen() {
       </Drawer>
       </ErrorBoundary>
     </div>
+  )
+}
+
+// Who may author the menu, matching _can_manage_menu on the API.
+//
+// A waiter typing /manager/menu got the whole thing: "+ Add Item", every
+// price, the cost percentages, a Remove on every row. Not one of those
+// controls would have worked — the API gates menu authorship on ROLE — so the
+// screen was offering a person a drawer full of buttons that all refuse them.
+// That is the fault this system hunts hardest, because it teaches staff the
+// software is unreliable and the way round it is to stop using it.
+//
+// It cannot be a plain minLevel. front_desk and gate_lead sit at level 3
+// alongside head_chef and bar_lead, and must not price the menu. The one flag
+// that separates them is can_count_stock — the people who count a station's
+// stock are the people who author what that station sells.
+export default function MenuManageScreen() {
+  return (
+    <RequireRole
+      minLevel={5}
+      allow={u => u.role_level >= 5 || (u.role_level >= 3 && !!u.can_count_stock)}
+    >
+      <MenuManage />
+    </RequireRole>
   )
 }
