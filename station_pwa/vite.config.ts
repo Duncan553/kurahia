@@ -35,7 +35,18 @@ const PROXIED_PATHS = [
   // "disputes.map is not a function" — a proxy gap wearing the costume of a
   // frontend bug. Same shape as '/images' above.
   '/disputes',
+  '/lost-found',
 ]
+
+// The service worker below needs the SAME list, as a regex. It used to carry
+// its own hand-written copy — twice — and both had drifted: /disputes,
+// /lost-found, /calendar, /admin, /event-types, /audit, /reports, /suppliers,
+// /images and /uploads were all in the proxy but in neither regex. One rule
+// living in three places, two of them stale, which is how /disputes came to be
+// missing from the proxy in the first place. Derived now, so adding a path
+// above is the only edit anyone has to make.
+const API_ALTERNATION = PROXIED_PATHS.map(p => p.slice(1)).join('|')
+const API_PREFIX_RE = new RegExp('^\\/(' + API_ALTERNATION + ')\\b')
 
 const proxyConfig = Object.fromEntries(
   PROXIED_PATHS.map(p => [p, {
@@ -66,8 +77,7 @@ export default defineConfig({
         // app shell loads offline but live data never comes from a cache.
         runtimeCaching: [{
           urlPattern: ({ url }: { url: URL }) =>
-            /^\/(kitchen|bar|tabs|orders|order-items|gate|front-desk|inventory|menu|auth|hr|receipts|booking-payments|bookings|bookable-resources|waivers|equipment|housekeeping|incidents|events|finance|notifications|suggestions)\b/
-              .test(url.pathname),
+            API_PREFIX_RE.test(url.pathname),
           handler: 'NetworkOnly',
         }],
 
@@ -82,7 +92,7 @@ export default defineConfig({
         // answered with index.html when the network is down — a JSON caller
         // receiving HTML fails in a much more confusing way than a clean error.
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/(kitchen|bar|tabs|orders|order-items|gate|front-desk|inventory|menu|auth|hr|receipts|booking-payments|bookings|bookable-resources|waivers|equipment|housekeeping|incidents|events|finance|notifications|suggestions)\b/],
+        navigateFallbackDenylist: [API_PREFIX_RE],
       },
       manifest: {
         name: 'Waterfront Juja Station',
