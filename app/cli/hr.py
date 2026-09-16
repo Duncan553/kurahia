@@ -103,8 +103,17 @@ PIN_RESYNC_EXCLUDED_ROLES = {"owner"}
 
 @hr_cli_bp.cli.command("resync-pins")
 @click.option("--yes", is_flag=True, help="Confirm — this rewrites staff PINs.")
-def resync_pins(yes):
-    """DEV ONLY: reset staff PINs to the values in scripts/seed_realistic.py."""
+@click.option("--passwords", is_flag=True,
+              help="Also reset staff PASSWORDS to SEED_PASSWORD (default Kurahia1!).")
+def resync_pins(yes, passwords):
+    """DEV ONLY: reset staff PINs (and with --passwords, passwords) to the seed values.
+
+    Passwords rot the same way PINs do and for the same reason: they get changed
+    through the app during testing and nobody writes it down. docs/ACCOUNTS.md
+    said all twelve accounts took `Kurahia1!`; by 16 Sept only TWO of them did,
+    which is how a screenshot run died on "Invalid credentials" for an account
+    the documentation swore was fine. Same guards, same seed file, one command.
+    """
     import os, re
     from flask import current_app
 
@@ -167,5 +176,29 @@ def resync_pins(yes):
         click.echo(f"  RESET    {username} -> PIN now matches the seed file")
         changed += 1
 
+    # Passwords, same rule and the same exclusion: never the owner's.
+    pw_changed = pw_ok = 0
+    if passwords:
+        seed_password = os.environ.get("SEED_PASSWORD", "Kurahia1!")
+        click.echo("")
+        for username, role_key, _pin in pairs:
+            if role_key in PIN_RESYNC_EXCLUDED_ROLES:
+                click.echo(f"  skip     {username} ({role_key} — excluded)")
+                continue
+            u = db.session.query(User).filter_by(username=username).first()
+            if not u or not u.password_hash:
+                continue
+            if u.check_password(seed_password):
+                click.echo(f"  already  {username} (password)")
+                pw_ok += 1
+                continue
+            u.set_password(seed_password)
+            u.failed_attempts = 0
+            u.locked_until = None
+            click.echo(f"  RESET    {username} -> password now matches the seed file")
+            pw_changed += 1
+
     db.session.commit()
     click.echo(f"\nresync-pins: {changed} reset, {ok} already correct, {skipped} excluded.")
+    if passwords:
+        click.echo(f"passwords:   {pw_changed} reset, {pw_ok} already correct.")

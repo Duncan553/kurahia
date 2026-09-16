@@ -68,6 +68,12 @@ def check(ok, what, detail=""):
 class Person:
     def __init__(self, app, username):
         u = db.session.query(User).filter_by(username=username).first()
+        if u is None:
+            # Staff leave. An account named in this script years ago is not a
+            # reason the resort cannot run its day — it used to die here with
+            # "NoneType has no attribute id", which reads like a broken script
+            # rather than a missing person.
+            raise LookupError(username)
         self.c, self.name, self.uid = app.test_client(), username, u.id
         self.h = {"Authorization": f"Bearer {create_access_token(identity=u.id)}"}
 
@@ -101,14 +107,18 @@ def serve(order_id, waiter, kitchen, bar):
 def run(app):
     random.seed(20260901)
     with app.app_context():
-        p = {n: Person(app, n) for n in
-             ["amara.wanjiku", "brian.mwangi", "cynthia.achieng", "david.otieno",
-              "grace.muthoni", "hassan.omondi", "ivan.kipchoge", "joyce.wambua",
-              "peter.mwendwa", "esther.kamau"]}
+        p = {}
+        for n in ["amara.wanjiku", "brian.mwangi", "cynthia.achieng", "david.otieno",
+                  "grace.muthoni", "hassan.omondi", "ivan.kipchoge", "joyce.wambua",
+                  "peter.mwendwa", "esther.kamau"]:
+            try:
+                p[n] = Person(app, n)
+            except LookupError:
+                print(f"  (no account for {n} — the day runs without them)")
         owner, mgr = p["amara.wanjiku"], p["brian.mwangi"]
         front, gate = p["grace.muthoni"], p["hassan.omondi"]
         chef, bar = p["cynthia.achieng"], p["david.otieno"]
-        waiters = [p["ivan.kipchoge"], p["joyce.wambua"], p["peter.mwendwa"]]
+        waiters = [p[n] for n in ("ivan.kipchoge", "joyce.wambua", "peter.mwendwa") if n in p]
 
         print("\n══ 06:00  the shift clocks in ═══════════════════════════════")
         for person in p.values():
