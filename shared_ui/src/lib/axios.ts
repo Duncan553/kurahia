@@ -102,7 +102,13 @@ api.interceptors.response.use(
       } catch (refreshErr) {
         drainQueue(refreshErr)
         useAuthStore.getState().clearAuth()
-        window.location.href = '/login'
+        // In kiosk mode the person holding the tablet is a GUEST. Bouncing them
+        // to a staff login screen is both useless and alarming — and it threw
+        // away the review they had just typed. Let the kiosk screen handle the
+        // failure in its own words; staff unlock it with the corner tap.
+        if (!window.location.pathname.startsWith('/kiosk')) {
+          window.location.href = '/login'
+        }
         return Promise.reject(refreshErr)
       } finally {
         isRefreshing = false

@@ -396,13 +396,168 @@ function PersonalTab() {
   )
 }
 
+
+// ── Conduct rules ─────────────────────────────────────────────────────────────
+//
+// POST /conduct/rules is owner-only and had no caller in any app, so the staff
+// app's "Code of Conduct" screen — which every employee is asked to read and
+// sign — could only ever say "No conduct rules published yet." The rules could
+// be seeded by a command on the server, which is not a door the owner has.
+//
+// Publishing the same rule_key again creates version 2 and retires version 1
+// (app/conduct/core.py), and a signature is against a VERSION, so re-publishing
+// a rule correctly asks everyone to sign again.
+
+interface ConductRule {
+  id: string
+  rule_key: string
+  title: string
+  body: string
+  category: string
+  version: number
+  is_active: boolean
+}
+
+// Shape per app/conduct/core.py::compliance_report — names, not ids, and a
+// count of who has NOT signed rather than who has.
+interface ComplianceRow {
+  rule_id: string
+  rule_key: string
+  title: string
+  version: number
+  unsigned_count: number
+  unsigned_employees: string[]
+  message: string
+}
+
+const RULE_CATEGORIES = ['RESPECT', 'PUNCTUALITY', 'SAFETY', 'CONFIDENTIALITY', 'GENERAL']
+
+function ConductTab() {
+  const qc = useQueryClient()
+  const [title, setTitle]       = useState('')
+  const [body, setBody]         = useState('')
+  const [category, setCategory] = useState('GENERAL')
+  const [err, setErr]           = useState('')
+
+  const { data: rules = [], isLoading } = useQuery<ConductRule[]>({
+    queryKey: ['conduct-rules'],
+    queryFn: () => api.get<ConductRule[]>('/conduct/rules').then(r => Array.isArray(r.data) ? r.data : []),
+  })
+
+  const { data: compliance = [] } = useQuery<ComplianceRow[]>({
+    queryKey: ['conduct-compliance'],
+    queryFn: () => api.get<ComplianceRow[]>('/conduct/compliance').then(r => Array.isArray(r.data) ? r.data : []),
+    staleTime: 60_000,
+  })
+
+  const publish = useMutation({
+    mutationFn: () => api.post('/conduct/rules', {
+      // The key is what versions chain on, so it comes from the title rather
+      // than being another thing to type and get subtly different.
+      rule_key: title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      title: title.trim(),
+      body: body.trim(),
+      category,
+    }).then(r => r.data),
+    onSuccess: () => {
+      setTitle(''); setBody(''); setErr('')
+      qc.invalidateQueries({ queryKey: ['conduct-rules'] })
+      qc.invalidateQueries({ queryKey: ['conduct-compliance'] })
+    },
+    onError: (e: unknown) => setErr(
+      (e as { response?: { data?: { error?: string } } })?.response?.data?.error
+      ?? 'Could not publish that rule.'),
+  })
+
+  const signedFor = (ruleId: string) => compliance.find(c => c.rule_id === ruleId)
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl glass-card p-4 space-y-3">
+        <p className="text-sm font-semibold text-ink-primary">Publish a rule</p>
+        <input
+          placeholder="Title — e.g. Arriving on time"
+          value={title} onChange={e => setTitle(e.target.value)}
+          className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
+            text-ink-primary focus:outline-none focus:border-primary-main" />
+        <textarea
+          rows={3}
+          placeholder="What the rule actually says, in the words staff will read."
+          value={body} onChange={e => setBody(e.target.value)}
+          className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
+            text-ink-primary focus:outline-none focus:border-primary-main resize-none" />
+        <select
+          style={{ colorScheme: 'dark' }}
+          value={category} onChange={e => setCategory(e.target.value)}
+          className="w-full rounded-xl glass-card bg-transparent px-4 py-3 text-sm
+            text-ink-primary focus:outline-none focus:border-primary-main">
+          {RULE_CATEGORIES.map(c => <option key={c} value={c}>{c.toLowerCase()}</option>)}
+        </select>
+        {err && <p className="text-xs text-status-failed">{err}</p>}
+        <button
+          onClick={() => publish.mutate()}
+          disabled={!title.trim() || !body.trim() || publish.isPending}
+          className="w-full min-h-[44px] rounded-xl bg-primary-main text-white text-sm
+            font-semibold disabled:opacity-50">
+          {publish.isPending ? 'Publishing…' : 'Publish to every employee'}
+        </button>
+        <p className="text-[11px] text-ink-tertiary">
+          Publishing a title that already exists creates a new version and asks
+          everyone to sign it again.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-ink-tertiary">Loading…</p>
+      ) : rules.length === 0 ? (
+        <p className="text-sm text-ink-tertiary">
+          Nothing published yet. Until there is, the staff app tells everyone there
+          are no rules to sign.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {rules.map(r => {
+            const c = signedFor(r.id)
+            return (
+              <div key={r.id} className="rounded-2xl glass-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink-primary">{r.title}</p>
+                    <p className="text-[10px] uppercase tracking-wider text-ink-tertiary mt-0.5">
+                      {r.category.toLowerCase()} · v{r.version}
+                    </p>
+                  </div>
+                  {c && (
+                    <p className="text-xs shrink-0">
+                      {c.unsigned_count > 0
+                        ? <span className="text-status-pending">{c.unsigned_count} not signed</span>
+                        : <span className="text-status-paid">everyone signed</span>}
+                    </p>
+                  )}
+                </div>
+                <p className="text-sm text-ink-secondary mt-2 whitespace-pre-wrap">{r.body}</p>
+                {c && c.unsigned_count > 0 && (
+                  <p className="text-[11px] text-ink-tertiary mt-2">
+                    Waiting on: {(c.unsigned_employees ?? []).join(', ')}
+                  </p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-type TabKey = 'departments' | 'roles' | 'baselines' | 'sockets' | 'personal'
+type TabKey = 'departments' | 'roles' | 'conduct' | 'baselines' | 'sockets' | 'personal'
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'departments', label: 'Departments'     },
   { key: 'roles',       label: 'Roles'           },
+  { key: 'conduct',     label: 'Code of Conduct' },
   { key: 'baselines',   label: 'Judge Baselines' },
   { key: 'sockets',     label: 'Socket Status'   },
   { key: 'personal',    label: 'Personal'        },
@@ -441,6 +596,7 @@ export default function SettingsScreen() {
 
       {tab === 'departments' && <DepartmentsTab />}
       {tab === 'roles'       && <RolesTab />}
+      {tab === 'conduct'     && <ConductTab />}
       {tab === 'baselines'   && <BaselinesTab />}
       {tab === 'sockets'     && <SocketStatusTab />}
       {tab === 'personal'    && <PersonalTab />}

@@ -8,6 +8,9 @@ export default function KioskLaunchScreen() {
   const activateKiosk = useKioskStore((s) => s.activateKiosk)
 
   function handleActivate() {
+    // Arming a guest-facing tablet on a session that is not there is how a
+    // guest ends up at a staff login screen with their feedback lost. Say so
+    // instead of doing nothing.
     if (!user?.username) return
     activateKiosk(user.username)
     navigate('/kiosk/menu')
@@ -36,6 +39,7 @@ export default function KioskLaunchScreen() {
 
       <button
         onClick={handleActivate}
+        disabled={!user?.username}
         className="w-full max-w-sm py-4 rounded-2xl bg-tea-brown text-ticket-paper
           font-semibold text-base tracking-wide
           hover:bg-tea-brown/90 active:scale-[0.99] transition-all
@@ -43,6 +47,18 @@ export default function KioskLaunchScreen() {
       >
         Activate Menu Kiosk
       </button>
+
+      {!user?.username && (
+
+        <p className="text-sm text-ticket-ink/60 text-center max-w-sm">
+
+          Sign in on this tablet first — the kiosk runs on a staff session, and
+
+          without one a guest would be shown a login screen.
+
+        </p>
+
+      )}
 
       <button
         onClick={() => navigate(-1)}
