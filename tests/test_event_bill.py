@@ -776,3 +776,98 @@ class TestEveryEventCarriesABookingFee:
     def test_with_no_minimum_set_nothing_is_required(self, client, manager_token, event_type_id):
         eid = self._new(client, manager_token, event_type_id).get_json()["id"]
         assert client.post(f"/events/{eid}/confirm", headers=H(manager_token)).status_code == 200
+
+
+# ── The system keeps checking ─────────────────────────────────────────────────
+
+class TestTheSystemKeepsCheckingEachEvent:
+    """Wachira: the event must not arrive without the manager knowing what is
+    still undone — checked again and again, and especially on the day."""
+
+    def _notices(self, event_id):
+        from app.extensions import db
+        from app.models.notification import Notification
+        from app.models.user import User
+        manager = db.session.query(User).filter_by(username="manager1").one()
+        return [n.body for n in db.session.query(Notification).filter_by(
+            reference_id=event_id, reference_type="event_check", recipient_user_id=manager.id)]
+
+    def test_the_manager_is_told_what_is_still_undone(
+            self, client, manager_token, owner_token, event_type_id, pilau):
+        from app.services.event_menu import check_readiness
+        client.patch("/admin/settings", headers=H(owner_token), json={"event_min_booking_fee": 20000})
+        eid = _event(client, manager_token, event_type_id, days=5)
+        _plan(client, manager_token, eid, pilau, 100)                      # 10 kg rice short
+        check_readiness()
+        body = self._notices(eid)[0]
+        assert "in 5 days" in body
+        for undone in ("booking fee", "not confirmed", "no kitchen crew", "no service crew", "Short: 10 kg Rice"):
+            assert undone in body, undone
+
+    def test_checking_again_the_same_day_does_not_repeat_itself(
+            self, client, manager_token, event_type_id, pilau):
+        from app.services.event_menu import check_readiness
+        eid = _event(client, manager_token, event_type_id, days=3)
+        _plan(client, manager_token, eid, pilau, 10)
+        check_readiness(); check_readiness()
+        assert len(self._notices(eid)) == 1
+
+    def test_an_event_with_nothing_undone_is_all_set(
+            self, client, manager_token, kitchen_token, event_type_id, pilau, waiter_profile):
+        from app.extensions import db
+        from app.models.employee_profile import EmployeeProfile
+        from app.models.user import User
+        from app.services.event_menu import check_readiness
+        eid = _event(client, manager_token, event_type_id, days=2)
+        cook = db.session.query(EmployeeProfile).join(User).filter(User.username == "kitchen1").one()
+        client.post(f"/events/{eid}/assignments", headers=H(manager_token), json={"employee_id": cook.id, "job": "KITCHEN"})
+        client.post(f"/events/{eid}/assignments", headers=H(manager_token), json={"employee_id": waiter_profile.id, "job": "SERVICE"})
+        _plan(client, manager_token, eid, pilau, 10)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        check_readiness()
+        assert "All set" in self._notices(eid)[0]
+
+    def test_on_the_day_it_says_today_and_what_has_not_gone_to_the_kitchen(
+            self, client, manager_token, event_type_id, pilau):
+        from app.services.event_menu import check_readiness
+        eid = _event(client, manager_token, event_type_id, days=0)
+        _plan(client, manager_token, eid, pilau, 10)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        check_readiness()
+        body = self._notices(eid)[0]
+        assert "TODAY" in body and "Not sent to the kitchen yet: 10 × Pilau" in body
+
+    def test_events_more_than_a_week_away_are_left_alone(
+            self, client, manager_token, event_type_id, pilau):
+        from app.services.event_menu import check_readiness
+        eid = _event(client, manager_token, event_type_id, days=10)
+        check_readiness()
+        assert self._notices(eid) == []
+
+    def test_the_crew_get_a_reminder_on_the_morning_of_the_event(
+            self, client, manager_token, event_type_id, waiter_profile):
+        from app.extensions import db
+        from app.models.notification import Notification
+        eid = _event(client, manager_token, event_type_id, days=6)
+        client.post(f"/events/{eid}/assignments", headers=H(manager_token),
+                    json={"employee_id": waiter_profile.id, "job": "SERVICE"})
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        subjects = [n.subject for n in db.session.query(Notification).filter_by(
+            reference_id=eid, recipient_user_id=waiter_profile.user_id)]
+        assert any(s.startswith("[Today]") for s in subjects)
+
+    def test_an_event_already_underway_or_over_is_described_as_such(
+            self, client, manager_token, event_type_id):
+        from datetime import datetime, timezone, timedelta
+        from app.services.event_menu import check_readiness
+        now = datetime.now(timezone.utc)
+        start = now.replace(hour=0, minute=1, second=0, microsecond=0)        # earlier today
+        mk = lambda title, hours: client.post("/events", headers=H(manager_token), json={
+            "title": title, "event_type_id": event_type_id, "venue_id": make_venue(),
+            "starts_at_utc": start.isoformat(), "ends_at_utc": (start + timedelta(hours=hours)).isoformat(),
+            "idempotency_key": str(uuid.uuid4())}).get_json()["id"]
+        over = mk("Breakfast Talk", hours=0.01)                               # ended minutes after midnight
+        check_readiness(now=start + timedelta(hours=23, minutes=58))
+        body = self._notices(over)[0]
+        assert "starts in under 2 hours" not in body
+        assert "has ended — finish it and settle the bill" in body

@@ -90,15 +90,21 @@ def schedule_event_alerts(event: Event, assignment: EventAssignment | None = Non
 
     count = 0
     now = datetime.now(timezone.utc)
+    starts = event.starts_at_utc if event.starts_at_utc.tzinfo else event.starts_at_utc.replace(tzinfo=timezone.utc)
+    tiers = [(starts - offset, label, f"{offset.total_seconds():.0f}") for offset, label in ALERT_OFFSETS]
+    # "[Today]": the morning of the event, 07:00 on the resort's clock — so an
+    # evening wedding is on the crew's phones from breakfast, not only 2 hours
+    # out. For an early event, no later than 3 hours before it starts.
+    from app.services.business_day import _get_tz
+    local_start = starts.astimezone(_get_tz())
+    morning = local_start.replace(hour=7, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+    tiers.append((min(morning, starts - timedelta(hours=3)), "[Today]   ", "today"))
     for asgn in targets:
         if not asgn.employee or not asgn.employee.user_id:
             continue
-        for offset, label in ALERT_OFFSETS:
-            scheduled = event.starts_at_utc - offset
-            if scheduled.tzinfo is None:
-                scheduled = scheduled.replace(tzinfo=timezone.utc)
+        for scheduled, label, tier_key in tiers:
             subject, body = _alert_body(label, event, asgn)
-            idem = f"alert-{event.id}-{asgn.id}-{offset.total_seconds():.0f}"
+            idem = f"alert-{event.id}-{asgn.id}-{tier_key}"
             # Skip if already exists (idempotent on re-confirm)
             existing = db.session.query(Notification).filter_by(
                 idempotency_key=idem

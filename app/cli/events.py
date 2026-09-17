@@ -4,6 +4,7 @@ cli/events.py — Events seed and maintenance commands.
 flask events seed-types      → seed default event types
 flask events seed-sample     → create a sample event with assignments + allocations
 flask events deliver-due     → dispatch due QUEUED notifications
+flask events check-readiness → tell managers what is still undone for events in the next 7 days
 flask events flag-incomplete → flag IN_PROGRESS events past their end time
 """
 import uuid
@@ -91,6 +92,13 @@ def seed_sample():
 
     db.session.commit()
     click.echo(f"Created sample event: {event.id}")
+
+
+@events_cli_bp.cli.command("check-readiness")
+def check_readiness_cmd():
+    """Tell managers what is still undone for every event in the next 7 days."""
+    from app.services.event_menu import check_readiness
+    click.echo(f"Readiness: {check_readiness()} notice(s) sent.")
 
 
 @events_cli_bp.cli.command("deliver-due")

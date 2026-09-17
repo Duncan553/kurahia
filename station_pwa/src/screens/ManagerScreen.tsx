@@ -97,6 +97,49 @@ function G({ children, className = '', onClick }: {
   )
 }
 
+// ── Events — still to do ─────────────────────────────────────────────────────
+//
+// The hourly readiness check (flask events check-readiness) writes each
+// manager a checklist per event in the next 7 days. It lands in the inbox; this
+// puts the newest one per event where the manager already looks, on the post's
+// own tablet.
+interface CheckNotice { id: string; subject: string; body: string; reference_type: string; reference_id: string | null }
+
+function EventChecks() {
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const { data: notices = [] } = useQuery<CheckNotice[]>({
+    queryKey: ['notifications', 'inbox'],
+    queryFn: () => api.get<CheckNotice[]>('/notifications/inbox').then(r => Array.isArray(r.data) ? r.data : []),
+    refetchInterval: 60_000,
+  })
+  const checks = notices.filter(n => n.reference_type === 'event_check')
+  // Newest per event. The inbox is newest first, so keep the FIRST per event —
+  // a Map keyed by event keeps the last, which showed yesterday's news.
+  const latest = checks.filter((n, i) => checks.findIndex(m => m.reference_id === n.reference_id) === i)
+  const seen = useMutation({
+    mutationFn: (eventId: string | null) => Promise.all(checks.filter(n => n.reference_id === eventId)
+      .map(n => api.post(`/notifications/${n.id}/mark-read`))),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications', 'inbox'] }),
+  })
+  if (!latest.length) return null
+  return (
+    <div className="mb-8 space-y-2">
+      <h2 className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Events — still to do</h2>
+      {latest.map(n => (
+        <div key={n.id} className={`glass-card rounded-xl p-3 flex items-start gap-3 border ${
+          n.body.includes('All set') ? 'border-status-paid/30' : 'border-status-pending/40'}`}>
+          <button className="flex-1 text-left text-sm text-ink-primary" onClick={() => navigate('/events')}>
+            {n.body.replace(/^\d{2} \w{3}: /, '')}
+          </button>
+          <button className="text-xs text-ink-tertiary hover:text-ink-primary shrink-0"
+            onClick={() => seen.mutate(n.reference_id)}>Seen</button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function ManagerScreen() {
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
@@ -303,6 +346,8 @@ export default function ManagerScreen() {
       <div className="p-4 md:p-6 max-w-6xl mx-auto">
         <motion.div initial="hidden" animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.06 } } }}>
+
+          <EventChecks />
 
           {/* ── Row 1: Greeting + Pending approvals (HERO if > 0) ── */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 mb-8">

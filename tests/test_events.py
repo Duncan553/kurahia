@@ -4,7 +4,7 @@ tests/test_events.py — Chunk 8 Events & Notifications tests.
 Coverage:
   1.  Event lifecycle: PLANNED → CONFIRMED → IN_PROGRESS → COMPLETED; illegal moves rejected
   2.  Cancellation flips all QUEUED notifications to FAILED
-  3.  Alert scheduling: confirming with 1 assigned employee creates exactly 4 notifications
+  3.  Alert scheduling: confirming with 1 assigned employee creates exactly 5 notifications
   4.  Idempotent confirm: double-tap returns same state, notifications still only 4
   5.  Alive delivery: clocked-in recipient → IN_APP; off-shift with no phone gateway → waits in the inbox
   6.  Inbox: returns unread DELIVERED items; mark-as-read works; idempotent
@@ -305,14 +305,14 @@ class TestAlertScheduling:
         # Confirm the event
         rv = client.post(f"/events/{eid}/confirm", headers=auth(manager_token))
         assert rv.status_code == 200
-        assert rv.get_json()["notifications_scheduled"] == 4
+        assert rv.get_json()["notifications_scheduled"] == 5   # 7 days, 3 days, tomorrow, 2 hours, and the morning of
 
         with app.app_context():
             notifs = db.session.query(Notification).filter_by(
                 reference_type=NotificationReferenceType.EVENT_ALERT.value,
                 reference_id=eid,
             ).all()
-        assert len(notifs) == 4
+        assert len(notifs) == 5   # 7 days, 3 days, tomorrow, 2 hours, and the morning of
 
     def test_notifications_have_correct_offsets(
             self, client, manager_token, event_type, employee_profile, app):
@@ -332,11 +332,15 @@ class TestAlertScheduling:
 
         with app.app_context():
             notifs = db.session.query(Notification).filter_by(reference_id=eid).all()
+        as_utc = lambda d: d.replace(tzinfo=timezone.utc) if d.tzinfo is None else d
+        today = [n for n in notifs if n.subject.startswith("[Today]")]
+        # The morning-of reminder: 07:00 on the resort clock (UTC in tests),
+        # never later than 3 hours before the start.
+        morning = starts.replace(hour=7, minute=0, second=0, microsecond=0)
+        assert len(today) == 1
+        assert abs((as_utc(today[0].scheduled_for_utc) - min(morning, starts - timedelta(hours=3))).total_seconds()) < 5
         scheduled_times = sorted(
-            [n.scheduled_for_utc.replace(tzinfo=timezone.utc)
-             if n.scheduled_for_utc.tzinfo is None
-             else n.scheduled_for_utc
-             for n in notifs]
+            [as_utc(n.scheduled_for_utc) for n in notifs if not n.subject.startswith("[Today]")]
         )
         expected_offsets = sorted([
             starts - timedelta(days=7),
@@ -371,7 +375,7 @@ class TestIdempotentConfirm:
 
         with app.app_context():
             count = db.session.query(Notification).filter_by(reference_id=eid).count()
-        assert count == 4   # still 4, not 8
+        assert count == 5   # still 5, not 10
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -396,7 +400,7 @@ class TestCancellation:
             notifs = db.session.query(Notification).filter_by(reference_id=eid).all()
         assert all(n.status == NotificationStatus.FAILED.value for n in notifs)
         assert all("cancelled" in (n.notes or "") for n in notifs)
-        assert len(notifs) == 4   # history preserved, not deleted
+        assert len(notifs) == 5   # history preserved, not deleted
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -856,11 +860,11 @@ class TestAssignments:
         rv = client.post(f"/events/{eid}/assignments", json={
             "employee_id": employee_profile.id, "job": "SERVICE", "role_on_event": "DJ",
         }, headers=auth(manager_token))
-        assert rv.get_json()["notifications_scheduled"] == 4
+        assert rv.get_json()["notifications_scheduled"] == 5   # 7 days, 3 days, tomorrow, 2 hours, and the morning of
 
         with app.app_context():
             count = db.session.query(Notification).filter_by(reference_id=eid).count()
-        assert count == 4
+        assert count == 5
 
 
 def test_two_hour_alert_is_deliverable_within_a_quarter_hour(app):

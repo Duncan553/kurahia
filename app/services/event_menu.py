@@ -17,7 +17,7 @@ The rules live here; app/events/bill.py is only HTTP. Decided 17 Sep 2026:
           a till order, so the kitchen board, stock deduction on READY, and the
           theft checks all see it.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
 
 from app.extensions import db
@@ -347,6 +347,116 @@ def settle_cancellation(event: Event, actor: User) -> None:
     ok, _ = is_tab_closable(event.tab_id)
     if ok:
         event.tab.status, event.tab.closed_at_utc, event.tab.closed_by_id = TabStatus.CLOSED.value, now, actor.id
+
+
+# ── Keeping watch ─────────────────────────────────────────────────────────────
+
+def readiness(event: Event) -> list[str]:
+    """Everything still undone for this event, in plain words. Empty = all set."""
+    from app.services.business_day import _get_tz
+    from app.models.event_assignment import EventAssignment, AssignmentStatus
+    from app.models.order import Order
+    from app.models.order_item import OrderItem
+    undone: list[str] = []
+    fee = Decimal(str(event.booking_fee or 0))
+    if fee > 0 and booking_fee_paid(event) < fee:
+        undone.append(f"take the booking fee (KSh {fee:,.0f})")
+    if event.status == EventStatus.PLANNED.value:
+        undone.append("not confirmed")
+
+    lines = active_lines(event.id)
+    sent_stations = {oi.prep_station_snapshot for oi in db.session.query(OrderItem).join(Order)
+                     .filter(Order.tab_id == event.tab_id)} if event.tab_id else set()
+    stations = {l.menu_item.prep_station for l in lines} | sent_stations
+    if not lines and not sent_stations:
+        undone.append("no menu planned")
+    if PrepStation.KITCHEN.value in stations and not crew(event, "KITCHEN"):
+        undone.append("no kitchen crew")
+    if PrepStation.BAR.value in stations and not crew(event, "BAR"):
+        undone.append("no bar crew")
+    if not crew(event, "SERVICE"):
+        undone.append("no service crew")
+
+    short = [i for i in stock_check(event)["items"] if Decimal(i["short"]) > 0]
+    if short:
+        undone.append("Short: " + ", ".join(f"{plates(i['short'])} {i['unit']} {i['name']}" for i in short))
+    waiting = db.session.query(PurchaseRequest).filter(
+        PurchaseRequest.event_id == event.id,
+        PurchaseRequest.status.in_([RequestStatus.PENDING.value, RequestStatus.PROPOSED.value,
+                                    RequestStatus.APPROVED.value]),
+    ).all()
+    if waiting:
+        undone.append("not delivered yet: " + ", ".join(
+            f"{pr.item.name} ({pr.status.lower()})" for pr in waiting))
+
+    tz = _get_tz()
+    if datetime.now(tz).date() >= cooking_opens(event):
+        unsent = active_lines(event.id, unsent_only=True)
+        if unsent:
+            undone.append("Not sent to the kitchen yet: " + ", ".join(
+                f"{plates(l.quantity)} × {l.menu_item.name}" for l in unsent))
+    return undone
+
+
+def check_readiness(now: datetime | None = None) -> int:
+    """Tell managers what is still undone for every event in the next 7 days.
+
+    Run hourly (flask events check-readiness). The message names the day, so it
+    repeats once a day before the event; on the day it names TODAY and, under
+    2 hours out, says so — and whenever what is undone changes, it goes again.
+    A message identical to one already sent is not sent twice.
+    """
+    from app.services.business_day import _get_tz
+    tz = _get_tz()
+    now = now or datetime.now(timezone.utc)
+    today = now.astimezone(tz).date()
+    sent = 0
+    events = db.session.query(Event).filter(Event.status.in_(
+        (EventStatus.PLANNED.value, EventStatus.CONFIRMED.value, EventStatus.IN_PROGRESS.value))).all()
+    for event in events:
+        starts = event.starts_at_utc if event.starts_at_utc.tzinfo else event.starts_at_utc.replace(tzinfo=timezone.utc)
+        local = starts.astimezone(tz)
+        days = (local.date() - today).days
+        if days < 0 or days > 7:
+            continue
+        where = event.venue.name if event.venue else (event.location or "")
+        if days == 0:
+            ends = event.ends_at_utc if event.ends_at_utc.tzinfo else event.ends_at_utc.replace(tzinfo=timezone.utc)
+            if now >= ends:
+                when = " — has ended — finish it and settle the bill"
+            elif now >= starts:
+                when = " — under way now"
+            elif starts - now <= timedelta(hours=2):
+                when = " — starts in under 2 hours"
+            else:
+                when = ""
+            head = f"{event.title} is TODAY at {local:%H:%M}, {where}{when}."
+        else:
+            head = f"{event.title} is in {days} day{'s' if days != 1 else ''} ({local:%a %d %b}, {where})."
+        undone = readiness(event)
+        body = f"{today:%d %b}: {head} " + ("Still to do: " + "; ".join(undone) + "." if undone else "All set.")
+        before = db.session.query(Notification).filter_by(reference_id=event.id, reference_type="event_check").count()
+        _tell_check(_people(min_level=MANAGER_LEVEL), event, f"Check: {event.title}", body)
+        sent += db.session.query(Notification).filter_by(reference_id=event.id, reference_type="event_check").count() - before
+    db.session.commit()
+    return sent
+
+
+def _tell_check(users, event, subject, body):
+    import hashlib
+    now = datetime.now(timezone.utc)
+    fingerprint = hashlib.sha1(body.encode()).hexdigest()[:12]
+    for u in users:
+        key = f"event-check-{event.id}-{u.id}-{fingerprint}"
+        if db.session.query(Notification).filter_by(idempotency_key=key).first():
+            continue
+        db.session.add(Notification(
+            recipient_user_id=u.id, reference_type="event_check", reference_id=event.id,
+            subject=subject[:200], body=body, status=NotificationStatus.DELIVERED.value,
+            channel=NotificationChannel.IN_APP.value, scheduled_for_utc=now, sent_at_utc=now,
+            idempotency_key=key,
+        ))
+    db.session.flush()
 
 
 # ── The kitchen board ─────────────────────────────────────────────────────────
