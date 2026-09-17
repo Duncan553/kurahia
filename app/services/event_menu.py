@@ -369,6 +369,14 @@ def settle_finish(event: Event, actor: User) -> None:
             OrderItem.status.in_([OrderItemStatus.PENDING.value, OrderItemStatus.RECEIVED.value]),
         ).all()
         loose = [f"{plates(oi.quantity)} × {oi.menu_item.name}" for oi in waiting]
+        # Plates already READY were carried out by the service crew — at an
+        # event nobody taps "served" 40 times. Left READY, they kept a fully
+        # paid bill open with nothing saying why (found end to end).
+        now = datetime.now(timezone.utc)
+        for oi in db.session.query(OrderItem).join(Order).filter(
+                Order.tab_id == event.tab_id, OrderItem.status == OrderItemStatus.READY.value):
+            oi.status, oi.served_at = OrderItemStatus.SERVED.value, now
+        db.session.flush()
         owing = get_tab_balance(event.tab_id)
         ok, _ = is_tab_closable(event.tab_id)
         if ok:

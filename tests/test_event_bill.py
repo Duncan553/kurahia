@@ -987,3 +987,25 @@ class TestFinishingAnEvent:
         client.post(f"/events/{eid}/start", headers=H(manager_token))
         client.post(f"/events/{eid}/complete", headers=H(manager_token))
         assert "10 × Pilau never marked ready" in self._told(eid, "manager1")[0]
+
+    def test_dishes_ready_at_the_end_count_as_served_so_a_paid_bill_closes(
+            self, client, manager_token, chef_token, event_type_id, pilau):
+        """Found in the end-to-end run: a fully paid event finished with its bill
+        still OPEN, because 40 plates sat at READY — carried out, never tapped
+        'served' — and nothing said so. When the event is over, ready is served."""
+        from app.extensions import db
+        from app.models.order_item import OrderItem
+        eid = _event(client, manager_token, event_type_id, days=0, venue_fee="50000")
+        _plan(client, manager_token, eid, pilau, 10)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        client.post(f"/events/{eid}/send", headers=H(manager_token), json={})
+        oi = db.session.query(OrderItem).filter_by(menu_item_id=pilau).one()
+        client.post(f"/order-items/{oi.id}/receive", headers=H(chef_token))
+        client.post(f"/order-items/{oi.id}/ready", headers=H(chef_token))
+        bill = client.get(f"/events/{eid}/bill", headers=H(manager_token)).get_json()
+        client.post(f"/tabs/{bill['tab_id']}/payments", headers=H(manager_token),
+                    json={"method": "CASH", "amount": bill["owing"], "idempotency_key": str(uuid.uuid4())})
+        client.post(f"/events/{eid}/start", headers=H(manager_token))
+        client.post(f"/events/{eid}/complete", headers=H(manager_token))
+        assert db.session.get(OrderItem, oi.id).status == "SERVED"
+        assert client.get(f"/events/{eid}/bill", headers=H(manager_token)).get_json()["status"] == "CLOSED"
