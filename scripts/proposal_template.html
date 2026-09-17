@@ -266,7 +266,7 @@ footer .prose { max-width: 72ch; }
     </p>
     <div class="facts">
       <div class="fact"><b>{{N}}</b><span>screens, each photographed as the person who works that post</span></div>
-      <div class="fact"><b>1,538</b><span>automated tests passing, 5 skipped</span></div>
+      <div class="fact"><b>1,546</b><span>automated tests passing, 5 skipped</span></div>
       <div class="fact"><b>296</b><span>role-and-screen combinations opened to check nothing is offered that would be refused</span></div>
       <div class="fact"><b>16 Sept</b><span>date every figure here was read off the running system</span></div>
     </div>
@@ -333,7 +333,7 @@ footer .prose { max-width: 72ch; }
       <div>
         <h3 data-n="05">How it was checked</h3>
         <p>
-          1,538 automated tests. A full trading day run end to end, then the
+          1,546 automated tests. A full trading day run end to end, then the
           books closed and audited. Every screen opened as the person who works
           that post. 296 role-and-screen combinations checked so nothing is
           offered to someone the system would then refuse.
@@ -522,6 +522,15 @@ footer .prose { max-width: 72ch; }
     </div>
 
     <div class="feature">
+      <div class="feature-name"><h3>A stay is charged once, and can be made longer or shorter</h3><span class="who">Front house</span></div>
+      <dl class="dl">
+        <dt>Does</dt><dd>The whole stay &mdash; nightly rate &times; nights &mdash; is charged once, at check-in. If a guest stays longer or leaves early, front desk changes the leaving date: extra nights are added, nights not stayed come off, always at the rate the guest booked at. Staying longer is refused if the villa is taken for those nights.</dd>
+        <dt>Shows</dt><dd>Before saving, &ldquo;1 extra night will be added&rdquo; or &ldquo;2 nights not stayed will come off&rdquo;. On the room bill, each change as its own line &mdash; the check-in charge is never rewritten.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">Duncan booked Villa&nbsp;15 for 3 nights at KSh 65,000: one line at check-in, &ldquo;Accommodation &mdash; Villa 15, 3 nights: KSh 195,000&rdquo;. Extended to 4 nights, the bill added &ldquo;Extra night &mdash; Villa 15, 1 night: KSh 65,000&rdquo;; cut to 2 nights, it took off KSh 130,000 as &ldquo;Nights not stayed&rdquo;.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
       <div class="feature-name"><h3>A room is settled at front house</h3><span class="who">Your rule</span></div>
       <dl class="dl">
         <dt>Does</dt><dd>A wristband is settled wherever the guest is standing. A stay is settled at front house, where the deposit was taken and check-out happens.</dd>
@@ -661,6 +670,15 @@ footer .prose { max-width: 72ch; }
         <dt>Does</dt><dd>Read off the stock record &mdash; not estimated &mdash; what the event&rsquo;s food and drink actually used, what that cost, and what it was billed, with the discount given.</dd>
         <dt>Shows</dt><dd>Per event on your screen: menu value, discount and who gave it, billed, paid, owing, food and drink cost, and profit on food and drink. An ingredient with no recorded cost is named, never counted as free.</dd>
         <dt class="checked-dt">Checked</dt><dd class="checked">The 120-plate wedding used 24 kg of chicken, 12 kg of rice and 15 kg of onions: KSh 19,664 in cost against KSh 117,000 billed for food and drink &mdash; KSh 97,336 profit on it.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>Finishing an event, and what is left owing</h3><span class="who">Manager &middot; Owner</span></div>
+      <dl class="dl">
+        <dt>Does</dt><dd>An event ends when the guests leave, so finishing it is never refused. A settled bill closes on its own. If money is still owed or a dish was never made, the owner and managers are told once, in plain words. A cancelled event keeps its booking fee; anything bought for it is ordinary hotel stock.</dd>
+        <dt>Shows</dt><dd>&ldquo;Finished with loose ends&rdquo; naming the amount owed and the dishes never made; on your Events screen the amount still owing in red.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">A birthday dinner was paid in full (KSh 110,500) and finished; its bill closed. In an automated check, an event finished with KSh 50,000 unpaid told the owner &ldquo;KSh 50,000 still owed&rdquo; and left the bill open to settle.</dd>
       </dl>
     </div>
 
@@ -810,7 +828,7 @@ footer .prose { max-width: 72ch; }
     </div>
 
     <ul class="plain">
-      <li><b>1,538</b><span>automated tests passing, 5 skipped &mdash; the rules, held on every change</span></li>
+      <li><b>1,546</b><span>automated tests passing, 5 skipped &mdash; the rules, held on every change</span></li>
       <li><b>68</b><span>interface tests on the shared controls all three apps are built from</span></li>
       <li><b>{{N}} / {{N}}</b><span>screens photographed, each proving which screen it was on before the image was saved</span></li>
       <li><b>{{N}}</b><span>distinct images verified by fingerprint &mdash; no screen photographed twice under two names</span></li>
