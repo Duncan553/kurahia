@@ -640,7 +640,218 @@ function RunPanel({ event, onClose }: { event: EventItem; onClose: () => void })
           </p>
         )}
       </section>
+
+      <MenuAndBill event={event} />
     </div>
+  )
+}
+
+// ── Menu & bill ─────────────────────────────────────────────────────────────
+//
+// The event is a special customer. The manager plans dish × plates (with a
+// recorded discount), the system checks the store and writes the buy list, and
+// on the day the plan goes to the kitchen and bar as real orders on the
+// event's own bill. Rules live in app/services/event_menu.py — this only shows
+// them and asks.
+
+interface MenuLine {
+  id: string; name: string; quantity: string; menu_price: string
+  discount_per_unit: string; charged_per_unit: string; line_total: string
+  discount_reason: string | null; sent: boolean
+}
+interface StockRow { name: string; unit: string; needed: string; short: string }
+interface EventMenu {
+  lines: MenuLine[]
+  totals: { menu_value: string; discount: string; to_charge: string }
+  stock: { ready: boolean; items: StockRow[] }
+}
+interface Bill { tab_id: string | null; charged: string; paid: string; owing: string }
+interface Dish { id: string; name: string; price: string; stock_tracking: string; prep_station: string }
+
+const ksh = (v: string | number) => `KSh ${Number(v).toLocaleString()}`
+// Stock quantities come back as "10.0000"; a person reads "10".
+const qty = (v: string) => String(Number(v))
+
+function MenuAndBill({ event }: { event: EventItem }) {
+  const qc = useQueryClient()
+  const addToast = useToastStore(s => s.addToast)
+  const [dishId, setDishId] = useState('')
+  const [plates, setPlates] = useState('')
+  const [discount, setDiscount] = useState('')
+  const [reason, setReason] = useState('')
+  const [payMethod, setPayMethod] = useState('CASH')
+  const [payAmount, setPayAmount] = useState('')
+  const [payIdem, setPayIdem] = useState(() => crypto.randomUUID())
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ['events', event.id] })
+  const fail = (e: unknown) => addToast({ message: extractErr(e), type: 'error' })
+
+  const { data: menu } = useQuery<EventMenu>({
+    queryKey: ['events', event.id, 'menu'],
+    queryFn: () => api.get<EventMenu>(`/events/${event.id}/menu`).then(r => r.data),
+  })
+  const { data: bill } = useQuery<Bill>({
+    queryKey: ['events', event.id, 'bill'],
+    queryFn: () => api.get<Bill>(`/events/${event.id}/bill`).then(r => r.data),
+  })
+  // Kitchen and bar dishes only, and never one nobody has classified — the
+  // backend refuses those anyway; offering them would only produce a refusal.
+  const { data: dishes = [] } = useQuery<Dish[]>({
+    queryKey: ['menu-items', 'KITCHEN,BAR'],
+    queryFn: () => api.get<Dish[]>('/menu/items?station=KITCHEN,BAR').then(r => r.data),
+    staleTime: 5 * 60_000,
+    select: d => d.filter(i => i.stock_tracking !== 'UNTRACKED'),
+  })
+
+  const add = useMutation({
+    mutationFn: () => api.post(`/events/${event.id}/menu`, {
+      menu_item_id: dishId, quantity: plates,
+      discount_per_unit: discount || '0', discount_reason: reason.trim() || null,
+    }),
+    onSuccess: () => {
+      addToast({ message: 'Added to the menu.', type: 'success' })
+      setDishId(''); setPlates(''); setDiscount(''); setReason(''); refresh()
+    },
+    onError: fail,
+  })
+  const remove = useMutation({
+    mutationFn: (id: string) => api.post(`/events/${event.id}/menu/${id}/remove`, {}),
+    onSuccess: () => { addToast({ message: 'Taken off the menu.', type: 'success' }); refresh() },
+    onError: fail,
+  })
+  const buyList = useMutation({
+    mutationFn: () => api.post<{ written: number }>(`/events/${event.id}/buy-list`, {}).then(r => r.data),
+    onSuccess: d => {
+      addToast({ message: d.written ? `${d.written} item${d.written === 1 ? '' : 's'} added to purchase requests.`
+                                    : 'Already on the purchase requests.', type: 'success' })
+      refresh(); qc.invalidateQueries({ queryKey: ['purchase-requests'] })
+    },
+    onError: fail,
+  })
+  const send = useMutation({
+    mutationFn: () => api.post(`/events/${event.id}/send`, {}),
+    onSuccess: () => {
+      addToast({ message: 'Sent to the kitchen and bar. Charged to the event bill.', type: 'success' })
+      refresh()
+    },
+    onError: fail,
+  })
+  const pay = useMutation({
+    mutationFn: () => api.post(`/tabs/${bill!.tab_id}/payments`, {
+      method: payMethod, amount: payAmount, idempotency_key: payIdem,
+    }),
+    onSuccess: () => {
+      addToast({ message: 'Payment recorded on the event bill.', type: 'success' })
+      setPayAmount(''); setPayIdem(crypto.randomUUID()); refresh()
+    },
+    onError: fail,
+  })
+
+  const open = ['PLANNED', 'CONFIRMED', 'IN_PROGRESS'].includes(event.status)
+  const canSend = ['CONFIRMED', 'IN_PROGRESS'].includes(event.status)
+  const lines = menu?.lines ?? []
+  const unsent = lines.filter(l => !l.sent)
+  const short = (menu?.stock.items ?? []).filter(i => Number(i.short) > 0)
+  const chosen = dishes.find(d => d.id === dishId)
+
+  return (
+    <section className="space-y-3 pt-3 border-t border-white/5">
+      <h3 className="text-[10px] font-bold tracking-widest uppercase text-ink-tertiary">Menu &amp; bill</h3>
+
+      {lines.length === 0 && <p className="text-xs text-ink-tertiary">No dishes planned yet.</p>}
+      {lines.map(l => (
+        <div key={l.id} className="flex items-start justify-between gap-2 text-sm">
+          <span className="text-ink-secondary min-w-0">
+            {l.quantity} × {l.name} · {ksh(l.charged_per_unit)}
+            {Number(l.discount_per_unit) > 0 && (
+              <span className="text-ink-tertiary"> (menu {ksh(l.menu_price)}, −{ksh(l.discount_per_unit)}: {l.discount_reason})</span>
+            )}
+            <span className="text-ink-primary"> = {ksh(l.line_total)}</span>
+          </span>
+          {l.sent
+            ? <span className="text-xs text-ink-tertiary shrink-0">Sent</span>
+            : <button className="text-xs text-ink-tertiary hover:text-status-failed shrink-0"
+                onClick={() => remove.mutate(l.id)}>Remove</button>}
+        </div>
+      ))}
+
+      {open && (
+        <div className="grid grid-cols-2 gap-2">
+          <Select label="Dish or drink" value={dishId} onChange={e => setDishId(e.target.value)}
+            options={[{ value: '', label: 'Pick one' },
+                      ...dishes.map(d => ({ value: d.id, label: `${d.name} · ${ksh(d.price)}` }))]} />
+          <Input label="Plates" value={plates} inputMode="numeric" placeholder="150"
+            onChange={e => setPlates(e.target.value)} />
+          <Input label="Discount per plate (KSh)" value={discount} inputMode="decimal" placeholder="0"
+            onChange={e => setDiscount(e.target.value)} />
+          <Input label="Why the discount" value={reason} placeholder="e.g. package deal"
+            disabled={!Number(discount)} onChange={e => setReason(e.target.value)} />
+          <Button className="col-span-2" disabled={!dishId || !plates || add.isPending}
+            onClick={() => add.mutate()}>
+            Add{chosen && plates ? ` ${plates} × ${chosen.name}` : ''}
+          </Button>
+        </div>
+      )}
+
+      {lines.length > 0 && menu && (
+        <div className="grid grid-cols-3 gap-2 text-center">
+          {([['Menu value', menu.totals.menu_value], ['Discount', menu.totals.discount],
+             ['To charge', menu.totals.to_charge]] as const).map(([label, v]) => (
+            <div key={label} className="rounded-lg bg-white/5 p-2">
+              <p className="text-[10px] uppercase tracking-widest text-ink-tertiary">{label}</p>
+              <p className="text-sm font-semibold tabular-nums text-ink-primary">{ksh(v)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {unsent.length > 0 && menu && (
+        menu.stock.ready
+          ? <p className="text-xs text-status-paid">The store covers everything planned.</p>
+          : (
+            <div className="space-y-1">
+              <p className="text-xs text-status-failed">
+                Short: {short.map(i => `${qty(i.short)} ${i.unit} ${i.name}`).join(', ')}
+              </p>
+              <Button size="sm" variant="ghost" disabled={buyList.isPending} onClick={() => buyList.mutate()}>
+                Put these on purchase requests
+              </Button>
+            </div>
+          )
+      )}
+
+      {canSend && unsent.length > 0 && (
+        <Button disabled={send.isPending} onClick={() => send.mutate()}>
+          Send {unsent.length} to kitchen &amp; bar
+        </Button>
+      )}
+
+      {bill?.tab_id ? (
+        <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {([['Billed', bill.charged], ['Paid', bill.paid], ['Owing', bill.owing]] as const).map(([label, v]) => (
+              <div key={label} className="rounded-lg bg-white/5 p-2">
+                <p className="text-[10px] uppercase tracking-widest text-ink-tertiary">{label}</p>
+                <p className="text-sm font-semibold tabular-nums text-ink-primary">{ksh(v)}</p>
+              </div>
+            ))}
+          </div>
+          {Number(bill.owing) > 0 && (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Select label="Paid by" value={payMethod} onChange={e => setPayMethod(e.target.value)}
+                options={[{ value: 'CASH', label: 'Cash' }, { value: 'MPESA', label: 'M-Pesa' },
+                          { value: 'CARD', label: 'Card' }, { value: 'BANK_TRANSFER', label: 'Bank transfer' }]} />
+              <Input label="Amount (KSh)" value={payAmount} inputMode="decimal"
+                onChange={e => setPayAmount(e.target.value)} />
+              <Button className="sm:self-end" disabled={!Number(payAmount) || pay.isPending}
+                onClick={() => pay.mutate()}>Take payment</Button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-ink-tertiary">The bill opens when the event is confirmed.</p>
+      )}
+    </section>
   )
 }
 

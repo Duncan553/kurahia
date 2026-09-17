@@ -32,6 +32,9 @@ class PurchaseRequest(db.Model):
     requested_by_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
     status = db.Column(db.String(20), nullable=False, default=RequestStatus.PENDING)
     system_generated = db.Column(db.Boolean, nullable=False, default=False)
+    # Set when the request is an event's buy list — which event it is for, so a
+    # second check does not ask for the same thing twice.
+    event_id = db.Column(db.String(36), db.ForeignKey("events.id"), nullable=True, index=True)
 
     # Optional link to a supplier
     supplier_id = db.Column(db.String(36), db.ForeignKey("suppliers.id"), nullable=True)

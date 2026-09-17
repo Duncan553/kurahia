@@ -28,6 +28,7 @@ const PayrollDraftScreen       = lazy(() => import('./screens/PayrollDraftScreen
 const ReconciliationScreen     = lazy(() => import('./screens/ReconciliationScreen'))
 const StaffScreen              = lazy(() => import('./screens/StaffScreen'))
 const BookingsScreen           = lazy(() => import('./screens/BookingsScreen'))
+const EventsScreen = lazy(() => import('./screens/EventsScreen'))
 const SettingsScreen           = lazy(() => import('./screens/SettingsScreen'))
 const PurchaseApprovalsScreen  = lazy(() => import('./screens/PurchaseApprovalsScreen'))
 const FeedbackScreen           = lazy(() => import('./screens/FeedbackScreen'))
@@ -62,6 +63,7 @@ const router = createBrowserRouter([
         { path: '/reconciliation',   element: <ReconciliationScreen /> },
         { path: '/staff',            element: <StaffScreen />          },
         { path: '/bookings',              element: <BookingsScreen />            },
+        { path: '/events',                element: <EventsScreen />              },
         { path: '/settings',              element: <SettingsScreen />            },
         { path: '/audit',                 element: <AuditScreen />               },
         { path: '/menu-profit',           element: <MenuProfitScreen />          },

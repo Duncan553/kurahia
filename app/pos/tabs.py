@@ -125,6 +125,10 @@ def open_tab():
 
     if tab_type not in TabType.__members__:
         return jsonify({"error": f"tab_type must be one of {list(TabType.__members__)}."}), 400
+    # An event's bill is opened by confirming the event, never by hand — a
+    # hand-made one would belong to no event and carry no guards.
+    if tab_type == TabType.EVENT.value:
+        return jsonify({"error": "An event's bill opens when the event is confirmed."}), 403
 
     # Every bill belongs to a guest, and at this resort a guest is either
     # wearing a wristband or staying in a villa. Both accounts already exist

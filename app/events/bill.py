@@ -1,0 +1,228 @@
+"""
+events/bill.py — an event's menu, buy list, and bill (HTTP only).
+
+The rules are in app/services/event_menu.py. Every route here is manager and
+above: planning an event's food and taking its money is the manager's job.
+"""
+import uuid
+from datetime import datetime, timezone
+from decimal import Decimal
+
+from flask import request, jsonify
+from flask_jwt_extended import get_jwt_identity
+
+from app.extensions import db
+from app.utils.auth_decorators import require_active_user, require_clocked_in
+from app.utils.money import parse_quantity
+from app.models.user import User
+from app.models.event import Event, EventStatus
+from app.models.event_menu_line import EventMenuLine
+from app.models.menu_item import MenuItem
+from app.models.order import Order
+from app.models.order_item import OrderItem
+from app.models.audit_log import AuditLog
+from app.services import event_menu as em
+from app.pos.orders import sellable_error, sold_out_error, send_order_items
+from app.events.core import events_bp
+
+EDITABLE = (EventStatus.PLANNED.value, EventStatus.CONFIRMED.value, EventStatus.IN_PROGRESS.value)
+
+
+def _manager_and_event(event_id):
+    """(actor, event, None) or (None, None, refusal)."""
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < em.MANAGER_LEVEL:
+        return None, None, (jsonify({"error": "Manager or above required."}), 403)
+    event = db.session.get(Event, event_id)
+    if not event:
+        return None, None, (jsonify({"error": "Event not found."}), 404)
+    return actor, event, None
+
+
+def _reannounce(event):
+    """Once the kitchen has been told, a changed plan must reach it again."""
+    if event.status in (EventStatus.CONFIRMED.value, EventStatus.IN_PROGRESS.value):
+        db.session.flush()
+        em.announce_menu(event)
+
+
+def _open_line(event, line_id):
+    line = db.session.get(EventMenuLine, line_id)
+    if not line or line.event_id != event.id or not line.is_active:
+        return None, (jsonify({"error": "Menu line not found."}), 404)
+    if line.is_sent:
+        return None, (jsonify({"error": "This line has gone to the kitchen and cannot be changed."}), 400)
+    return line, None
+
+
+@events_bp.get("/<event_id>/menu")
+@require_active_user
+def get_menu(event_id):
+    actor, event, refused = _manager_and_event(event_id)
+    if refused:
+        return refused
+    lines = em.active_lines(event.id)
+    return jsonify({"lines": [em.line_dict(l) for l in lines],
+                    "totals": em.totals(lines),
+                    "stock": em.stock_check(event)}), 200
+
+
+@events_bp.post("/<event_id>/menu")
+@require_active_user
+def add_menu_line(event_id):
+    actor, event, refused = _manager_and_event(event_id)
+    if refused:
+        return refused
+    if event.status not in EDITABLE:
+        return jsonify({"error": f"This event is {event.status.lower()}; its menu is closed."}), 400
+    data = request.get_json(silent=True) or {}
+    qty, err = parse_quantity(data.get("quantity"), "Plates")
+    if err:
+        return jsonify({"error": err}), 400
+    mi = db.session.get(MenuItem, data.get("menu_item_id"))
+    if not mi:
+        return jsonify({"error": "Menu item not found."}), 404
+    not_sellable = sellable_error(mi)
+    if not_sellable:
+        return jsonify({"error": not_sellable}), 400
+    discount = em.parse_discount(data.get("discount_per_unit"))
+    if discount is None:
+        return jsonify({"error": "Discount must be a number of shillings, 0 or more."}), 400
+    reason = (data.get("discount_reason") or "").strip() or None
+    no = em.discount_refusal(actor, Decimal(str(mi.price)), discount, reason)
+    if no:
+        return jsonify({"error": no[0]}), no[1]
+
+    line = EventMenuLine(event_id=event.id, menu_item_id=mi.id, quantity=qty,
+                         menu_price=mi.price, discount_per_unit=discount,
+                         discount_reason=reason if discount else None,
+                         discount_by_id=actor.id if discount else None,
+                         created_by_id=actor.id)
+    db.session.add(line)
+    db.session.flush()
+    AuditLog.log(actor=actor.username, action="event.menu.add", target=line.id,
+                 details=f"{event.title}: {em.plates(qty)} × {mi.name}, discount {em.money(discount)}")
+    _reannounce(event)
+    db.session.commit()
+    return jsonify(em.line_dict(line)), 201
+
+
+@events_bp.patch("/<event_id>/menu/<line_id>")
+@require_active_user
+def edit_menu_line(event_id, line_id):
+    actor, event, refused = _manager_and_event(event_id)
+    if refused:
+        return refused
+    line, refused = _open_line(event, line_id)
+    if refused:
+        return refused
+    data = request.get_json(silent=True) or {}
+    if "quantity" in data:
+        qty, err = parse_quantity(data["quantity"], "Plates")
+        if err:
+            return jsonify({"error": err}), 400
+        line.quantity = qty
+    if "discount_per_unit" in data or "discount_reason" in data:
+        discount = em.parse_discount(data.get("discount_per_unit", line.discount_per_unit))
+        if discount is None:
+            return jsonify({"error": "Discount must be a number of shillings, 0 or more."}), 400
+        reason = (data.get("discount_reason", line.discount_reason) or "").strip() or None
+        no = em.discount_refusal(actor, Decimal(str(line.menu_price)), discount, reason)
+        if no:
+            return jsonify({"error": no[0]}), no[1]
+        line.discount_per_unit = discount
+        line.discount_reason = reason if discount else None
+        line.discount_by_id = actor.id if discount else None
+    line.updated_at_utc = datetime.now(timezone.utc)
+    AuditLog.log(actor=actor.username, action="event.menu.edit", target=line.id,
+                 details=f"qty={line.quantity} discount={line.discount_per_unit}")
+    _reannounce(event)
+    db.session.commit()
+    return jsonify(em.line_dict(line)), 200
+
+
+@events_bp.post("/<event_id>/menu/<line_id>/remove")
+@require_active_user
+def remove_menu_line(event_id, line_id):
+    actor, event, refused = _manager_and_event(event_id)
+    if refused:
+        return refused
+    line, refused = _open_line(event, line_id)
+    if refused:
+        return refused
+    line.is_active = False   # disabled, never deleted
+    line.updated_at_utc = datetime.now(timezone.utc)
+    AuditLog.log(actor=actor.username, action="event.menu.remove", target=line.id)
+    _reannounce(event)
+    db.session.commit()
+    return jsonify({"id": line.id, "is_active": False}), 200
+
+
+@events_bp.post("/<event_id>/buy-list")
+@require_active_user
+def buy_list(event_id):
+    actor, event, refused = _manager_and_event(event_id)
+    if refused:
+        return refused
+    written = em.write_buy_list(event, actor)
+    db.session.commit()
+    return jsonify({"written": len(written), "stock": em.stock_check(event)}), 200
+
+
+@events_bp.get("/<event_id>/bill")
+@require_active_user
+def get_bill(event_id):
+    actor, event, refused = _manager_and_event(event_id)
+    if refused:
+        return refused
+    return jsonify(em.bill_dict(event)), 200
+
+
+@events_bp.post("/<event_id>/send")
+@require_active_user
+@require_clocked_in
+def send_menu(event_id):
+    """Send planned lines to the kitchen and bar as real orders on the event's bill."""
+    actor, event, refused = _manager_and_event(event_id)
+    if refused:
+        return refused
+    if event.status not in (EventStatus.CONFIRMED.value, EventStatus.IN_PROGRESS.value):
+        return jsonify({"error": "Confirm the event before sending its menu to the kitchen."}), 400
+    wanted = (request.get_json(silent=True) or {}).get("line_ids")
+    lines = [l for l in em.active_lines(event.id, unsent_only=True)
+             if not wanted or l.id in wanted]
+    if not lines:
+        return jsonify({"error": "Nothing left to send for this event."}), 400
+
+    for line in lines:
+        mi = line.menu_item
+        no = sellable_error(mi)
+        if no:
+            return jsonify({"error": no}), 400
+        no = sold_out_error(mi, Decimal(str(line.quantity)))
+        if no:
+            return jsonify({"error": no}), 409
+
+    tab = em.open_bill(event, actor)
+    order = Order(tab_id=tab.id, created_by_id=actor.id,
+                  idempotency_key=f"event-send-{uuid.uuid4()}")
+    db.session.add(order)
+    db.session.flush()
+    for line in lines:
+        oi = OrderItem(order_id=order.id, menu_item_id=line.menu_item_id, quantity=line.quantity,
+                       unit_price_snapshot=line.charged_per_unit,
+                       prep_station_snapshot=line.menu_item.prep_station,
+                       notes=f"Event: {event.title}"[:200])
+        db.session.add(oi)
+        db.session.flush()
+        line.order_item_id = oi.id
+    db.session.flush()
+    db.session.refresh(order)
+    no = send_order_items(order, actor)
+    if no:
+        db.session.rollback()
+        return jsonify({"error": no}), 400
+    AuditLog.log(actor=actor.username, action="event.menu.send", target=order.id,
+                 details=f"{event.title}: {len(lines)} line(s)")
+    db.session.commit()
+    return jsonify({"order_id": order.id, "lines_sent": len(lines), "bill": em.bill_dict(event)}), 200

@@ -14,6 +14,9 @@ class TabType(str, enum.Enum):
     WALK_IN = "WALK_IN"
     VILLA   = "VILLA"    # Chunk 7
     BAND    = "BAND"     # Chunk 7
+    # An event is a special customer: one bill for the whole event, opened when
+    # the event is confirmed and settled only by a manager.
+    EVENT   = "EVENT"
 
 
 class TabStatus(str, enum.Enum):

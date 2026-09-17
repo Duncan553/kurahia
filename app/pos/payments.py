@@ -17,6 +17,7 @@ from app.services.tab import get_tab_balance
 
 # Front desk and above: the people who take a deposit and run a check-out.
 FRONT_DESK_LEVEL = 3
+MANAGER_LEVEL    = 5
 
 payments_bp = Blueprint("payments", __name__, url_prefix="/tabs")
 
@@ -47,6 +48,10 @@ def record_payment(tab_id):
             "error": "A room account is settled at front house. Send the guest "
                      "there, or they can leave it all for check-out."
         }), 403
+    # An event's bill is settled by a manager, who takes the money — so the cash
+    # lands on a manager's reconciliation, not on whichever waiter was nearest.
+    if tab.tab_type == TabType.EVENT.value and actor.role.level < MANAGER_LEVEL:
+        return jsonify({"error": "An event's bill is settled by a manager."}), 403
 
     data     = request.get_json(silent=True) or {}
     raw_amt  = data.get("amount")

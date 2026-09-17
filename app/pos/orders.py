@@ -23,7 +23,7 @@ from app.utils.auth_decorators import require_active_user, require_clocked_in
 from app.utils.money import parse_amount, parse_quantity
 from app.extensions import db
 from app.models.menu_item import MenuItem, PrepStation, StockTracking
-from app.models.tab import Tab, TabStatus
+from app.models.tab import Tab, TabStatus, TabType
 from app.models.order import Order, OrderStatus
 from app.models.order_item import OrderItem, OrderItemStatus, VALID_TRANSITIONS
 from app.models.charge import Charge
@@ -48,6 +48,117 @@ def _can_operate_station(actor: User, station: str) -> bool:
 
 
 # ── Create Order ──────────────────────────────────────────────────────────────
+
+# ── Shared by every way an order is placed ────────────────────────────────────
+#
+# A till order and an event's planned menu must pass the SAME checks and write
+# the SAME charges, or events become a second, weaker path through the POS.
+# These used to live inline in create_order / send_order.
+
+def _works_the_event(actor: User, tab_id: str) -> bool:
+    """True if `actor` holds a live assignment on the event whose bill this is."""
+    from app.models.event import Event
+    from app.models.event_assignment import EventAssignment, AssignmentStatus
+    from app.models.employee_profile import EmployeeProfile
+    return db.session.query(EventAssignment).join(
+        EmployeeProfile, EmployeeProfile.id == EventAssignment.employee_id
+    ).join(Event, Event.id == EventAssignment.event_id).filter(
+        Event.tab_id == tab_id,
+        EmployeeProfile.user_id == actor.id,
+        EventAssignment.status != AssignmentStatus.CANCELLED.value,
+    ).first() is not None
+
+
+def sellable_error(mi: MenuItem) -> str | None:
+    """Plain-English refusal if this item may not be sold at all, else None."""
+    if not mi.is_active:
+        return f"'{mi.name}' is disabled. Re-enable it or choose another."
+    # UNTRACKED may not be SOLD, which is the rule the whole catalogue
+    # rests on — and it was only ever enforced when ENABLING an item
+    # (app/pos/menu.py:321). A menu item is created active and UNTRACKED
+    # by default, so it never passes through enable, and it sold freely:
+    # money taken, stock never moved, and the count wrong at month end
+    # with no event to blame.
+    #
+    # UNTRACKED means "nobody has decided how this deducts", not
+    # "consumes nothing" — SERVICE is how a person says that, on
+    # purpose. Blocking only UNTRACKED is what keeps it enforceable.
+    if mi.stock_tracking == StockTracking.UNTRACKED.value:
+        return (
+            f"'{mi.name}' has no stock tracking set, so selling it would "
+            f"not move inventory. Ask a manager to set a recipe, link it "
+            f"to a stock item, or mark it as a service that consumes "
+            f"nothing."
+        )
+    return None
+
+
+def sold_out_error(mi: MenuItem, qty: Decimal) -> str | None:
+    """Plain-English refusal if the store cannot cover `qty` of this dish now."""
+    from app.models.recipe_line import RecipeLine
+    from app.services.stock import get_current_stock
+    recipe_lines = db.session.query(RecipeLine).filter_by(
+        menu_item_id=mi.id, is_active=True).all()
+    for rl in recipe_lines:
+        inv = db.session.get(InventoryItem, rl.inventory_item_id)
+        if inv:
+            needed = inv.recipe_to_stock(Decimal(str(rl.quantity))) * qty
+            if get_current_stock(inv.id) < needed:
+                return (f"{mi.name} is sold out — {inv.name} stock is too low. "
+                        f"Check with the kitchen before ordering.")
+    return None
+
+
+def send_order_items(order: Order, actor: User) -> str | None:
+    """Charge every line of a DRAFT order to its tab and route it to its station.
+
+    Returns a refusal string (nothing written) or None on success. The caller
+    commits.
+    """
+    # Band-tab credit ceiling: sum all charges for this send and check before committing
+    total_new_charge = sum(
+        Decimal(str(oi.quantity)) * Decimal(str(oi.unit_price_snapshot))
+        for oi in order.items
+    )
+    ok, credit_err = check_tab_credit(order.tab_id, total_new_charge)
+    if not ok:
+        return credit_err
+
+    with db.session.begin_nested():
+        order.status  = OrderStatus.SENT.value
+        order.sent_at = datetime.now(timezone.utc)
+
+        for oi in order.items:
+            # Create a charge for every item (positive amount)
+            charge_amount = Decimal(str(oi.quantity)) * Decimal(str(oi.unit_price_snapshot))
+            charge = Charge(
+                tab_id=order.tab_id,
+                order_item_id=oi.id,
+                amount=charge_amount,
+                description=f"{oi.quantity}x {oi.menu_item.name if oi.menu_item else oi.menu_item_id}",
+                created_by_id=actor.id,
+                # Frozen per charge: rates change by statute, and a sale must
+                # keep computing with the rate that applied when it was made.
+                tax_rate_snapshot=rate_for_menu_item(oi.menu_item),
+            )
+            db.session.add(charge)
+
+            # Direct items (NONE) are immediately SERVED — no prep queue.
+            #
+            # They must still consume their recipe HERE, because they never pass
+            # through READY, which is the only other place consume_order_item is
+            # called. Without this a spa treatment or a jet-ski ride deducted
+            # NOTHING from stock — and worse, the "no recipe -> alert the head
+            # chef" safety net inside consume_order_item never fired either, so
+            # the gap was silent. Kitchen and bar were tracked; every direct
+            # service department leaked.
+            if oi.prep_station_snapshot == PrepStation.NONE.value:
+                oi.status    = OrderItemStatus.SERVED.value
+                oi.served_at = datetime.now(timezone.utc)
+                consume_order_item(oi, actor)
+
+    return None
+
 
 @orders_bp.post("/orders")
 @require_active_user
@@ -103,6 +214,11 @@ def create_order():
             return jsonify({"error": "Tab not found."}), 404
         if tab.status == TabStatus.CLOSED.value:
             return jsonify({"error": "This tab is already closed. Open a new tab."}), 400
+        # An event's bill is big enough to hide a lunch in. Only a manager or
+        # someone rostered onto that event may put anything on it.
+        if tab.tab_type == TabType.EVENT.value and actor.role.level < MANAGER_LEVEL \
+                and not _works_the_event(actor, tab.id):
+            return jsonify({"error": "Only staff assigned to this event can order on its bill."}), 403
 
     with db.session.begin_nested():
         order = Order(tab_id=tab_id, created_by_id=actor.id, idempotency_key=idem_key)
@@ -120,40 +236,14 @@ def create_order():
             mi    = db.session.get(MenuItem, mi_id)
             if not mi:
                 return jsonify({"error": f"Menu item '{mi_id}' not found."}), 404
-            if not mi.is_active:
-                return jsonify({"error": f"'{mi.name}' is disabled. Re-enable it or choose another."}), 400
-            # UNTRACKED may not be SOLD, which is the rule the whole catalogue
-            # rests on — and it was only ever enforced when ENABLING an item
-            # (app/pos/menu.py:321). A menu item is created active and UNTRACKED
-            # by default, so it never passes through enable, and it sold freely:
-            # money taken, stock never moved, and the count wrong at month end
-            # with no event to blame.
-            #
-            # UNTRACKED means "nobody has decided how this deducts", not
-            # "consumes nothing" — SERVICE is how a person says that, on
-            # purpose. Blocking only UNTRACKED is what keeps it enforceable.
-            if mi.stock_tracking == StockTracking.UNTRACKED.value:
-                return jsonify({"error": (
-                    f"'{mi.name}' has no stock tracking set, so selling it would "
-                    f"not move inventory. Ask a manager to set a recipe, link it "
-                    f"to a stock item, or mark it as a service that consumes "
-                    f"nothing."
-                )}), 400
+            refused = sellable_error(mi)
+            if refused:
+                return jsonify({"error": refused}), 400
 
-            # Stock pre-check: warn if recipe ingredients are depleted
-            from app.models.recipe_line import RecipeLine
-            from app.services.stock import get_current_stock
-            recipe_lines = db.session.query(RecipeLine).filter_by(
-                menu_item_id=mi.id, is_active=True).all()
-            for rl in recipe_lines:
-                inv = db.session.get(InventoryItem, rl.inventory_item_id)
-                if inv:
-                    needed = inv.recipe_to_stock(Decimal(str(rl.quantity))) * qty
-                    if get_current_stock(inv.id) < needed:
-                        return jsonify({
-                            "error": f"{mi.name} is sold out — {inv.name} stock is too low. "
-                                     f"Check with the kitchen before ordering."
-                        }), 409
+            # Stock pre-check: refuse a dish whose ingredients are not in the store.
+            refused = sold_out_error(mi, qty)
+            if refused:
+                return jsonify({"error": refused}), 409
 
             # Nobody goes on the water without a signed waiver — including the
             # day guest, who is the person most likely to be on it.
@@ -208,47 +298,9 @@ def send_order(order_id):
     if order.status != OrderStatus.DRAFT.value:
         return jsonify({"error": f"This order is already {order.status} and cannot be sent again."}), 400
 
-    # Band-tab credit ceiling: sum all charges for this send and check before committing
-    total_new_charge = sum(
-        Decimal(str(oi.quantity)) * Decimal(str(oi.unit_price_snapshot))
-        for oi in order.items
-    )
-    ok, credit_err = check_tab_credit(order.tab_id, total_new_charge)
-    if not ok:
-        return jsonify({"error": credit_err}), 400
-
-    with db.session.begin_nested():
-        order.status  = OrderStatus.SENT.value
-        order.sent_at = datetime.now(timezone.utc)
-
-        for oi in order.items:
-            # Create a charge for every item (positive amount)
-            charge_amount = Decimal(str(oi.quantity)) * Decimal(str(oi.unit_price_snapshot))
-            charge = Charge(
-                tab_id=order.tab_id,
-                order_item_id=oi.id,
-                amount=charge_amount,
-                description=f"{oi.quantity}x {oi.menu_item.name if oi.menu_item else oi.menu_item_id}",
-                created_by_id=actor.id,
-                # Frozen per charge: rates change by statute, and a sale must
-                # keep computing with the rate that applied when it was made.
-                tax_rate_snapshot=rate_for_menu_item(oi.menu_item),
-            )
-            db.session.add(charge)
-
-            # Direct items (NONE) are immediately SERVED — no prep queue.
-            #
-            # They must still consume their recipe HERE, because they never pass
-            # through READY, which is the only other place consume_order_item is
-            # called. Without this a spa treatment or a jet-ski ride deducted
-            # NOTHING from stock — and worse, the "no recipe -> alert the head
-            # chef" safety net inside consume_order_item never fired either, so
-            # the gap was silent. Kitchen and bar were tracked; every direct
-            # service department leaked.
-            if oi.prep_station_snapshot == PrepStation.NONE.value:
-                oi.status    = OrderItemStatus.SERVED.value
-                oi.served_at = datetime.now(timezone.utc)
-                consume_order_item(oi, actor)
+    refused = send_order_items(order, actor)
+    if refused:
+        return jsonify({"error": refused}), 400
 
     AuditLog.log(actor=actor.username, action="order.send", target=order.id)
     db.session.commit()

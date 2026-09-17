@@ -310,8 +310,17 @@ def confirm_event(event_id):
     # Idempotent: already confirmed → return current state, no new notifications
     if event.status == EventStatus.CONFIRMED.value:
         return jsonify(_event_dict(event)), 200
+    # Confirming sets the event in motion as a customer: its bill opens with the
+    # venue charged, the store is checked and the buy list written, and the
+    # kitchen, bar and managers are told what is coming. Then the staff alerts.
+    from app.services.event_menu import on_confirm
+
+    def confirmed(ev):
+        on_confirm(ev, actor)
+        return schedule_event_alerts(ev)   # the count the response reports
+
     return _lifecycle_transition(event_id, EventStatus.CONFIRMED.value, actor,
-                                  post_hook=schedule_event_alerts)
+                                  post_hook=confirmed)
 
 
 @events_bp.post("/<event_id>/start")

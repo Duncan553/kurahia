@@ -790,3 +790,40 @@ def action_taken(alert_id):
                  target=alert_id, details=notes[:200])
     db.session.commit()
     return jsonify({"id": alert.id, "status": alert.status}), 200
+
+
+@dashboard_bp.get("/events")
+@require_active_user
+def events_view():
+    """Every event the resort has booked, as the owner needs to see it.
+
+    An event is a special customer run by the manager. The owner does not run
+    it, but sees what it is worth, what was discounted and by whom, what has
+    been billed, paid, and is still owed.
+    """
+    actor = db.session.get(User, get_jwt_identity())
+    err = _require_owner(actor)
+    if err:
+        return err
+
+    from app.models.event import Event, EventStatus
+    from app.services import event_menu as em
+
+    events = db.session.query(Event).filter(
+        Event.status != EventStatus.CANCELLED.value,
+    ).order_by(Event.starts_at_utc.desc()).limit(200).all()
+
+    rows = []
+    for e in events:
+        lines = em.active_lines(e.id)
+        totals, bill = em.totals(lines), em.bill_dict(e)
+        rows.append({
+            "id": e.id, "title": e.title, "status": e.status,
+            "starts_at": e.starts_at_utc.isoformat(), "expected_guests": e.expected_guests,
+            "venue": ({"id": e.venue.id, "name": e.venue.name, "capacity": e.venue.capacity}
+                      if e.venue else None),
+            "menu_value": totals["menu_value"], "discount": totals["discount"],
+            "discount_by": sorted({l.discount_by.username for l in lines if l.discount_by}),
+            "charged": bill["charged"], "paid": bill["paid"], "owing": bill["owing"],
+        })
+    return jsonify(rows), 200

@@ -119,6 +119,7 @@ const SIDEBAR_ITEMS: NavItem[] = [
   { path: '/suggestions',         label: 'From staff', Icon: FeedbackIcon  },
   { path: '/disputes',            label: 'Disputes',  Icon: FeedbackIcon   },
   { path: '/bookings',            label: 'Bookings',  Icon: BookingsIcon   },
+  { path: '/events',              label: 'Events',    Icon: BookingsIcon   },
   { path: '/menu-profit',         label: 'Profit',    Icon: ProfitIcon     },
   { path: '/audit',               label: 'Audit',     Icon: AuditIcon      },
   { path: '/settings',            label: 'Settings',  Icon: SettingsIcon   },

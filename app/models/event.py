@@ -44,6 +44,8 @@ class Event(db.Model):
     venue_id        = db.Column(db.String(36), db.ForeignKey("bookable_resources.id"),
                                 nullable=True, index=True)
     location        = db.Column(db.String(200), nullable=True)
+    # The event's own bill (TabType.EVENT). Opened on confirm.
+    tab_id          = db.Column(db.String(36), db.ForeignKey("tabs.id"), nullable=True)
     notes           = db.Column(db.Text, nullable=True)
     status          = db.Column(db.String(15), nullable=False, default=EventStatus.PLANNED.value)
     created_by_id   = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
@@ -58,6 +60,7 @@ class Event(db.Model):
     event_type  = db.relationship("EventType", lazy="select")
     booking     = db.relationship("Booking", lazy="select")
     venue       = db.relationship("BookableResource", lazy="select")
+    tab         = db.relationship("Tab", lazy="select")
     created_by  = db.relationship("User", foreign_keys=[created_by_id], lazy="select")
     assignments = db.relationship("EventAssignment", back_populates="event",
                                   lazy="dynamic", cascade="all, delete-orphan")

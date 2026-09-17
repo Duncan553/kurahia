@@ -17,6 +17,9 @@ OWNER_LEVEL = 10
 
 KNOWN_KEYS = {
     "business_day_start_hour": {"type": "int", "min": 0, "max": 23, "default": "6"},
+    # How far a manager may discount an event plate on their own. Above it, only
+    # the owner. 0 = nothing delegated — the same rule as an unset budget.
+    "event_discount_max_percent": {"type": "int", "min": 0, "max": 100, "default": "0"},
 }
 
 

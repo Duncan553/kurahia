@@ -46,6 +46,7 @@ from .event_inventory_allocation import (
     EventInventoryAllocation, AllocationStatus, VALID_ALLOCATION_TRANSITIONS,
 )
 from .event_stock_movement import EventStockMovement, EventMovementType
+from .event_menu_line import EventMenuLine
 from .notification import (
     Notification, NotificationStatus, NotificationChannel,
     NotificationReferenceType, NotificationChannelConfig,
@@ -105,7 +106,7 @@ __all__ = [
     "Event", "EventStatus", "VALID_EVENT_TRANSITIONS",
     "EventAssignment", "AssignmentStatus", "VALID_ASSIGNMENT_TRANSITIONS",
     "EventInventoryAllocation", "AllocationStatus", "VALID_ALLOCATION_TRANSITIONS",
-    "EventStockMovement", "EventMovementType",
+    "EventStockMovement", "EventMovementType", "EventMenuLine",
     "Notification", "NotificationStatus", "NotificationChannel",
     "NotificationReferenceType", "NotificationChannelConfig",
     "Suggestion", "SuggestionCategory", "SuggestionStatus",
