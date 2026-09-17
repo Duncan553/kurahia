@@ -665,7 +665,11 @@ interface EventMenu {
   totals: { menu_value: string; discount: string; to_charge: string }
   stock: { ready: boolean; items: StockRow[] }
 }
-interface Bill { tab_id: string | null; charged: string; paid: string; owing: string }
+interface Bill {
+  tab_id: string | null; charged: string; paid: string; owing: string
+  lines?: { description: string; amount: string }[]
+  payments?: { method: string; amount: string }[]
+}
 interface Dish { id: string; name: string; price: string; stock_tracking: string; prep_station: string }
 
 const ksh = (v: string | number) => `KSh ${Number(v).toLocaleString()}`
@@ -833,6 +837,21 @@ function MenuAndBill({ event }: { event: EventItem }) {
               <div key={label} className="rounded-lg bg-white/5 p-2">
                 <p className="text-[10px] uppercase tracking-widest text-ink-tertiary">{label}</p>
                 <p className="text-sm font-semibold tabular-nums text-ink-primary">{ksh(v)}</p>
+              </div>
+            ))}
+          </div>
+          {/* What the bill is made of — the venue hire, every dish sent, every payment. */}
+          <div className="space-y-0.5 text-xs">
+            {(bill.lines ?? []).map((l, i) => (
+              <div key={i} className="flex justify-between gap-2 text-ink-secondary">
+                <span className="min-w-0 truncate">{l.description}</span>
+                <span className="tabular-nums shrink-0">{ksh(l.amount)}</span>
+              </div>
+            ))}
+            {(bill.payments ?? []).map((p, i) => (
+              <div key={`p${i}`} className="flex justify-between gap-2 text-status-paid">
+                <span>Paid · {p.method.replace('_', ' ').toLowerCase()}</span>
+                <span className="tabular-nums">−{ksh(p.amount)}</span>
               </div>
             ))}
           </div>

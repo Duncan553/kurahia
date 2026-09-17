@@ -117,11 +117,19 @@ def deliver_notification(notif: Notification) -> str:
             return notif.status
         notif.notes = (notif.notes or "") + f" | SMS: {msg}"
 
-    # Path 4: all paths down
-    notif.status = NotificationStatus.FAILED.value
+    # Path 4: no phone gateway reached them — the notice waits in their inbox.
+    #
+    # This used to mark it FAILED. The inbox only shows DELIVERED, so a reminder
+    # to anyone not clocked in — the people a "[7 days]" or "[Tomorrow]"
+    # reminder is FOR — was thrown away, and their Alerts screen said "You're
+    # all caught up". Proved in Chrome, 17 Sep 2026. The note keeps why it did
+    # not go by phone.
+    notif.channel     = NotificationChannel.IN_APP.value
+    notif.status      = NotificationStatus.DELIVERED.value
+    notif.sent_at_utc = now
     if not notif.notes:
-        notif.notes = "no gateway configured"
-    AuditLog.log(actor="dispatcher", action="notification.failed",
+        notif.notes = "No phone gateway configured (SMS); waiting in the app inbox."
+    AuditLog.log(actor="dispatcher", action="notification.inbox_only",
                  target=notif.id, details=notif.notes)
     return notif.status
 

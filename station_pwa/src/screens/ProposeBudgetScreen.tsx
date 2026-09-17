@@ -12,6 +12,7 @@ interface PurchaseRequest {
   status: string
   created_at: string
   requested_by: string | null
+  event?: { title: string } | null
   department: string
   notes: string | null
   estimated_cost: string | null
@@ -219,7 +220,7 @@ export default function ProposeBudgetScreen() {
                       </p>
                       <p className="text-xs text-ink-tertiary mt-0.5">
                         Qty: {parseFloat(req.quantity).toLocaleString()}
-                        {req.requested_by ? ` · by ${req.requested_by}` : ''}
+                        {req.requested_by ? ` · by ${req.requested_by}` : ''}{req.event ? ` · for ${req.event.title}` : ''}
                       </p>
                     </div>
                     <StatusBadge status={statusValue(req.status)} />

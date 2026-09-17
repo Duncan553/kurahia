@@ -269,6 +269,23 @@ class TestTheSystemChecksStockBeforeTheDay:
         assert client.get(f"/events/{earlier}/menu",
                           headers=H(manager_token)).get_json()["stock"]["ready"] is True
 
+    def test_plates_already_on_the_kitchen_board_count_against_the_store(
+            self, client, manager_token, event_id, pilau):
+        """Found on the live wedding: 90 plates sent (not yet cooked, so no stock
+        has moved) and 30 more planned read "covered" — 6 kg needed against
+        19.4 kg in the store, ignoring the 18 kg the board had already promised."""
+        _plan(client, manager_token, event_id, pilau, 40)                 # 8 kg of 10
+        client.post(f"/events/{event_id}/confirm", headers=H(manager_token))
+        client.post(f"/events/{event_id}/send", headers=H(manager_token), json={})
+        _plan(client, manager_token, event_id, pilau, 10)                 # 2 more kg
+        rice = client.get(f"/events/{event_id}/menu",
+                          headers=H(manager_token)).get_json()["stock"]["items"][0]
+        assert rice["waiting_on_boards"] == "8.0000"
+        assert rice["short"] == "0.0000"                                  # 10 exactly
+        _plan(client, manager_token, event_id, pilau, 5)                  # 1 kg over
+        stock = client.get(f"/events/{event_id}/menu", headers=H(manager_token)).get_json()["stock"]
+        assert stock["ready"] is False and stock["items"][0]["short"] == "1.0000"
+
     def test_confirming_writes_the_buy_list_once(self, client, manager_token, event_id, pilau):
         from app.extensions import db
         from app.models.purchase_request import PurchaseRequest
@@ -279,6 +296,36 @@ class TestTheSystemChecksStockBeforeTheDay:
         assert len(requests) == 1
         pr = requests[0]
         assert pr.quantity == Decimal("10") and pr.system_generated is True
+
+    def test_the_manager_can_approve_the_events_buy_list_inside_the_budget(
+            self, client, manager_token, event_id, pilau, rice):
+        """Found reading the approval rule: nobody may approve their own request,
+        and the buy list recorded the manager who pressed the button as the
+        requester — so with one manager, every event's shopping went to the
+        owner and the budget delegation never applied. The list is the
+        system's request; the audit log still says which manager wrote it."""
+        from app.extensions import db
+        from app.models.budget import Budget
+        from app.models.department import Department
+        from app.models.purchase_request import PurchaseRequest
+        from app.models.user import User
+        _plan(client, manager_token, event_id, pilau, 100)                # 10 kg short
+        client.post(f"/events/{event_id}/buy-list", headers=H(manager_token))
+        pr = db.session.query(PurchaseRequest).filter_by(event_id=event_id).one()
+        kitchen = db.session.query(Department).filter_by(name="Kitchen").one()
+        owner = db.session.query(User).filter_by(username="owner1").one()
+        db.session.add(Budget(department_id=kitchen.id, amount=Decimal("50000"),
+                              period=datetime.now(timezone.utc).strftime("%Y-%m"), set_by_id=owner.id))
+        db.session.commit()
+        assert client.post(f"/inventory/purchase-requests/{pr.id}/propose", headers=H(manager_token),
+                           json={"estimated_cost": "2500"}).status_code == 200
+        rv = client.post(f"/inventory/purchase-requests/{pr.id}/approve", headers=H(manager_token),
+                         json={"action": "approve"})
+        assert rv.status_code == 200, rv.get_json()
+        listed = next(r for r in client.get("/inventory/purchase-requests",
+                                            headers=H(manager_token)).get_json() if r["id"] == pr.id)
+        assert listed["event"]["title"] == "Otieno Wedding"
+        assert (listed["quantity"], listed["requested_by"]) == ("10.0000", "system")
 
     def test_confirming_tells_the_chef_the_bar_and_the_managers(
             self, client, manager_token, event_id, pilau, soda):
@@ -349,6 +396,8 @@ class TestTheEventHasItsOwnBill:
         bill = self._confirmed(client, manager_token, event_id)
         assert bill["tab_type"] == "EVENT"
         assert bill["charged"] == "50000.00" and bill["owing"] == "50000.00"
+        assert bill["lines"] == [{"description": bill["lines"][0]["description"], "amount": "50000.00"}]
+        assert bill["lines"][0]["description"].startswith("Venue hire — Lawn")
         client.post(f"/events/{event_id}/confirm", headers=H(manager_token))   # double tap
         again = client.get(f"/events/{event_id}/bill", headers=H(manager_token)).get_json()
         assert again["charged"] == "50000.00"
@@ -372,10 +421,11 @@ class TestTheEventHasItsOwnBill:
         assert again.status_code == 400
 
     def test_sent_dishes_move_stock_when_the_kitchen_marks_them_ready(
-            self, client, manager_token, chef_token, event_id, pilau, rice):
+            self, client, manager_token, chef_token, event_type_id, pilau, rice):
         from app.extensions import db
         from app.models.order_item import OrderItem
         from app.services.stock import get_current_stock
+        event_id = _event(client, manager_token, event_type_id, days=0)   # the event's own day
         _plan(client, manager_token, event_id, pilau, 40)
         self._confirmed(client, manager_token, event_id)
         client.post(f"/events/{event_id}/send", headers=H(manager_token), json={})
@@ -405,6 +455,19 @@ class TestTheEventHasItsOwnBill:
         rv = client.post(f"/events/{event_id}/send", headers=H(manager_token), json={})
         assert rv.status_code == 409
         assert "Rice" in rv.get_json()["error"]
+
+    def test_sending_more_than_the_board_leaves_in_the_store_is_refused(
+            self, client, manager_token, event_id, pilau):
+        """The till's sold-out check reads the shelf only. 40 plates on the board
+        (8 kg promised) plus 15 more (3 kg) is 11 kg against 10 — refused, and
+        the refusal says what to buy."""
+        _plan(client, manager_token, event_id, pilau, 40)
+        self._confirmed(client, manager_token, event_id)
+        client.post(f"/events/{event_id}/send", headers=H(manager_token), json={})
+        _plan(client, manager_token, event_id, pilau, 15)
+        rv = client.post(f"/events/{event_id}/send", headers=H(manager_token), json={})
+        assert rv.status_code == 409
+        assert "1 kg Rice" in rv.get_json()["error"]
 
     def test_only_a_manager_takes_the_events_money(
             self, client, manager_token, waiter_token, event_id):
@@ -460,3 +523,58 @@ class TestTheOwnerSeesEveryEvent:
 
     def test_a_manager_cannot_open_the_owners_event_view(self, client, manager_token):
         assert client.get("/dashboard/events", headers=H(manager_token)).status_code == 403
+
+
+# ── The kitchen board ─────────────────────────────────────────────────────────
+
+class TestEventDishesOnTheKitchenBoard:
+    """Wachira, after watching a 120-plate wedding sit on the board beside a
+    burger: event orders need their own place, must be described properly, and
+    nobody may start one before the event's day — cooking takes the stock."""
+
+    def _sent(self, client, manager_token, event_type_id, pilau, days):
+        eid = _event(client, manager_token, event_type_id, days=days, guests=120, title="Mwangi Wedding")
+        _plan(client, manager_token, eid, pilau, 40)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        client.post(f"/events/{eid}/send", headers=H(manager_token), json={})
+        return eid
+
+    def test_the_board_describes_the_event(self, client, manager_token, chef_token, event_type_id, pilau):
+        eid = self._sent(client, manager_token, event_type_id, pilau, days=7)
+        ticket = next(i for i in client.get("/kitchen/queue", headers=H(chef_token)).get_json()
+                      if i["menu_item"] == "Pilau")
+        ev = ticket["event"]
+        assert (ev["id"], ev["title"], ev["expected_guests"]) == (eid, "Mwangi Wedding", 120)
+        assert ev["venue"].startswith("Lawn") and ev["starts_at"]
+        assert ev["can_start"] is False and ev["opens_on"]
+
+    def test_an_ordinary_order_carries_no_event(self, client, waiter_token, chef_token, drink_item_id,
+                                                food_item_id, manager_token):
+        from tests.helpers import open_tab
+        tab = open_tab(client, assign_to="waiter1")
+        order = client.post("/orders", headers=H(waiter_token),
+                            json={"tab_id": tab["id"], "items": [{"menu_item_id": food_item_id}]}).get_json()
+        client.post(f"/orders/{order['id']}/send", headers=H(waiter_token))
+        tickets = client.get("/kitchen/queue", headers=H(chef_token)).get_json()
+        assert tickets and all(i["event"] is None for i in tickets)
+
+    def test_nobody_starts_an_event_dish_before_the_day(
+            self, client, manager_token, chef_token, event_type_id, pilau):
+        from app.extensions import db
+        from app.models.order_item import OrderItem
+        self._sent(client, manager_token, event_type_id, pilau, days=7)
+        oi = db.session.query(OrderItem).filter_by(menu_item_id=pilau).one()
+        for who in (chef_token, manager_token):
+            rv = client.post(f"/order-items/{oi.id}/receive", headers=H(who))
+            assert rv.status_code == 409
+            assert "Mwangi Wedding" in rv.get_json()["error"]
+        assert db.session.get(OrderItem, oi.id).status == "PENDING"
+
+    def test_on_the_day_the_kitchen_starts_it(self, client, manager_token, chef_token, event_type_id, pilau):
+        from app.extensions import db
+        from app.models.order_item import OrderItem
+        self._sent(client, manager_token, event_type_id, pilau, days=0)
+        oi = db.session.query(OrderItem).filter_by(menu_item_id=pilau).one()
+        assert client.post(f"/order-items/{oi.id}/receive", headers=H(chef_token)).status_code == 200
+        ticket = client.get("/kitchen/queue", headers=H(chef_token)).get_json()[0]
+        assert ticket["event"]["can_start"] is True

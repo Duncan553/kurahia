@@ -194,6 +194,14 @@ def send_menu(event_id):
     if not lines:
         return jsonify({"error": "Nothing left to send for this event."}), 400
 
+    # The shelf alone is not enough: dishes already on the board have not taken
+    # their stock yet. Same check the manager saw on the plan.
+    short = [i for i in em.stock_check(event)["items"] if Decimal(i["short"]) > 0]
+    if short:
+        listing = ", ".join(f"{em.plates(i['short'])} {i['unit']} {i['name']}" for i in short)
+        return jsonify({"error": f"Not enough in the store yet: {listing}. "
+                                 f"Record the delivery, then send."}), 409
+
     for line in lines:
         mi = line.menu_item
         no = sellable_error(mi)

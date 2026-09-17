@@ -35,7 +35,9 @@ interface RecentPurchase {
 }
 interface PurchaseReq {
   id: string; item_id: string; item_name?: string
-  quantity_requested?: string; status: string
+  // The API sends `quantity`. This read `quantity_requested`, a field that never
+  // arrives, so every request in the picker said "? requested".
+  quantity: string; unit?: string | null; status: string
 }
 
 const extractErr = (e: unknown) =>
@@ -223,7 +225,7 @@ export default function PurchaseRecordScreen() {
                       { value: '', label: 'Not against a request' },
                       ...approved.map(p => ({
                         value: p.id,
-                        label: `${p.item_name ?? 'Item'} — ${p.quantity_requested ?? '?'} requested`,
+                        label: `${p.item_name ?? 'Item'} — ${Number(p.quantity)} ${p.unit ?? ''} requested`,
                       })),
                     ]}
                   />

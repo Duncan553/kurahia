@@ -35,6 +35,7 @@ class PurchaseRequest(db.Model):
     # Set when the request is an event's buy list — which event it is for, so a
     # second check does not ask for the same thing twice.
     event_id = db.Column(db.String(36), db.ForeignKey("events.id"), nullable=True, index=True)
+    event    = db.relationship("Event", lazy="select")
 
     # Optional link to a supplier
     supplier_id = db.Column(db.String(36), db.ForeignKey("suppliers.id"), nullable=True)

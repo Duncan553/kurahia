@@ -30,6 +30,19 @@ interface QueueItem {
   notes: string | null
   allergens: string | null
   dietary_flags: string | null
+  // Set when the ticket is an event's dish (app/services/event_menu.py board_event).
+  event: BoardEvent | null
+}
+
+interface BoardEvent {
+  id: string
+  title: string
+  starts_at: string
+  ends_at: string
+  venue: string | null
+  expected_guests: number
+  opens_on: string      // the resort-clock day the kitchen may start it
+  can_start: boolean
 }
 
 interface OrderGroup {
@@ -39,6 +52,7 @@ interface OrderGroup {
   items: QueueItem[]
   age_seconds: number
   ordered_by: string | null
+  event: BoardEvent | null
 }
 
 /* ── Utilities ─────────────────────────────────────────────────── */
@@ -61,9 +75,23 @@ function groupByOrder(items: QueueItem[]): OrderGroup[] {
       items,
       age_seconds: maxAge,
       ordered_by: items[0].ordered_by,
+      event: items[0].event,
     }
   })
 }
+
+// Quantities arrive as "90.00"; a cook reads "90".
+const qty = (q: string) => String(Number(q))
+
+// The event's own clock, as the resort reads it.
+const eventWhen = (e: BoardEvent) => {
+  const start = new Date(e.starts_at), end = new Date(e.ends_at)
+  const day = start.toLocaleDateString('en-KE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Africa/Nairobi' })
+  const hm = (d: Date) => d.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Africa/Nairobi' })
+  return `${day} · ${hm(start)}–${hm(end)}`
+}
+const opensLabel = (e: BoardEvent) =>
+  new Date(`${e.opens_on}T00:00:00`).toLocaleDateString('en-KE', { weekday: 'short', day: 'numeric', month: 'short' })
 
 function ordLabel(id: string) { return `#${id.slice(0, 6).toUpperCase()}` }
 
@@ -127,14 +155,20 @@ function OrderTicket({
         <div className="flex items-center gap-3">
           <span className="text-lg font-bold font-mono text-ink-primary">{ordLabel(group.order_id)}</span>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/10 text-ink-secondary">
-            {group.tab_reference ?? 'Walk-in'}
+            {group.event ? 'Event' : group.tab_reference ?? 'Walk-in'}
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {group.event ? (
+            // Sent days ahead, a wait timer would read 48:00:00 in red. What a
+            // cook needs is when it is served.
+            <span className="text-sm font-bold text-ink-primary">{eventWhen(group.event)}</span>
+          ) : (
           <span className={`text-2xl font-mono font-bold tabular-nums ${timerColor(liveSeconds)}`}>
             {formatTimer(liveSeconds)}
           </span>
-          {isUrgent && (
+          )}
+          {isUrgent && !group.event && (
             <span className="animate-pulse w-2 h-2 rounded-full bg-status-failed" />
           )}
         </div>
@@ -151,7 +185,7 @@ function OrderTicket({
       <div className="flex-1 p-4 space-y-3">
         {group.items.map(item => (
           <div key={item.order_item_id} className="flex items-start gap-3">
-            <span className="text-lg font-bold text-primary-main min-w-[2rem]">{item.quantity}×</span>
+            <span className="text-lg font-bold text-primary-main min-w-[2rem]">{qty(item.quantity)}×</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-ink-primary leading-tight">{item.menu_item}</p>
               {/* What the guest asked for. This was the DIMMEST line on the
@@ -189,6 +223,13 @@ function OrderTicket({
       </div>
 
       {/* ── Action bar ──────────────────────────────────────────── */}
+      {group.event && !group.event.can_start ? (
+        // The API refuses it anyway (too_early_to_cook). No button to press by
+        // mistake a week before the wedding — cooking is what takes the stock.
+        <div className="px-4 py-3 bg-white/[0.02] border-t border-white/[0.06] text-center text-sm font-semibold text-ink-secondary">
+          Opens {opensLabel(group.event)} — not before the event's day
+        </div>
+      ) : (
       <div className="px-4 py-3 bg-white/[0.02] border-t border-white/[0.06] flex gap-2">
         {allPending && (
           <button
@@ -264,6 +305,7 @@ function OrderTicket({
           </span>
         )}
       </div>
+      )}
     </motion.div>
   )
 }
@@ -333,10 +375,25 @@ function StationBoard({ station }: { station: Station }) {
     })
   }, [orderGroups])
 
-  // Stats
-  const pendingCount = items.filter(i => i.status === 'PENDING').length
-  const receivedCount = items.filter(i => i.status === 'RECEIVED').length
-  const urgentCount = items.filter(i => i.age_seconds >= 600 && i.status !== 'READY').length
+  // Event dishes get their own place on the board: a 120-plate wedding
+  // sitting beside a single burger is how the wrong ticket gets started.
+  const counterGroups = sortedGroups.filter(g => !g.event)
+  const eventSections = useMemo(() => {
+    const byEvent = new Map<string, { event: BoardEvent; groups: OrderGroup[] }>()
+    for (const g of sortedGroups) {
+      if (!g.event) continue
+      const entry = byEvent.get(g.event.id) ?? { event: g.event, groups: [] }
+      entry.groups.push(g)
+      byEvent.set(g.event.id, entry)
+    }
+    return [...byEvent.values()].sort((a, b) => a.event.starts_at.localeCompare(b.event.starts_at))
+  }, [sortedGroups])
+
+  // Stats — the counter only. Event dishes are planned, not waiting.
+  const counterItems = items.filter(i => !i.event)
+  const pendingCount = counterItems.filter(i => i.status === 'PENDING').length
+  const receivedCount = counterItems.filter(i => i.status === 'RECEIVED').length
+  const urgentCount = counterItems.filter(i => i.age_seconds >= 600 && i.status !== 'READY').length
 
   return (
     <div className="h-full flex flex-col">
@@ -411,10 +468,36 @@ function StationBoard({ station }: { station: Station }) {
           </div>
         )}
 
-        {!isLoading && !isError && sortedGroups.length > 0 && (
+        {!isLoading && !isError && eventSections.map(({ event, groups }) => (
+          <section key={event.id} className="mb-8">
+            <div className="mb-3 rounded-xl border border-primary-main/30 bg-primary-main/10 px-4 py-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="text-lg font-bold text-ink-primary">{event.title}</h2>
+                <span className={`text-xs font-bold uppercase tracking-wider ${event.can_start ? 'text-status-paid' : 'text-ink-tertiary'}`}>
+                  {event.can_start ? 'Today — cook now' : `Opens ${opensLabel(event)}`}
+                </span>
+              </div>
+              <p className="text-sm text-ink-secondary">
+                {eventWhen(event)}{event.venue ? ` · ${event.venue}` : ''} · {event.expected_guests} guests
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {groups.map(group => (
+                <OrderTicket key={group.order_id} group={group} station={station}
+                  onAction={(id, action) => actMut.mutate({ id, action })} isPending={actMut.isPending} />
+              ))}
+            </div>
+          </section>
+        ))}
+
+        {!isLoading && !isError && eventSections.length > 0 && counterGroups.length > 0 && (
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-ink-tertiary">Counter orders</h2>
+        )}
+
+        {!isLoading && !isError && counterGroups.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             <AnimatePresence mode="popLayout">
-              {sortedGroups.map(group => (
+              {counterGroups.map(group => (
                 <OrderTicket
                   key={group.order_id}
                   group={group}

@@ -6,7 +6,7 @@ Coverage:
   2.  Cancellation flips all QUEUED notifications to FAILED
   3.  Alert scheduling: confirming with 1 assigned employee creates exactly 4 notifications
   4.  Idempotent confirm: double-tap returns same state, notifications still only 4
-  5.  Alive delivery: clocked-in recipient → IN_APP; off-shift → FAILED with notes
+  5.  Alive delivery: clocked-in recipient → IN_APP; off-shift with no phone gateway → waits in the inbox
   6.  Inbox: returns unread DELIVERED items; mark-as-read works; idempotent
   7.  Event inventory: allocation → issue writes EVENT_ALLOCATION movement
   8.  Judge exclusion: EVENT_ALLOCATION movement excluded from consumption ratios
@@ -454,7 +454,13 @@ class TestAliveDelivery:
             assert notif.channel == "IN_APP"
             assert results["delivered"] >= 1
 
-    def test_off_shift_user_gets_failed_status(self, client, manager_token, app):
+    def test_off_shift_user_finds_the_reminder_in_their_inbox(
+            self, client, manager_token, app):
+        """Was: off shift → FAILED. The inbox only shows DELIVERED, so a reminder
+        to anyone not at work — the people a "[7 days]" reminder is FOR — was
+        thrown away, and their Alerts screen said "You're all caught up".
+        Proved in Chrome on 17 Sep 2026. With no phone gateway it now waits in
+        the inbox for when they next open the app."""
         from app.models.notification import Notification, NotificationStatus
         from app.models.user import User
         from app.extensions import db
@@ -470,9 +476,43 @@ class TestAliveDelivery:
             db.session.commit()
 
             notif = db.session.get(Notification, notif_id)
-            assert notif.status == NotificationStatus.FAILED.value
-            assert notif.notes is not None
-            assert results["failed"] >= 1
+            assert notif.status == NotificationStatus.DELIVERED.value
+            assert notif.channel == "IN_APP"
+            assert "SMS" in (notif.notes or "")          # why it did not go by phone
+            assert results["delivered"] >= 1
+
+        # Logged in WITHOUT clocking in — the owner_token fixture clocks in,
+        # which would make them "present" and prove nothing.
+        token = client.post("/auth/login", json={"username": "owner1",
+                                                 "password": "OwnerPass1!"}).get_json()["access_token"]
+        inbox = client.get("/notifications/inbox", headers=auth(token)).get_json()
+        assert any(n["subject"] == "Test alert" for n in inbox)
+
+
+class TestReminderWording:
+    """Reminders are read by staff on their phones, in Kenya."""
+
+    def test_a_reminder_gives_the_resort_time_and_the_venue(
+            self, client, manager_token, event_type, employee_profile, app):
+        from app.models.notification import Notification
+        from app.models.system_setting import SystemSetting
+        from app.extensions import db
+        from tests.helpers import make_venue
+        db.session.get(SystemSetting, "business_day_timezone").value = "EAT"
+        db.session.commit()
+        start = datetime(2030, 3, 14, 11, 0, tzinfo=timezone.utc)        # 14:00 in Nairobi
+        eid = client.post("/events", headers=auth(manager_token), json={
+            "title": "Otieno Wedding", "event_type_id": event_type.id,
+            "venue_id": make_venue(name="Lakeside Lawn"),
+            "starts_at_utc": start.isoformat(),
+            "ends_at_utc": (start + timedelta(hours=6)).isoformat(),
+        }).get_json()["id"]
+        client.post(f"/events/{eid}/assignments", headers=auth(manager_token),
+                    json={"employee_id": employee_profile.id, "role_on_event": "Bar"})
+        client.post(f"/events/{eid}/confirm", headers=auth(manager_token))
+        body = db.session.query(Notification).filter_by(reference_id=eid).first().body
+        assert "14 Mar 2030 14:00" in body and "UTC" not in body
+        assert "Lakeside Lawn" in body
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

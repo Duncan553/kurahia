@@ -122,15 +122,15 @@ def totals(lines: list[EventMenuLine]) -> dict:
 
 # ── Stock ─────────────────────────────────────────────────────────────────────
 
-def _needs(lines: list[EventMenuLine]) -> dict[str, Decimal]:
-    """Stock units each inventory item must supply for these lines.
+def _needs(pairs) -> dict[str, Decimal]:
+    """Stock units each inventory item must supply for these (menu item, qty) pairs.
 
-    Mirrors how a sale consumes: RECIPE draws every ingredient × plates in stock
+    Mirrors how a sale consumes: RECIPE draws every ingredient × qty in stock
     units; DIRECT draws its one linked item per unit; SERVICE draws nothing.
     """
     need: dict[str, Decimal] = {}
-    for line in lines:
-        mi, n = line.menu_item, Decimal(str(line.quantity))
+    for mi, n in pairs:
+        n = Decimal(str(n))
         if mi.stock_tracking == StockTracking.DIRECT.value and mi.inventory_item_id:
             need[mi.inventory_item_id] = need.get(mi.inventory_item_id, Decimal("0")) + n
         elif mi.stock_tracking == StockTracking.RECIPE.value:
@@ -142,9 +142,34 @@ def _needs(lines: list[EventMenuLine]) -> dict[str, Decimal]:
     return need
 
 
+def _lines(lines):
+    return [(l.menu_item, l.quantity) for l in lines]
+
+
+def _waiting_on_boards() -> dict[str, Decimal]:
+    """Stock already promised to dishes sent to a kitchen or bar and not yet made.
+
+    Stock only moves when a dish is marked READY, so a sent order sitting on the
+    board still looks like it is on the shelf. Counting it is what stops "30
+    more plates" reading covered when 90 are already waiting to be cooked.
+    """
+    from app.models.order import Order, OrderStatus
+    from app.models.order_item import OrderItem, OrderItemStatus
+    items = db.session.query(OrderItem).join(Order, Order.id == OrderItem.order_id).filter(
+        Order.status != OrderStatus.DRAFT.value,
+        OrderItem.status.in_([OrderItemStatus.PENDING.value, OrderItemStatus.RECEIVED.value]),
+    ).all()
+    return _needs((oi.menu_item, oi.quantity) for oi in items)
+
+
 def stock_check(event: Event) -> dict:
-    """Can the store cover this event's unsent plan, after earlier events' plans?"""
-    mine = _needs(active_lines(event.id, unsent_only=True))
+    """Can the store cover this event's unsent plan, after everything ahead of it?
+
+    Ahead of it: dishes already on a kitchen/bar board, and the plans of events
+    that start earlier. Each event alone can look covered while together they
+    are not.
+    """
+    mine = _needs(_lines(active_lines(event.id, unsent_only=True)))
     earlier_lines = db.session.query(EventMenuLine).join(Event).filter(
         EventMenuLine.is_active.is_(True),
         EventMenuLine.order_item_id.is_(None),
@@ -152,22 +177,25 @@ def stock_check(event: Event) -> dict:
         Event.status.in_(OPEN_STATUSES),
         Event.starts_at_utc < event.starts_at_utc,
     ).all()
-    earlier = _needs(earlier_lines)
+    earlier = _needs(_lines(earlier_lines))
+    boards = _waiting_on_boards()
 
     items = []
     for item_id, needed in mine.items():
         inv = db.session.get(InventoryItem, item_id)
         in_store = get_current_stock(item_id)
         ahead = earlier.get(item_id, Decimal("0"))
+        cooking = boards.get(item_id, Decimal("0"))
         # This event's share of the gap: never more than it needs itself, so
-        # an earlier event's shortfall is written on that event's list.
-        short = min(needed, max(Decimal("0"), needed + ahead - in_store))
+        # an earlier shortfall is written on the list of whoever caused it.
+        short = min(needed, max(Decimal("0"), needed + ahead + cooking - in_store))
         items.append({
             "inventory_item_id":         item_id,
             "name":                      inv.name,
             "unit":                      inv.unit,
             "needed":                    qty4(needed),
             "planned_by_earlier_events": qty4(ahead),
+            "waiting_on_boards":         qty4(cooking),
             "in_store":                  qty4(in_store),
             "short":                     qty4(short),
         })
@@ -192,9 +220,13 @@ def write_buy_list(event: Event, actor: User) -> list[PurchaseRequest]:
         ).first()
         if already:
             continue
+        # The SYSTEM is the requester, like the nightly reorder drafts. Naming the
+        # manager here meant the rule "nobody approves their own request" sent
+        # every event's shopping to the owner, and budget delegation never
+        # applied. The audit line below still records which manager wrote it.
         pr = PurchaseRequest(item_id=item["inventory_item_id"], quantity=short,
                              status=RequestStatus.PENDING.value, system_generated=True,
-                             requested_by_id=actor.id, event_id=event.id)
+                             requested_by_id=None, event_id=event.id)
         db.session.add(pr)
         db.session.flush()
         AuditLog.log(actor=actor.username, action="event.buy_list", target=pr.id,
@@ -228,9 +260,61 @@ def bill_dict(event: Event) -> dict:
         return {"tab_id": None, "tab_type": None, "charged": "0.00", "paid": "0.00", "owing": "0.00"}
     charged = db.session.query(db.func.sum(Charge.amount)).filter_by(tab_id=event.tab_id).scalar() or 0
     paid = db.session.query(db.func.sum(Payment.amount)).filter_by(tab_id=event.tab_id).scalar() or 0
+    # Every line on the bill, so "what is the 60,000?" has an answer: the venue
+    # hire, each dish sent, and every payment taken.
+    charges = db.session.query(Charge).filter_by(tab_id=event.tab_id).order_by(Charge.created_at).all()
+    payments = db.session.query(Payment).filter_by(tab_id=event.tab_id).all()
     return {"tab_id": event.tab_id, "tab_type": TabType.EVENT.value, "status": event.tab.status,
             "charged": money(charged), "paid": money(paid),
-            "owing": money(Decimal(str(charged)) - Decimal(str(paid)))}
+            "owing": money(Decimal(str(charged)) - Decimal(str(paid))),
+            "lines": [{"description": c.description, "amount": money(c.amount)} for c in charges],
+            "payments": [{"method": p.method, "amount": money(p.amount)} for p in payments]}
+
+
+# ── The kitchen board ─────────────────────────────────────────────────────────
+
+def event_for_tab(tab_id: str | None) -> Event | None:
+    """The event whose bill this is, or None for an ordinary tab."""
+    if not tab_id:
+        return None
+    return db.session.query(Event).filter_by(tab_id=tab_id).first()
+
+
+def cooking_opens(event: Event):
+    """The resort-clock day the kitchen may start this event's dishes."""
+    from app.services.business_day import _get_tz
+    starts = event.starts_at_utc
+    starts = starts if starts.tzinfo else starts.replace(tzinfo=timezone.utc)
+    return starts.astimezone(_get_tz()).date()
+
+
+def too_early_to_cook(event: Event) -> str | None:
+    """Refusal if today (resort clock) is before the event's day.
+
+    Starting a dish is what leads to READY, and READY is what takes the stock.
+    A wedding's 120 plates started a week early empty the store for a meal
+    nobody is eating yet — so the kitchen may not, whoever taps it.
+    """
+    from app.services.business_day import _get_tz
+    opens = cooking_opens(event)
+    if datetime.now(_get_tz()).date() < opens:
+        return (f"This is for {event.title} on {opens:%a %d %b}. "
+                f"The kitchen can start it on that day, not before.")
+    return None
+
+
+def board_event(event: Event | None) -> dict | None:
+    """What a cook needs to know about the event a ticket belongs to."""
+    if not event:
+        return None
+    return {
+        "id": event.id, "title": event.title,
+        "starts_at": event.starts_at_utc.isoformat(), "ends_at": event.ends_at_utc.isoformat(),
+        "venue": event.venue.name if event.venue else event.location,
+        "expected_guests": event.expected_guests,
+        "opens_on": cooking_opens(event).isoformat(),
+        "can_start": too_early_to_cook(event) is None,
+    }
 
 
 # ── Confirm ───────────────────────────────────────────────────────────────────

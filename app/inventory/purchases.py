@@ -98,6 +98,10 @@ def list_requests():
         "system_generated": r.system_generated,
         "created_at":       r.created_at.isoformat(),
         "requested_by":     r.requested_by.username if r.requested_by else "system",
+        # Which event this is shopping for — "Chicken breast, by system" alone
+        # does not tell the manager why it is needed or by when.
+        "event":            ({"id": r.event.id, "title": r.event.title,
+                              "starts_at": r.event.starts_at_utc.isoformat()} if r.event else None),
         "department":       r.item.department.name if r.item and r.item.department else (
                             r.requested_by.department.name if r.requested_by and r.requested_by.department else "General"),
         "notes":            r.manager_notes,

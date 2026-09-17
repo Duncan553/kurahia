@@ -57,14 +57,21 @@ def transition_assignment(assignment: EventAssignment, new_status: str) -> tuple
 
 def _alert_body(label: str, event: Event, assignment: EventAssignment) -> tuple[str, str]:
     """Generate (subject, body) for one alert tier."""
-    date_str  = event.starts_at_utc.strftime("%d %b %Y %H:%M UTC")
+    # In the resort's clock: "11:00 UTC" on a Nairobi phone reads as three
+    # hours early. And where is the venue now — events stopped filling the old
+    # free-text location when they started booking a venue.
+    from app.services.business_day import _get_tz
+    starts = event.starts_at_utc
+    starts = starts if starts.tzinfo else starts.replace(tzinfo=timezone.utc)
+    date_str  = starts.astimezone(_get_tz()).strftime("%d %b %Y %H:%M")
+    where = event.venue.name if event.venue else event.location
     employee_name = assignment.employee.full_name if assignment.employee else "Staff"
     subject = f"{label} {event.title}"
     body = (
         f"Hi {employee_name}, "
         f"you are assigned as '{assignment.role_on_event}' at '{event.title}' "
         f"on {date_str}."
-        + (f" Location: {event.location}." if event.location else "")
+        + (f" Location: {where}." if where else "")
     )
     return subject, body
 

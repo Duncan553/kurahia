@@ -13,6 +13,7 @@ from app.models.order_item import OrderItem, OrderItemStatus
 from app.models.order import Order
 from app.models.menu_item import PrepStation
 from app.models.user import User
+from app.services.event_menu import board_event, event_for_tab
 
 queues_bp = Blueprint("queues", __name__)
 
@@ -59,6 +60,9 @@ def _queue_for_station(station: str, actor: User):
             "age_seconds":   _age(oi),
             "ordered_by":    oi.order.created_by.username if oi.order and oi.order.created_by else None,
             "notes":         oi.notes,
+            # Set when the ticket is an event's dish: which event, when, where,
+            # for how many, and whether the kitchen may start it yet.
+            "event":         board_event(event_for_tab(oi.order.tab_id if oi.order else None)),
         }
         for oi in items
     ], None

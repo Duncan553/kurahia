@@ -69,6 +69,14 @@ def _works_the_event(actor: User, tab_id: str) -> bool:
     ).first() is not None
 
 
+def _event_not_today(oi: OrderItem):
+    """409 response if this is an event dish and the event's day has not come."""
+    from app.services.event_menu import event_for_tab, too_early_to_cook
+    event = event_for_tab(oi.order.tab_id if oi.order else None)
+    refusal = too_early_to_cook(event) if event else None
+    return (jsonify({"error": refusal}), 409) if refusal else None
+
+
 def sellable_error(mi: MenuItem) -> str | None:
     """Plain-English refusal if this item may not be sold at all, else None."""
     if not mi.is_active:
@@ -427,6 +435,9 @@ def receive_item(oi_id):
         return jsonify({"error": "Order item not found."}), 404
     if not _can_operate_station(actor, oi.prep_station_snapshot):
         return jsonify({"error": f"Only {oi.prep_station_snapshot} staff or a manager can receive this item."}), 403
+    early = _event_not_today(oi)
+    if early:
+        return early
     if not oi.can_transition_to(OrderItemStatus.RECEIVED):
         return jsonify({"error": f"This item is {oi.status} — you cannot mark it Received."}), 400
     with db.session.begin_nested():
@@ -478,6 +489,9 @@ def mark_ready(oi_id):
         return jsonify({"error": "Order item not found."}), 404
     if not _can_operate_station(actor, oi.prep_station_snapshot):
         return jsonify({"error": f"Only {oi.prep_station_snapshot} staff or a manager can mark this item ready."}), 403
+    early = _event_not_today(oi)
+    if early:
+        return early
     if not oi.can_transition_to(OrderItemStatus.READY):
         return jsonify({"error": f"This item is {oi.status} — it must be Received before it can be marked Ready."}), 400
     with db.session.begin_nested():
