@@ -255,9 +255,42 @@ def open_bill(event: Event, actor: User) -> Tab:
     return tab
 
 
-def bill_dict(event: Event) -> dict:
+def min_booking_fee() -> Decimal:
+    row = db.session.get(SystemSetting, "event_min_booking_fee")
+    return Decimal(row.value) if row else Decimal("0")
+
+
+def booking_fee_refusal(actor: User, raw) -> tuple[Decimal | None, str | None]:
+    """(fee, None) or (None, reason). Omitted → the owner's minimum."""
+    minimum = min_booking_fee()
+    if raw in (None, ""):
+        return minimum, None
+    try:
+        fee = Decimal(str(raw))
+    except InvalidOperation:
+        return None, "The booking fee must be a number of shillings."
+    if not fee.is_finite() or fee < 0:
+        return None, "The booking fee must be a number of shillings."
+    if fee < minimum and actor.role.level < OWNER_LEVEL:
+        return None, f"The owner's minimum booking fee is KSh {minimum:,.0f}."
+    return fee, None
+
+
+def booking_fee_paid(event: Event) -> Decimal:
+    """Money taken on the event's bill, counted against the booking fee."""
     if not event.tab_id:
-        return {"tab_id": None, "tab_type": None, "charged": "0.00", "paid": "0.00", "owing": "0.00"}
+        return Decimal("0")
+    paid = db.session.query(db.func.sum(Payment.amount)).filter_by(tab_id=event.tab_id).scalar()
+    return min(Decimal(str(paid or 0)), Decimal(str(event.booking_fee or 0)))
+
+
+def bill_dict(event: Event) -> dict:
+    fee = Decimal(str(event.booking_fee or 0))
+    booking = {"amount": money(fee), "paid": money(booking_fee_paid(event)),
+               "settled": booking_fee_paid(event) >= fee}
+    if not event.tab_id:
+        return {"tab_id": None, "tab_type": None, "charged": "0.00", "paid": "0.00", "owing": "0.00",
+                "booking_fee": booking}
     charged = db.session.query(db.func.sum(Charge.amount)).filter_by(tab_id=event.tab_id).scalar() or 0
     paid = db.session.query(db.func.sum(Payment.amount)).filter_by(tab_id=event.tab_id).scalar() or 0
     # Every line on the bill, so "what is the 60,000?" has an answer: the venue
@@ -267,8 +300,53 @@ def bill_dict(event: Event) -> dict:
     return {"tab_id": event.tab_id, "tab_type": TabType.EVENT.value, "status": event.tab.status,
             "charged": money(charged), "paid": money(paid),
             "owing": money(Decimal(str(charged)) - Decimal(str(paid))),
+            "booking_fee": booking,
             "lines": [{"description": c.description, "amount": money(c.amount)} for c in charges],
             "payments": [{"method": p.method, "amount": money(p.amount)} for p in payments]}
+
+
+def settle_cancellation(event: Event, actor: User) -> None:
+    """A cancelled event keeps its booking fee and nothing else stands.
+
+    Dishes sent but not yet started come off the board and the bill; anything
+    already cooked stays charged. The venue hire is reversed. The booking fee
+    paid is charged as kept, so the bill balances and closes — there is no
+    refund path, the same as unused wristband credit. Stock bought for the
+    event is simply hotel stock.
+    """
+    from app.models.order import Order
+    from app.models.order_item import OrderItem, OrderItemStatus
+    from app.pos.orders import _reverse_charge
+    from app.services.tab import is_tab_closable
+    from app.models.tab import TabStatus
+    if not event.tab_id:
+        return
+    now = datetime.now(timezone.utc)
+    items = db.session.query(OrderItem).join(Order).filter(
+        Order.tab_id == event.tab_id,
+        OrderItem.status.in_([OrderItemStatus.PENDING.value, OrderItemStatus.RECEIVED.value]),
+    ).all()
+    for oi in items:
+        oi.status, oi.cancelled_at = OrderItemStatus.CANCELLED.value, now
+        oi.cancel_reason = f"{event.title} was cancelled"
+        _reverse_charge(oi, actor)
+    venue = db.session.query(Charge).filter(
+        Charge.tab_id == event.tab_id, Charge.idempotency_key == f"event-venue-{event.id}").first()
+    if venue:
+        db.session.add(Charge(tab_id=event.tab_id, amount=-venue.amount,
+                              description=f"REVERSAL: {venue.description}", created_by_id=actor.id,
+                              tax_rate_snapshot=venue.tax_rate_snapshot,
+                              idempotency_key=f"event-venue-reversal-{event.id}"))
+    kept = booking_fee_paid(event)
+    if kept > 0:
+        db.session.add(Charge(tab_id=event.tab_id, amount=kept,
+                              description="Booking fee kept — event cancelled", created_by_id=actor.id,
+                              tax_rate_snapshot=venue.tax_rate_snapshot if venue else None,
+                              idempotency_key=f"event-fee-kept-{event.id}"))
+    db.session.flush()
+    ok, _ = is_tab_closable(event.tab_id)
+    if ok:
+        event.tab.status, event.tab.closed_at_utc, event.tab.closed_by_id = TabStatus.CLOSED.value, now, actor.id
 
 
 # ── The kitchen board ─────────────────────────────────────────────────────────

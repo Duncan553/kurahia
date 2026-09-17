@@ -20,6 +20,9 @@ KNOWN_KEYS = {
     # How far a manager may discount an event plate on their own. Above it, only
     # the owner. 0 = nothing delegated — the same rule as an unset budget.
     "event_discount_max_percent": {"type": "int", "min": 0, "max": 100, "default": "0"},
+    # The least a manager may take to book an event, in shillings. 0 = none
+    # required — the same rule as an unset budget.
+    "event_min_booking_fee": {"type": "int", "min": 0, "max": 10_000_000, "default": "0"},
 }
 
 

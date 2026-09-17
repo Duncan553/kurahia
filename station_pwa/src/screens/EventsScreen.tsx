@@ -101,6 +101,7 @@ function CreateEventModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [endsAt, setEndsAt] = useState('')
   const [guests, setGuests] = useState('1')
   const [venueId, setVenueId] = useState('')
+  const [bookingFee, setBookingFee] = useState('')
   // One key per event, not per form. The form stays mounted between opens, so a
   // key made once was reused: every event after the first came back as a
   // "duplicate" of it with a 200, and the screen still said "Event created."
@@ -138,12 +139,13 @@ function CreateEventModal({ open, onClose }: { open: boolean; onClose: () => voi
       ends_at_utc: new Date(endsAt).toISOString(),
       expected_guests: Number(guests) || 1,
       venue_id: venueId,
+      booking_fee: bookingFee.trim() || null,   // empty → the owner's minimum
       idempotency_key: idem,
     }),
     onSuccess: () => {
       addToast({ type: 'success', message: 'Event created.' })
       qc.invalidateQueries({ queryKey: ['events', 'upcoming'] })
-      setTitle(''); setTypeId(''); setStartsAt(''); setEndsAt(''); setGuests('1'); setVenueId(''); setIdem(crypto.randomUUID())
+      setTitle(''); setTypeId(''); setStartsAt(''); setEndsAt(''); setGuests('1'); setVenueId(''); setBookingFee(''); setIdem(crypto.randomUUID())
       onClose()
     },
     onError: e => addToast({ type: 'error', message: extractErr(e) }),
@@ -227,6 +229,15 @@ function CreateEventModal({ open, onClose }: { open: boolean; onClose: () => voi
               </p>
             )}
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-ink-secondary mb-1">Booking fee (KSh)</label>
+          <input value={bookingFee} inputMode="numeric" onChange={e => setBookingFee(e.target.value)}
+            placeholder="Leave empty for the owner's minimum"
+            className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
+              placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-primary-main" />
+          <p className="text-xs text-ink-tertiary mt-1">Taken before confirming. Kept if the event is cancelled.</p>
         </div>
 
         <Button variant="primary" className="w-full"
@@ -681,6 +692,7 @@ interface EventMenu {
 interface Bill {
   tab_id: string | null; charged: string; paid: string; owing: string
   lines?: { description: string; amount: string }[]
+  booking_fee: { amount: string; paid: string; settled: boolean }
   payments?: { method: string; amount: string }[]
 }
 interface Dish { id: string; name: string; price: string; stock_tracking: string; prep_station: string }
@@ -753,6 +765,20 @@ function MenuAndBill({ event }: { event: EventItem }) {
     },
     onError: fail,
   })
+  const [feeMethod, setFeeMethod] = useState('CASH')
+  const [feeIdem, setFeeIdem] = useState(() => crypto.randomUUID())
+  const takeFee = useMutation({
+    mutationFn: () => api.post(`/events/${event.id}/booking-fee`, {
+      method: feeMethod, idempotency_key: feeIdem,
+      amount: String(Number(bill!.booking_fee.amount) - Number(bill!.booking_fee.paid)),
+    }),
+    onSuccess: () => {
+      addToast({ message: 'Booking fee taken. The event can be confirmed.', type: 'success' })
+      setFeeIdem(crypto.randomUUID()); refresh()
+    },
+    onError: fail,
+  })
+
   const pay = useMutation({
     mutationFn: () => api.post(`/tabs/${bill!.tab_id}/payments`, {
       method: payMethod, amount: payAmount, idempotency_key: payIdem,
@@ -841,6 +867,26 @@ function MenuAndBill({ event }: { event: EventItem }) {
         <Button disabled={send.isPending} onClick={() => send.mutate()}>
           Send {unsent.length} to kitchen &amp; bar
         </Button>
+      )}
+
+      {bill && Number(bill.booking_fee.amount) > 0 && (
+        <div className={`rounded-lg p-2 text-sm flex flex-col sm:flex-row sm:items-end gap-2 ${
+          bill.booking_fee.settled ? 'bg-status-paid/10' : 'bg-status-pending/10'}`}>
+          <p className="flex-1 text-ink-primary">
+            Booking fee {ksh(bill.booking_fee.amount)} —{' '}
+            {bill.booking_fee.settled
+              ? <span className="text-status-paid">paid</span>
+              : <span className="text-status-pending">not paid yet; confirming waits for it</span>}
+          </p>
+          {!bill.booking_fee.settled && open && (
+            <>
+              <Select label="Paid by" value={feeMethod} onChange={e => setFeeMethod(e.target.value)}
+                options={[{ value: 'CASH', label: 'Cash' }, { value: 'MPESA', label: 'M-Pesa' },
+                          { value: 'CARD', label: 'Card' }, { value: 'BANK_TRANSFER', label: 'Bank transfer' }]} />
+              <Button disabled={takeFee.isPending} onClick={() => takeFee.mutate()}>Take booking fee</Button>
+            </>
+          )}
+        </div>
       )}
 
       {bill?.tab_id ? (

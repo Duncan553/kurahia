@@ -43,6 +43,7 @@ def _event_dict(e: Event) -> dict:
                            if e.venue else None),
         "location":       e.venue.name if e.venue else e.location,
         "notes":          e.notes,
+        "booking_fee":    f"{e.booking_fee or 0:.2f}",
         "status":         e.status,
     }
 
@@ -225,6 +226,10 @@ def create_event():
     venue, refused = _check_venue(data.get("venue_id"), starts, ends, guests)
     if refused:
         return refused
+    from app.services.event_menu import booking_fee_refusal
+    fee, why = booking_fee_refusal(actor, data.get("booking_fee"))
+    if why:
+        return jsonify({"error": why}), 400
 
     event = Event(
         title=title, event_type_id=type_id,
@@ -232,6 +237,7 @@ def create_event():
         starts_at_utc=starts, ends_at_utc=ends,
         expected_guests=guests,
         venue_id=venue.id,
+        booking_fee=fee,
         location=data.get("location"),
         notes=data.get("notes"),
         created_by_id=actor.id,
@@ -261,6 +267,12 @@ def edit_event(event_id):
     if "title" in data:          event.title = data["title"].strip()
     if "location" in data:       event.location = data["location"]
     if "notes" in data:          event.notes = data["notes"]
+    if "booking_fee" in data:
+        from app.services.event_menu import booking_fee_refusal
+        fee, why = booking_fee_refusal(actor, data["booking_fee"])
+        if why:
+            return jsonify({"error": why}), 400
+        event.booking_fee = fee
     if "expected_guests" in data or "venue_id" in data:
         guests = _guest_count(data.get("expected_guests", event.expected_guests))
         if guests is None:
@@ -311,6 +323,12 @@ def confirm_event(event_id):
     # Idempotent: already confirmed → return current state, no new notifications
     if event.status == EventStatus.CONFIRMED.value:
         return jsonify(_event_dict(event)), 200
+    # Same rule as a villa deposit: the booking is not confirmed until the
+    # booking fee is in.
+    from app.services.event_menu import booking_fee_paid
+    fee = event.booking_fee or 0
+    if booking_fee_paid(event) < fee:
+        return jsonify({"error": f"Take the booking fee (KSh {fee:,.0f}) before confirming."}), 409
     # Confirming sets the event in motion as a customer: its bill opens with the
     # venue charged, the store is checked and the buy list written, and the
     # kitchen, bar and managers are told what is coming. Then the staff alerts.
@@ -358,6 +376,8 @@ def cancel_event(event_id):
 
     event.status = EventStatus.CANCELLED.value
     event.updated_at_utc = datetime.now(timezone.utc)
+    from app.services.event_menu import settle_cancellation
+    settle_cancellation(event, actor)
     flipped = cancel_event_notifications(event_id)
     db.session.flush()
     AuditLog.log(actor=actor.username, action="event.cancel", target=event_id)

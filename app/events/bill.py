@@ -273,3 +273,20 @@ def station_prep():
             "planned": [{"name": l.menu_item.name, "plates": em.plates(l.quantity)} for l in planned],
         })
     return jsonify(rows), 200
+
+
+@events_bp.post("/<event_id>/booking-fee")
+@require_active_user
+@require_clocked_in
+def take_booking_fee(event_id):
+    """Take the booking fee: opens the event's bill, then records the money
+    through the ordinary payment endpoint — one payment path, not two."""
+    from app.pos.payments import record_payment
+    actor, event, refused = _manager_and_event(event_id)
+    if refused:
+        return refused
+    if event.status not in (EventStatus.PLANNED.value, EventStatus.CONFIRMED.value):
+        return jsonify({"error": f"This event is {event.status.lower()}."}), 400
+    em.open_bill(event, actor)
+    db.session.commit()
+    return record_payment(event.tab_id)

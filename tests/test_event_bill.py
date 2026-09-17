@@ -698,3 +698,79 @@ class TestTheKitchenSeesEventsComingUp:
         assert client.get("/events/prep?station=KITCHEN", headers=H(waiter_token)).status_code == 403
         assert client.get("/events/prep?station=KITCHEN", headers=H(manager_token)).status_code == 200
         assert client.get("/events/prep?station=SPA", headers=H(manager_token)).status_code == 400
+
+
+# ── Booking fee ───────────────────────────────────────────────────────────────
+
+class TestEveryEventCarriesABookingFee:
+    """Wachira: an event can be cancelled after food is bought. The owner sets
+    the minimum booking fee, the manager sets each event's fee at or above it,
+    confirming waits for it like a villa deposit, and a cancelled event keeps it."""
+
+    def _min_fee(self, client, owner_token, amount):
+        assert client.patch("/admin/settings", headers=H(owner_token),
+                            json={"event_min_booking_fee": amount}).status_code == 200
+
+    def _new(self, client, token, type_id, **extra):
+        start = datetime.now(timezone.utc) + timedelta(days=7)
+        return client.post("/events", headers=H(token), json={
+            "title": "Otieno Wedding", "event_type_id": type_id,
+            "venue_id": make_venue(base_price="50000"),
+            "starts_at_utc": start.isoformat(), "ends_at_utc": (start + timedelta(hours=6)).isoformat(),
+            "expected_guests": 100, "idempotency_key": str(uuid.uuid4()), **extra})
+
+    def _pay_fee(self, client, token, event_id, amount="20000"):
+        return client.post(f"/events/{event_id}/booking-fee", headers=H(token),
+                           json={"method": "CASH", "amount": amount, "idempotency_key": str(uuid.uuid4())})
+
+    def test_the_manager_sets_the_fee_within_the_owners_minimum(
+            self, client, manager_token, owner_token, event_type_id):
+        self._min_fee(client, owner_token, 20000)
+        rv = self._new(client, manager_token, event_type_id, booking_fee="15000")
+        assert rv.status_code == 400 and "20,000" in rv.get_json()["error"]
+        assert self._new(client, manager_token, event_type_id).get_json()["booking_fee"] == "20000.00"
+        assert self._new(client, manager_token, event_type_id, booking_fee="35000").get_json()["booking_fee"] == "35000.00"
+        # The owner may go below their own minimum.
+        assert self._new(client, owner_token, event_type_id, booking_fee="5000").status_code == 201
+
+    def test_confirming_waits_for_the_booking_fee(
+            self, client, manager_token, owner_token, event_type_id):
+        self._min_fee(client, owner_token, 20000)
+        eid = self._new(client, manager_token, event_type_id).get_json()["id"]
+        rv = client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        assert rv.status_code == 409 and "booking fee" in rv.get_json()["error"].lower()
+        rv = self._pay_fee(client, manager_token, eid)
+        assert rv.status_code == 201, rv.get_json()
+        assert client.post(f"/events/{eid}/confirm", headers=H(manager_token)).status_code == 200
+        bill = client.get(f"/events/{eid}/bill", headers=H(manager_token)).get_json()
+        assert (bill["tab_type"], bill["charged"], bill["paid"], bill["owing"]) == \
+               ("EVENT", "50000.00", "20000.00", "30000.00")
+        assert bill["booking_fee"] == {"amount": "20000.00", "paid": "20000.00", "settled": True}
+
+    def test_only_a_manager_takes_the_booking_fee(self, client, manager_token, waiter_token, owner_token, event_type_id):
+        self._min_fee(client, owner_token, 20000)
+        eid = self._new(client, manager_token, event_type_id).get_json()["id"]
+        assert self._pay_fee(client, waiter_token, eid).status_code == 403
+
+    def test_a_cancelled_event_keeps_its_booking_fee(
+            self, client, manager_token, owner_token, event_type_id, pilau):
+        from app.extensions import db
+        from app.models.order_item import OrderItem
+        self._min_fee(client, owner_token, 20000)
+        eid = self._new(client, manager_token, event_type_id).get_json()["id"]
+        self._pay_fee(client, manager_token, eid)
+        _plan(client, manager_token, eid, pilau, 10)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        client.post(f"/events/{eid}/send", headers=H(manager_token), json={})
+        assert client.post(f"/events/{eid}/cancel", headers=H(manager_token)).status_code == 200
+        bill = client.get(f"/events/{eid}/bill", headers=H(manager_token)).get_json()
+        descriptions = [l["description"] for l in bill["lines"]]
+        assert any(d.startswith("REVERSAL") and "Venue hire" in d for d in descriptions)
+        assert any("Booking fee kept" in d for d in descriptions)
+        assert (bill["owing"], bill["status"]) == ("0.00", "CLOSED")
+        # The uncooked dish came off the kitchen board.
+        assert db.session.query(OrderItem).filter_by(menu_item_id=pilau).one().status == "CANCELLED"
+
+    def test_with_no_minimum_set_nothing_is_required(self, client, manager_token, event_type_id):
+        eid = self._new(client, manager_token, event_type_id).get_json()["id"]
+        assert client.post(f"/events/{eid}/confirm", headers=H(manager_token)).status_code == 200

@@ -44,8 +44,11 @@ class Event(db.Model):
     venue_id        = db.Column(db.String(36), db.ForeignKey("bookable_resources.id"),
                                 nullable=True, index=True)
     location        = db.Column(db.String(200), nullable=True)
-    # The event's own bill (TabType.EVENT). Opened on confirm.
+    # The event's own bill (TabType.EVENT). Opened when the booking fee is paid or on confirm.
     tab_id          = db.Column(db.String(36), db.ForeignKey("tabs.id"), nullable=True)
+    # Paid before confirming, kept if the event is cancelled. At least the
+    # owner's event_min_booking_fee unless the owner set it.
+    booking_fee     = db.Column(db.Numeric(14, 2), nullable=False, default=0, server_default="0")
     notes           = db.Column(db.Text, nullable=True)
     status          = db.Column(db.String(15), nullable=False, default=EventStatus.PLANNED.value)
     created_by_id   = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)

@@ -33,22 +33,25 @@ const kes = (v: string | number) =>
 const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
 
-function DiscountLimit() {
+// One owner rule for events, saved to /admin/settings. Until the owner sets it,
+// nothing is delegated / required.
+function OwnerRule({ settingKey, title, hint, label, saved }: {
+  settingKey: 'event_discount_max_percent' | 'event_min_booking_fee'
+  title: string; hint: string; label: string; saved: (v: number) => string
+}) {
   const qc = useQueryClient()
   const addToast = useToastStore(s => s.addToast)
-  const { data } = useQuery<{ event_discount_max_percent: string }>({
+  const { data } = useQuery<Record<string, string>>({
     queryKey: ['admin-settings'],
     queryFn: () => api.get('/admin/settings').then(r => r.data),
   })
-  const [percent, setPercent] = useState('')
-  useEffect(() => { if (data) setPercent(data.event_discount_max_percent) }, [data])
+  const [value, setValue] = useState('')
+  useEffect(() => { if (data) setValue(data[settingKey]) }, [data, settingKey])
 
   const save = useMutation({
-    mutationFn: () => api.patch('/admin/settings', { event_discount_max_percent: Number(percent) }),
+    mutationFn: () => api.patch('/admin/settings', { [settingKey]: Number(value) }),
     onSuccess: () => {
-      addToast({ type: 'success', message: Number(percent)
-        ? `Managers may now discount event plates up to ${percent}%.`
-        : 'Managers may no longer discount events. Only you can.' })
+      addToast({ type: 'success', message: saved(Number(value)) })
       qc.invalidateQueries({ queryKey: ['admin-settings'] })
     },
     onError: e => addToast({ type: 'error', message: extractErr(e) }),
@@ -57,15 +60,11 @@ function DiscountLimit() {
   return (
     <div className="glass-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-end gap-3">
       <div className="flex-1">
-        <p className="text-sm font-semibold text-ink-primary">How far a manager may discount</p>
-        <p className="text-xs text-ink-tertiary">
-          Per plate, on their own. Above this only you can give it. 0 means only you.
-        </p>
+        <p className="text-sm font-semibold text-ink-primary">{title}</p>
+        <p className="text-xs text-ink-tertiary">{hint}</p>
       </div>
-      <Input label="Limit (%)" value={percent} inputMode="numeric"
-        onChange={e => setPercent(e.target.value)} />
-      <Button disabled={save.isPending || percent === data?.event_discount_max_percent}
-        onClick={() => save.mutate()}>Save</Button>
+      <Input label={label} value={value} inputMode="numeric" onChange={e => setValue(e.target.value)} />
+      <Button disabled={save.isPending || value === data?.[settingKey]} onClick={() => save.mutate()}>Save</Button>
     </div>
   )
 }
@@ -84,7 +83,14 @@ export default function EventsScreen() {
         <p className="text-sm text-ink-secondary">What each event is worth, what was discounted, and what is still owed.</p>
       </div>
 
-      <DiscountLimit />
+      <OwnerRule settingKey="event_discount_max_percent" label="Limit (%)"
+        title="How far a manager may discount"
+        hint="Per plate, on their own. Above this only you can give it. 0 means only you."
+        saved={v => v ? `Managers may now discount event plates up to ${v}%.` : 'Managers may no longer discount events. Only you can.'} />
+      <OwnerRule settingKey="event_min_booking_fee" label="Minimum (KSh)"
+        title="Minimum booking fee"
+        hint="Taken before an event is confirmed and kept if it is cancelled. The manager may ask more, never less. 0 means none required."
+        saved={v => v ? `Every event now needs a booking fee of at least KSh ${v.toLocaleString()}.` : 'No booking fee is required.'} />
 
       {isLoading && [1, 2, 3].map(i => <Skeleton key={i} variant="row" className="h-28" />)}
       {isError && <p className="text-sm text-status-failed">Could not load events.</p>}
