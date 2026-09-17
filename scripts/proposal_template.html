@@ -266,7 +266,7 @@ footer .prose { max-width: 72ch; }
     </p>
     <div class="facts">
       <div class="fact"><b>{{N}}</b><span>screens, each photographed as the person who works that post</span></div>
-      <div class="fact"><b>1,456</b><span>automated tests passing, 5 skipped</span></div>
+      <div class="fact"><b>1,458</b><span>automated tests passing, 5 skipped</span></div>
       <div class="fact"><b>296</b><span>role-and-screen combinations opened to check nothing is offered that would be refused</span></div>
       <div class="fact"><b>16 Sept</b><span>date every figure here was read off the running system</span></div>
     </div>
@@ -333,7 +333,7 @@ footer .prose { max-width: 72ch; }
       <div>
         <h3 data-n="05">How it was checked</h3>
         <p>
-          1,456 automated tests. A full trading day run end to end, then the
+          1,458 automated tests. A full trading day run end to end, then the
           books closed and audited. Every screen opened as the person who works
           that post. 296 role-and-screen combinations checked so nothing is
           offered to someone the system would then refuse.
@@ -708,7 +708,7 @@ footer .prose { max-width: 72ch; }
     </div>
 
     <ul class="plain">
-      <li><b>1,456</b><span>automated tests passing, 5 skipped &mdash; the rules, held on every change</span></li>
+      <li><b>1,458</b><span>automated tests passing, 5 skipped &mdash; the rules, held on every change</span></li>
       <li><b>68</b><span>interface tests on the shared controls all three apps are built from</span></li>
       <li><b>{{N}} / {{N}}</b><span>screens photographed, each proving which screen it was on before the image was saved</span></li>
       <li><b>{{N}}</b><span>distinct images verified by fingerprint &mdash; no screen photographed twice under two names</span></li>
@@ -721,22 +721,96 @@ footer .prose { max-width: 72ch; }
     <div class="note found">
       <h3>Found by using it, and named rather than quietly repaired</h3>
       <p>
-        The standard this document is held to is that nothing was checked by
-        reading the code and hoping. Where the review found something wrong, it is
-        listed here.
+        Nothing here was checked by reading the code and hoping. Each fault below
+        was found by operating the system as the person whose job it is. Each one
+        says how it was found, what was wrong, what changed, and how the repair
+        was proved. &ldquo;Proved&rdquo; has one meaning throughout: an automatic
+        check that passes with the repair in place and was seen to
+        <em>fail</em> when the repair was taken out again. A check that cannot
+        fail proves nothing.
       </p>
     </div>
 
-    <ul class="plain" style="margin-top:22px">
-      <li><b>&rarr;</b><span>A grievance could be resolved and the person who filed it was never told.</span></li>
-      <li><b>&rarr;</b><span>Anyone could log a lost item; only a manager could read the list &mdash; so the desk a guest actually asks could never answer.</span></li>
-      <li><b>&rarr;</b><span>A wedding could be booked and then never confirmed, staffed, issued a crate or closed: the buttons did not exist.</span></li>
-      <li><b>&rarr;</b><span>Four screens opened for people the system would then refuse, two of them showing a refusal as reassuring good news.</span></li>
-      <li><b>&rarr;</b><span>A panel opened from inside a card anchored itself to the card, cutting half the form off the screen.</span></li>
-      <li><b>&rarr;</b><span>Three copies of one list of addresses, two of them stale &mdash; which is how a whole screen came to be unreachable.</span></li>
-      <li><b>&rarr;</b><span>An alarm on the login screen that was measuring the wrong thing and reporting a fault that did not exist.</span></li>
-      <li><b>&rarr;</b><span>Two tiles on the owner's own dashboard inventing their numbers, one reporting zero injuries while two guests had been hurt.</span></li>
-    </ul>
+    <div class="feature">
+      <div class="feature-name"><h3>A grievance was answered in silence</h3><span class="who">Staff &middot; Manager</span></div>
+      <dl class="dl">
+        <dt>Found</dt><dd>A complaint was filed as a waiter, then resolved by a manager with notes. The waiter&rsquo;s inbox stayed empty.</dd>
+        <dt>Was wrong</dt><dd>Resolving or dismissing a complaint wrote the answer into the record and stopped there. The person who raised it could only find out by reopening the screen on the off-chance.</dd>
+        <dt>Now</dt><dd>Resolving or dismissing sends the person who filed it the outcome and the manager&rsquo;s notes. A double tap cannot send it twice, and a complaint raised privately to the owner is answered the same way.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">4 automatic checks. With the notice switched off, all 4 fail; with it back, all 4 pass.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>The desk could log a lost item but never look it up</h3><span class="who">Front desk</span></div>
+      <dl class="dl">
+        <dt>Found</dt><dd>A found jacket was logged as front desk, then looked for as front desk. Refused.</dd>
+        <dt>Was wrong</dt><dd>Anyone could log a found item, but only a manager could read the list. A guest asks at the desk, and the manager is not standing there.</dd>
+        <dt>Now</dt><dd>Front desk can see what is in the box. Handing an item over still needs a manager, because &ldquo;yes, that phone is mine&rdquo; is where the risk is.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">21 checks on Lost &amp; Found pass. Front desk reads the list; front desk handing an item over is refused. Put the list back to manager-only and the read check fails.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>A wedding could be booked and never run</h3><span class="who">Manager</span></div>
+      <dl class="dl">
+        <dt>Found</dt><dd>The Events screen was opened as a manager. It could create an event and nothing else.</dd>
+        <dt>Was wrong</dt><dd>Confirming, staffing, setting stock aside, issuing it, starting and finishing all worked in the system, but the screen had no buttons for any of them. An event sat at &ldquo;planned&rdquo; forever. <b>Testing that repair for this document turned up three more faults, all now fixed.</b> Stock set aside for an event never appeared in the panel: the system sent the list in a wrapper the screen did not open, so it read &ldquo;Nothing set aside&rdquo; right after saying &ldquo;Set aside&rdquo;. Even once it appeared, it had no Issue button, because the screen and the system used different names for that state. And an event dropped off the screen the moment it was started, or once its start time passed, so it could never be finished.</dd>
+        <dt>Now</dt><dd>A &ldquo;Staff &amp; stock&rdquo; panel on every event. It offers only the steps the event can actually take next, and an event stays on the screen until it is finished or cancelled.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">A browser drove one event through every step using only the screen: confirmed, one person added, one item set aside and issued, started, page reloaded (the event was still there), stock returned, finished. Each step was confirmed against the system&rsquo;s own records. Before these fixes the same run stopped at Issue. Two further checks, that a started event and a late-starting event both stay listed, failed before the fix and pass after.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>Four screens opened for people the system then refused</h3><span class="who">Every role</span></div>
+      <dl class="dl">
+        <dt>Found</dt><dd>A real browser opened every screen as every role, 296 combinations, recording what each screen asked for and what came back. An earlier checker that only read the code had reported 14 problems: 12 were false, and it missed these.</dd>
+        <dt>Was wrong</dt><dd>A waiter could open the manager&rsquo;s suggestions inbox and the menu editor, and four kitchen and housekeeping roles could open queues that were not theirs. Two of them showed the refusal as good news: &ldquo;Nothing yet&rdquo; and &ldquo;No pending requests&rdquo;.</dd>
+        <dt>Now</dt><dd>Those screens now refuse at the door in plain English. The head chef and the manager, who are allowed in, still get in.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">The same 296-combination sweep: 0 screens offering what the system refuses.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>A panel opened inside a card cut half its form off the screen</h3><span class="who">Every app</span></div>
+      <dl class="dl">
+        <dt>Found</dt><dd>In Chrome, on Events, pressing &ldquo;Staff &amp; stock&rdquo; opened the panel hanging off the top of its card. The event name and the buttons could not be seen.</dd>
+        <dt>Was wrong</dt><dd>The panel measured its position against the card instead of the screen, because of how the card&rsquo;s animation is drawn. Any panel opened from inside a card was exposed to it.</dd>
+        <dt>Now</dt><dd>Every panel and pop-up in all three apps now opens against the screen itself. That fixes every place at once, including ones nobody had opened from a card yet.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">2 automatic checks build a card with the same trap and confirm the panel and the pop-up escape it. With the repair removed, both fail.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>A complaints screen could not load</h3><span class="who">Manager</span></div>
+      <dl class="dl">
+        <dt>Found</dt><dd>The complaints queue in the station app showed an error instead of complaints: the app had been sent a web page where it expected data.</dd>
+        <dt>Was wrong</dt><dd>The station app kept its list of the system&rsquo;s addresses in three places. Two copies were out of date, missing ten addresses between them, and the main copy was missing complaints.</dd>
+        <dt>Now</dt><dd>One list. The other two are built from it, so adding an address is one change, not three that drift apart.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">An automatic check reads every address the apps actually call and confirms the list covers each one. Take complaints off the list and it fails, naming the screen that calls it.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>A security alarm reported a fault that did not exist</h3><span class="who">Sign-in</span></div>
+      <dl class="dl">
+        <dt>Found</dt><dd>The security checks reported that sign-in leaked whether a username exists, through a 166&nbsp;ms difference in response time.</dd>
+        <dt>Was wrong</dt><dd>There was no leak. The check itself was wrong: it tried so many passwords that the account locked, and most of its timings measured the instant &ldquo;account locked&rdquo; reply instead of a real password check. Looking into it turned up a real hazard as well: the sign-in protection copied the password-strength settings once at start-up, so strengthening them later would have silently switched the protection off.</dd>
+        <dt>Now</dt><dd>The check unlocks the account between timings. The protection reads the current settings every time.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">4 timing checks pass. Stop unlocking between timings and the phantom leak comes straight back, at about 130&nbsp;ms.</dd>
+      </dl>
+    </div>
+
+    <div class="feature">
+      <div class="feature-name"><h3>The owner&rsquo;s dashboard invented two of its numbers</h3><span class="who">Owner</span></div>
+      <dl class="dl">
+        <dt>Found</dt><dd>During a trading day two guests were hurt, one at the jet-ski dock and one on the pool steps. Both were reported. The owner&rsquo;s front page read &ldquo;Incidents 0 Active&rdquo;.</dd>
+        <dt>Was wrong</dt><dd>That tile was counting theft alerts under the word &ldquo;Incidents&rdquo;. &ldquo;Spa Utilization&rdquo; read a figure the system does not have, so it showed 0% forever. &ldquo;Dining Reservations&rdquo; was the day&rsquo;s arrivals under another name.</dd>
+        <dt>Now</dt><dd>Guest Satisfaction, Arrivals Today, Guests Inside and Open Incidents. Each counts exactly what it is called.</dd>
+        <dt class="checked-dt">Checked</dt><dd class="checked">A browser opened the owner&rsquo;s dashboard and compared every tile with the system&rsquo;s own record: open incidents, guests inside and arrivals all matched, and neither invented tile appears. Point Open Incidents back at the theft alerts and the check fails.</dd>
+      </dl>
+    </div>
+
   </section>
 
   <footer>
