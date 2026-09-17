@@ -59,7 +59,8 @@ test('a booked event can be confirmed, staffed, stocked, started and finished fr
 
   // Staff it: first real person in the list, doing "Bar".
   await drawer.getByLabel('Person').selectOption({ index: 1 })
-  await drawer.getByLabel('Doing what').fill('Bar')
+  await drawer.getByLabel('Job').selectOption('SERVICE')
+  await drawer.getByLabel('Details (optional)').fill('Bar')
   await drawer.getByRole('button', { name: 'Add' }).click()
   await expect.poll(async () =>
     (await api('GET', `/events/${id}/assignments`, MANAGER)).data.length).toBe(1)

@@ -13,7 +13,7 @@ from app.models.event_type import EventType
 from app.models.event import Event, EventStatus
 from app.models.bookable_resource import BookableResource, ResourceType
 from app.services.business_day import _get_tz as _resort_tz
-from app.models.event_assignment import EventAssignment, AssignmentStatus
+from app.models.event_assignment import EventAssignment, AssignmentStatus, CrewJob
 from app.models.event_inventory_allocation import EventInventoryAllocation, AllocationStatus
 from app.models.inventory_item import InventoryItem
 from app.models.employee_profile import EmployeeProfile
@@ -54,6 +54,7 @@ def _assignment_dict(a: EventAssignment) -> dict:
         "employee_id":  a.employee_id,
         "employee_name": a.employee.full_name if a.employee else None,
         "role_on_event": a.role_on_event,
+        "job":          a.job,
         "status":       a.status,
     }
 
@@ -433,9 +434,14 @@ def assign_employee(event_id):
 
     data        = request.get_json(silent=True) or {}
     employee_id = data.get("employee_id")
-    role_txt    = (data.get("role_on_event") or "").strip()
-    if not employee_id or not role_txt:
-        return jsonify({"error": "employee_id and role_on_event are required."}), 400
+    job         = (data.get("job") or "").upper()
+    # The job is what the system acts on — who hears the plates, the drinks,
+    # the pickups. Free text alone ("Helping out") tells it nothing.
+    if job not in CrewJob.__members__:
+        return jsonify({"error": "Choose what they will do: kitchen, bar, service or setup."}), 400
+    role_txt    = (data.get("role_on_event") or "").strip() or job.capitalize()
+    if not employee_id:
+        return jsonify({"error": "employee_id is required."}), 400
 
     profile = db.session.get(EmployeeProfile, employee_id)
     if not profile or not profile.is_active:
@@ -443,7 +449,7 @@ def assign_employee(event_id):
 
     assignment = EventAssignment(
         event_id=event_id, employee_id=employee_id,
-        role_on_event=role_txt, notes=data.get("notes"),
+        role_on_event=role_txt, job=job, notes=data.get("notes"),
         created_by_id=actor.id,
     )
     db.session.add(assignment)

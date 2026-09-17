@@ -299,7 +299,7 @@ class TestAlertScheduling:
         eid = ev["id"]
         client.post(f"/events/{eid}/assignments", json={
             "employee_id": employee_profile.id,
-            "role_on_event": "Waiter",
+            "job": "SERVICE", "role_on_event": "Waiter",
         }, headers=auth(manager_token))
 
         # Confirm the event
@@ -326,7 +326,7 @@ class TestAlertScheduling:
             starts = starts.replace(tzinfo=timezone.utc)
 
         client.post(f"/events/{eid}/assignments", json={
-            "employee_id": employee_profile.id, "role_on_event": "Lead",
+            "employee_id": employee_profile.id, "job": "SERVICE", "role_on_event": "Lead",
         }, headers=auth(manager_token))
         client.post(f"/events/{eid}/confirm", headers=auth(manager_token))
 
@@ -362,7 +362,7 @@ class TestIdempotentConfirm:
         ev = _make_event(client, manager_token, event_type.id).get_json()
         eid = ev["id"]
         client.post(f"/events/{eid}/assignments", json={
-            "employee_id": employee_profile.id, "role_on_event": "Chef",
+            "employee_id": employee_profile.id, "job": "SERVICE", "role_on_event": "Chef",
         }, headers=auth(manager_token))
 
         client.post(f"/events/{eid}/confirm", headers=auth(manager_token))  # first
@@ -387,7 +387,7 @@ class TestCancellation:
         ev = _make_event(client, manager_token, event_type.id).get_json()
         eid = ev["id"]
         client.post(f"/events/{eid}/assignments", json={
-            "employee_id": employee_profile.id, "role_on_event": "Bar",
+            "employee_id": employee_profile.id, "job": "SERVICE", "role_on_event": "Bar",
         }, headers=auth(manager_token))
         client.post(f"/events/{eid}/confirm", headers=auth(manager_token))
         client.post(f"/events/{eid}/cancel",  headers=auth(manager_token))
@@ -508,7 +508,7 @@ class TestReminderWording:
             "ends_at_utc": (start + timedelta(hours=6)).isoformat(),
         }).get_json()["id"]
         client.post(f"/events/{eid}/assignments", headers=auth(manager_token),
-                    json={"employee_id": employee_profile.id, "role_on_event": "Bar"})
+                    json={"employee_id": employee_profile.id, "job": "SERVICE", "role_on_event": "Bar"})
         client.post(f"/events/{eid}/confirm", headers=auth(manager_token))
         body = db.session.query(Notification).filter_by(reference_id=eid).first().body
         assert "14 Mar 2030 14:00" in body and "UTC" not in body
@@ -826,7 +826,7 @@ class TestAssignments:
         ev = _make_event(client, manager_token, event_type.id).get_json()
         rv = client.post(f"/events/{ev['id']}/assignments", json={
             "employee_id": employee_profile.id,
-            "role_on_event": "Head Chef",
+            "job": "SERVICE", "role_on_event": "Head Chef",
         }, headers=auth(manager_token))
         assert rv.status_code == 201
         assert rv.get_json()["status"] == "ASSIGNED"
@@ -835,7 +835,7 @@ class TestAssignments:
             self, client, manager_token, waiter_token, event_type, employee_profile):
         ev = _make_event(client, manager_token, event_type.id).get_json()
         rv = client.post(f"/events/{ev['id']}/assignments", json={
-            "employee_id": employee_profile.id, "role_on_event": "Waiter",
+            "employee_id": employee_profile.id, "job": "SERVICE", "role_on_event": "Waiter",
         }, headers=auth(manager_token))
         aid = rv.get_json()["id"]
         rv = client.post(f"/events/{ev['id']}/assignments/{aid}/acknowledge",
@@ -854,7 +854,7 @@ class TestAssignments:
 
         # Assign after confirm → notifications created immediately
         rv = client.post(f"/events/{eid}/assignments", json={
-            "employee_id": employee_profile.id, "role_on_event": "DJ",
+            "employee_id": employee_profile.id, "job": "SERVICE", "role_on_event": "DJ",
         }, headers=auth(manager_token))
         assert rv.get_json()["notifications_scheduled"] == 4
 

@@ -16,6 +16,18 @@ class AssignmentStatus(str, enum.Enum):
     CANCELLED    = "CANCELLED"
 
 
+class CrewJob(str, enum.Enum):
+    """What a person does at the event — what the system tells them and when.
+
+    KITCHEN hears the plates, BAR the drinks, SERVICE is told when a dish is
+    ready for pickup. The free-text role_on_event stays as the description.
+    """
+    KITCHEN = "KITCHEN"
+    BAR     = "BAR"
+    SERVICE = "SERVICE"
+    SETUP   = "SETUP"
+
+
 VALID_ASSIGNMENT_TRANSITIONS: dict[str, set] = {
     AssignmentStatus.ASSIGNED.value:     {AssignmentStatus.ACKNOWLEDGED.value,
                                           AssignmentStatus.CANCELLED.value},
@@ -33,6 +45,8 @@ class EventAssignment(db.Model):
     employee_id  = db.Column(db.String(36), db.ForeignKey("employee_profiles.id"),
                              nullable=False)
     role_on_event = db.Column(db.String(100), nullable=False)
+    # Nullable only for assignments made before jobs existed; required on new ones.
+    job           = db.Column(db.String(10), nullable=True)
     notes         = db.Column(db.Text, nullable=True)
     status        = db.Column(db.String(15), nullable=False, default=AssignmentStatus.ASSIGNED.value)
     created_by_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)

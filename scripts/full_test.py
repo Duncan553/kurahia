@@ -755,7 +755,7 @@ print("\n--- Test 23: Assign staff to event ---")
 assign_code = "SKIP"
 if EVT_ID and W1_PROF:
     r = requests.post(f"{BASE}/events/{EVT_ID}/assignments", headers=auth(W),
-                       json={"employee_id": W1_PROF, "role_on_event": "Server"})
+                       json={"employee_id": W1_PROF, "job": "SERVICE", "role_on_event": "Server"})
     assign_code = r.status_code
     print(f"  Assign staff: HTTP {assign_code} | {safe_json(r)}")
 

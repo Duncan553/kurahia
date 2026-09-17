@@ -28,8 +28,18 @@ interface Assignment {
   employee_id: string
   employee_name: string | null
   role_on_event: string
+  job: string | null
   status: string
 }
+
+// What a crew member does — the system acts on it: KITCHEN hears the plates,
+// BAR the drinks, SERVICE is told when a dish is ready for pickup.
+const JOBS = [
+  { value: 'KITCHEN', label: 'Kitchen — cooks the food' },
+  { value: 'BAR',     label: 'Bar — prepares the drinks' },
+  { value: 'SERVICE', label: 'Service — carries it out' },
+  { value: 'SETUP',   label: 'Setup' },
+]
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -444,6 +454,7 @@ function RunPanel({ event, onClose }: { event: EventItem; onClose: () => void })
 
   const [who, setWho] = useState('')
   const [role, setRole] = useState('')
+  const [job, setJob] = useState('')
   const [itemId, setItemId] = useState('')
   const [qty, setQty] = useState('')
 
@@ -491,7 +502,7 @@ function RunPanel({ event, onClose }: { event: EventItem; onClose: () => void })
 
   const assign = useMutation({
     mutationFn: () => api.post(`/events/${event.id}/assignments`,
-      { employee_id: who, role_on_event: role.trim() }),
+      { employee_id: who, job, role_on_event: role.trim() || null }),
     onSuccess: (r) => {
       const n = (r.data as { notifications_scheduled?: number })?.notifications_scheduled
       addToast({
@@ -502,7 +513,7 @@ function RunPanel({ event, onClose }: { event: EventItem; onClose: () => void })
                    : 'Added. Reminders go out when the event is confirmed.',
         type: 'success',
       })
-      setWho(''); setRole(''); refresh()
+      setWho(''); setRole(''); setJob(''); refresh()
     },
     onError: fail,
   })
@@ -587,9 +598,11 @@ function RunPanel({ event, onClose }: { event: EventItem; onClose: () => void })
               options={[{ value: '', label: 'Pick someone' },
                         ...staff.filter(s => s.is_active !== false)
                                 .map(s => ({ value: s.id, label: s.full_name }))]} />
-            <Input label="Doing what" value={role} onChange={e => setRole(e.target.value)}
-              placeholder="Bar, service, setup…" />
-            <Button className="sm:self-end" disabled={!who || !role.trim() || assign.isPending}
+            <Select label="Job" value={job} onChange={e => setJob(e.target.value)}
+              options={[{ value: '', label: 'Pick a job' }, ...JOBS]} />
+            <Input label="Details (optional)" value={role} onChange={e => setRole(e.target.value)}
+              placeholder="e.g. head waiter" />
+            <Button className="sm:self-end" disabled={!who || !job || assign.isPending}
               onClick={() => assign.mutate()}>Add</Button>
           </div>
         )}

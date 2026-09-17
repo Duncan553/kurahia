@@ -802,7 +802,7 @@ def test_staff_cannot_allocate_or_read_event_inventory(client, waiter_token, eve
 
 def test_assignment_of_inactive_employee_refused(client, manager_token, event_id, app):
     rv = client.post(f"/events/{event_id}/assignments", headers=H(manager_token),
-                     json={"employee_id": "ghost", "role_on_event": "server"})
+                     json={"employee_id": "ghost", "job": "SERVICE", "role_on_event": "server"})
     assert rv.status_code == 404
 
 

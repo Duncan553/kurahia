@@ -493,7 +493,7 @@ class TestTheEventHasItsOwnBill:
             self, client, manager_token, waiter_token, event_id, drink_item_id, waiter_profile):
         tab_id = self._confirmed(client, manager_token, event_id)["tab_id"]
         client.post(f"/events/{event_id}/assignments", headers=H(manager_token),
-                    json={"employee_id": waiter_profile.id, "role_on_event": "Bar"})
+                    json={"employee_id": waiter_profile.id, "job": "SERVICE", "role_on_event": "Bar"})
         rv = client.post("/orders", headers=H(waiter_token),
                          json={"tab_id": tab_id, "items": [{"menu_item_id": drink_item_id}]})
         assert rv.status_code == 201, rv.get_json()
@@ -578,3 +578,87 @@ class TestEventDishesOnTheKitchenBoard:
         assert client.post(f"/order-items/{oi.id}/receive", headers=H(chef_token)).status_code == 200
         ticket = client.get("/kitchen/queue", headers=H(chef_token)).get_json()[0]
         assert ticket["event"]["can_start"] is True
+
+
+# ── The event crew ────────────────────────────────────────────────────────────
+
+class TestTheEventCrew:
+    """The manager decides who handles an event's food, drinks and service, and
+    the system tells exactly those people — not whoever pressed a button."""
+
+    def _assign(self, client, manager_token, event_id, profile_id, job, **extra):
+        return client.post(f"/events/{event_id}/assignments", headers=H(manager_token),
+                           json={"employee_id": profile_id, "job": job, **extra})
+
+    def test_every_crew_member_has_a_job_the_system_understands(
+            self, client, manager_token, event_id, waiter_profile):
+        rv = client.post(f"/events/{event_id}/assignments", headers=H(manager_token),
+                         json={"employee_id": waiter_profile.id, "role_on_event": "Helping out"})
+        assert rv.status_code == 400
+        assert "kitchen, bar, service or setup" in rv.get_json()["error"].lower()
+        rv = self._assign(client, manager_token, event_id, waiter_profile.id, "SERVICE",
+                          role_on_event="Head waiter")
+        assert rv.status_code == 201
+        assert (rv.get_json()["job"], rv.get_json()["role_on_event"]) == ("SERVICE", "Head waiter")
+        # No description given: the job is the description.
+        rv = self._assign(client, manager_token, event_id, waiter_profile.id, "SETUP")
+        assert rv.get_json()["role_on_event"] == "Setup"
+
+    def test_the_kitchen_crew_is_told_the_plates_and_the_bar_crew_the_drinks(
+            self, client, manager_token, kitchen_token, event_id, pilau, soda, waiter_profile):
+        from app.extensions import db
+        from app.models.notification import Notification
+        from app.models.employee_profile import EmployeeProfile
+        from app.models.user import User
+        cook = db.session.query(User).filter_by(username="kitchen1").one()
+        cook_profile = db.session.query(EmployeeProfile).filter_by(user_id=cook.id).one()
+        self._assign(client, manager_token, event_id, cook_profile.id, "KITCHEN")
+        self._assign(client, manager_token, event_id, waiter_profile.id, "BAR")
+        _plan(client, manager_token, event_id, pilau, 40)
+        _plan(client, manager_token, event_id, soda, 50)
+        client.post(f"/events/{event_id}/confirm", headers=H(manager_token))
+        told = lambda username: [n.body for n in db.session.query(Notification).filter_by(
+            reference_id=event_id, reference_type="event_menu",
+            recipient_user_id=db.session.query(User).filter_by(username=username).one().id)]
+        assert any("40 × Pilau" in b for b in told("kitchen1"))
+        assert not any("Soda" in b for b in told("kitchen1"))
+        assert any("50 × Soda" in b for b in told("waiter1"))
+
+    def test_ready_for_pickup_goes_to_the_service_crew_not_the_sender(
+            self, client, manager_token, chef_token, kitchen_token, event_type_id, pilau, waiter_profile):
+        from app.extensions import db
+        from app.models.notification import Notification
+        from app.models.order_item import OrderItem
+        from app.models.employee_profile import EmployeeProfile
+        from app.models.user import User
+        eid = _event(client, manager_token, event_type_id, days=0)
+        self._assign(client, manager_token, eid, waiter_profile.id, "SERVICE")
+        # A second server: a message key shared per dish would refuse this one.
+        second = db.session.query(EmployeeProfile).join(User).filter(User.username == "kitchen1").one()
+        self._assign(client, manager_token, eid, second.id, "SERVICE")
+        _plan(client, manager_token, eid, pilau, 10)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        client.post(f"/events/{eid}/send", headers=H(manager_token), json={})
+        oi = db.session.query(OrderItem).filter_by(menu_item_id=pilau).one()
+        client.post(f"/order-items/{oi.id}/receive", headers=H(chef_token))
+        client.post(f"/order-items/{oi.id}/ready", headers=H(chef_token))
+        ready = db.session.query(Notification).filter_by(reference_id=oi.id, reference_type="order_ready").all()
+        who = {db.session.get(User, n.recipient_user_id).username for n in ready}
+        assert who == {"waiter1", "kitchen1"}
+        assert "Otieno Wedding" in ready[0].body
+
+    def test_with_no_service_crew_the_sender_is_still_told(
+            self, client, manager_token, chef_token, event_type_id, pilau):
+        from app.extensions import db
+        from app.models.notification import Notification
+        from app.models.order_item import OrderItem
+        from app.models.user import User
+        eid = _event(client, manager_token, event_type_id, days=0)
+        _plan(client, manager_token, eid, pilau, 10)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        client.post(f"/events/{eid}/send", headers=H(manager_token), json={})
+        oi = db.session.query(OrderItem).filter_by(menu_item_id=pilau).one()
+        client.post(f"/order-items/{oi.id}/receive", headers=H(chef_token))
+        client.post(f"/order-items/{oi.id}/ready", headers=H(chef_token))
+        ready = db.session.query(Notification).filter_by(reference_id=oi.id, reference_type="order_ready").all()
+        assert {db.session.get(User, n.recipient_user_id).username for n in ready} == {"manager1"}

@@ -394,19 +394,30 @@ def _notify_waiter_ready(oi: OrderItem):
     qty_txt = str(qty.quantize(Decimal("1"))) if qty == qty.to_integral_value() else str(qty.normalize())
     body = f"{tab_ref}: {qty_txt}x {item_name} is ready for pickup."
 
-    db.session.add(Notification(
-        recipient_user_id=order.created_by_id,
-        reference_type="order_ready",
-        reference_id=oi.id,
-        subject=f"Order ready — {tab_ref}",
-        body=body,
-        status=NotificationStatus.DELIVERED.value,
-        channel=NotificationChannel.IN_APP.value,
-        scheduled_for_utc=datetime.now(timezone.utc),
-        sent_at_utc=datetime.now(timezone.utc),
-        idempotency_key=f"order-ready-{oi.id}",
-    ))
-    push_to_user(order.created_by_id, f"Order ready — {tab_ref}", body, "order_ready")
+    # An event's dish is carried out by the service crew the manager chose,
+    # not by the manager who pressed Send. No crew set → the sender, so the
+    # plate is never left at the pass with nobody told.
+    from app.services.event_menu import event_for_tab, crew
+    event = event_for_tab(order.tab_id)
+    recipients = [u.id for u in crew(event, "SERVICE")] if event else []
+    if event:
+        body = f"{event.title}: {qty_txt}x {item_name} is ready for pickup."
+    for recipient_id in recipients or [order.created_by_id]:
+        db.session.add(Notification(
+            recipient_user_id=recipient_id,
+            reference_type="order_ready",
+            reference_id=oi.id,
+            subject=f"Order ready — {tab_ref}",
+            body=body,
+            status=NotificationStatus.DELIVERED.value,
+            channel=NotificationChannel.IN_APP.value,
+            scheduled_for_utc=datetime.now(timezone.utc),
+            sent_at_utc=datetime.now(timezone.utc),
+            # One per person per dish — two service crew are two messages, and a
+            # key shared between them would refuse the second.
+            idempotency_key=f"order-ready-{oi.id}-{recipient_id}",
+        ))
+        push_to_user(recipient_id, f"Order ready — {tab_ref}", body, "order_ready")
 
 
 # ── Order Item transitions ────────────────────────────────────────────────────

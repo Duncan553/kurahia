@@ -840,7 +840,7 @@ for p in profiles:
 
   ASSIGN_RESP=$(curl -s -w "\n%{http_code}" "$BASE/events/$EVT_ID/assignments" -X POST \
     -H "$(A $WACHIRA)" -H 'Content-Type: application/json' \
-    -d "{\"employee_id\":\"$W1_EP\",\"role_on_event\":\"Server\"}")
+    -d "{\"employee_id\":\"$W1_EP\",\"job\":\"SERVICE\",\"role_on_event\":\"Server\"}")
   ASSIGN_CODE=$(echo "$ASSIGN_RESP" | tail -1)
   ASSIGN_BODY=$(echo "$ASSIGN_RESP" | sed '$d')
   echo "  Assign staff: HTTP $ASSIGN_CODE | $ASSIGN_BODY"

@@ -350,6 +350,20 @@ def _tell(users: list[User], event: Event, subject: str, body: str) -> None:
         ))
 
 
+def crew(event: Event, job: str) -> list[User]:
+    """Active users the manager put on this event to do `job`."""
+    from app.models.event_assignment import EventAssignment, AssignmentStatus
+    from app.models.employee_profile import EmployeeProfile
+    return db.session.query(User).join(EmployeeProfile, EmployeeProfile.user_id == User.id).join(
+        EventAssignment, EventAssignment.employee_id == EmployeeProfile.id
+    ).filter(
+        EventAssignment.event_id == event.id,
+        EventAssignment.job == job,
+        EventAssignment.status != AssignmentStatus.CANCELLED.value,
+        User.is_active.is_(True),
+    ).all()
+
+
 def announce_menu(event: Event) -> None:
     """Tell the head chef (food), the bar lead (drinks) and managers what is planned."""
     lines = active_lines(event.id, unsent_only=True)
@@ -359,11 +373,14 @@ def announce_menu(event: Event) -> None:
     listing = lambda ls: ", ".join(f"{plates(l.quantity)} × {l.menu_item.name}" for l in ls)
     food = [l for l in lines if l.menu_item.prep_station == PrepStation.KITCHEN.value]
     drink = [l for l in lines if l.menu_item.prep_station == PrepStation.BAR.value]
+    # The station leads always hear it; so does whoever the manager put on
+    # this event's kitchen or bar crew.
+    unique = lambda users: list({u.id: u for u in users}.values())
     if food:
-        _tell(_people(role_names=["head_chef"]), event,
+        _tell(unique(_people(role_names=["head_chef"]) + crew(event, "KITCHEN")), event,
               f"Plates for {event.title}", f"{event.title} on {when}: {listing(food)}.")
     if drink:
-        _tell(_people(role_names=["bar_lead"]), event,
+        _tell(unique(_people(role_names=["bar_lead"]) + crew(event, "BAR")), event,
               f"Drinks for {event.title}", f"{event.title} on {when}: {listing(drink)}.")
     # What is short NOW, whether or not a request for it already exists — a
     # notice built from newly written requests said "covers it" when the list

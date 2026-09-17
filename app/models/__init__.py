@@ -41,7 +41,7 @@ from .gate_entry import GateEntry
 from .gate_headcount import GateHeadcount
 from .event_type import EventType
 from .event import Event, EventStatus, VALID_EVENT_TRANSITIONS
-from .event_assignment import EventAssignment, AssignmentStatus, VALID_ASSIGNMENT_TRANSITIONS
+from .event_assignment import EventAssignment, AssignmentStatus, VALID_ASSIGNMENT_TRANSITIONS, CrewJob
 from .event_inventory_allocation import (
     EventInventoryAllocation, AllocationStatus, VALID_ALLOCATION_TRANSITIONS,
 )
