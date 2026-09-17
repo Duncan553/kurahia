@@ -17,6 +17,7 @@ from app.utils.money import parse_quantity
 from app.models.user import User
 from app.models.event import Event, EventStatus
 from app.models.event_menu_line import EventMenuLine
+from app.models.employee_profile import EmployeeProfile
 from app.models.menu_item import MenuItem
 from app.models.order import Order
 from app.models.order_item import OrderItem
@@ -234,3 +235,41 @@ def send_menu(event_id):
                  details=f"{event.title}: {len(lines)} line(s)")
     db.session.commit()
     return jsonify({"order_id": order.id, "lines_sent": len(lines), "bill": em.bill_dict(event)}), 200
+
+
+@events_bp.get("/prep")
+@require_active_user
+def station_prep():
+    """Upcoming confirmed events and what they will need from one station.
+
+    Feeds the Events tab on the kitchen/bar board — the same tablet as counter
+    orders, never the same list — so a station sees a wedding coming days
+    before any dish is sent.
+    """
+    from datetime import timedelta
+    from app.models.menu_item import PrepStation
+    actor = db.session.get(User, get_jwt_identity())
+    station = (request.args.get("station") or "").upper()
+    if station not in (PrepStation.KITCHEN.value, PrepStation.BAR.value):
+        return jsonify({"error": "station must be KITCHEN or BAR."}), 400
+    dept = actor.department.name.upper() if actor.department else ""
+    if actor.role.level < em.MANAGER_LEVEL and dept != station:
+        return jsonify({"error": f"Only {station.lower()} staff or a manager can see this."}), 403
+
+    horizon = datetime.now(timezone.utc) + timedelta(days=14)
+    events = db.session.query(Event).filter(
+        Event.status.in_((EventStatus.CONFIRMED.value, EventStatus.IN_PROGRESS.value)),
+        Event.starts_at_utc <= horizon,
+    ).order_by(Event.starts_at_utc).all()
+    job = "KITCHEN" if station == PrepStation.KITCHEN.value else "BAR"
+    rows = []
+    for event in events:
+        planned = [l for l in em.active_lines(event.id, unsent_only=True)
+                   if l.menu_item.prep_station == station]
+        rows.append({
+            "event": em.board_event(event),
+            "crew": [name for (name,) in db.session.query(EmployeeProfile.full_name).filter(
+                         EmployeeProfile.user_id.in_([u.id for u in em.crew(event, job)]))],
+            "planned": [{"name": l.menu_item.name, "plates": em.plates(l.quantity)} for l in planned],
+        })
+    return jsonify(rows), 200

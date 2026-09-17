@@ -662,3 +662,39 @@ class TestTheEventCrew:
         client.post(f"/order-items/{oi.id}/ready", headers=H(chef_token))
         ready = db.session.query(Notification).filter_by(reference_id=oi.id, reference_type="order_ready").all()
         assert {db.session.get(User, n.recipient_user_id).username for n in ready} == {"manager1"}
+
+
+# ── Coming up, on the kitchen's Events tab ────────────────────────────────────
+
+class TestTheKitchenSeesEventsComingUp:
+    """One tablet, two tabs: Orders and Events. The Events tab shows what each
+    upcoming event will need from THIS station, days before anything is sent."""
+
+    def test_planned_plates_show_days_ahead_for_the_right_station(
+            self, client, manager_token, chef_token, kitchen_token, event_type_id, pilau, soda):
+        from app.extensions import db
+        from app.models.employee_profile import EmployeeProfile
+        from app.models.user import User
+        eid = _event(client, manager_token, event_type_id, days=5, guests=120, title="Mwangi Wedding")
+        cook = db.session.query(EmployeeProfile).join(User).filter(User.username == "kitchen1").one()
+        client.post(f"/events/{eid}/assignments", headers=H(manager_token),
+                    json={"employee_id": cook.id, "job": "KITCHEN"})
+        _plan(client, manager_token, eid, pilau, 40)
+        _plan(client, manager_token, eid, soda, 50)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        rows = client.get("/events/prep?station=KITCHEN", headers=H(chef_token)).get_json()
+        row = next(r for r in rows if r["event"]["id"] == eid)
+        assert (row["event"]["title"], row["event"]["expected_guests"], row["event"]["can_start"]) == \
+               ("Mwangi Wedding", 120, False)
+        assert row["crew"] == ["Test Kitchen"]
+        assert row["planned"] == [{"name": "Pilau", "plates": "40"}]      # the bar's Soda is not here
+
+    def test_a_planned_event_not_yet_confirmed_is_not_shown(
+            self, client, manager_token, chef_token, event_id, pilau):
+        _plan(client, manager_token, event_id, pilau, 40)
+        assert client.get("/events/prep?station=KITCHEN", headers=H(chef_token)).get_json() == []
+
+    def test_only_that_station_or_a_manager_may_look(self, client, waiter_token, manager_token):
+        assert client.get("/events/prep?station=KITCHEN", headers=H(waiter_token)).status_code == 403
+        assert client.get("/events/prep?station=KITCHEN", headers=H(manager_token)).status_code == 200
+        assert client.get("/events/prep?station=SPA", headers=H(manager_token)).status_code == 400

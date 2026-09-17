@@ -45,6 +45,12 @@ interface BoardEvent {
   can_start: boolean
 }
 
+interface PrepRow {
+  event: BoardEvent
+  crew: string[]
+  planned: { name: string; plates: string }[]
+}
+
 interface OrderGroup {
   order_id: string
   tab_reference: string | null
@@ -336,6 +342,19 @@ function StationBoard({ station }: { station: Station }) {
     staleTime: 0,
   })
 
+  // Upcoming events and what they will need from this station, days before
+  // anything is sent (GET /events/prep). Shown only on the Events tab.
+  const { data: prep = [] } = useQuery<PrepRow[]>({
+    queryKey: ['event-prep', station],
+    queryFn: () => api.get<PrepRow[]>(`/events/prep?station=${station}`).then(r => r.data),
+    refetchInterval: 60_000,
+  })
+
+  // One tablet, two tabs that never mix. Orders is home.
+  const [view, setView] = useState<'orders' | 'events'>('orders')
+  const [ordersWaiting, setOrdersWaiting] = useState(false)
+  const lastTouch = useRef(Date.now())
+
   // lib/audio.ts's `muted` module variable starts false regardless of what
   // was persisted last session — sync it once on mount so a previously-muted
   // tablet doesn't start alerting again until someone re-taps the button.
@@ -346,11 +365,26 @@ function StationBoard({ station }: { station: Station }) {
     if (!items.length) return
     const currentIds = new Set(items.map(i => i.order_item_id))
     if (prevIdsRef.current.size > 0) {
-      const hasNew = items.some(i => !prevIdsRef.current.has(i.order_item_id))
-      if (hasNew) playOrderAlert(station)
+      const fresh = items.filter(i => !prevIdsRef.current.has(i.order_item_id))
+      // An event's dishes sent days early are not something to cook now, so
+      // they do not ring. Counter orders always do.
+      const counterNew = fresh.some(i => !i.event)
+      if (counterNew || fresh.some(i => i.event?.can_start)) playOrderAlert(station)
+      if (counterNew && view === 'events') setOrdersWaiting(true)
     }
     prevIdsRef.current = currentIds
-  }, [items, station])
+  }, [items, station])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A cook left on Events must not miss a guest's order: once a counter order
+  // is waiting and nobody has touched the screen for 20s, go back to Orders.
+  useEffect(() => {
+    if (view === 'orders') { setOrdersWaiting(false); return }
+    if (!ordersWaiting) return
+    const id = setInterval(() => {
+      if (Date.now() - lastTouch.current > 20_000) setView('orders')
+    }, 2_000)
+    return () => clearInterval(id)
+  }, [view, ordersWaiting])
 
   const actMut = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'receive' | 'ready' | 'unreceive' }) =>
@@ -388,6 +422,19 @@ function StationBoard({ station }: { station: Station }) {
     }
     return [...byEvent.values()].sort((a, b) => a.event.starts_at.localeCompare(b.event.starts_at))
   }, [sortedGroups])
+
+  // Every event the Events tab shows: sent tickets and/or plans still to come.
+  const eventsTab = useMemo(() => {
+    const rows = new Map<string, { event: BoardEvent; groups: OrderGroup[]; prep?: PrepRow }>()
+    for (const sec of eventSections) rows.set(sec.event.id, { ...sec })
+    for (const p of prep) {
+      const row = rows.get(p.event.id) ?? { event: p.event, groups: [] }
+      rows.set(p.event.id, { ...row, prep: p })
+    }
+    return [...rows.values()]
+      .filter(r => r.groups.length > 0 || (r.prep?.planned.length ?? 0) > 0)
+      .sort((a, b) => a.event.starts_at.localeCompare(b.event.starts_at))
+  }, [eventSections, prep])
 
   // Stats — the counter only. Event dishes are planned, not waiting.
   const counterItems = items.filter(i => !i.event)
@@ -443,8 +490,25 @@ function StationBoard({ station }: { station: Station }) {
         </button>
       </div>
 
+      {/* ── Tabs: one tablet, two lists that never mix ─────────── */}
+      <div className="flex gap-2 px-6 pt-3" role="tablist">
+        {([
+          ['orders', 'Orders', counterGroups.length, ordersWaiting],
+          ['events', 'Events', eventsTab.length, eventsTab.some(r => r.event.can_start && r.groups.length > 0)],
+        ] as const).map(([id, label, count, hot]) => (
+          <button key={id} role="tab" aria-selected={view === id} onClick={() => setView(id)}
+            className={`min-h-[44px] px-5 rounded-xl text-sm font-bold uppercase tracking-wider border transition-colors ${
+              view === id ? 'bg-white/10 text-ink-primary border-white/20'
+                          : 'text-ink-tertiary border-white/[0.08] hover:text-ink-secondary'
+            } ${hot && view !== id ? 'animate-pulse border-status-failed/50 text-status-failed' : ''}`}>
+            {label} <span className="ml-1 tabular-nums">{count}</span>
+          </button>
+        ))}
+      </div>
+
       {/* ── Content ─────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-auto p-6 glass-scroll">
+      <div className="flex-1 overflow-auto p-6 glass-scroll"
+        onPointerDown={() => { lastTouch.current = Date.now() }}>
         {isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {[1, 2, 3].map(i => (
@@ -460,7 +524,7 @@ function StationBoard({ station }: { station: Station }) {
           </div>
         )}
 
-        {!isLoading && !isError && items.length === 0 && (
+        {view === 'orders' && !isLoading && !isError && counterGroups.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Icon name="check" size={64} strokeWidth={1.5} className="mb-4 text-status-paid" />
             <p className="text-2xl font-bold text-ink-primary">Queue Clear</p>
@@ -468,33 +532,7 @@ function StationBoard({ station }: { station: Station }) {
           </div>
         )}
 
-        {!isLoading && !isError && eventSections.map(({ event, groups }) => (
-          <section key={event.id} className="mb-8">
-            <div className="mb-3 rounded-xl border border-primary-main/30 bg-primary-main/10 px-4 py-3">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="text-lg font-bold text-ink-primary">{event.title}</h2>
-                <span className={`text-xs font-bold uppercase tracking-wider ${event.can_start ? 'text-status-paid' : 'text-ink-tertiary'}`}>
-                  {event.can_start ? 'Today — cook now' : `Opens ${opensLabel(event)}`}
-                </span>
-              </div>
-              <p className="text-sm text-ink-secondary">
-                {eventWhen(event)}{event.venue ? ` · ${event.venue}` : ''} · {event.expected_guests} guests
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {groups.map(group => (
-                <OrderTicket key={group.order_id} group={group} station={station}
-                  onAction={(id, action) => actMut.mutate({ id, action })} isPending={actMut.isPending} />
-              ))}
-            </div>
-          </section>
-        ))}
-
-        {!isLoading && !isError && eventSections.length > 0 && counterGroups.length > 0 && (
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-ink-tertiary">Counter orders</h2>
-        )}
-
-        {!isLoading && !isError && counterGroups.length > 0 && (
+        {view === 'orders' && !isLoading && !isError && counterGroups.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             <AnimatePresence mode="popLayout">
               {counterGroups.map(group => (
@@ -509,6 +547,46 @@ function StationBoard({ station }: { station: Station }) {
             </AnimatePresence>
           </div>
         )}
+
+        {view === 'events' && !isLoading && !isError && eventsTab.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <p className="text-2xl font-bold text-ink-primary">No events coming up</p>
+            <p className="text-ink-tertiary mt-1">Confirmed events for the next two weeks show here</p>
+          </div>
+        )}
+
+        {view === 'events' && !isLoading && !isError && eventsTab.map(({ event, groups, prep: p }) => (
+          <section key={event.id} className="mb-8">
+            <div className="mb-3 rounded-xl border border-primary-main/30 bg-primary-main/10 px-4 py-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="text-lg font-bold text-ink-primary">{event.title}</h2>
+                <span className={`text-xs font-bold uppercase tracking-wider ${event.can_start ? 'text-status-paid' : 'text-ink-tertiary'}`}>
+                  {event.can_start ? 'Today — cook now' : `Opens ${opensLabel(event)}`}
+                </span>
+              </div>
+              <p className="text-sm text-ink-secondary">
+                {eventWhen(event)}{event.venue ? ` · ${event.venue}` : ''} · {event.expected_guests} guests
+              </p>
+              {p && p.crew.length > 0 && (
+                <p className="text-xs text-ink-tertiary mt-1">Crew: {p.crew.join(', ')}</p>
+              )}
+              {p && p.planned.length > 0 && (
+                <p className="text-sm text-ink-primary mt-2">
+                  To prepare: {p.planned.map(l => `${l.plates} × ${l.name}`).join(', ')}
+                  <span className="text-ink-tertiary"> — sent to this board on the day</span>
+                </p>
+              )}
+            </div>
+            {groups.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {groups.map(group => (
+                  <OrderTicket key={group.order_id} group={group} station={station}
+                    onAction={(id, action) => actMut.mutate({ id, action })} isPending={actMut.isPending} />
+                ))}
+              </div>
+            )}
+          </section>
+        ))}
       </div>
     </div>
   )
