@@ -202,7 +202,10 @@ export default function ResourcesScreen() {
   // whole edit thrown back at them with "Only the owner can change resource
   // pricing" — about a price they had not touched. Send the field only when the
   // person is allowed to change it.
-  const mayPrice = roleLevel >= 10
+  // A venue's hire fee is the exception: running the spaces is the manager's job
+  // (decided 17 Sep 2026), so the backend lets them set it. A villa rate is not.
+  const isVenue = f.resource_type === 'EVENT_VENUE'
+  const mayPrice = roleLevel >= 10 || isVenue
   const body = () => ({
     name: f.name.trim(),
     resource_type: f.resource_type,
@@ -250,14 +253,14 @@ export default function ResourcesScreen() {
           onChange={e => setF({ ...f, resource_type: e.target.value })} options={TYPES} />
       </FormField>
       <div className="grid grid-cols-2 gap-3">
-        <FormField label="Nightly / session rate (KSh)" htmlFor="r-price" required>
+        <FormField label={isVenue ? 'Hire fee (KSh)' : 'Nightly / session rate (KSh)'} htmlFor="r-price" required>
           <Input id="r-price" required type="number" min="0" step="0.01" inputMode="decimal"
             placeholder="0.00" value={f.base_price}
             readOnly={!mayPrice}
             title={mayPrice ? undefined : 'Only the owner sets the rate'}
             onChange={e => setF({ ...f, base_price: e.target.value })} />
         </FormField>
-        <FormField label="Sleeps / seats" htmlFor="r-cap">
+        <FormField label={isVenue ? 'Guests it holds' : 'Sleeps / seats'} htmlFor="r-cap">
           <Input id="r-cap" type="number" min="0" step="1" inputMode="numeric" placeholder="Optional"
             value={f.capacity} onChange={e => setF({ ...f, capacity: e.target.value })} />
         </FormField>
@@ -331,7 +334,7 @@ export default function ResourcesScreen() {
                     </div>
                     <p className="text-sm text-ink-secondary tabular-nums">
                       KSh {parseFloat(r.base_price || '0').toLocaleString()}
-                      {r.capacity ? <span className="text-ink-tertiary"> · sleeps {r.capacity}</span> : null}
+                      {r.capacity ? <span className="text-ink-tertiary"> · {r.resource_type === 'EVENT_VENUE' ? 'holds' : 'sleeps'} {r.capacity}</span> : null}
                     </p>
                   </div>
                 ))}

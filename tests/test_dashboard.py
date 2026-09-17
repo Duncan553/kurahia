@@ -357,10 +357,12 @@ class TestRetrofit:
             db.session.commit()
             et_id = et.id
 
+        from tests.helpers import make_venue
         now = datetime.now(timezone.utc)
         rv = client.post("/events", json={
             "title": "Retrofit Test Event",
             "event_type_id": et_id,
+            "venue_id": make_venue(),
             "starts_at_utc": (now + timedelta(days=5)).isoformat(),
             "ends_at_utc":   (now + timedelta(days=5, hours=4)).isoformat(),
             "expected_guests": 20,

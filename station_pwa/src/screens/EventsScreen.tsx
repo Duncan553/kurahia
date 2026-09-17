@@ -76,6 +76,7 @@ const extractErr = (e: unknown) =>
   (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Something went wrong.'
 
 interface EventType { id: string; name: string }
+interface Venue { id: string; name: string; capacity: number | null }
 
 /** Create an event. Manager+ per the backend (app/events/core.py) — this
  * screen was read-only (view + acknowledge assignments) with no way for
@@ -89,12 +90,24 @@ function CreateEventModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [startsAt, setStartsAt] = useState('')
   const [endsAt, setEndsAt] = useState('')
   const [guests, setGuests] = useState('1')
-  const [location, setLocation] = useState('')
-  const [idem] = useState(() => crypto.randomUUID())
+  const [venueId, setVenueId] = useState('')
+  // One key per event, not per form. The form stays mounted between opens, so a
+  // key made once was reused: every event after the first came back as a
+  // "duplicate" of it with a 200, and the screen still said "Event created."
+  const [idem, setIdem] = useState(() => crypto.randomUUID())
 
   const { data: types = [] } = useQuery<EventType[]>({
     queryKey: ['event-types'],
     queryFn: () => api.get<EventType[]>('/event-types').then(r => r.data),
+    staleTime: 5 * 60_000,
+  })
+
+  // Every event is held somewhere, and the places are the manager's own list
+  // (Manage → Villas & venues). The backend refuses no venue, an over-full one,
+  // and a space already taken for those hours — this only offers the list.
+  const { data: venues = [] } = useQuery<Venue[]>({
+    queryKey: ['bookable-resources', 'EVENT_VENUE'],
+    queryFn: () => api.get<Venue[]>('/bookable-resources?resource_type=EVENT_VENUE').then(r => r.data),
     staleTime: 5 * 60_000,
   })
 
@@ -114,19 +127,19 @@ function CreateEventModal({ open, onClose }: { open: boolean; onClose: () => voi
       starts_at_utc: new Date(startsAt).toISOString(),
       ends_at_utc: new Date(endsAt).toISOString(),
       expected_guests: Number(guests) || 1,
-      location: location.trim() || null,
+      venue_id: venueId,
       idempotency_key: idem,
     }),
     onSuccess: () => {
       addToast({ type: 'success', message: 'Event created.' })
       qc.invalidateQueries({ queryKey: ['events', 'upcoming'] })
-      setTitle(''); setTypeId(''); setStartsAt(''); setEndsAt(''); setGuests('1'); setLocation('')
+      setTitle(''); setTypeId(''); setStartsAt(''); setEndsAt(''); setGuests('1'); setVenueId(''); setIdem(crypto.randomUUID())
       onClose()
     },
     onError: e => addToast({ type: 'error', message: extractErr(e) }),
   })
 
-  const canSubmit = title.trim() && typeId && startsAt && endsAt
+  const canSubmit = title.trim() && typeId && venueId && startsAt && endsAt
 
   return (
     <Modal open={open} onClose={onClose} title="Create Event" size="md">
@@ -189,11 +202,20 @@ function CreateEventModal({ open, onClose }: { open: boolean; onClose: () => voi
                 focus:outline-none focus:ring-2 focus:ring-primary-main" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-ink-secondary mb-1">Location (optional)</label>
-            <input value={location} onChange={e => setLocation(e.target.value)}
-              placeholder="e.g. Lakeside Lawn"
+            <label className="block text-xs font-semibold text-ink-secondary mb-1">Where</label>
+            <select style={{ colorScheme: 'dark' }} value={venueId} onChange={e => setVenueId(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink-primary
-                placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-primary-main" />
+                focus:outline-none focus:ring-2 focus:ring-primary-main">
+              <option value="">Choose a venue…</option>
+              {venues.map(v => (
+                <option key={v.id} value={v.id}>{v.name}{v.capacity ? ` · holds ${v.capacity}` : ''}</option>
+              ))}
+            </select>
+            {venues.length === 0 && (
+              <p className="text-xs text-ink-tertiary mt-1">
+                No venues yet. Add the resort&apos;s spaces under Manage → Villas &amp; venues.
+              </p>
+            )}
           </div>
         </div>
 
@@ -388,7 +410,7 @@ interface Alloc {
   inventory_item_id: string
   item_name: string | null
   allocated_quantity: string
-  status: string            // ALLOCATED | ISSUED | RETURNED | CONSUMED
+  status: string            // PLANNED | ISSUED | RETURNED | CONSUMED — the backend's words (AllocationStatus). It said ALLOCATED here, so Issue never rendered.
   notes: string | null
 }
 
@@ -397,7 +419,7 @@ interface InvItem { id: string; name: string; unit: string; is_active?: boolean 
 
 function allocBadge(s: string): StatusValue {
   const map: Record<string, StatusValue> = {
-    ALLOCATED: 'pending', ISSUED: 'active', RETURNED: 'checked-out', CONSUMED: 'resolved',
+    PLANNED: 'pending', ISSUED: 'active', RETURNED: 'checked-out', CONSUMED: 'resolved',
   }
   return map[s.toUpperCase()] ?? 'info'
 }
@@ -451,7 +473,10 @@ function RunPanel({ event, onClose }: { event: EventItem; onClose: () => void })
   })
   const { data: allocs = [] } = useQuery<Alloc[]>({
     queryKey: ['events', event.id, 'inventory'],
-    queryFn: () => api.get<Alloc[]>(`/events/${event.id}/inventory`).then(r => Array.isArray(r.data) ? r.data : []),
+    // The API wraps the rows: { allocations, reconciliation }. This used to read the
+    // body as an array, got an object, and silently showed "Nothing set aside".
+    queryFn: () => api.get<{ allocations: Alloc[] }>(`/events/${event.id}/inventory`)
+      .then(r => r.data.allocations ?? []),
   })
 
   const move = useMutation({
@@ -583,7 +608,7 @@ function RunPanel({ event, onClose }: { event: EventItem; onClose: () => void })
             </span>
             <span className="flex items-center gap-2 shrink-0">
               <StatusBadge status={allocBadge(a.status)} size="sm" />
-              {a.status === 'ALLOCATED' && (
+              {a.status === 'PLANNED' && (
                 <button className="text-xs text-[#fa5c29]"
                   onClick={() => allocMove.mutate({ id: a.id, verb: 'issue' })}>Issue</button>
               )}

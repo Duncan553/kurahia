@@ -220,7 +220,7 @@ export default function ManagerScreen() {
         <path d="M10 8v3.5M10 13.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ) },
-    { label: 'Villas', desc: 'What guests can book & rates', path: '/manager/resources', svg: (
+    { label: 'Villas & venues', desc: 'Rooms, and the spaces events are held in', path: '/manager/resources', svg: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M3 10L10 4l7 6v7a1 1 0 01-1 1H4a1 1 0 01-1-1v-7z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
         <path d="M8 18v-5h4v5" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>

@@ -98,8 +98,11 @@ def edit_resource(resource_id):
     if "capacity" in data:
         resource.capacity = int(data["capacity"]) if data["capacity"] is not None else None
     if "base_price" in data:
-        if actor.role.level < OWNER_LEVEL:
-            return jsonify({"error": "Only the owner can change resource pricing."}), 403
+        # A villa's nightly rate is the owner's. An event venue's hire fee is the
+        # manager's — running the spaces is their job (decided 17 Sep 2026).
+        if (resource.resource_type != ResourceType.EVENT_VENUE.value
+                and actor.role.level < OWNER_LEVEL):
+            return jsonify({"error": "Only the owner can change a villa's rate."}), 403
         try:
             resource.base_price = Decimal(str(data["base_price"]))
         except InvalidOperation:

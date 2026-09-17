@@ -717,11 +717,12 @@ def test_HOLE_manager_may_assign_anyone_as_a_housekeeper(client, manager_token,
 @pytest.fixture
 def event_id(client, manager_token):
     from datetime import datetime, timezone, timedelta
+    from tests.helpers import make_venue
     tid = client.post("/event-types", headers=H(manager_token),
                       json={"name": "Wedding"}).get_json()["id"]
     start = datetime.now(timezone.utc) + timedelta(days=7)
     return client.post("/events", headers=H(manager_token), json={
-        "title": "Otieno Wedding", "event_type_id": tid,
+        "title": "Otieno Wedding", "event_type_id": tid, "venue_id": make_venue(),
         "starts_at_utc": start.isoformat(),
         "ends_at_utc": (start + timedelta(hours=6)).isoformat(),
         "expected_guests": 200,
@@ -1078,29 +1079,22 @@ def test_HOLE_equipment_disable_is_one_way(client, manager_token, jetski_id):
                        json={"check_items": {"a": {"checked": True}}}).status_code == 404
 
 
-def test_HOLE_event_expected_guests_is_not_validated(client, manager_token):
-    """SHOULD: 400 'expected_guests must be a whole number / must be positive'.
-    IS: events/core.py:166 does int(data.get('expected_guests', 1)) bare, and
-    line 194 the same on edit — 'many' raises ValueError. A negative IS caught,
-    but only by the DB CHECK ck_event_guests_pos, which escapes as an
-    IntegrityError, not a plain-English 400. Both are unhandled exceptions."""
+def test_event_expected_guests_is_validated(client, manager_token):
+    """Was a HOLE: bare int() let 'many' crash the request (ValueError) and let
+    -50 escape as an IntegrityError from ck_event_guests_pos. Closed 17 Sep 2026
+    by events/core.py::_guest_count — both are now a plain-English 400."""
     from datetime import datetime, timezone, timedelta
+    from tests.helpers import make_venue
     tid = client.post("/event-types", headers=H(manager_token),
                       json={"name": "Conference"}).get_json()["id"]
     start = datetime.now(timezone.utc) + timedelta(days=3)
-    body = {"title": "T", "event_type_id": tid,
+    body = {"title": "T", "event_type_id": tid, "venue_id": make_venue(),
             "starts_at_utc": start.isoformat(),
             "ends_at_utc": (start + timedelta(hours=2)).isoformat()}
-
-    with pytest.raises(ValueError):
-        client.post("/events", headers=H(manager_token),
-                    json={**body, "expected_guests": "many"})
-
-    from sqlalchemy.exc import IntegrityError
-    with pytest.raises(IntegrityError):
-        client.post("/events", headers=H(manager_token),
-                    json={**body, "expected_guests": -50, "title": "T2"})
-
+    for bad in ("many", -50):
+        rv = client.post("/events", headers=H(manager_token), json={**body, "expected_guests": bad})
+        assert rv.status_code == 400
+        assert "whole number" in rv.get_json()["error"]
 
 def test_a_classified_item_still_sells(client, waiter_token, food_item_id):
     """The other half of the untracked block: it must not catch anything

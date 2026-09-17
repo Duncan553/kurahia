@@ -11,6 +11,8 @@ from app.extensions import db
 from app.models.user import User
 from app.models.event_type import EventType
 from app.models.event import Event, EventStatus
+from app.models.bookable_resource import BookableResource, ResourceType
+from app.services.business_day import _get_tz as _resort_tz
 from app.models.event_assignment import EventAssignment, AssignmentStatus
 from app.models.event_inventory_allocation import EventInventoryAllocation, AllocationStatus
 from app.models.inventory_item import InventoryItem
@@ -37,7 +39,9 @@ def _event_dict(e: Event) -> dict:
         "starts_at":      e.starts_at_utc.isoformat(),
         "ends_at":        e.ends_at_utc.isoformat(),
         "expected_guests": e.expected_guests,
-        "location":       e.location,
+        "venue":          ({"id": e.venue.id, "name": e.venue.name, "capacity": e.venue.capacity}
+                           if e.venue else None),
+        "location":       e.venue.name if e.venue else e.location,
         "notes":          e.notes,
         "status":         e.status,
     }
@@ -64,6 +68,62 @@ def _alloc_dict(a: EventInventoryAllocation) -> dict:
         "notes":              a.notes,
         "status":             a.status,
     }
+
+
+# Statuses that still hold a space. A finished or cancelled event frees it.
+_HOLDS_SPACE = (EventStatus.PLANNED.value, EventStatus.CONFIRMED.value,
+                EventStatus.IN_PROGRESS.value)
+
+
+def _guest_count(val):
+    """A whole number above zero, or None. Bare int() used to let "many" crash
+    the request and let -50 escape as a database error instead of a sentence."""
+    try:
+        n = int(val)
+    except (TypeError, ValueError):
+        return None
+    return n if n > 0 else None
+
+
+def _check_venue(venue_id, starts, ends, guests, exclude_id=None):
+    """Return (venue, None) if this event may be held there, else (None, response).
+
+    The spaces are data the manager registers (EVENT_VENUE resources), so the
+    rules read that data instead of a list in code: the space must exist and be
+    in service, hold the guest count, and not already be held by another open
+    event over any part of the same hours.
+    """
+    if not venue_id:
+        return None, (jsonify({"error": "Choose where the event is held."}), 400)
+    # Locked: two managers booking the same lawn at the same moment would both
+    # pass the clash check below. The lock makes the second one wait and see the first.
+    venue = db.session.get(BookableResource, venue_id, with_for_update=True)
+    if not venue or venue.resource_type != ResourceType.EVENT_VENUE.value:
+        return None, (jsonify({"error": "That place is not an event venue."}), 400)
+    if not venue.is_active:
+        return None, (jsonify({"error": f"{venue.name} is switched off and cannot be booked."}), 400)
+    if venue.capacity and guests > venue.capacity:
+        return None, (jsonify({"error": f"{venue.name} holds {venue.capacity} guests; "
+                                        f"this event expects {guests}."}), 400)
+    # Two time ranges overlap when each starts before the other ends. Touching
+    # ends (one finishes at 4pm, the next starts at 4pm) is not a clash.
+    clash = db.session.query(Event).filter(
+        Event.venue_id == venue.id,
+        Event.status.in_(_HOLDS_SPACE),
+        Event.starts_at_utc < ends,
+        Event.ends_at_utc > starts,
+        Event.id != exclude_id,
+    ).first()
+    if clash:
+        # Said in the resort's own clock. The manager typed 2pm; a reply saying
+        # "11:00 UTC" reads as a different booking. SQLite hands back naive
+        # datetimes, which are UTC by invariant 8.
+        tz = _resort_tz()
+        local = lambda d: (d if d.tzinfo else d.replace(tzinfo=timezone.utc)).astimezone(tz)
+        return None, (jsonify({"error": f"{venue.name} is already booked for "
+                                        f"{clash.title} ({local(clash.starts_at_utc):%d %b %H:%M}"
+                                        f"–{local(clash.ends_at_utc):%H:%M})."}), 409)
+    return venue, None
 
 
 def _parse_dt(val: str) -> datetime | None:
@@ -158,11 +218,19 @@ def create_event():
     if ends <= starts:
         return jsonify({"error": "ends_at_utc must be after starts_at_utc."}), 400
 
+    guests = _guest_count(data.get("expected_guests", 1))
+    if guests is None:
+        return jsonify({"error": "expected_guests must be a whole number above zero."}), 400
+    venue, refused = _check_venue(data.get("venue_id"), starts, ends, guests)
+    if refused:
+        return refused
+
     event = Event(
         title=title, event_type_id=type_id,
         booking_id=data.get("booking_id"),
         starts_at_utc=starts, ends_at_utc=ends,
-        expected_guests=int(data.get("expected_guests", 1)),
+        expected_guests=guests,
+        venue_id=venue.id,
         location=data.get("location"),
         notes=data.get("notes"),
         created_by_id=actor.id,
@@ -192,7 +260,16 @@ def edit_event(event_id):
     if "title" in data:          event.title = data["title"].strip()
     if "location" in data:       event.location = data["location"]
     if "notes" in data:          event.notes = data["notes"]
-    if "expected_guests" in data: event.expected_guests = int(data["expected_guests"])
+    if "expected_guests" in data or "venue_id" in data:
+        guests = _guest_count(data.get("expected_guests", event.expected_guests))
+        if guests is None:
+            return jsonify({"error": "expected_guests must be a whole number above zero."}), 400
+        venue, refused = _check_venue(data.get("venue_id", event.venue_id),
+                                      event.starts_at_utc, event.ends_at_utc,
+                                      guests, exclude_id=event.id)
+        if refused:
+            return refused
+        event.expected_guests, event.venue_id = guests, venue.id
     event.updated_at_utc = datetime.now(timezone.utc)
     db.session.flush()
     AuditLog.log(actor=actor.username, action="event.edit", target=event_id)
@@ -307,11 +384,14 @@ def upcoming_events():
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < STAFF_LEVEL:
         return jsonify({"error": "Login required."}), 403
-    now = datetime.now(timezone.utc)
+    # Every event still open, whatever the clock says. This is the only list the
+    # Events screen reads, and Start / Finish / the stock buttons sit on its
+    # cards. Filtering on "starts in the future" hid a wedding the moment it was
+    # started (no Finish anywhere) or its start time passed (no Start either).
     events = db.session.query(Event).filter(
-        Event.starts_at_utc >= now,
-        Event.status.in_([EventStatus.PLANNED.value, EventStatus.CONFIRMED.value]),
-    ).order_by(Event.starts_at_utc).limit(20).all()
+        Event.status.in_([EventStatus.PLANNED.value, EventStatus.CONFIRMED.value,
+                          EventStatus.IN_PROGRESS.value]),
+    ).order_by(Event.starts_at_utc).all()
     return jsonify([_event_dict(e) for e in events]), 200
 
 

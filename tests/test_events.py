@@ -71,15 +71,18 @@ def inventory_item(app):
     return item
 
 
-def _make_event(client, token, event_type_id, days_ahead=14, idem=None):
+def _make_event(client, token, event_type_id, days_ahead=14, idem=None, venue_id=None, **fields):
+    from tests.helpers import make_venue
     now = datetime.now(timezone.utc)
     return client.post("/events", json={
         "title": "Test Event",
         "event_type_id": event_type_id,
+        "venue_id": venue_id or make_venue(),
         "starts_at_utc": (now + timedelta(days=days_ahead)).isoformat(),
         "ends_at_utc":   (now + timedelta(days=days_ahead, hours=6)).isoformat(),
         "expected_guests": 50,
         "idempotency_key": idem or str(uuid.uuid4()),
+        **fields,
     }, headers=auth(token))
 
 
@@ -122,6 +125,162 @@ class TestEventLifecycle:
 
     def test_staff_cannot_create_event(self, client, waiter_token, event_type):
         rv = _make_event(client, waiter_token, event_type.id)
+        assert rv.status_code == 403
+
+
+class TestTheEventsScreenListsEveryOpenEvent:
+    """/events/upcoming is the ONLY list the Events screen reads, and the Start,
+    Finish and stock buttons live on its cards. It used to return PLANNED and
+    CONFIRMED events that had not started yet — so a wedding vanished the
+    moment it was started (no Finish button anywhere) or the moment its start
+    time passed (no Start button either). Open means not finished, not future."""
+
+    def _ids(self, client, token):
+        return {e["id"] for e in client.get("/events/upcoming", headers=auth(token)).get_json()}
+
+    def test_a_started_event_stays_on_the_list_until_it_is_finished(
+            self, client, manager_token, event_type):
+        eid = _make_event(client, manager_token, event_type.id).get_json()["id"]
+        client.post(f"/events/{eid}/confirm", headers=auth(manager_token))
+        client.post(f"/events/{eid}/start",   headers=auth(manager_token))
+        assert eid in self._ids(client, manager_token)
+        client.post(f"/events/{eid}/complete", headers=auth(manager_token))
+        assert eid not in self._ids(client, manager_token)
+
+    def test_an_event_whose_start_time_passed_can_still_be_started(
+            self, client, manager_token, event_type):
+        # Began an hour ago, confirmed, nobody has pressed Start yet.
+        eid = _make_event(client, manager_token, event_type.id, days_ahead=-1 / 24).get_json()["id"]
+        client.post(f"/events/{eid}/confirm", headers=auth(manager_token))
+        assert eid in self._ids(client, manager_token)
+
+
+class TestAnEventIsHeldSomewhere:
+    """Every event books one of the spaces the manager registered. Before this,
+    "where" was free text: two weddings could share one lawn at the same hour,
+    and 300 guests could be booked into a space for 200."""
+
+    def test_an_event_with_no_venue_is_refused(self, client, manager_token, event_type):
+        from tests.helpers import make_venue
+        make_venue()  # a venue exists — the event simply did not pick one
+        now = datetime.now(timezone.utc)
+        rv = client.post("/events", headers=auth(manager_token), json={
+            "title": "Nowhere", "event_type_id": event_type.id,
+            "starts_at_utc": (now + timedelta(days=3)).isoformat(),
+            "ends_at_utc": (now + timedelta(days=3, hours=4)).isoformat(),
+        })
+        assert rv.status_code == 400
+        assert "where" in rv.get_json()["error"].lower()
+
+    def test_a_villa_is_not_an_event_venue(self, client, manager_token, event_type):
+        from app.extensions import db
+        from app.models.bookable_resource import BookableResource
+        villa = BookableResource(name="Villa 9", resource_type="VILLA",
+                                 capacity=8, base_price=Decimal("100000"))
+        db.session.add(villa); db.session.commit()
+        rv = _make_event(client, manager_token, event_type.id, venue_id=villa.id)
+        assert rv.status_code == 400
+        assert "not an event venue" in rv.get_json()["error"]
+
+    def test_a_switched_off_venue_cannot_be_booked(self, client, manager_token, event_type):
+        from tests.helpers import make_venue
+        vid = make_venue(name="Old Hall")
+        client.post(f"/bookable-resources/{vid}/disable", headers=auth(manager_token))
+        rv = _make_event(client, manager_token, event_type.id, venue_id=vid)
+        assert rv.status_code == 400
+        assert "Old Hall" in rv.get_json()["error"]
+
+    def test_more_guests_than_the_space_holds_is_refused(self, client, manager_token, event_type):
+        from tests.helpers import make_venue
+        vid = make_venue(name="Garden", capacity=200)
+        rv = _make_event(client, manager_token, event_type.id, venue_id=vid, expected_guests=300)
+        assert rv.status_code == 400
+        assert "Garden holds 200" in rv.get_json()["error"]
+        assert _make_event(client, manager_token, event_type.id, venue_id=vid,
+                           expected_guests=200).status_code == 201
+
+    def test_two_open_events_cannot_share_a_space_at_the_same_time(
+            self, client, manager_token, event_type):
+        from tests.helpers import make_venue
+        vid = make_venue(name="Lake Lawn")
+        first = _make_event(client, manager_token, event_type.id, venue_id=vid, title="Otieno Wedding")
+        assert first.status_code == 201
+        rv = _make_event(client, manager_token, event_type.id, venue_id=vid, title="Kamau Party")
+        assert rv.status_code == 409
+        assert "Otieno Wedding" in rv.get_json()["error"]
+        assert "UTC" not in rv.get_json()["error"]  # said in the resort's clock
+        # A different space the same day is fine.
+        assert _make_event(client, manager_token, event_type.id, title="Kamau Party").status_code == 201
+
+    def test_one_event_may_start_the_moment_the_last_one_ends(
+            self, client, manager_token, event_type):
+        from tests.helpers import make_venue
+        vid = make_venue()
+        start = datetime.now(timezone.utc) + timedelta(days=5)
+        body = lambda s, t: {"venue_id": vid, "title": t,
+                             "starts_at_utc": s.isoformat(),
+                             "ends_at_utc": (s + timedelta(hours=4)).isoformat()}
+        assert _make_event(client, manager_token, event_type.id, **body(start, "Morning")).status_code == 201
+        assert _make_event(client, manager_token, event_type.id,
+                           **body(start + timedelta(hours=4), "Evening")).status_code == 201
+
+    def test_a_cancelled_event_frees_the_space(self, client, manager_token, event_type):
+        from tests.helpers import make_venue
+        vid = make_venue()
+        eid = _make_event(client, manager_token, event_type.id, venue_id=vid).get_json()["id"]
+        client.post(f"/events/{eid}/cancel", headers=auth(manager_token))
+        assert _make_event(client, manager_token, event_type.id, venue_id=vid).status_code == 201
+
+    def test_editing_cannot_overfill_or_double_book_a_space(self, client, manager_token, event_type):
+        from tests.helpers import make_venue
+        small, busy = make_venue(name="Gazebo", capacity=40), make_venue(name="Hall")
+        _make_event(client, manager_token, event_type.id, venue_id=busy, title="Hall Booking")
+        eid = _make_event(client, manager_token, event_type.id, venue_id=small,
+                          expected_guests=30).get_json()["id"]
+        rv = client.patch(f"/events/{eid}", headers=auth(manager_token), json={"expected_guests": 60})
+        assert rv.status_code == 400 and "Gazebo holds 40" in rv.get_json()["error"]
+        rv = client.patch(f"/events/{eid}", headers=auth(manager_token), json={"venue_id": busy})
+        assert rv.status_code == 409 and "Hall Booking" in rv.get_json()["error"]
+        # Editing its own details does not make it clash with itself.
+        rv = client.patch(f"/events/{eid}", headers=auth(manager_token), json={"title": "Renamed"})
+        assert rv.status_code == 200
+
+    def test_the_event_says_where_it_is(self, client, manager_token, event_type):
+        from tests.helpers import make_venue
+        vid = make_venue(name="Poolside", capacity=120)
+        ev = _make_event(client, manager_token, event_type.id, venue_id=vid).get_json()
+        assert ev["venue"] == {"id": vid, "name": "Poolside", "capacity": 120}
+        assert ev["location"] == "Poolside"
+
+    def test_a_guest_count_that_is_not_a_number_is_refused_in_plain_english(
+            self, client, manager_token, event_type):
+        for bad in ("many", -50, 0):
+            rv = _make_event(client, manager_token, event_type.id, expected_guests=bad)
+            assert rv.status_code == 400, bad
+            assert "guests" in rv.get_json()["error"]
+
+
+class TestTheManagerRunsTheVenues:
+    """The spaces are the manager's to run, fee included (decided 17 Sep 2026).
+    A villa's nightly rate stays the owner's."""
+
+    def test_a_manager_sets_a_venue_fee(self, client, manager_token):
+        from tests.helpers import make_venue
+        vid = make_venue(base_price="50000")
+        rv = client.patch(f"/bookable-resources/{vid}", headers=auth(manager_token),
+                          json={"base_price": "65000", "capacity": 250})
+        assert rv.status_code == 200
+        assert rv.get_json()["base_price"] == "65000.00"
+        assert rv.get_json()["capacity"] == 250
+
+    def test_a_manager_still_cannot_change_a_villa_rate(self, client, manager_token):
+        from app.extensions import db
+        from app.models.bookable_resource import BookableResource
+        villa = BookableResource(name="Villa 3", resource_type="VILLA",
+                                 capacity=8, base_price=Decimal("100000"))
+        db.session.add(villa); db.session.commit()
+        rv = client.patch(f"/bookable-resources/{villa.id}", headers=auth(manager_token),
+                          json={"base_price": "1"})
         assert rv.status_code == 403
 
 

@@ -51,3 +51,22 @@ def open_tab(client, reference="Table 9", assign_to=None, **fields):
                          headers=manager_auth(client))
         assert rv.status_code == 200, rv.get_json()
     return tab
+
+
+def make_venue(name=None, capacity=500, base_price="50000"):
+    """Register an EVENT_VENUE and return its id.
+
+    Every event must be held somewhere (app/events/core.py::_check_venue). Tests
+    that are not about venues get a fresh one each call, so two events created
+    for the same dates in one test never collide in the same space.
+    """
+    import uuid
+    from decimal import Decimal
+    from app.extensions import db
+    from app.models.bookable_resource import BookableResource, ResourceType
+    venue = BookableResource(name=name or f"Lawn {uuid.uuid4().hex[:6]}",
+                             resource_type=ResourceType.EVENT_VENUE.value,
+                             capacity=capacity, base_price=Decimal(base_price))
+    db.session.add(venue)
+    db.session.commit()
+    return venue.id
