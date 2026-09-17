@@ -400,14 +400,18 @@ def _notify_waiter_ready(oi: OrderItem):
     from app.services.event_menu import event_for_tab, crew
     event = event_for_tab(order.tab_id)
     recipients = [u.id for u in crew(event, "SERVICE")] if event else []
+    subject = f"Order ready — {tab_ref}"
     if event:
-        body = f"{event.title}: {qty_txt}x {item_name} is ready for pickup."
+        # An event is not a table: name the event and where the plate goes.
+        where = event.venue.name if event.venue else (event.location or "the event")
+        subject = f"Ready for {event.title}"
+        body = f"{qty_txt}x {item_name} is ready — take it to {where}."
     for recipient_id in recipients or [order.created_by_id]:
         db.session.add(Notification(
             recipient_user_id=recipient_id,
             reference_type="order_ready",
             reference_id=oi.id,
-            subject=f"Order ready — {tab_ref}",
+            subject=subject,
             body=body,
             status=NotificationStatus.DELIVERED.value,
             channel=NotificationChannel.IN_APP.value,
@@ -417,7 +421,7 @@ def _notify_waiter_ready(oi: OrderItem):
             # key shared between them would refuse the second.
             idempotency_key=f"order-ready-{oi.id}-{recipient_id}",
         ))
-        push_to_user(recipient_id, f"Order ready — {tab_ref}", body, "order_ready")
+        push_to_user(recipient_id, subject, body, "order_ready")
 
 
 # ── Order Item transitions ────────────────────────────────────────────────────

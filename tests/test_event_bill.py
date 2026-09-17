@@ -645,7 +645,9 @@ class TestTheEventCrew:
         ready = db.session.query(Notification).filter_by(reference_id=oi.id, reference_type="order_ready").all()
         who = {db.session.get(User, n.recipient_user_id).username for n in ready}
         assert who == {"waiter1", "kitchen1"}
-        assert "Otieno Wedding" in ready[0].body
+        # An event is not a table: say which event and where to take it.
+        assert ready[0].subject == "Ready for Otieno Wedding"
+        assert "take it to Lawn" in ready[0].body and "table" not in ready[0].body.lower()
 
     def test_with_no_service_crew_the_sender_is_still_told(
             self, client, manager_token, chef_token, event_type_id, pilau):

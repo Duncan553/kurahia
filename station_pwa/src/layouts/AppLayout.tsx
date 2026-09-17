@@ -230,7 +230,7 @@ function ReadyBar() {
           {pings.length === 1 ? first.subject : `${pings.length} orders ready for pickup`}
         </span>
         <span className="block text-[11px] text-ink-secondary truncate">
-          {pings.length === 1 ? first.body : 'Tap to see which tables'}
+          {pings.length === 1 ? first.body : 'Tap to see what is ready and where it goes'}
         </span>
       </span>
       <span className="shrink-0 text-[11px] font-bold text-status-paid">Collect →</span>
