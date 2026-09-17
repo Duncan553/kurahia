@@ -350,6 +350,47 @@ def settle_cancellation(event: Event, actor: User) -> None:
         event.tab.status, event.tab.closed_at_utc, event.tab.closed_by_id = TabStatus.CLOSED.value, now, actor.id
 
 
+def settle_finish(event: Event, actor: User) -> None:
+    """Finishing an event: flag, don't block.
+
+    A settled bill closes. If money is still owed, or dishes were never marked
+    ready, the event still finishes — real events end when the guests leave —
+    but the owner and managers are told once, in plain words.
+    """
+    from app.models.order import Order
+    from app.models.order_item import OrderItem, OrderItemStatus
+    from app.services.tab import get_tab_balance, is_tab_closable
+    from app.models.tab import TabStatus
+    loose = []
+    owing = Decimal("0")
+    if event.tab_id:
+        waiting = db.session.query(OrderItem).join(Order).filter(
+            Order.tab_id == event.tab_id,
+            OrderItem.status.in_([OrderItemStatus.PENDING.value, OrderItemStatus.RECEIVED.value]),
+        ).all()
+        loose = [f"{plates(oi.quantity)} × {oi.menu_item.name}" for oi in waiting]
+        owing = get_tab_balance(event.tab_id)
+        ok, _ = is_tab_closable(event.tab_id)
+        if ok:
+            now = datetime.now(timezone.utc)
+            event.tab.status, event.tab.closed_at_utc, event.tab.closed_by_id = TabStatus.CLOSED.value, now, actor.id
+    problems = []
+    if owing > 0:
+        problems.append(f"KSh {owing:,.0f} still owed — settle it on the event's bill")
+    if loose:
+        problems.append(", ".join(loose) + " never marked ready")
+    if problems:
+        body = f"{event.title} was finished by {actor.username} with " + "; ".join(problems) + "."
+        now = datetime.now(timezone.utc)
+        for u in _people(min_level=MANAGER_LEVEL):
+            db.session.add(Notification(
+                recipient_user_id=u.id, reference_type="event_finished", reference_id=event.id,
+                subject=f"Finished with loose ends: {event.title}"[:200], body=body,
+                status=NotificationStatus.DELIVERED.value, channel=NotificationChannel.IN_APP.value,
+                scheduled_for_utc=now, sent_at_utc=now, idempotency_key=f"event-finished-{event.id}-{u.id}",
+            ))
+
+
 # ── Cost sheet ────────────────────────────────────────────────────────────────
 
 def cost_sheet(event: Event) -> dict:

@@ -938,3 +938,52 @@ class TestTheEventCostSheet:
 
     def test_staff_cannot_read_an_events_costs(self, client, waiter_token, event_id):
         assert client.get(f"/events/{event_id}/cost-sheet", headers=H(waiter_token)).status_code == 403
+
+
+# ── Finishing an event ────────────────────────────────────────────────────────
+
+class TestFinishingAnEvent:
+    """Flag, don't block (the rule Wachira chose for leave vs clock-in): an event
+    may be finished with money owed, but the owner is told, and a settled bill closes."""
+
+    def _running(self, client, manager_token, event_type_id):
+        eid = _event(client, manager_token, event_type_id, days=0, venue_fee="50000")
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        client.post(f"/events/{eid}/start", headers=H(manager_token))
+        return eid
+
+    def _told(self, event_id, username):
+        from app.extensions import db
+        from app.models.notification import Notification
+        from app.models.user import User
+        uid = db.session.query(User).filter_by(username=username).one().id
+        return [n.body for n in db.session.query(Notification).filter_by(
+            reference_id=event_id, reference_type="event_finished", recipient_user_id=uid)]
+
+    def test_finishing_with_money_owed_is_allowed_and_the_owner_is_told(
+            self, client, manager_token, event_type_id):
+        eid = self._running(client, manager_token, event_type_id)
+        assert client.post(f"/events/{eid}/complete", headers=H(manager_token)).status_code == 200
+        body = self._told(eid, "owner1")[0]
+        assert "KSh 50,000 still owed" in body
+        bill = client.get(f"/events/{eid}/bill", headers=H(manager_token)).get_json()
+        assert bill["status"] == "OPEN" and bill["owing"] == "50000.00"
+
+    def test_a_settled_event_closes_its_bill(self, client, manager_token, event_type_id):
+        eid = self._running(client, manager_token, event_type_id)
+        tab_id = client.get(f"/events/{eid}/bill", headers=H(manager_token)).get_json()["tab_id"]
+        client.post(f"/tabs/{tab_id}/payments", headers=H(manager_token),
+                    json={"method": "CASH", "amount": "50000", "idempotency_key": str(uuid.uuid4())})
+        client.post(f"/events/{eid}/complete", headers=H(manager_token))
+        bill = client.get(f"/events/{eid}/bill", headers=H(manager_token)).get_json()
+        assert (bill["status"], bill["owing"]) == ("CLOSED", "0.00")
+        assert self._told(eid, "owner1") == []
+
+    def test_dishes_never_marked_ready_are_named(self, client, manager_token, event_type_id, pilau):
+        eid = _event(client, manager_token, event_type_id, days=0)
+        _plan(client, manager_token, eid, pilau, 10)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        client.post(f"/events/{eid}/send", headers=H(manager_token), json={})
+        client.post(f"/events/{eid}/start", headers=H(manager_token))
+        client.post(f"/events/{eid}/complete", headers=H(manager_token))
+        assert "10 × Pilau never marked ready" in self._told(eid, "manager1")[0]

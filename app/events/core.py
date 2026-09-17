@@ -357,7 +357,13 @@ def complete_event(event_id):
     actor = db.session.get(User, get_jwt_identity())
     if actor.role.level < MANAGER_LEVEL:
         return jsonify({"error": "Manager or above required."}), 403
-    return _lifecycle_transition(event_id, EventStatus.COMPLETED.value, actor)
+    from app.services.event_menu import settle_finish
+
+    def finished(ev):
+        settle_finish(ev, actor)   # close a settled bill, or flag what is left
+        return 0                   # no reminders are scheduled by finishing
+
+    return _lifecycle_transition(event_id, EventStatus.COMPLETED.value, actor, post_hook=finished)
 
 
 @events_bp.post("/<event_id>/cancel")
