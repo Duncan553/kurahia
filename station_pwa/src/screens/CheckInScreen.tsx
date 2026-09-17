@@ -27,8 +27,57 @@ interface Occupant {
   booking_id: string
   guest_name: string
   resource: string | null
+  check_in_planned: string | null
+  check_out_planned: string | null
   tab_id: string | null
   tab_balance: string
+}
+
+// A guest stays longer or leaves early. The system charges the extra nights —
+// or takes off the nights not stayed — at the rate they BOOKED at, as its own
+// line on the room bill (POST /bookings/:id/change-dates).
+function ChangeStay({ stay, onClose }: { stay: Occupant; onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const addToast = useToastStore((s) => s.addToast)
+  const day = (iso: string | null) => (iso ?? '').slice(0, 10)
+  const [leaving, setLeaving] = useState(day(stay.check_out_planned))
+  const nightsFor = (out: string) =>
+    Math.round((Date.parse(out) - Date.parse(day(stay.check_in_planned))) / 86_400_000)
+  const nights = leaving ? nightsFor(leaving) : 0
+  const was = nightsFor(day(stay.check_out_planned))
+
+  const save = useMutation({
+    mutationFn: () => api.post(`/bookings/${stay.booking_id}/change-dates`,
+      { check_out_planned_utc: `${leaving}T11:00:00` }).then(r => r.data as { nights: number; base_total: string }),
+    onSuccess: (d) => {
+      addToast({ type: 'success', message:
+        `${stay.guest_name} now stays ${d.nights} night${d.nights === 1 ? '' : 's'} — room KSh ${Number(d.base_total).toLocaleString()}.` })
+      queryClient.invalidateQueries({ queryKey: ['front-desk-today'] })
+      onClose()
+    },
+    onError: (e: unknown) => addToast({ type: 'error', message:
+      (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not change the stay.' }),
+  })
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-ink-secondary">
+        {stay.guest_name} · {stay.resource} · booked for {was} night{was === 1 ? '' : 's'}
+      </p>
+      <Input label="Leaving on" type="date" value={leaving} min={day(stay.check_in_planned)}
+        onChange={(e) => setLeaving(e.target.value)} />
+      <p className="text-sm text-ink-primary">
+        {nights < 1 ? 'A stay must be at least one night.'
+          : nights === was ? 'No change.'
+          : nights > was ? `${nights - was} extra night${nights - was === 1 ? '' : 's'} will be added to the room bill.`
+          : `${was - nights} night${was - nights === 1 ? '' : 's'} not stayed will come off the room bill.`}
+      </p>
+      <Button className="w-full" disabled={nights < 1 || nights === was || save.isPending}
+        onClick={() => save.mutate()}>
+        {save.isPending ? 'Saving…' : 'Save new leaving date'}
+      </Button>
+    </div>
+  )
 }
 
 interface PendingWaiver {
@@ -113,6 +162,7 @@ export default function CheckInScreen() {
   // they get names — and where charging rights are granted deliberately rather
   // than by being in the room.
   const [guestsFor, setGuestsFor] = useState<Occupant | null>(null)
+  const [stayFor, setStayFor] = useState<Occupant | null>(null)
   const [newName, setNewName] = useState('')
   const [newId, setNewId] = useState('')
 
@@ -680,6 +730,14 @@ export default function CheckInScreen() {
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-tertiary">
                       Who's staying
                     </button>
+                    <button
+                      onClick={() => setStayFor(o)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold
+                        text-ink-secondary border border-white/15
+                        hover:text-ink-primary active:scale-[0.98] transition-all
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-tertiary">
+                      Change leaving date
+                    </button>
                     {o.tab_id && (
                       <button
                         onClick={() => navigate(`/folio/${o.tab_id}`)}
@@ -823,6 +881,9 @@ export default function CheckInScreen() {
         >
           OK
         </button>
+      </Modal>
+      <Modal open={!!stayFor} onClose={() => setStayFor(null)} title="Stay longer or leave early" size="sm">
+        {stayFor && <ChangeStay stay={stayFor} onClose={() => setStayFor(null)} />}
       </Modal>
       </ErrorBoundary>
     </RequireRole>

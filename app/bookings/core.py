@@ -297,6 +297,77 @@ def check_out(booking_id):
 
 # ── Cancel ────────────────────────────────────────────────────────────────────
 
+@bookings_bp.post("/<booking_id>/change-dates")
+@require_active_user
+def change_dates(booking_id):
+    """A guest stays longer, or leaves early: front desk moves the leaving date.
+
+    The nightly rate is the one the guest BOOKED at (base_total ÷ nights booked),
+    so a price change since never reaches a stay already agreed. Staying longer
+    is refused if the villa is taken for those nights. Checked in, the
+    difference goes on the room bill as its own line — the check-in charge is
+    never rewritten. Not yet checked in, only the booking's total moves, because
+    the room is charged at check-in.
+    """
+    from app.models.charge import Charge
+    from app.models.tab import Tab
+    from app.services.tax import rate_for_menu_item
+    actor = db.session.get(User, get_jwt_identity())
+    if actor.role.level < FRONT_DESK_LEVEL:
+        return jsonify({"error": "Front desk or above required to change a stay."}), 403
+    booking = db.session.get(Booking, booking_id)
+    if not booking:
+        return jsonify({"error": "Booking not found."}), 404
+    open_statuses = (BookingStatus.HELD.value, BookingStatus.CONFIRMED.value, BookingStatus.CHECKED_IN.value)
+    if booking.status not in open_statuses:
+        return jsonify({"error": f"This booking is {booking.status.lower().replace('_', ' ')}; its dates cannot change."}), 400
+    villa = booking.resource
+    if not villa or villa.resource_type != ResourceType.VILLA.value:
+        return jsonify({"error": "Only a villa stay has nights to change."}), 400
+
+    aware = lambda d: d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    new_co = _parse_dt((request.get_json(silent=True) or {}).get("check_out_planned_utc"))
+    if not new_co:
+        return jsonify({"error": "Give the new leaving date."}), 400
+    check_in, old_co = aware(booking.check_in_planned_utc), aware(booking.check_out_planned_utc)
+    old_nights = max((old_co.date() - check_in.date()).days, 1)
+    new_nights = (new_co.date() - check_in.date()).days
+    if new_nights < 1:
+        return jsonify({"error": "A stay must be at least one night."}), 400
+    if new_nights == old_nights:
+        return jsonify({**_booking_dict(booking), "nights": new_nights}), 200
+
+    if new_nights > old_nights:
+        # Same lock as creating a booking: two desks cannot both win the nights.
+        db.session.get(BookableResource, villa.id, with_for_update=True)
+        ok, reason = check_resource_availability(villa.id, old_co, new_co, exclude_booking_id=booking.id)
+        if not ok:
+            return jsonify({"error": f"{villa.name} is not free for the extra nights. {reason}"}), 409
+
+    rate = Decimal(str(booking.base_total)) / old_nights
+    change = new_nights - old_nights
+    booking.check_out_planned_utc = new_co
+    booking.base_total = (rate * new_nights).quantize(Decimal("0.01"))
+    booking.updated_at_utc = datetime.now(timezone.utc)
+
+    if booking.status == BookingStatus.CHECKED_IN.value and booking.tab_id:
+        n = abs(change)
+        what = ("Extra night" if n == 1 else "Extra nights") if change > 0 \
+            else ("Night not stayed" if n == 1 else "Nights not stayed")
+        db.session.add(Charge(
+            tab_id=booking.tab_id,
+            amount=(rate * change).quantize(Decimal("0.01")),
+            description=f"{what} — {villa.name}, {n} night{'s' if n != 1 else ''}",
+            created_by_id=actor.id,
+            tax_rate_snapshot=rate_for_menu_item(None),
+        ))
+    db.session.flush()
+    AuditLog.log(actor=actor.username, action="booking.change_dates", target=booking_id,
+                 details=f"{old_nights} → {new_nights} nights at {rate:.2f}")
+    db.session.commit()
+    return jsonify({**_booking_dict(booking), "nights": new_nights}), 200
+
+
 @bookings_bp.post("/<booking_id>/cancel")
 @require_active_user
 def cancel_booking(booking_id):

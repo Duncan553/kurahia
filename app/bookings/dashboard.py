@@ -98,6 +98,9 @@ def front_desk_today():
             "booking_id":  b.id,
             "guest_name":  b.guest_name,
             "resource":    b.resource.name if b.resource else None,
+            # For "Change leaving date": when they came and when they leave.
+            "check_in_planned":  b.check_in_planned_utc.isoformat() if b.check_in_planned_utc else None,
+            "check_out_planned": b.check_out_planned_utc.isoformat() if b.check_out_planned_utc else None,
             "tab_id":      b.tab_id,
             "tab_balance": str(get_tab_balance(b.tab_id)) if b.tab_id else "0",
         } for b in occupancy],
