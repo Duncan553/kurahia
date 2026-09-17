@@ -290,3 +290,13 @@ def take_booking_fee(event_id):
     em.open_bill(event, actor)
     db.session.commit()
     return record_payment(event.tab_id)
+
+
+@events_bp.get("/<event_id>/cost-sheet")
+@require_active_user
+def get_cost_sheet(event_id):
+    """What the event used, what it cost, and what it billed. Manager and above."""
+    actor, event, refused = _manager_and_event(event_id)
+    if refused:
+        return refused
+    return jsonify(em.cost_sheet(event)), 200

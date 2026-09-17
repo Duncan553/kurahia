@@ -35,6 +35,7 @@ from app.models.system_setting import SystemSetting
 from app.models.purchase_request import PurchaseRequest, RequestStatus
 from app.models.notification import Notification, NotificationStatus, NotificationChannel
 from app.services.stock import get_current_stock
+from app.services.events import get_event_inventory_reconciliation
 
 MANAGER_LEVEL = 5
 OWNER_LEVEL = 10
@@ -347,6 +348,74 @@ def settle_cancellation(event: Event, actor: User) -> None:
     ok, _ = is_tab_closable(event.tab_id)
     if ok:
         event.tab.status, event.tab.closed_at_utc, event.tab.closed_by_id = TabStatus.CLOSED.value, now, actor.id
+
+
+# ── Cost sheet ────────────────────────────────────────────────────────────────
+
+def cost_sheet(event: Event) -> dict:
+    """What the event used from the store, what that cost, against what it billed.
+
+    Read off the stock ledger, never estimated: cooking a dish writes
+    `sale-<order item>-<stock item>` (a cancellation after cooking writes
+    `sale-reverse-…`), so the event's own dishes name exactly what left the
+    shelf. Stock issued for the event and not returned counts too.
+
+    Cost is used × the item's current cost per unit (a weighted average kept by
+    purchases). An item with no cost is NAMED in `uncosted`, and profit is not
+    given as a number, because a missing cost is not a free ingredient.
+    """
+    from app.models.order import Order
+    from app.models.order_item import OrderItem
+    from app.models.stock_movement import StockMovement
+    used: dict[str, Decimal] = {}
+    food_billed = Decimal("0")
+    if event.tab_id:
+        items = db.session.query(OrderItem).join(Order).filter(Order.tab_id == event.tab_id).all()
+        for oi in items:
+            moves = db.session.query(StockMovement).filter(db.or_(
+                StockMovement.idempotency_key.like(f"sale-{oi.id}-%"),
+                StockMovement.idempotency_key.like(f"sale-reverse-{oi.id}-%"),
+            )).all()
+            for m in moves:
+                used[m.item_id] = used.get(m.item_id, Decimal("0")) - Decimal(str(m.change_amount))
+            billed = db.session.query(db.func.sum(Charge.amount)).filter_by(order_item_id=oi.id).scalar()
+            food_billed += Decimal(str(billed or 0))
+    for row in get_event_inventory_reconciliation(event.id):
+        alloc = next((a for a in event.allocations if a.id == row["allocation_id"]), None)
+        if alloc and Decimal(row["consumed"]) > 0:
+            used[alloc.inventory_item_id] = used.get(alloc.inventory_item_id, Decimal("0")) + Decimal(row["consumed"])
+
+    lines, uncosted, total = [], [], Decimal("0")
+    for item_id, qty in used.items():
+        if qty <= 0:
+            continue
+        inv = db.session.get(InventoryItem, item_id)
+        cpu = Decimal(str(inv.cost_per_unit)) if inv.cost_per_unit is not None else None
+        cost = (qty * cpu).quantize(Decimal("0.01")) if cpu is not None else None
+        if cost is None:
+            uncosted.append(inv.name)
+        else:
+            total += cost
+        lines.append({"name": inv.name, "unit": inv.unit, "used": qty4(qty),
+                      "cost_per_unit": qty4(cpu) if cpu is not None else None,
+                      "cost": money(cost) if cost is not None else None})
+    lines.sort(key=lambda l: l["name"])
+
+    venue = db.session.query(db.func.sum(Charge.amount)).filter(
+        Charge.tab_id == event.tab_id, Charge.idempotency_key.in_(
+            [f"event-venue-{event.id}", f"event-venue-reversal-{event.id}"])).scalar() if event.tab_id else 0
+    billed_total = db.session.query(db.func.sum(Charge.amount)).filter_by(
+        tab_id=event.tab_id).scalar() if event.tab_id else 0
+    return {
+        "items": lines,
+        "uncosted": sorted(uncosted),
+        "food_and_drink_cost": money(total),
+        "food_and_drink_billed": money(food_billed),
+        "discount": totals(active_lines(event.id))["discount"],
+        "venue_billed": money(venue or 0),
+        "billed_total": money(billed_total or 0),
+        "profit_on_food_and_drink": None if uncosted else money(food_billed - total),
+    }
 
 
 # ── Keeping watch ─────────────────────────────────────────────────────────────

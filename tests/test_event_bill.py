@@ -871,3 +871,70 @@ class TestTheSystemKeepsCheckingEachEvent:
         body = self._notices(over)[0]
         assert "starts in under 2 hours" not in body
         assert "has ended — finish it and settle the bill" in body
+
+
+# ── Cost sheet: the recipe of an event's spending ─────────────────────────────
+
+class TestTheEventCostSheet:
+    """What the event actually used from the store, what that cost, against
+    what it was billed — read off the stock ledger, never estimated."""
+
+    def _cooked(self, client, manager_token, chef_token, event_type_id, pilau, plates, discount=None, owner_token=None):
+        from app.extensions import db
+        from app.models.order_item import OrderItem
+        eid = _event(client, manager_token, event_type_id, days=0, venue_fee="50000")
+        extra = {}
+        if discount:
+            _set_discount_ceiling(client, owner_token, 20)
+            extra = {"discount_per_unit": discount, "discount_reason": "Package"}
+        _plan(client, manager_token, eid, pilau, plates, **extra)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        client.post(f"/events/{eid}/send", headers=H(manager_token), json={})
+        oi = db.session.query(OrderItem).filter_by(menu_item_id=pilau).one()
+        client.post(f"/order-items/{oi.id}/receive", headers=H(chef_token))
+        client.post(f"/order-items/{oi.id}/ready", headers=H(chef_token))
+        return eid
+
+    def test_cost_comes_from_what_the_kitchen_actually_used(
+            self, client, manager_token, chef_token, owner_token, event_type_id, pilau):
+        eid = self._cooked(client, manager_token, chef_token, event_type_id, pilau, 40,
+                           discount="100", owner_token=owner_token)
+        sheet = client.get(f"/events/{eid}/cost-sheet", headers=H(manager_token)).get_json()
+        assert sheet["items"] == [{"name": "Rice", "unit": "kg", "used": "8.0000",
+                                   "cost_per_unit": "100.0000", "cost": "800.00"}]
+        assert sheet["uncosted"] == []
+        assert (sheet["food_and_drink_cost"], sheet["food_and_drink_billed"], sheet["discount"]) == \
+               ("800.00", "28000.00", "4000.00")                              # 40 × 700 billed
+        assert (sheet["venue_billed"], sheet["billed_total"]) == ("50000.00", "78000.00")
+        assert sheet["profit_on_food_and_drink"] == "27200.00"
+
+    def test_dishes_not_yet_cooked_have_cost_nothing_yet(
+            self, client, manager_token, event_type_id, pilau):
+        eid = _event(client, manager_token, event_type_id, days=0)
+        _plan(client, manager_token, eid, pilau, 40)
+        client.post(f"/events/{eid}/confirm", headers=H(manager_token))
+        client.post(f"/events/{eid}/send", headers=H(manager_token), json={})
+        sheet = client.get(f"/events/{eid}/cost-sheet", headers=H(manager_token)).get_json()
+        assert sheet["items"] == [] and sheet["food_and_drink_cost"] == "0.00"
+        assert sheet["food_and_drink_billed"] == "32000.00"
+
+    def test_an_ingredient_with_no_cost_is_named_not_counted_as_free(
+            self, client, manager_token, chef_token, event_type_id, pilau, rice):
+        from app.extensions import db
+        from app.models.inventory_item import InventoryItem
+        db.session.get(InventoryItem, rice).cost_per_unit = None
+        db.session.commit()
+        eid = self._cooked(client, manager_token, chef_token, event_type_id, pilau, 10)
+        sheet = client.get(f"/events/{eid}/cost-sheet", headers=H(manager_token)).get_json()
+        assert sheet["uncosted"] == ["Rice"]
+        assert sheet["items"][0]["cost"] is None
+        assert sheet["profit_on_food_and_drink"] is None     # not knowable, so not shown as a number
+
+    def test_the_owner_sees_cost_and_profit_on_every_event(
+            self, client, manager_token, chef_token, owner_token, event_type_id, pilau):
+        eid = self._cooked(client, manager_token, chef_token, event_type_id, pilau, 40)
+        row = next(r for r in client.get("/dashboard/events", headers=H(owner_token)).get_json() if r["id"] == eid)
+        assert (row["food_and_drink_cost"], row["profit_on_food_and_drink"]) == ("800.00", "31200.00")
+
+    def test_staff_cannot_read_an_events_costs(self, client, waiter_token, event_id):
+        assert client.get(f"/events/{event_id}/cost-sheet", headers=H(waiter_token)).status_code == 403

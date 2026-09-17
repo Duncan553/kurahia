@@ -25,6 +25,10 @@ interface EventRow {
   charged: string
   paid: string
   owing: string
+  // Off the stock ledger: what the event's dishes and drinks actually used.
+  food_and_drink_cost: string
+  profit_on_food_and_drink: string | null   // null when an ingredient has no cost
+  uncosted: string[]
 }
 
 const kes = (v: string | number) =>
@@ -116,19 +120,25 @@ export default function EventsScreen() {
               {e.status.replace('_', ' ').toLowerCase()}
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2">
             {([['Menu value', e.menu_value], ['Discount', e.discount], ['Billed', e.charged],
-               ['Paid', e.paid], ['Owing', e.owing]] as const).map(([label, v]) => (
+               ['Paid', e.paid], ['Owing', e.owing], ['Food & drink cost', e.food_and_drink_cost],
+               ['Profit on food & drink', e.profit_on_food_and_drink ?? '—']] as const).map(([label, v]) => (
               <div key={label} className="rounded-lg bg-white/5 p-2">
                 <p className="text-[10px] uppercase tracking-widest text-ink-tertiary">{label}</p>
                 <p className={`text-sm font-semibold tabular-nums ${
                   label === 'Owing' && Number(v) > 0 ? 'text-status-failed'
                   : label === 'Discount' && Number(v) > 0 ? 'text-status-pending' : 'text-ink-primary'}`}>
-                  {kes(v)}
+                  {v === '—' ? v : kes(v)}
                 </p>
               </div>
             ))}
           </div>
+          {e.uncosted.length > 0 && (
+            <p className="text-xs text-status-pending">
+              Profit not shown: no cost recorded yet for {e.uncosted.join(', ')}. Record a purchase to price it.
+            </p>
+          )}
           {e.discount_by.length > 0 && (
             <p className="text-xs text-ink-tertiary">Discount given by {e.discount_by.join(', ')}.</p>
           )}

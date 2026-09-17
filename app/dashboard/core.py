@@ -816,7 +816,7 @@ def events_view():
     rows = []
     for e in events:
         lines = em.active_lines(e.id)
-        totals, bill = em.totals(lines), em.bill_dict(e)
+        totals, bill, sheet = em.totals(lines), em.bill_dict(e), em.cost_sheet(e)
         rows.append({
             "id": e.id, "title": e.title, "status": e.status,
             "starts_at": e.starts_at_utc.isoformat(), "expected_guests": e.expected_guests,
@@ -825,5 +825,6 @@ def events_view():
             "menu_value": totals["menu_value"], "discount": totals["discount"],
             "discount_by": sorted({l.discount_by.username for l in lines if l.discount_by}),
             "charged": bill["charged"], "paid": bill["paid"], "owing": bill["owing"],
+            **{k: sheet[k] for k in ("food_and_drink_cost", "profit_on_food_and_drink", "uncosted")},
         })
     return jsonify(rows), 200
